@@ -1,0 +1,547 @@
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+
+// API base URL - change for production
+// Use your computer's IP for physical devices, localhost only works in web/emulator
+const API_BASE_URL = __DEV__
+    ? 'http://172.29.224.1:3001/api' // Your computer's IP for mobile devices
+    : 'https://api.fitzo.app/api';
+
+
+// Create axios instance
+const api = axios.create({
+    baseURL: API_BASE_URL,
+    timeout: 10000,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Token management - platform aware (web uses localStorage, native uses SecureStore)
+const TOKEN_KEY = 'fitzo_auth_token';
+
+export const setAuthToken = async (token: string): Promise<void> => {
+    if (Platform.OS === 'web') {
+        localStorage.setItem(TOKEN_KEY, token);
+    } else {
+        await SecureStore.setItemAsync(TOKEN_KEY, token);
+    }
+};
+
+export const getAuthToken = async (): Promise<string | null> => {
+    if (Platform.OS === 'web') {
+        return localStorage.getItem(TOKEN_KEY);
+    }
+    return await SecureStore.getItemAsync(TOKEN_KEY);
+};
+
+export const removeAuthToken = async (): Promise<void> => {
+    if (Platform.OS === 'web') {
+        localStorage.removeItem(TOKEN_KEY);
+    } else {
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+    }
+};
+
+// Request interceptor - add auth token
+api.interceptors.request.use(
+    async (config) => {
+        const token = await getAuthToken();
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Response interceptor - handle errors
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
+
+        // Handle token expiry
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            // Token expired or invalid - clear it
+            await removeAuthToken();
+            // The app will redirect to login via AuthContext
+        }
+
+        // Transform error to user-friendly message
+        const message = error.response?.data?.message || 'Something went wrong. Please try again.';
+
+        return Promise.reject({
+            message,
+            code: error.response?.data?.code || 'NETWORK_ERROR',
+            status: error.response?.status || 500,
+        });
+    }
+);
+
+// ===========================================
+// AUTH ENDPOINTS
+// ===========================================
+
+export const authAPI = {
+    register: async (data: { email: string; password: string; name: string; gym_code: string }) => {
+        const response = await api.post('/auth/register', data);
+        return response.data;
+    },
+
+    login: async (data: { email: string; password: string }) => {
+        const response = await api.post('/auth/login', data);
+        return response.data;
+    },
+
+    getMe: async () => {
+        const response = await api.get('/auth/me');
+        return response.data;
+    },
+};
+
+// ===========================================
+// MEMBER ENDPOINTS
+// ===========================================
+
+export const memberAPI = {
+    getHome: async () => {
+        const response = await api.get('/member/home');
+        return response.data;
+    },
+};
+
+// ===========================================
+// CHECK-IN ENDPOINTS
+// ===========================================
+
+export const checkinAPI = {
+    checkin: async (gymId: string) => {
+        const response = await api.post('/checkin', { gym_id: gymId });
+        return response.data;
+    },
+
+    getStatus: async () => {
+        const response = await api.get('/checkin/status');
+        return response.data;
+    },
+
+    getHistory: async (days = 30) => {
+        const response = await api.get(`/checkin/history?days=${days}`);
+        return response.data;
+    },
+};
+
+// ===========================================
+// INTENT ENDPOINTS
+// ===========================================
+
+export const intentAPI = {
+    setIntent: async (data: {
+        training_pattern?: string | null;
+        emphasis: string[];
+        session_label?: string | null;
+        visibility?: string;
+        note?: string;
+    }) => {
+        const response = await api.post('/intent', data);
+        return response.data;
+    },
+
+    getIntent: async () => {
+        const response = await api.get('/intent');
+        return response.data;
+    },
+
+    getFeed: async () => {
+        const response = await api.get('/intent/feed');
+        return response.data;
+    },
+
+    getSessions: async (splitType: string) => {
+        const response = await api.get(`/intent/sessions/${splitType}`);
+        return response.data;
+    },
+
+    clearIntent: async () => {
+        const response = await api.delete('/intent');
+        return response.data;
+    },
+};
+
+// ===========================================
+// FRIENDS ENDPOINTS
+// ===========================================
+
+export const friendsAPI = {
+    getFriends: async () => {
+        const response = await api.get('/friends');
+        return response.data;
+    },
+
+    sendRequest: async (friendId: string) => {
+        const response = await api.post('/friends/request', { friend_id: friendId });
+        return response.data;
+    },
+
+    acceptRequest: async (friendId: string) => {
+        const response = await api.post('/friends/accept', { friend_id: friendId });
+        return response.data;
+    },
+
+    rejectRequest: async (friendId: string) => {
+        const response = await api.post('/friends/reject', { friend_id: friendId });
+        return response.data;
+    },
+
+    removeFriend: async (friendId: string) => {
+        const response = await api.delete(`/friends/${friendId}`);
+        return response.data;
+    },
+
+    search: async (query: string) => {
+        const response = await api.get(`/friends/search?q=${encodeURIComponent(query)}`);
+        return response.data;
+    },
+};
+
+// ===========================================
+// LEARN ENDPOINTS
+// ===========================================
+
+export const learnAPI = {
+    getLessons: async () => {
+        const response = await api.get('/learn/lessons');
+        return response.data;
+    },
+
+    getLesson: async (lessonId: string) => {
+        const response = await api.get(`/learn/lessons/${lessonId}`);
+        return response.data;
+    },
+
+    submitAttempt: async (lessonId: string, answers: number[]) => {
+        const response = await api.post('/learn/attempt', { lesson_id: lessonId, answers });
+        return response.data;
+    },
+
+    getProgress: async () => {
+        const response = await api.get('/learn/progress');
+        return response.data;
+    },
+};
+
+// ===========================================
+// CLASSES ENDPOINTS
+// ===========================================
+
+export const classesAPI = {
+    getClasses: async (date?: string) => {
+        const url = date ? `/classes?date=${date}` : '/classes';
+        const response = await api.get(url);
+        return response.data;
+    },
+
+    bookClass: async (sessionId: string) => {
+        const response = await api.post(`/classes/${sessionId}/book`);
+        return response.data;
+    },
+
+    cancelBooking: async (sessionId: string) => {
+        const response = await api.delete(`/classes/${sessionId}/book`);
+        return response.data;
+    },
+
+    getMyBookings: async () => {
+        const response = await api.get('/classes/my-bookings');
+        return response.data;
+    },
+};
+
+// ===========================================
+// TRAINER ENDPOINTS
+// ===========================================
+
+export const trainerAPI = {
+    getMembers: async () => {
+        const response = await api.get('/trainer/members');
+        return response.data;
+    },
+
+    getMemberDetail: async (memberId: string) => {
+        const response = await api.get(`/trainer/members/${memberId}`);
+        return response.data;
+    },
+
+    getSchedule: async () => {
+        const response = await api.get('/trainer/schedule');
+        return response.data;
+    },
+
+    getMemberNutritionHistory: async (memberId: string) => {
+        const response = await api.get(`/trainer/members/${memberId}/nutrition`);
+        return response.data;
+    },
+
+    sendNudge: async (memberId: string, type: string, message: string) => {
+        const response = await api.post(`/trainer/members/${memberId}/nudge`, { type, message });
+        return response.data;
+    },
+};
+
+// ===========================================
+// MANAGER ENDPOINTS
+// ===========================================
+
+export const managerAPI = {
+    getDashboard: async () => {
+        const response = await api.get('/manager/dashboard');
+        return response.data;
+    },
+
+    addUser: async (data: { email: string; name: string; role: 'member' | 'trainer'; trainer_id?: string }) => {
+        const response = await api.post('/manager/users', data);
+        return response.data;
+    },
+
+    getMembers: async () => {
+        const response = await api.get('/manager/members');
+        return response.data;
+    },
+
+    getTrainers: async () => {
+        const response = await api.get('/manager/trainers');
+        return response.data;
+    },
+};
+
+// ===========================================
+// WORKOUTS ENDPOINTS
+// ===========================================
+
+export const workoutsAPI = {
+    log: async (data: { workout_type: string; exercises?: string; notes?: string; visibility?: string }) => {
+        const response = await api.post('/workouts', data);
+        return response.data;
+    },
+
+    startSession: async (data: { split_id: string | null; day_name: string; visibility: string }) => {
+        const response = await api.post('/workouts/sessions', data);
+        return response.data;
+    },
+
+    getSession: async (sessionId: string) => {
+        const response = await api.get(`/workouts/sessions/${sessionId}`);
+        return response.data;
+    },
+
+    completeSession: async (sessionId: string, data: { notes?: string }) => {
+        const response = await api.put(`/workouts/sessions/${sessionId}/complete`, data);
+        return response.data;
+    },
+
+    getToday: async () => {
+        const response = await api.get('/workouts/today');
+        return response.data;
+    },
+
+    getHistory: async (limit = 30) => {
+        const response = await api.get(`/workouts/history?limit=${limit}`);
+        return response.data;
+    },
+
+    getFeed: async () => {
+        const response = await api.get('/workouts/feed');
+        return response.data;
+    },
+
+    delete: async (workoutId: string) => {
+        const response = await api.delete(`/workouts/${workoutId}`);
+        return response.data;
+    },
+
+    getMySplits: async () => {
+        const response = await api.get('/workouts/splits');
+        return response.data;
+    },
+
+    saveSplit: async (data: any) => {
+        const response = await api.post('/workouts/splits', data);
+        return response.data;
+    },
+
+    getPublishedSplits: async (filters?: { days?: number; difficulty?: string; official?: boolean }) => {
+        const response = await api.get('/workouts/published', { params: filters });
+        return response.data;
+    },
+
+    adoptSplit: async (splitId: string) => {
+        const response = await api.post(`/workouts/published/${splitId}/adopt`);
+        return response.data;
+    },
+
+    searchExercises: async (queryStr: string = '') => {
+        const response = await api.get(`/workouts/exercises?search=${encodeURIComponent(queryStr)}`);
+        return response.data;
+    },
+
+    addExerciseToSession: async (sessionId: string, exerciseId: string) => {
+        const response = await api.post(`/workouts/sessions/${sessionId}/exercises`, { exercise_id: exerciseId });
+        return response.data;
+    },
+
+    addSet: async (exerciseLogId: string, data: { reps: number; weight_kg: number; rpe?: number }) => {
+        const response = await api.post(`/workouts/exercises/${exerciseLogId}/sets`, data);
+        return response.data;
+    },
+
+    updateSet: async (setId: string, data: { reps?: number; weight_kg?: number; is_failure?: boolean; rpe?: number }) => {
+        const response = await api.put(`/workouts/sets/${setId}`, data);
+        return response.data;
+    },
+
+    publishSplit: async (data: {
+        name: string;
+        description: string;
+        days_per_week: number;
+        difficulty_level: string;
+        program_structure: Record<string, string>;
+        tags: string[];
+    }) => {
+        const response = await api.post('/workouts/published', data);
+        return response.data;
+    },
+};
+
+// ===========================================
+// CALORIES ENDPOINTS
+// ===========================================
+
+export const caloriesAPI = {
+    log: async (data: { calories: number; protein?: number; carbs?: number; fat?: number; meal_name?: string; visibility?: string }) => {
+        const response = await api.post('/calories', data);
+        return response.data;
+    },
+
+    getToday: async () => {
+        const response = await api.get('/calories/today');
+        return response.data;
+    },
+
+    getHistory: async (limit = 30) => {
+        const response = await api.get(`/calories/history?limit=${limit}`);
+        return response.data;
+    },
+
+    getFeed: async () => {
+        const response = await api.get('/calories/feed');
+        return response.data;
+    },
+
+    delete: async (entryId: string) => {
+        const response = await api.delete(`/calories/${entryId}`);
+        return response.data;
+    },
+
+    getFrequentFoods: async (limit = 10) => {
+        const response = await api.get(`/calories/frequent?limit=${limit}`);
+        return response.data;
+    },
+};
+
+// ===========================================
+// FOOD ENDPOINTS (FatSecret)
+// ===========================================
+
+export const foodAPI = {
+    search: async (query: string, page = 0, limit = 20) => {
+        const response = await api.get(`/food/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
+        return response.data;
+    },
+
+    getDetails: async (foodId: string, source = 'indian') => {
+        const response = await api.get(`/food/${foodId}?source=${source}`);
+        return response.data;
+    },
+
+    getCategories: async () => {
+        const response = await api.get('/food/categories/indian');
+        return response.data;
+    },
+
+    getGymFoods: async () => {
+        const response = await api.get('/food/gym-foods');
+        return response.data;
+    },
+};
+
+// ===========================================
+// NUTRITION PROFILE ENDPOINTS
+// ===========================================
+
+export const nutritionAPI = {
+    getProfile: async () => {
+        const response = await api.get('/nutrition/profile');
+        return response.data;
+    },
+
+    updateProfile: async (data: {
+        weight_kg: number;
+        height_cm: number;
+        age: number;
+        gender: 'male' | 'female';
+        activity_level?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+        goal_type?: 'fat_loss' | 'maintenance' | 'muscle_gain';
+        target_weight_kg?: number;
+        is_vegetarian?: boolean;
+    }) => {
+        const response = await api.post('/nutrition/profile', data);
+        return response.data;
+    },
+
+    getToday: async () => {
+        const response = await api.get('/nutrition/today');
+        return response.data;
+    },
+};
+
+// ===========================================
+// RECIPE ENDPOINTS
+// ===========================================
+
+export const recipesAPI = {
+    getAll: async () => {
+        const response = await api.get('/recipes');
+        return response.data;
+    },
+
+    getOne: async (id: string) => {
+        const response = await api.get(`/recipes/${id}`);
+        return response.data;
+    },
+
+    create: async (data: {
+        name: string;
+        description?: string;
+        instructions?: string;
+        ingredients: any[];
+        total_calories: number;
+        total_protein: number;
+        total_carbs: number;
+        total_fat: number;
+    }) => {
+        const response = await api.post('/recipes', data);
+        return response.data;
+    },
+
+    delete: async (id: string) => {
+        const response = await api.delete(`/recipes/${id}`);
+        return response.data;
+    },
+};
+
+export default api;
+

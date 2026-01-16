@@ -1,0 +1,292 @@
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ImageBackground, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialIcons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
+import GlassCard from '../../components/GlassCard';
+
+const { width } = Dimensions.get('window');
+
+export default function WorkoutRecapScreen() {
+    const params = useLocalSearchParams();
+
+    // Parse the recap data passed as string
+    const recap = params.recap ? JSON.parse(params.recap as string) : null;
+    const session = params.session ? JSON.parse(params.session as string) : null;
+
+    if (!recap) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <Text style={{ color: 'white' }}>No recap data found.</Text>
+                <TouchableOpacity onPress={() => router.replace('/(tabs)')}>
+                    <Text style={{ color: 'white' }}>Go Home</Text>
+                </TouchableOpacity>
+            </SafeAreaView>
+        );
+    }
+
+    return (
+        <SafeAreaView style={styles.container}>
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+
+                {/* Header Section */}
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>WORKOUT COMPLETE!</Text>
+                    <Text style={styles.headerSub}>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
+
+                    <View style={styles.badge}>
+                        <MaterialIcons name="local-fire-department" size={20} color={colors.text.dark} />
+                        <Text style={styles.badgeText}>Great Job!</Text>
+                    </View>
+                </View>
+
+                {/* Main Stats Grid */}
+                <View style={styles.grid}>
+                    <GlassCard style={styles.gridItem}>
+                        <MaterialIcons name="timer" size={24} color={colors.primary} style={{ marginBottom: 8 }} />
+                        <Text style={styles.statValue}>{recap.duration}m</Text>
+                        <Text style={styles.statLabel}>DURATION</Text>
+                    </GlassCard>
+
+                    <GlassCard style={styles.gridItem}>
+                        <MaterialIcons name="fitness-center" size={24} color={colors.crowd.medium} style={{ marginBottom: 8 }} />
+                        <Text style={styles.statValue}>{(recap.volume / 1000).toFixed(1)}k</Text>
+                        <Text style={styles.statLabel}>VOL (kg)</Text>
+                    </GlassCard>
+
+                    <GlassCard style={styles.gridItem}>
+                        <MaterialIcons name="repeat" size={24} color="#60A5FA" style={{ marginBottom: 8 }} />
+                        <Text style={styles.statValue}>{recap.sets}</Text>
+                        <Text style={styles.statLabel}>SETS</Text>
+                    </GlassCard>
+
+                    <GlassCard style={styles.gridItem}>
+                        <MaterialIcons name="emoji-events" size={24} color="#FBBF24" style={{ marginBottom: 8 }} />
+                        <Text style={styles.statValue}>{recap.prs?.length || 0}</Text>
+                        <Text style={styles.statLabel}>RECORDS</Text>
+                    </GlassCard>
+                </View>
+
+                {/* Achievements */}
+                {recap.achievements && recap.achievements.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>ACHIEVEMENTS</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.achievementsRow}>
+                            {recap.achievements.map((ach: any, i: number) => (
+                                <View key={i} style={styles.achievementCard}>
+                                    <View style={styles.achievementIcon}>
+                                        <MaterialIcons name={ach.icon} size={32} color={colors.text.dark} />
+                                    </View>
+                                    <Text style={styles.achievementTitle}>{ach.title}</Text>
+                                    <Text style={styles.achievementDesc}>{ach.desc}</Text>
+                                </View>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
+
+                {/* PRs List */}
+                {recap.prs && recap.prs.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>NEW RECORDS 🏆</Text>
+                        {recap.prs.map((pr: any, i: number) => (
+                            <GlassCard key={i} style={styles.prCard} padding="md">
+                                <View>
+                                    <Text style={styles.prExercise}>{pr.exerciseName}</Text>
+                                    <Text style={styles.prImprovement}>+{pr.improvement}kg improvement</Text>
+                                </View>
+                                <Text style={styles.prValue}>{pr.newWeight}kg</Text>
+                            </GlassCard>
+                        ))}
+                    </View>
+                )}
+
+                {/* Action Buttons */}
+                <View style={styles.actions}>
+                    <TouchableOpacity style={styles.shareBtn}>
+                        <MaterialIcons name="share" size={20} color={colors.text.primary} />
+                        <Text style={styles.shareText}>SHARE</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.finishBtn}
+                        onPress={() => router.replace('/(tabs)/home')}
+                    >
+                        <Text style={styles.finishText}>FINISH</Text>
+                    </TouchableOpacity>
+                </View>
+
+            </ScrollView>
+        </SafeAreaView>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    scrollContent: {
+        padding: spacing.xl,
+        paddingBottom: 40,
+    },
+    header: {
+        alignItems: 'center',
+        marginVertical: spacing.xl,
+    },
+    headerTitle: {
+        fontSize: typography.sizes['3xl'], // condensed font?
+        fontFamily: typography.fontFamily.extraBold,
+        color: colors.primary,
+        textAlign: 'center',
+        marginBottom: spacing.xs,
+        letterSpacing: -1,
+    },
+    headerSub: {
+        fontSize: typography.sizes.sm,
+        color: colors.text.muted,
+        textTransform: 'uppercase',
+        letterSpacing: 2,
+        marginBottom: spacing.lg,
+    },
+    badge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.full,
+        gap: spacing.xs,
+        ...shadows.glow,
+    },
+    badgeText: {
+        color: colors.text.dark,
+        fontFamily: typography.fontFamily.bold,
+        fontSize: typography.sizes.sm,
+        textTransform: 'uppercase',
+    },
+    grid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.md,
+        marginBottom: spacing['2xl'],
+    },
+    gridItem: {
+        width: (width - (spacing.xl * 2) - spacing.md) / 2,
+        alignItems: 'center',
+        paddingVertical: spacing.lg,
+    },
+    statValue: {
+        fontSize: typography.sizes['2xl'],
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+    },
+    statLabel: {
+        fontSize: typography.sizes.xs,
+        color: colors.text.muted,
+        marginTop: 4,
+        letterSpacing: 1,
+    },
+    section: {
+        marginBottom: spacing['2xl'],
+    },
+    sectionTitle: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.muted,
+        letterSpacing: 2,
+        marginBottom: spacing.lg,
+    },
+    achievementsRow: {
+        gap: spacing.md,
+        paddingRight: spacing.xl,
+    },
+    achievementCard: {
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.xl,
+        padding: spacing.lg,
+        alignItems: 'center',
+        width: 140,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    achievementIcon: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: colors.primary, // Gold?
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: spacing.md,
+        ...shadows.glow,
+    },
+    achievementTitle: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+        textAlign: 'center',
+        marginBottom: 4,
+    },
+    achievementDesc: {
+        fontSize: typography.sizes.xs,
+        color: colors.text.muted,
+        textAlign: 'center',
+    },
+    prCard: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
+    prExercise: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+    },
+    prImprovement: {
+        fontSize: typography.sizes.xs,
+        color: colors.crowd.low, // Green
+        marginTop: 2,
+    },
+    prValue: {
+        fontSize: typography.sizes.xl,
+        fontFamily: typography.fontFamily.extraBold,
+        color: colors.primary,
+    },
+    actions: {
+        gap: spacing.md,
+    },
+    shareBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: spacing.lg,
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        gap: spacing.sm,
+    },
+    shareText: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+        letterSpacing: 1,
+    },
+    finishBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: spacing.lg,
+        borderRadius: borderRadius.full,
+        backgroundColor: colors.primary,
+        gap: spacing.sm,
+        ...shadows.glow,
+    },
+    finishText: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.dark,
+        letterSpacing: 1,
+    },
+});
