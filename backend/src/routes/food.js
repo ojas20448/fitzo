@@ -35,20 +35,32 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
     // Second: Try USDA API
     let usdaResults = { foods: [] };
     try {
-        usdaResults = await usda.searchFoods(query, pageSize - indianResults.foods.length, 1);
+        usdaResults = await usda.searchFoods(query, 5, 1); // Reduced USDA limit to make room for FatSecret
         console.log('✅ USDA:', usdaResults.foods?.length, 'foods');
     } catch (error) {
         console.error('❌ USDA failed:', error.message);
     }
 
-    // Combine results: Indian first, then USDA
+    // Third: Try FatSecret API
+    let fatsecretResults = { foods: [] };
+    try {
+        // Fetch more results from FatSecret to fill the remaining space
+        const remainingLimit = Math.max(5, pageSize - indianResults.foods.length - (usdaResults.foods?.length || 0));
+        fatsecretResults = await fatsecret.searchFoods(query, 0, remainingLimit);
+        console.log('✅ FatSecret:', fatsecretResults.foods?.length, 'foods');
+    } catch (error) {
+        console.error('❌ FatSecret failed:', error.message);
+    }
+
+    // Combine results: Indian first, then USDA, then FatSecret
     const combinedFoods = [
         ...indianResults.foods.map(f => ({ ...f, source: 'indian' })),
         ...usdaResults.foods.map(f => ({ ...f, source: 'usda' })),
+        ...(fatsecretResults.foods || []).map(f => ({ ...f, source: 'fatsecret' })),
     ].slice(0, pageSize);
 
     console.log('📊 Total results:', combinedFoods.length,
-        `(${indianResults.foods.length} Indian, ${usdaResults.foods?.length || 0} USDA)`);
+        `(${indianResults.foods.length} Indian, ${usdaResults.foods?.length || 0} USDA, ${fatsecretResults.foods?.length || 0} FatSecret)`);
 
     return res.json({
         foods: combinedFoods,
@@ -57,6 +69,7 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
         sources: {
             indian: indianResults.foods.length,
             usda: usdaResults.foods?.length || 0,
+            fatsecret: fatsecretResults.foods?.length || 0,
         }
     });
 }));
