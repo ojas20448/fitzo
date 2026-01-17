@@ -16,54 +16,35 @@ import { useAuth } from '../src/context/AuthContext';
 import Button from '../src/components/Button';
 import { useToast } from '../src/components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../src/styles/theme';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-import { makeRedirectUri } from 'expo-auth-session';
-
-WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
-    const { login, googleSignIn } = useAuth();
+    const { login, register } = useAuth();
     const toast = useToast();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // For Expo Go, use the auth.expo.io proxy
-    // For web development, Google blocks localhost - test on mobile instead
-    // For web, we need to explicitly use the current window location
-    const redirectUri = Platform.OS === 'web'
-        ? (typeof window !== 'undefined' ? window.location.origin : undefined)
-        : makeRedirectUri({
-            scheme: 'fitzo',
-            path: 'login'
-        });
+    const handleDemoLogin = async () => {
+        setLoading(true);
+        const demoEmail = 'demo@fitzo.com';
+        const demoPass = 'password123';
 
-    console.log('Redirect URI:', redirectUri);
-
-    {/* Google Auth Disabled for Testing
-    // const [request, response, promptAsync] = Google.useAuthRequest({
-    //    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    //    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    //    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-    //    redirectUri,
-    // });
-    */}
-
-    {/* 
-    React.useEffect(() => {
-        if (response?.type === 'success') {
-            const { id_token } = response.params;
-            handleGoogleSignIn(id_token);
-        } else if (response?.type === 'error') {
-            toast.error('Sign In Failed', 'Google Sign-In encountered an error');
+        try {
+            await login(demoEmail, demoPass);
+            router.replace('/(tabs)');
+        } catch (loginError: any) {
+            try {
+                console.log('Demo login failed, registering...', loginError.message);
+                await register(demoEmail, demoPass, 'Demo User', 'FITZOHQ');
+                router.replace('/(tabs)');
+            } catch (regError: any) {
+                console.error('Demo registration failed:', regError);
+                toast.error('Demo Failed', 'Could not sign in as demo user.');
+            }
+        } finally {
+            setLoading(false);
         }
-    }, [response]);
-    */}
-
-    const handleGoogleSignIn = async (token: string) => {
-        // Disabled
     };
 
     const handleLogin = async () => {
@@ -154,25 +135,6 @@ export default function LoginScreen() {
                             style={{ marginTop: spacing.lg }}
                         />
 
-                        {/* Social Login 
-                        <View style={styles.dividerContainer}>
-                            <View style={styles.dividerLine} />
-                            <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
-                            <View style={styles.dividerLine} />
-                        </View>
-
-                        <TouchableOpacity
-                            style={styles.googleBtn}
-                            onPress={() => {
-                                // promptAsync();
-                            }}
-                            disabled={true}
-                        >
-                            <Text style={styles.googleBtnText}>G</Text>
-                            <Text style={styles.googleBtnLabel}>Sign in with Google</Text>
-                        </TouchableOpacity>
-                        */}
-
                         <TouchableOpacity style={styles.forgotPassword}>
                             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                         </TouchableOpacity>
@@ -186,12 +148,13 @@ export default function LoginScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Skip Login for Testing */}
+                    {/* Demo Login */}
                     <TouchableOpacity
                         style={styles.skipButton}
-                        onPress={() => router.replace('/(tabs)')}
+                        onPress={handleDemoLogin}
+                        disabled={loading}
                     >
-                        <Text style={styles.skipText}>Skip Login (Testing)</Text>
+                        <Text style={styles.skipText}>Demo Login (Test User)</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>

@@ -107,10 +107,9 @@ export default function WeeklyCharts() {
 
     return (
         <View style={styles.container}>
-            {/* CALORIE CHART */}
             <GlassCard style={styles.card} padding="lg">
                 <View style={styles.headerRow}>
-                    <Text style={styles.title}>CALORIES</Text>
+                    <Text style={styles.title}>NUTRITION & MACROS</Text>
                     <MaterialIcons name="more-horiz" size={20} color={colors.text.muted} />
                 </View>
 
@@ -129,26 +128,52 @@ export default function WeeklyCharts() {
                         />
 
                         {history.map((day: any, i) => {
-                            const barHeight = scaleY(day.total_calories);
                             const x = i * (BAR_WIDTH + BAR_GAP);
-                            const y = CHART_HEIGHT - barHeight;
-                            const isOver = day.total_calories > targetCalories;
 
-                            // Color logic: Green if under/equal target, Red if over (with some buffer?)
-                            // Lose It: Green if under budget. Red if over.
-                            // But usually being slightly over is fine. Let's stick to strict for now.
-                            // Wait, if 0 calories, it's empty.
+                            // Calculate calories from macros for consistency in stacking
+                            const calP = day.total_protein * 4;
+                            const calC = day.total_carbs * 4;
+                            const calF = day.total_fat * 9;
+                            const totalCalcCal = calP + calC + calF; // Use calculated total for stack height consistency
 
-                            const barColor = day.total_calories === 0
-                                ? colors.surfaceLight
-                                : isOver ? '#EF4444' : '#22C55E';
+                            // If total is 0, show placeholder
+                            if (totalCalcCal === 0) {
+                                return (
+                                    <G key={i}>
+                                        <Rect
+                                            x={x}
+                                            y={0}
+                                            width={BAR_WIDTH}
+                                            height={CHART_HEIGHT}
+                                            fill={colors.surfaceLight}
+                                            rx={4}
+                                            opacity={0.3}
+                                        />
+                                        <SvgText
+                                            x={x + BAR_WIDTH / 2}
+                                            y={CHART_HEIGHT + 20}
+                                            fontSize="10"
+                                            fill={day.isToday ? colors.primary : colors.text.muted}
+                                            textAnchor="middle"
+                                            fontWeight={day.isToday ? "bold" : "normal"}
+                                        >
+                                            {day.dayLabel}
+                                        </SvgText>
+                                    </G>
+                                );
+                            }
 
-                            // Background placeholder bar
-                            const bgHeight = CHART_HEIGHT;
+                            const hP = scaleY(calP);
+                            const hC = scaleY(calC);
+                            const hF = scaleY(calF);
+
+                            const yP = CHART_HEIGHT - hP;
+                            const yC = yP - hC;
+                            const yF = yC - hF;
 
                             return (
                                 <G key={i}>
-                                    {/* Placeholder Bar */}
+                                    {/* Placeholder Background */}
                                     <Rect
                                         x={x}
                                         y={0}
@@ -159,14 +184,34 @@ export default function WeeklyCharts() {
                                         opacity={0.3}
                                     />
 
-                                    {/* Actual Bar */}
+                                    {/* Protein (Bottom) - Purple */}
                                     <Rect
                                         x={x}
-                                        y={y}
+                                        y={yP}
                                         width={BAR_WIDTH}
-                                        height={barHeight}
-                                        fill={barColor}
-                                        rx={4}
+                                        height={Math.max(0, hP)}
+                                        fill="#8B5CF6"
+                                        rx={2}
+                                    />
+
+                                    {/* Carbs (Middle) - Blue */}
+                                    <Rect
+                                        x={x}
+                                        y={yC}
+                                        width={BAR_WIDTH}
+                                        height={Math.max(0, hC)}
+                                        fill="#3B82F6"
+                                        rx={2}
+                                    />
+
+                                    {/* Fat (Top) - Amber */}
+                                    <Rect
+                                        x={x}
+                                        y={yF}
+                                        width={BAR_WIDTH}
+                                        height={Math.max(0, hF)}
+                                        fill="#F59E0B"
+                                        rx={2}
                                     />
 
                                     {/* Day Label */}
@@ -186,90 +231,9 @@ export default function WeeklyCharts() {
                     </Svg>
 
                     {/* Floating Info */}
-                    <View style={styles.targetBadge}>
+                    <View style={[styles.targetBadge, { top: -5 }]}>
                         <Text style={styles.targetText}>{targetCalories.toLocaleString()} Target</Text>
                     </View>
-                </View>
-            </GlassCard>
-
-            {/* MACRO CHART */}
-            <GlassCard style={styles.card} padding="lg">
-                <View style={styles.headerRow}>
-                    <Text style={styles.title}>MACRONUTRIENTS</Text>
-                    <MaterialIcons name="more-horiz" size={20} color={colors.text.muted} />
-                </View>
-
-                <View style={styles.chartContainer}>
-                    <Svg width={CHART_WIDTH} height={CHART_HEIGHT + 30}>
-                        {history.map((day: any, i) => {
-                            const x = i * (BAR_WIDTH + BAR_GAP);
-
-                            const hP = scaleMacro(day.total_protein);
-                            const hC = scaleMacro(day.total_carbs);
-                            const hF = scaleMacro(day.total_fat);
-
-                            const yP = CHART_HEIGHT - hP;
-                            const yC = yP - hC;
-                            const yF = yC - hF;
-
-                            return (
-                                <G key={i}>
-                                    {/* Background Track */}
-                                    <Rect
-                                        x={x}
-                                        y={0}
-                                        width={BAR_WIDTH}
-                                        height={CHART_HEIGHT}
-                                        fill={colors.surfaceLight}
-                                        rx={4}
-                                        opacity={0.3}
-                                    />
-
-                                    {/* Protein (Purple/Bottom) */}
-                                    <Rect
-                                        x={x}
-                                        y={yP}
-                                        width={BAR_WIDTH}
-                                        height={Math.max(0, hP)}
-                                        fill="#8B5CF6" // Purple
-                                        rx={2}
-                                    />
-
-                                    {/* Carbs (Blue/Middle) */}
-                                    <Rect
-                                        x={x}
-                                        y={yC}
-                                        width={BAR_WIDTH}
-                                        height={Math.max(0, hC)}
-                                        fill="#3B82F6" // Blue
-                                        rx={2}
-                                    />
-
-                                    {/* Fat (Yellow/Top) */}
-                                    <Rect
-                                        x={x}
-                                        y={yF}
-                                        width={BAR_WIDTH}
-                                        height={Math.max(0, hF)}
-                                        fill="#F59E0B" // Amber/Yellow
-                                        rx={2}
-                                    />
-
-                                    {/* Day Label */}
-                                    <SvgText
-                                        x={x + BAR_WIDTH / 2}
-                                        y={CHART_HEIGHT + 20}
-                                        fontSize="10"
-                                        fill={day.isToday ? colors.primary : colors.text.muted}
-                                        textAnchor="middle"
-                                        fontWeight={day.isToday ? "bold" : "normal"}
-                                    >
-                                        {day.dayLabel}
-                                    </SvgText>
-                                </G>
-                            );
-                        })}
-                    </Svg>
                 </View>
 
                 {/* Legend */}
@@ -288,7 +252,7 @@ export default function WeeklyCharts() {
                     </View>
                 </View>
 
-                {/* Averages (Mock for now, or calc) */}
+                {/* Averages */}
                 {history.length > 0 && (
                     <View style={styles.avgRow}>
                         <Text style={styles.avgTitle}>DAILY AVG</Text>

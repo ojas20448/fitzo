@@ -7,7 +7,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import GlassCard from '../../components/GlassCard';
 import Button from '../../components/Button';
-import { memberAPI } from '../../services/api';
+import { memberAPI, foodPhotoAPI } from '../../services/api';
 
 export default function FoodScannerScreen() {
     const [permission, requestPermission] = useCameraPermissions();
@@ -60,7 +60,7 @@ export default function FoodScannerScreen() {
             // For now, using a placeholder - you'll need to implement upload
 
             // This is a demo - you need to upload the image first and get a public URL
-            const response = await memberAPI.analyzeFoodPhoto(capturedImage);
+            const response = await foodPhotoAPI.analyzePhoto(capturedImage);
 
             if (response.success) {
                 setDetectedFood(response.food);
@@ -81,7 +81,7 @@ export default function FoodScannerScreen() {
         try {
             // Navigate to calorie log screen with pre-filled data
             router.push({
-                pathname: '/log-calories',
+                pathname: '/log/calories',
                 params: {
                     foodName: detectedFood.name,
                     calories: detectedFood.calories,

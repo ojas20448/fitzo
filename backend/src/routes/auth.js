@@ -46,16 +46,25 @@ router.post('/register', asyncHandler(async (req, res) => {
     // Hash password
     const password_hash = await bcrypt.hash(password, 10);
 
+    // Generate username from email (ensure it's unique-ish by appending random if needed, but for now simple)
+    let username = email.split('@')[0];
+    // Check if username exists, if so append random string
+    const existingUsername = await query('SELECT id FROM users WHERE username = $1', [username]);
+    if (existingUsername.rows.length > 0) {
+        username += Math.floor(Math.random() * 1000);
+    }
+
     // Create user
     const result = await query(
-        `INSERT INTO users (email, password_hash, name, role, gym_id)
-     VALUES ($1, $2, $3, 'member', $4)
-     RETURNING id, email, name, role, gym_id, xp_points`,
-        [email.toLowerCase(), password_hash, name, gym.id]
+        `INSERT INTO users (email, password_hash, name, role, gym_id, username)
+         VALUES ($1, $2, $3, 'member', $4, $5)
+         RETURNING id, email, name, role, gym_id, xp_points, username`,
+        [email.toLowerCase(), password_hash, name, gym.id, username]
     );
 
     const user = result.rows[0];
     const token = generateToken(user.id);
+
 
     res.status(201).json({
         message: 'Welcome to Fitzo! 💪',

@@ -101,7 +101,7 @@ router.get('/lessons/:id', authenticate, asyncHandler(async (req, res) => {
     const lessonId = req.params.id;
 
     const result = await query(
-        `SELECT id, title, unit, unit_title, description, questions, xp_reward
+        `SELECT id, title, unit, unit_title, description, content, questions, xp_reward
      FROM learn_lessons
      WHERE id = $1`,
         [lessonId]
@@ -128,6 +128,7 @@ router.get('/lessons/:id', authenticate, asyncHandler(async (req, res) => {
             unit: lesson.unit,
             unit_title: lesson.unit_title,
             description: lesson.description,
+            content: lesson.content,
             xp_reward: lesson.xp_reward,
             questions
         }

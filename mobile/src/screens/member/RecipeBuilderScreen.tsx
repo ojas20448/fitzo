@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
         color: colors.text.primary,
     },
     saveText: {
-        fontSize: typography.sizes.md,
+        fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.semiBold,
         color: colors.primary,
     },
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.lg,
         padding: spacing.md,
         color: colors.text.primary,
-        fontSize: typography.sizes.md,
+        fontSize: typography.sizes.base,
         borderWidth: 1,
         borderColor: colors.glass.border,
         marginBottom: spacing.md,
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     ingredientName: {
         color: colors.text.primary,
         fontFamily: typography.fontFamily.medium,
-        fontSize: typography.sizes.md,
+        fontSize: typography.sizes.base,
     },
     ingredientDetail: {
         color: colors.text.muted,
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
     },
     closeText: {
         color: colors.primary,
-        fontSize: typography.sizes.md,
+        fontSize: typography.sizes.base,
     },
     searchBar: {
         flexDirection: 'row',
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         color: colors.text.primary,
-        fontSize: typography.sizes.md,
+        fontSize: typography.sizes.base,
     },
     searchItem: {
         padding: spacing.lg,
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     searchItemName: {
         color: colors.text.primary,
         fontFamily: typography.fontFamily.medium,
-        fontSize: typography.sizes.md,
+        fontSize: typography.sizes.base,
     },
     searchItemDesc: {
         color: colors.text.muted,

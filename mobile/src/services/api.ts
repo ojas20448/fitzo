@@ -5,9 +5,13 @@ import { authEvents } from './authEvents';
 
 // API base URL - change for production
 // Use your computer's IP for physical devices, localhost only works in web/emulator
+// User requested to run without PC, so we point to the deployed backend on Render
+const API_BASE_URL = 'https://fitzo-api.onrender.com/api';
+/* 
 const API_BASE_URL = __DEV__
-    ? (Platform.OS === 'web' ? 'http://localhost:3001/api' : 'http://172.29.224.1:3001/api')
-    : 'https://fitzo-api.onrender.com/api';
+    ? (Platform.OS === 'web' ? 'http://localhost:3001/api' : 'http://192.168.1.23:3001/api')
+    : 'https://fitzo-api.onrender.com/api'; 
+*/
 
 
 // Create axios instance
@@ -353,6 +357,11 @@ export const workoutsAPI = {
         return response.data;
     },
 
+    getLatest: async (type: string) => {
+        const response = await api.get(`/workouts/latest?type=${encodeURIComponent(type)}`);
+        return response.data;
+    },
+
     getHistory: async (limit = 30) => {
         const response = await api.get(`/workouts/history?limit=${limit}`);
         return response.data;
@@ -481,6 +490,11 @@ export const foodAPI = {
         const response = await api.get('/food/gym-foods');
         return response.data;
     },
+
+    analyzeText: async (text: string) => {
+        const response = await api.post('/food/analyze-text', { text });
+        return response.data;
+    },
 };
 
 // ===========================================
@@ -509,6 +523,19 @@ export const nutritionAPI = {
 
     getToday: async () => {
         const response = await api.get('/nutrition/today');
+        return response.data;
+    },
+
+    logFood: async (data: {
+        food_name: string;
+        calories: number;
+        protein: number;
+        carbs: number;
+        fat: number;
+        serving_size: string;
+        meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+    }) => {
+        const response = await api.post('/nutrition/log', data);
         return response.data;
     },
 };
@@ -625,6 +652,10 @@ export const exerciseAPI = {
 // ===========================================
 
 export const foodPhotoAPI = {
+    analyzeText: async (text: string) => {
+        const response = await api.post('/food/analyze-text', { text });
+        return response.data;
+    },
     analyzePhoto: async (imageUrl: string) => {
         const response = await api.post('/food/analyze-photo', { image_url: imageUrl });
         return response.data;

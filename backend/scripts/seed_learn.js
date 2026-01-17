@@ -776,8 +776,8 @@ async function seedLearn() {
 
                 await client.query(
                     `INSERT INTO learn_lessons 
-           (title, unit, unit_title, order_index, description, questions, xp_reward)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+           (title, unit, unit_title, order_index, description, content, questions, xp_reward)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
                     [
                         // Title
                         `${unit.name} - Part ${lessonIndex}`,
@@ -789,11 +789,11 @@ async function seedLearn() {
                         lessonIndex,
                         // Description
                         `Master the basics of ${unit.name} (Part ${lessonIndex})`,
+                        // Content
+                        `# ${unit.name} - Part ${lessonIndex}\n\n## Introduction\nWelcome to part ${lessonIndex} of ${unit.name}. In this lesson, we will cover the key concepts needed to master this topic.\n\n## Key Concepts\n* Point 1: Understanding the basics.\n* Point 2: Applying knowledge to your diet.\n* Point 3: Consistency is key.\n\n## Summary\nReview the questions below to test your knowledge!`,
                         // Questions JSON
                         JSON.stringify(lessonQuestions),
-                        // XP Reward (sum of individual question XP or base reward?)
-                        // Route logic: "const xpEarned = passed ? lesson.xp_reward : ..."
-                        // So it's a fixed reward for the lesson. Let's make it 50 XP per lesson.
+                        // XP Reward
                         50
                     ]
                 );

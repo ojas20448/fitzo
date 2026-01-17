@@ -1997,3 +1997,1352 @@ Error: Please log in to continue
     at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
     at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
 -------------------
+[2026-01-17T19:54:35.568Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T19:54:35.613Z] GET /api/calories/today
+error: relation "calorie_logs" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T19:54:35.630Z] GET /api/workouts/today
+error: relation "workout_logs" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T19:54:35.905Z] GET /api/calories/history?limit=7
+error: relation "calorie_logs" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:96:20
+-------------------
+[2026-01-17T19:54:41.649Z] GET /api/calories/today
+error: relation "calorie_logs" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T19:54:41.827Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T19:55:29.629Z] GET /api/workouts/feed
+error: relation "workout_logs" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:132:20
+-------------------
+[2026-01-17T19:56:21.733Z] POST /api/intent
+Error: Invalid training pattern
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:71:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T19:56:34.616Z] POST /api/intent
+Error: Invalid training pattern
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:71:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T19:56:36.062Z] POST /api/intent
+Error: Invalid training pattern
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:71:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T19:57:07.101Z] POST /api/intent
+Error: Invalid training pattern
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:71:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T19:57:56.362Z] GET /api/calories/frequent?limit=10
+error: column "meal_name" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:174:20
+-------------------
+[2026-01-17T19:58:04.706Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T19:58:04.806Z] GET /api/workouts/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T19:58:04.811Z] GET /api/calories/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T19:59:00.889Z] GET /api/calories/frequent?limit=10
+error: column "meal_name" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:174:20
+-------------------
+[2026-01-17T20:00:05.887Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T20:00:05.997Z] GET /api/calories/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T20:00:06.002Z] GET /api/workouts/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T20:00:06.270Z] GET /api/calories/history?limit=7
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:96:20
+-------------------
+[2026-01-17T20:00:59.545Z] GET /api/workouts/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T20:00:59.553Z] GET /api/calories/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T20:00:59.669Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T20:04:01.691Z] GET /api/workouts/feed
+error: column w.workout_type does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:132:20
+-------------------
+[2026-01-17T20:08:05.579Z] GET /api/calories/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T20:08:05.587Z] GET /api/workouts/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T20:08:05.700Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T20:14:02.460Z] GET /api/calories/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T20:14:02.582Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T20:42:37.634Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T20:42:37.687Z] GET /api/workouts/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T20:42:37.694Z] GET /api/calories/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T20:46:23.393Z] GET /api/calories/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T20:46:23.524Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T20:53:21.332Z] POST /api/intent
+Error: Invalid emphasis selection
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:80:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:53:22.308Z] POST /api/intent
+Error: Invalid emphasis selection
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:80:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:53:22.754Z] POST /api/intent
+Error: Invalid emphasis selection
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:80:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:53:23.280Z] POST /api/intent
+Error: Invalid emphasis selection
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:80:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:53:23.512Z] POST /api/intent
+Error: Invalid emphasis selection
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:80:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:53:23.750Z] POST /api/intent
+Error: Invalid emphasis selection
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:80:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:53:24.014Z] POST /api/intent
+Error: Invalid emphasis selection
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:80:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:53:24.267Z] POST /api/intent
+Error: Invalid emphasis selection
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:80:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:53:24.593Z] POST /api/intent
+Error: Invalid emphasis selection
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:80:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:53:24.912Z] POST /api/intent
+Error: Invalid emphasis selection
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:80:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:53:25.192Z] POST /api/intent
+Error: Invalid emphasis selection
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:80:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:53:25.436Z] POST /api/intent
+Error: Invalid emphasis selection
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:80:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:53:25.672Z] POST /api/intent
+Error: Invalid emphasis selection
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:80:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:53:25.969Z] POST /api/intent
+Error: Invalid emphasis selection
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:80:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:54:11.835Z] GET /api/workouts/feed
+error: column w.workout_type does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:132:20
+-------------------
+[2026-01-17T20:58:52.749Z] POST /api/intent
+Error: Session label must be A or B
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:99:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:58:55.216Z] POST /api/intent
+Error: Session label must be A or B
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:99:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T20:58:55.402Z] POST /api/intent
+Error: Session label must be A or B
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:99:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:43:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T21:16:43.607Z] GET /api/workouts/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T21:16:43.613Z] GET /api/calories/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T21:16:43.755Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T21:16:45.370Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T21:16:45.463Z] GET /api/calories/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T21:16:45.468Z] GET /api/workouts/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T21:16:45.749Z] GET /api/calories/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T21:16:45.752Z] GET /api/workouts/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T21:16:45.760Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T21:16:54.642Z] POST /api/intent
+error: value too long for type character varying(1)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:119:20
+-------------------
+[2026-01-17T21:17:13.408Z] POST /api/intent
+error: value too long for type character varying(1)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:119:20
+-------------------
+[2026-01-17T21:17:15.976Z] GET /api/workouts/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T21:17:15.984Z] GET /api/calories/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T21:17:16.088Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T21:17:20.545Z] POST /api/intent
+error: value too long for type character varying(1)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:119:20
+-------------------
+[2026-01-17T21:17:23.021Z] GET /api/workouts/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T21:17:23.028Z] GET /api/calories/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T21:17:23.137Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T21:17:37.593Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T21:17:37.692Z] GET /api/workouts/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T21:17:37.694Z] GET /api/calories/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T21:17:41.280Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T21:17:41.390Z] GET /api/workouts/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T21:17:41.393Z] GET /api/calories/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T21:17:43.628Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T21:17:43.733Z] GET /api/workouts/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T21:17:43.736Z] GET /api/calories/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T21:17:46.649Z] POST /api/intent
+error: value too long for type character varying(1)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:119:20
+-------------------
+[2026-01-17T21:17:50.530Z] GET /api/calories/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\calories.js:57:21
+-------------------
+[2026-01-17T21:17:50.534Z] GET /api/workouts/today
+error: column "logged_date" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T21:17:50.640Z] GET /api/member/home
+error: missing FROM-clause entry for table "get_user_streak"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T21:20:51.584Z] GET /api/workouts/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T21:20:51.700Z] GET /api/member/home
+error: column reference "check_date" is ambiguous
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T21:21:11.055Z] GET /api/workouts/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T21:21:11.167Z] GET /api/member/home
+error: column reference "check_date" is ambiguous
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T21:21:13.128Z] GET /api/workouts/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T21:21:13.248Z] GET /api/member/home
+error: column reference "check_date" is ambiguous
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T21:21:36.820Z] GET /api/member/home
+error: column reference "check_date" is ambiguous
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T21:21:36.915Z] GET /api/workouts/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T21:21:39.155Z] GET /api/workouts/today
+error: column "created_at" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:74:20
+-------------------
+[2026-01-17T21:21:39.273Z] GET /api/member/home
+error: column reference "check_date" is ambiguous
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\member.js:108:26
+-------------------
+[2026-01-17T21:21:42.348Z] POST /api/intent
+error: null value in column "muscle_group" of relation "workout_intents" violates not-null constraint
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:119:20
+-------------------
+[2026-01-17T21:27:08.316Z] GET /api/workouts/today
+error: column "workout_type" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:82:27
+-------------------
+[2026-01-17T21:27:08.649Z] GET /api/workouts/today
+error: column "workout_type" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:82:27
+-------------------
+[2026-01-17T21:27:18.571Z] GET /api/workouts/today
+error: column "workout_type" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:82:27
+-------------------
+[2026-01-17T21:27:18.956Z] GET /api/workouts/feed
+error: column w.workout_type does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:132:20
+-------------------
+[2026-01-17T21:27:26.819Z] GET /api/workouts/today
+error: column "workout_type" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:82:27
+-------------------
+[2026-01-17T21:27:29.614Z] GET /api/workouts/today
+error: column "workout_type" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:82:27
+-------------------
+[2026-01-17T21:27:44.505Z] GET /api/workouts/today
+error: column "workout_type" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:82:27
+-------------------
+[2026-01-17T21:28:08.088Z] GET /api/workouts/today
+error: column "workout_type" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:82:27
+-------------------
+[2026-01-17T21:28:14.379Z] GET /api/workouts/today
+error: column "workout_type" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:82:27
+-------------------
+[2026-01-17T21:28:14.691Z] GET /api/workouts/today
+error: column "workout_type" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:82:27
+-------------------
+[2026-01-17T21:29:02.311Z] GET /api/workouts/today
+error: column "workout_type" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:82:27
+-------------------
+[2026-01-17T21:29:02.616Z] GET /api/workouts/today
+error: column "workout_type" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:82:27
+-------------------
+[2026-01-17T21:29:06.918Z] GET /api/workouts/today
+error: column "workout_type" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:82:27
+-------------------
+[2026-01-17T21:29:15.916Z] GET /api/workouts/today
+error: column "workout_type" does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:82:27
+-------------------
+[2026-01-17T22:01:15.185Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:01:15.199Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:01:15.205Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:01:15.213Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:01:30.176Z] POST /api/intent
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:01:33.085Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:01:33.092Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:01:33.099Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:01:33.107Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:01:38.633Z] POST /api/intent
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:02:47.110Z] POST /api/intent
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:02:47.865Z] POST /api/intent
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:02:48.850Z] POST /api/intent
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:02:52.475Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:02:52.481Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:02:52.487Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:02:52.493Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:04:07.962Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:04:07.976Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:04:12.290Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:04:12.297Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:04:12.307Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:04:12.314Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:04:13.519Z] GET /api/calories/frequent?limit=10
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:04:14.658Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:04:14.665Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:04:14.670Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:04:14.676Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:05:56.394Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:05:56.407Z] GET /api/workouts/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:05:56.415Z] GET /api/intent/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:05:57.694Z] GET /api/learn/lessons
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:07:50.255Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:07:50.265Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:07:50.271Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:07:50.277Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:09:32.012Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T22:09:32.019Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T22:09:50.704Z] POST /api/auth/login
+Error: Email or password is incorrect
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\auth.js:96:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T22:09:50.742Z] POST /api/auth/register
+Error: Invalid gym code. Please check and try again.
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\auth.js:31:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T22:09:59.227Z] POST /api/auth/login
+Error: Email or password is incorrect
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\auth.js:96:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T22:09:59.259Z] POST /api/auth/register
+Error: Invalid gym code. Please check and try again.
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\auth.js:31:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T22:16:08.981Z] POST /api/auth/login
+Error: Email or password is incorrect
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\auth.js:96:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T22:16:09.207Z] POST /api/auth/register
+error: null value in column "username" of relation "users" violates not-null constraint
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\auth.js:50:20
+-------------------
+[2026-01-17T22:16:13.237Z] POST /api/auth/login
+Error: Email or password is incorrect
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\auth.js:96:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-01-17T22:35:26.061Z] GET /api/workouts/feed
+error: column w.exercises does not exist
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:32:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:158:20
+-------------------
+[2026-01-17T22:40:00.178Z] POST /api/food/analyze-text
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------

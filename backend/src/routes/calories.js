@@ -29,7 +29,7 @@ router.post('/', asyncHandler(async (req, res) => {
     }
 
     const result = await query(
-        `INSERT INTO calorie_logs (user_id, calories, protein, carbs, fat, meal_name, visibility)
+        `INSERT INTO calorie_logs (user_id, calories, protein, carbs, fat, food_name, visibility)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING *`,
         [userId, calories, protein, carbs, fat, meal_name || null, visibility]
@@ -172,15 +172,15 @@ router.get('/frequent', asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
 
     const result = await query(
-        `SELECT meal_name as name, 
+        `SELECT food_name as name, 
                 ROUND(AVG(calories)) as calories, 
                 ROUND(AVG(protein)) as protein, 
                 ROUND(AVG(carbs)) as carbs, 
                 ROUND(AVG(fat)) as fat,
                 COUNT(*) as usage_count
          FROM calorie_logs 
-         WHERE user_id = $1 AND meal_name IS NOT NULL
-         GROUP BY meal_name
+         WHERE user_id = $1 AND food_name IS NOT NULL
+         GROUP BY food_name
          ORDER BY usage_count DESC
          LIMIT $2`,
         [userId, limit]

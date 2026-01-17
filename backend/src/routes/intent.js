@@ -8,14 +8,22 @@ const { ValidationError, asyncHandler } = require('../utils/errors');
 const VALID_PATTERNS = [
     'push', 'pull', 'legs', 'upper', 'lower',
     'anterior', 'posterior', 'full_body', 'bro_split',
-    'ppl', 'upper_lower', 'cardio', 'rest', 'custom'
+    'ppl', 'upper_lower', 'cardio', 'rest', 'custom', 'anterior_posterior'
 ];
 
 // Valid emphasis options (multi-select)
 const VALID_EMPHASIS = [
     'chest', 'back', 'shoulders', 'arms',
     'quads', 'hamstrings', 'glutes', 'calves',
-    'cardio', 'rest'
+    'cardio', 'rest',
+    // Split days
+    'push', 'pull', 'legs', 'upper', 'lower',
+    'full body', 'full_body', 'anterior', 'posterior',
+    'core', 'abs',
+    // Combined splits
+    'chest + back', 'arms + shoulders', 'legs + core',
+    // Catch-alls for variations like "Full Body A" -> just use "full body" or allow these specific strings if needed
+    'full body a', 'full body b', 'full body c'
 ];
 
 const VALID_VISIBILITY = ['public', 'friends', 'private'];
@@ -28,7 +36,8 @@ const formatPattern = (p) => {
         push: 'Push', pull: 'Pull', legs: 'Legs',
         upper: 'Upper', lower: 'Lower',
         anterior: 'Anterior', posterior: 'Posterior',
-        full_body: 'Full Body', bro_split: 'Bro Split', custom: 'Custom'
+        full_body: 'Full Body', bro_split: 'Bro Split', custom: 'Custom',
+        anterior_posterior: 'Ant/Post'
     };
     return labels[p] || p;
 };
@@ -39,9 +48,13 @@ const formatEmphasis = (arr) => {
     const labels = {
         chest: 'Chest', back: 'Back', shoulders: 'Shoulders', arms: 'Arms',
         quads: 'Quads', hamstrings: 'Hamstrings', glutes: 'Glutes', calves: 'Calves',
-        cardio: 'Cardio', rest: 'Rest'
+        cardio: 'Cardio', rest: 'Rest',
+        push: 'Push', pull: 'Pull', legs: 'Legs', upper: 'Upper', lower: 'Lower',
+        full_body: 'Full Body', 'full body': 'Full Body',
+        anterior: 'Anterior', posterior: 'Posterior',
+        'full body a': 'Full Body A', 'full body b': 'Full Body B', 'full body c': 'Full Body C'
     };
-    return arr.map(e => labels[e] || e).join(' & ');
+    return arr.map(e => labels[e] || e.charAt(0).toUpperCase() + e.slice(1)).join(' & ');
 };
 
 // Build display string
@@ -59,12 +72,17 @@ const buildDisplay = (pattern, emphasis, label) => {
  */
 router.post('/', authenticate, asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const {
+    let {
         training_pattern = null,
         emphasis = [],
         session_label = null,
         visibility = 'friends'
     } = req.body;
+
+    // Normalize emphasis to lowercase
+    if (Array.isArray(emphasis)) {
+        emphasis = emphasis.map(e => e.toLowerCase());
+    }
 
     // Validation
     if (training_pattern && !VALID_PATTERNS.includes(training_pattern)) {
@@ -79,9 +97,10 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
         throw new ValidationError('Invalid emphasis selection');
     }
 
-    if (session_label && !['A', 'B'].includes(session_label)) {
-        throw new ValidationError('Session label must be A or B');
-    }
+    // Relaxed session_label validation to allow descriptive names
+    // if (session_label && !['A', 'B'].includes(session_label)) {
+    //    throw new ValidationError('Session label must be A or B');
+    // }
 
     if (!VALID_VISIBILITY.includes(visibility)) {
         throw new ValidationError('Invalid visibility setting');

@@ -11,7 +11,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+
+// ... other imports
+
 import { useAuth } from '../../context/AuthContext';
 import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
@@ -105,6 +108,12 @@ const HomeScreen: React.FC = () => {
     useEffect(() => {
         loadHomeData();
     }, []);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            loadHomeData();
+        }, [])
+    );
 
     const loadHomeData = async () => {
         try {
@@ -310,16 +319,18 @@ const HomeScreen: React.FC = () => {
                             <Text style={styles.viewAllLink}>LOG FOOD</Text>
                         </TouchableOpacity>
                     </View>
-                    <MacroPieChart
-                        calories={todayCalories.total_calories || 0}
-                        calorieTarget={2000}
-                        protein={todayCalories.total_protein || 0}
-                        proteinTarget={150}
-                        carbs={todayCalories.total_carbs || 0}
-                        carbsTarget={200}
-                        fat={todayCalories.total_fat || 0}
-                        fatTarget={65}
-                    />
+                    <TouchableOpacity onPress={() => router.push('/log/calories' as any)} activeOpacity={0.8}>
+                        <MacroPieChart
+                            calories={todayCalories.total_calories || 0}
+                            calorieTarget={2000}
+                            protein={todayCalories.total_protein || 0}
+                            proteinTarget={150}
+                            carbs={todayCalories.total_carbs || 0}
+                            carbsTarget={200}
+                            fat={todayCalories.total_fat || 0}
+                            fatTarget={65}
+                        />
+                    </TouchableOpacity>
                 </View>
 
                 {/* Weekly Analytics - Lose It Style */}
@@ -385,6 +396,29 @@ const HomeScreen: React.FC = () => {
                             </Text>
                         )}
                     </ScrollView>
+                </View>
+
+                {/* Add Buddy Button */}
+                <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing['3xl'] }}>
+                    <TouchableOpacity
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: spacing.md,
+                            borderWidth: 1,
+                            borderColor: colors.glass.border,
+                            borderRadius: borderRadius.lg,
+                            backgroundColor: colors.glass.surface,
+                            gap: spacing.sm
+                        }}
+                        onPress={() => router.push('/member/add-buddy' as any)}
+                    >
+                        <MaterialIcons name="person-add" size={20} color={colors.primary} />
+                        <Text style={{ color: colors.primary, fontFamily: typography.fontFamily.semiBold }}>
+                            Add Gym Buddy
+                        </Text>
+                    </TouchableOpacity>
                 </View>
 
                 <View style={{ height: 120 }} />

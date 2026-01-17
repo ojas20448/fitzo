@@ -1,0 +1,18 @@
+{
+  "scan_time": "2026-01-17T22:35:02.663Z",
+  "tests": {
+    "myfitnesspal": {
+      "status": 200,
+      "data_preview": "[]",
+      "item_count": 0
+    },
+    "usda": {
+      "success": true,
+      "item_count": 5
+    },
+    "fatsecret": {
+      "success": true,
+      "item_count": 5
+    }
+  }
+}

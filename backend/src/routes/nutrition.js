@@ -328,4 +328,38 @@ router.get('/weekly', authenticate, asyncHandler(async (req, res) => {
     res.json({ history: result.rows });
 }));
 
+/**
+ * POST /api/nutrition/log
+ * Log a food item
+ */
+router.post('/log', authenticate, asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const {
+        food_name,
+        calories,
+        protein,
+        carbs,
+        fat,
+        serving_size,
+        meal_type = 'snack' // breakfast, lunch, dinner, snack
+    } = req.body;
+
+    if (!food_name || calories === undefined) {
+        throw new ValidationError('Food name and calories are required');
+    }
+
+    const result = await query(
+        `INSERT INTO calorie_logs (
+            user_id, food_name, calories, protein, carbs, fat, serving_size, meal_type
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING *`,
+        [userId, food_name, calories, protein || 0, carbs || 0, fat || 0, serving_size, meal_type]
+    );
+
+    res.json({
+        message: 'Food logged successfully',
+        log: result.rows[0]
+    });
+}));
+
 module.exports = router;

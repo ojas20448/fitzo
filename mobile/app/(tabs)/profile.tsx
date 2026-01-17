@@ -100,6 +100,7 @@ export default function ProfileScreen() {
 
             <ScrollView
                 style={styles.content}
+                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
@@ -204,7 +205,10 @@ export default function ProfileScreen() {
                 {/* Logout */}
                 <Button
                     title="Log Out"
-                    onPress={logout}
+                    onPress={async () => {
+                        await logout();
+                        router.replace('/login' as any);
+                    }}
                     variant="secondary"
                     fullWidth
                     style={{ marginTop: spacing.xl, marginBottom: 100 }}

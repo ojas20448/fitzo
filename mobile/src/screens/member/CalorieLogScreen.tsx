@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { foodAPI, caloriesAPI } from '../../services/api';
+import { foodAPI, caloriesAPI, nutritionAPI } from '../../services/api';
 import Celebration from '../../components/Celebration';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
@@ -136,15 +136,37 @@ const CalorieLogScreen: React.FC = () => {
             try {
                 console.log('Searching for:', searchQuery);
                 const result = await foodAPI.search(searchQuery);
-                console.log('Search result:', result);
-                setSearchResults(result.foods || []);
+
+                // Add AI Trigger Option at the top
+                const aiOption: FoodItem = {
+                    id: 'ai-trigger',
+                    name: `Ask AI: "${searchQuery}"`,
+                    brand: 'Smart Analysis',
+                    description: 'Get macros from description',
+                    // custom flag
+                    isAiTrigger: true
+                } as any;
+
+                setSearchResults([aiOption, ...(result.foods || [])]);
+
                 if (result.foods?.length === 0) {
-                    setSearchError('No foods found. Try a different search term.');
+                    // Even if no results, we show AI option, so don't show error yet
+                    // setSearchError('No foods found. Try a different search term.');
                 }
             } catch (error: any) {
                 console.error('Search error:', error);
-                setSearchError(error.message || 'Search failed. Please try again.');
-                setSearchResults([]);
+
+                // Still show AI option on error
+                const aiOption: FoodItem = {
+                    id: 'ai-trigger',
+                    name: `Ask AI: "${searchQuery}"`,
+                    brand: 'Smart Analysis',
+                    description: 'Retry with AI',
+                    isAiTrigger: true
+                } as any;
+                setSearchResults([aiOption]);
+
+                // setSearchError(error.message || 'Search failed. Please try again.');
             } finally {
                 setSearching(false);
             }
@@ -153,7 +175,54 @@ const CalorieLogScreen: React.FC = () => {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    const handleFoodSelect = async (food: FoodItem) => {
+    const handleFoodSelect = async (food: any) => {
+        // Handle AI Trigger
+        if (food.isAiTrigger) {
+            setLoadingDetail(true);
+            try {
+                const res = await foodAPI.analyzeText(searchQuery);
+                if (res.food) {
+                    const aiFood = res.food;
+                    setSelectedFood({
+                        id: 'ai-' + Date.now(),
+                        name: aiFood.name,
+                        brand: 'AI Analysis',
+                        servings: [{
+                            id: 'default',
+                            description: aiFood.serving_size || '1 meal',
+                            measurementDescription: 'serving',
+                            calories: aiFood.calories,
+                            protein: aiFood.protein_g,
+                            carbs: aiFood.carbs_g,
+                            fat: aiFood.fat_g,
+                            fiber: aiFood.fiber_g,
+                            sugar: aiFood.sugar_g
+                        }]
+                    });
+                    setSelectedServing({
+                        id: 'default',
+                        description: aiFood.serving_size || '1 meal',
+                        measurementDescription: 'serving',
+                        calories: aiFood.calories,
+                        protein: aiFood.protein_g,
+                        carbs: aiFood.carbs_g,
+                        fat: aiFood.fat_g,
+                        fiber: aiFood.fiber_g,
+                        sugar: aiFood.sugar_g
+                    });
+                    setServingCount(1);
+                    setShowDetail(true);
+                } else {
+                    toast.error('AI Error', 'Could not analyze meal');
+                }
+            } catch (err) {
+                toast.error('AI Error', 'Analysis failed');
+            } finally {
+                setLoadingDetail(false);
+            }
+            return;
+        }
+
         setLoadingDetail(true);
         setShowDetail(true);
         try {
@@ -182,13 +251,14 @@ const CalorieLogScreen: React.FC = () => {
 
         setLogging(true);
         try {
-            const result = await caloriesAPI.log({
+            const result = await nutritionAPI.logFood({
                 calories: totalCalories,
                 protein: totalProtein,
                 carbs: totalCarbs,
                 fat: totalFat,
-                meal_name: selectedFood.name,
-                visibility: 'friends',
+                food_name: selectedFood.name,
+                serving_size: `${servingCount} ${selectedServing.measurementDescription}`,
+                meal_type: 'snack'
             });
 
             if (result.xp_earned > 0) {
@@ -213,18 +283,25 @@ const CalorieLogScreen: React.FC = () => {
         return match ? match[1] : null;
     };
 
-    const renderSearchItem = ({ item }: { item: FoodItem }) => {
+    const renderSearchItem = ({ item }: { item: any }) => {
         const calories = parseDescription(item.description);
+        const isAi = item.isAiTrigger;
+
         return (
             <Pressable
                 style={({ pressed }) => [
                     styles.foodItem,
+                    isAi && styles.aiItem, // New style
                     pressed && styles.foodItemPressed
                 ]}
                 onPress={() => handleFoodSelect(item)}
             >
-                <View style={styles.foodIcon}>
-                    <MaterialIcons name="restaurant" size={20} color={colors.primary} />
+                <View style={[styles.foodIcon, isAi && styles.aiIcon]}>
+                    <MaterialIcons
+                        name={isAi ? "auto-awesome" : "restaurant"}
+                        size={20}
+                        color={isAi ? colors.background : colors.primary}
+                    />
                 </View>
                 <View style={styles.foodInfo}>
                     <Text style={styles.foodName} numberOfLines={1}>{item.name}</Text>
@@ -294,69 +371,133 @@ const CalorieLogScreen: React.FC = () => {
                 </View>
             </View>
 
-            {/* Frequent Foods */}
-            {!searching && searchQuery === '' && frequentFoods.length > 0 && (
-                <View style={styles.frequentContainer}>
-                    <Text style={styles.sectionTitle}>QUICK ADD</Text>
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.frequentScroll}
-                    >
-                        {frequentFoods.map((food, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={styles.frequentCard}
-                                onPress={() => handleQuickAdd(food)}
-                            >
-                                <View style={styles.frequentIcon}>
-                                    <MaterialIcons name="restaurant" size={16} color={colors.primary} />
-                                </View>
-                                <Text style={styles.frequentName} numberOfLines={1}>{food.name}</Text>
-                                <Text style={styles.frequentCals}>{food.calories} cal</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+            {/* AI Meal Describer */}
+            <View style={styles.aiContainer}>
+                <View style={styles.aiInputWrapper}>
+                    <MaterialIcons name="auto-awesome" size={20} color={colors.primary} />
+                    <TextInput
+                        style={styles.aiInput}
+                        placeholder="Describe meal (e.g. 'Chicken sandwich & coke')..."
+                        placeholderTextColor={colors.text.subtle}
+                        returnKeyType="go"
+                        onSubmitEditing={async (e) => {
+                            const text = e.nativeEvent.text;
+                            if (!text.trim()) return;
+
+                            setLoadingDetail(true);
+                            try {
+                                const res = await foodAPI.analyzeText(text);
+                                if (res.food) {
+                                    // Open detail modal with AI result
+                                    // Map AI result to our format for the modal
+                                    const aiFood = res.food;
+                                    setSelectedFood({
+                                        id: 'ai-' + Date.now(),
+                                        name: aiFood.name,
+                                        brand: 'AI Analysis',
+                                        servings: [{
+                                            id: 'default',
+                                            description: aiFood.serving_size || '1 meal',
+                                            measurementDescription: 'serving',
+                                            calories: aiFood.calories,
+                                            protein: aiFood.protein_g,
+                                            carbs: aiFood.carbs_g,
+                                            fat: aiFood.fat_g,
+                                            fiber: aiFood.fiber_g,
+                                            sugar: aiFood.sugar_g
+                                        }]
+                                    });
+                                    setSelectedServing({
+                                        id: 'default',
+                                        description: aiFood.serving_size || '1 meal',
+                                        measurementDescription: 'serving',
+                                        calories: aiFood.calories,
+                                        protein: aiFood.protein_g,
+                                        carbs: aiFood.carbs_g,
+                                        fat: aiFood.fat_g,
+                                        fiber: aiFood.fiber_g,
+                                        sugar: aiFood.sugar_g
+                                    });
+                                    setServingCount(1);
+                                    setShowDetail(true);
+                                }
+                            } catch (err: any) {
+                                toast.error('AI Error', 'Could not analyze meal.');
+                            } finally {
+                                setLoadingDetail(false);
+                            }
+                        }}
+                    />
                 </View>
-            )}
+            </View>
+
+            {/* Frequent Foods */}
+            {
+                !searching && searchQuery === '' && frequentFoods.length > 0 && (
+                    <View style={styles.frequentContainer}>
+                        <Text style={styles.sectionTitle}>QUICK ADD</Text>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.frequentScroll}
+                        >
+                            {frequentFoods.map((food, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.frequentCard}
+                                    onPress={() => handleQuickAdd(food)}
+                                >
+                                    <View style={styles.frequentIcon}>
+                                        <MaterialIcons name="restaurant" size={16} color={colors.primary} />
+                                    </View>
+                                    <Text style={styles.frequentName} numberOfLines={1}>{food.name}</Text>
+                                    <Text style={styles.frequentCals}>{food.calories} cal</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )
+            }
 
             {/* Results */}
-            {searching ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={styles.loadingText}>Searching...</Text>
-                </View>
-            ) : searchResults.length > 0 ? (
-                <FlatList
-                    data={searchResults}
-                    renderItem={renderSearchItem}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.resultsList}
-                    showsVerticalScrollIndicator={false}
-                />
-            ) : searchQuery.length > 0 ? (
-                <View style={styles.emptyContainer}>
-                    <MaterialIcons
-                        name={searchError ? "error-outline" : "search-off"}
-                        size={48}
-                        color={searchError ? colors.error : colors.text.subtle}
-                    />
-                    <Text style={styles.emptyText}>
-                        {searchError ? 'Search Error' : 'No foods found'}
-                    </Text>
-                    <Text style={styles.emptySubtext}>
-                        {searchError || 'Try a different search term'}
-                    </Text>
-                </View>
-            ) : (
-                <View style={styles.promptContainer}>
-                    <View style={styles.promptIcon}>
-                        <MaterialIcons name="restaurant-menu" size={32} color={colors.primary} />
+            {
+                searching ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color={colors.primary} />
+                        <Text style={styles.loadingText}>Searching...</Text>
                     </View>
-                    <Text style={styles.promptText}>Search for a food</Text>
-                    <Text style={styles.promptSubtext}>Find nutritional info from our database</Text>
-                </View>
-            )}
+                ) : searchResults.length > 0 ? (
+                    <FlatList
+                        data={searchResults}
+                        renderItem={renderSearchItem}
+                        keyExtractor={(item) => item.id}
+                        contentContainerStyle={styles.resultsList}
+                        showsVerticalScrollIndicator={false}
+                    />
+                ) : searchQuery.length > 0 ? (
+                    <View style={styles.emptyContainer}>
+                        <MaterialIcons
+                            name={searchError ? "error-outline" : "search-off"}
+                            size={48}
+                            color={searchError ? colors.error : colors.text.subtle}
+                        />
+                        <Text style={styles.emptyText}>
+                            {searchError ? 'Search Error' : 'No foods found'}
+                        </Text>
+                        <Text style={styles.emptySubtext}>
+                            {searchError || 'Try a different search term'}
+                        </Text>
+                    </View>
+                ) : (
+                    <View style={styles.promptContainer}>
+                        <View style={styles.promptIcon}>
+                            <MaterialIcons name="restaurant-menu" size={32} color={colors.primary} />
+                        </View>
+                        <Text style={styles.promptText}>Search for a food</Text>
+                        <Text style={styles.promptSubtext}>Find nutritional info from our database</Text>
+                    </View>
+                )
+            }
 
             {/* Food Detail Modal */}
             <Modal
@@ -589,7 +730,7 @@ const CalorieLogScreen: React.FC = () => {
                     ) : null}
                 </SafeAreaView>
             </Modal>
-        </SafeAreaView>
+        </SafeAreaView >
     );
 };
 
@@ -634,6 +775,28 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.glass.border,
     },
+    aiContainer: {
+        paddingHorizontal: spacing.xl,
+        paddingBottom: spacing.lg,
+    },
+    aiInputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.glass.surface, // Fixed color
+        borderRadius: borderRadius.xl,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        gap: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.primary, // Fixed color
+    },
+    aiInput: {
+        flex: 1,
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.primary,
+        paddingVertical: 4,
+    },
     searchInput: {
         flex: 1,
         fontSize: typography.sizes.base,
@@ -668,6 +831,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.glass.border,
     },
+    aiItem: {
+        backgroundColor: colors.primary + '10', // 10% opacity primary
+        borderColor: colors.primary,
+    },
     foodItemPressed: {
         backgroundColor: colors.glass.surfaceHover,
     },
@@ -678,6 +845,9 @@ const styles = StyleSheet.create({
         backgroundColor: colors.glass.surfaceLight,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    aiIcon: {
+        backgroundColor: colors.primary,
     },
     foodInfo: {
         flex: 1,

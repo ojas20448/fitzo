@@ -1,232 +1,136 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    FlatList,
     TouchableOpacity,
     Image,
-    TextInput,
-    ScrollView,
+    Modal,
     ActivityIndicator,
-    Alert,
+    ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
-import GlassCard from '../../components/GlassCard';
-import { exerciseAPI } from '../../services/api';
-import { cacheData, getCachedData, CACHE_KEYS, CACHE_DURATION } from '../../utils/cache';
+import ExerciseList from '../../components/ExerciseList';
 
 export default function ExerciseLibraryScreen() {
-    const [exercises, setExercises] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedFilter, setSelectedFilter] = useState<'all' | 'bodypart' | 'equipment'>('all');
-    const [selectedBodyPart, setSelectedBodyPart] = useState<string | null>(null);
-    const [bodyParts, setBodyParts] = useState<string[]>([]);
-    const [isOffline, setIsOffline] = useState(false);
+    const router = useRouter();
 
-    useEffect(() => {
-        loadBodyParts();
-        loadExercises();
-    }, []);
+    // Modal state
+    const [selectedExercise, setSelectedExercise] = useState<any | null>(null);
+    const [imageError, setImageError] = useState<string | null>(null);
+    const [imageLoading, setImageLoading] = useState(false);
 
-    const loadBodyParts = async () => {
-        try {
-            // Try cache first
-            const cached = await getCachedData(CACHE_KEYS.EXERCISE_FILTERS);
-            if (cached) {
-                setBodyParts(cached);
-                return;
-            }
-
-            const response = await exerciseAPI.getBodyParts();
-            const parts = response.bodyParts || [];
-            setBodyParts(parts);
-
-            // Cache for 24 hours
-            await cacheData(CACHE_KEYS.EXERCISE_FILTERS, parts, CACHE_DURATION.LONG);
-        } catch (error) {
-            console.error('Error loading body parts:', error);
-        }
+    const handleSelect = (item: any) => {
+        // Open detail modal
+        setImageError(null);
+        setImageLoading(false);
+        setSelectedExercise(item);
     };
-
-    const loadExercises = async () => {
-        setLoading(true);
-        try {
-            // Try cache first
-            const cached = await getCachedData(CACHE_KEYS.EXERCISES);
-            if (cached) {
-                setExercises(cached);
-                setIsOffline(true);
-                setLoading(false);
-                return;
-            }
-
-            const response = await exerciseAPI.getAll(50, 0);
-            const exerciseData = response.exercises || [];
-            setExercises(exerciseData);
-            setIsOffline(false);
-
-            // Cache for 24 hours
-            await cacheData(CACHE_KEYS.EXERCISES, exerciseData, CACHE_DURATION.LONG);
-            setExercises(response.exercises || []);
-        } catch (error: any) {
-            console.error('Error loading exercises:', error);
-            // Show user-friendly error
-            Alert.alert(
-                'Connection Error',
-                'Failed to load exercises. Please check your internet connection and try again.',
-                [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Retry', onPress: loadExercises }
-                ]
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSearch = async () => {
-        if (!searchQuery.trim()) {
-            loadExercises();
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const response = await exerciseAPI.search(searchQuery);
-            setExercises(response.exercises || []);
-        } catch (error) {
-            console.error('Error searching exercises:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleBodyPartFilter = async (bodyPart: string) => {
-        setSelectedBodyPart(bodyPart);
-        setLoading(true);
-        try {
-            const response = await exerciseAPI.getByBodyPart(bodyPart);
-            setExercises(response.exercises || []);
-        } catch (error) {
-            console.error('Error filtering by body part:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const renderExerciseCard = ({ item }: { item: any }) => (
-        <GlassCard style={styles.exerciseCard}>
-            {item.gifUrl && (
-                <Image
-                    source={{ uri: item.gifUrl }}
-                    style={styles.exerciseGif}
-                    resizeMode="cover"
-                />
-            )}
-            <View style={styles.exerciseInfo}>
-                <Text style={styles.exerciseName}>{item.name}</Text>
-                <View style={styles.tags}>
-                    {item.bodyPart && (
-                        <View style={styles.tag}>
-                            <Text style={styles.tagText}>{item.bodyPart}</Text>
-                        </View>
-                    )}
-                    {item.target && (
-                        <View style={[styles.tag, styles.tagSecondary]}>
-                            <Text style={styles.tagText}>{item.target}</Text>
-                        </View>
-                    )}
-                    {item.equipment && (
-                        <View style={[styles.tag, styles.tagEquipment]}>
-                            <Text style={styles.tagText}>{item.equipment}</Text>
-                        </View>
-                    )}
-                </View>
-            </View>
-        </GlassCard>
-    );
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Exercise Library</Text>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity
+                        onPress={() => {
+                            if (router.canGoBack()) {
+                                router.back();
+                            } else {
+                                router.replace('/home' as any);
+                            }
+                        }}
+                        style={styles.backButton}
+                    >
+                        <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Exercise Library</Text>
+                </View>
                 <Text style={styles.headerSubtitle}>1,300+ exercises with demos</Text>
             </View>
 
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-                <View style={styles.searchBar}>
-                    <MaterialIcons name="search" size={20} color={colors.text.muted} />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search exercises..."
-                        placeholderTextColor={colors.text.muted}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        onSubmitEditing={handleSearch}
-                    />
-                    {searchQuery.length > 0 && (
-                        <TouchableOpacity onPress={() => {
-                            setSearchQuery('');
-                            loadExercises();
-                        }}>
-                            <MaterialIcons name="close" size={20} color={colors.text.muted} />
+            {/* Exercise List Component */}
+            <ExerciseList onSelect={handleSelect} mode="view" />
+
+            {/* Exercise Detail Modal */}
+            <Modal
+                visible={!!selectedExercise}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setSelectedExercise(null)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Exercise Detail</Text>
+                        <TouchableOpacity
+                            onPress={() => setSelectedExercise(null)}
+                            style={styles.closeButton}
+                        >
+                            <MaterialIcons name="close" size={24} color={colors.text.primary} />
                         </TouchableOpacity>
+                    </View>
+
+                    {selectedExercise && (
+                        <ScrollView contentContainerStyle={styles.modalContent}>
+                            <View style={styles.modalImageContainer}>
+                                {imageLoading && (
+                                    <View style={styles.modalImageLoader}>
+                                        <ActivityIndicator size="large" color={colors.primary} />
+                                    </View>
+                                )}
+                                {selectedExercise.gifUrl && !imageError ? (
+                                    <Image
+                                        source={{ uri: selectedExercise.gifUrl }}
+                                        style={styles.modalGif}
+                                        resizeMode="contain"
+                                        onLoadStart={() => setImageLoading(true)}
+                                        onLoadEnd={() => setImageLoading(false)}
+                                        onError={(e) => {
+                                            console.log('Modal Image error:', e.nativeEvent.error);
+                                            setImageError('Failed to load GIF');
+                                            setImageLoading(false);
+                                        }}
+                                    />
+                                ) : (
+                                    <View style={styles.errorContainer}>
+                                        <MaterialIcons name="broken-image" size={50} color={colors.text.muted} />
+                                        <Text style={styles.errorText}>Image unavailable</Text>
+                                    </View>
+                                )}
+                            </View>
+
+                            <Text style={styles.modalExerciseName}>{selectedExercise.name}</Text>
+
+                            <View style={styles.tags}>
+                                <View style={styles.tag}>
+                                    <Text style={styles.tagText}>{selectedExercise.bodyPart}</Text>
+                                </View>
+                                <View style={[styles.tag, styles.tagSecondary]}>
+                                    <Text style={styles.tagText}>{selectedExercise.target}</Text>
+                                </View>
+                                <View style={[styles.tag, styles.tagEquipment]}>
+                                    <Text style={styles.tagText}>{selectedExercise.equipment}</Text>
+                                </View>
+                            </View>
+
+                            {selectedExercise.instructions && selectedExercise.instructions.length > 0 && (
+                                <View style={styles.instructionsContainer}>
+                                    <Text style={styles.sectionTitle}>Instructions</Text>
+                                    {selectedExercise.instructions.map((instruction: string, index: number) => (
+                                        <View key={index} style={styles.instructionStep}>
+                                            <Text style={styles.stepNumber}>{index + 1}</Text>
+                                            <Text style={styles.instructionText}>{instruction}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
+                        </ScrollView>
                     )}
                 </View>
-            </View>
-
-            {/* Body Part Filters */}
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.filtersContainer}
-                contentContainerStyle={styles.filtersContent}
-            >
-                <TouchableOpacity
-                    style={[styles.filterChip, !selectedBodyPart && styles.filterChipActive]}
-                    onPress={() => {
-                        setSelectedBodyPart(null);
-                        loadExercises();
-                    }}
-                >
-                    <Text style={[styles.filterText, !selectedBodyPart && styles.filterTextActive]}>
-                        All
-                    </Text>
-                </TouchableOpacity>
-                {bodyParts.map((part) => (
-                    <TouchableOpacity
-                        key={part}
-                        style={[styles.filterChip, selectedBodyPart === part && styles.filterChipActive]}
-                        onPress={() => handleBodyPartFilter(part)}
-                    >
-                        <Text style={[styles.filterText, selectedBodyPart === part && styles.filterTextActive]}>
-                            {part}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-
-            {/* Exercise List */}
-            {loading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={styles.loadingText}>Loading exercises...</Text>
-                </View>
-            ) : (
-                <FlatList
-                    data={exercises}
-                    renderItem={renderExerciseCard}
-                    keyExtractor={(item, index) => item.id || `exercise-${index}`}
-                    contentContainerStyle={styles.listContent}
-                    showsVerticalScrollIndicator={false}
-                />
-            )}
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -241,6 +145,16 @@ const styles = StyleSheet.create({
         paddingTop: spacing.lg,
         paddingBottom: spacing.md,
     },
+    headerTop: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        marginBottom: spacing.xs,
+    },
+    backButton: {
+        padding: spacing.xs,
+        marginLeft: -spacing.xs,
+    },
     headerTitle: {
         fontSize: typography.sizes['2xl'],
         fontFamily: typography.fontFamily.bold,
@@ -252,77 +166,45 @@ const styles = StyleSheet.create({
         color: colors.text.muted,
         marginTop: spacing.xs,
     },
-    searchContainer: {
-        paddingHorizontal: spacing.xl,
-        paddingBottom: spacing.md,
+    // Modal Styles (Kept from original)
+    modalContainer: {
+        flex: 1,
+        backgroundColor: colors.background,
     },
-    searchBar: {
+    modalHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius.xl,
-        paddingHorizontal: spacing.lg,
-        height: 48,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
-        gap: spacing.sm,
+        justifyContent: 'space-between',
+        padding: spacing.xl,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.glass.border,
     },
-    searchInput: {
-        flex: 1,
-        fontSize: typography.sizes.base,
-        fontFamily: typography.fontFamily.regular,
+    modalTitle: {
+        fontSize: typography.sizes.xl,
+        fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
     },
-    filtersContainer: {
-        marginBottom: spacing.md,
+    closeButton: {
+        padding: spacing.sm,
     },
-    filtersContent: {
-        paddingHorizontal: spacing.xl,
-        gap: spacing.sm,
-    },
-    filterChip: {
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.lg,
-        backgroundColor: colors.glass.surface,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
-    },
-    filterChipActive: {
-        backgroundColor: colors.primary,
-        borderColor: colors.primary,
-    },
-    filterText: {
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.secondary,
-        textTransform: 'capitalize',
-    },
-    filterTextActive: {
-        color: colors.background,
-    },
-    listContent: {
+    modalContent: {
         padding: spacing.xl,
         gap: spacing.lg,
     },
-    exerciseCard: {
-        flexDirection: 'row',
-        padding: spacing.md,
-        gap: spacing.md,
+    modalImageContainer: {
+        width: '100%',
+        aspectRatio: 1,
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.xl,
+        overflow: 'hidden',
     },
-    exerciseGif: {
-        width: 100,
-        height: 100,
-        borderRadius: borderRadius.lg,
-        backgroundColor: colors.glass.surfaceLight,
+    modalGif: {
+        width: '100%',
+        height: '100%',
     },
-    exerciseInfo: {
-        flex: 1,
-        justifyContent: 'space-between',
-    },
-    exerciseName: {
-        fontSize: typography.sizes.base,
-        fontFamily: typography.fontFamily.semiBold,
+    modalExerciseName: {
+        fontSize: typography.sizes['2xl'],
+        fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
         textTransform: 'capitalize',
     },
@@ -349,13 +231,44 @@ const styles = StyleSheet.create({
         color: colors.text.primary,
         textTransform: 'capitalize',
     },
-    loadingContainer: {
+    instructionsContainer: {
+        gap: spacing.md,
+    },
+    sectionTitle: {
+        fontSize: typography.sizes.lg,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.text.primary,
+    },
+    instructionStep: {
+        flexDirection: 'row',
+        gap: spacing.md,
+    },
+    stepNumber: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.primary,
+        width: 24,
+    },
+    instructionText: {
+        flex: 1,
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.secondary,
+        lineHeight: 24,
+    },
+    modalImageLoader: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1,
+    },
+    errorContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        gap: spacing.md,
+        gap: spacing.sm,
     },
-    loadingText: {
+    errorText: {
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,

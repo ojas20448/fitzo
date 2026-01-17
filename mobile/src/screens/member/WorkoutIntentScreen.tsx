@@ -11,6 +11,7 @@ const PRESET_SPLITS = [
     {
         id: 'ppl_6',
         name: 'PPL (6 Day)',
+        pattern: 'ppl',
         description: 'Push, Pull, Legs × 2',
         days: ['Push', 'Pull', 'Legs', 'Push', 'Pull', 'Legs'],
         daysPerWeek: 6,
@@ -18,6 +19,7 @@ const PRESET_SPLITS = [
     {
         id: 'ppl_3',
         name: 'PPL (3 Day)',
+        pattern: 'ppl',
         description: 'Push, Pull, Legs once per week',
         days: ['Push', 'Pull', 'Legs'],
         daysPerWeek: 3,
@@ -25,6 +27,7 @@ const PRESET_SPLITS = [
     {
         id: 'upper_lower_4',
         name: 'Upper Lower (4 Day)',
+        pattern: 'upper_lower',
         description: 'Upper, Lower × 2',
         days: ['Upper', 'Lower', 'Upper', 'Lower'],
         daysPerWeek: 4,
@@ -32,6 +35,7 @@ const PRESET_SPLITS = [
     {
         id: 'upper_lower_2',
         name: 'Upper Lower (2 Day)',
+        pattern: 'upper_lower',
         description: 'Upper, Lower × 1',
         days: ['Upper', 'Lower'],
         daysPerWeek: 2,
@@ -39,6 +43,7 @@ const PRESET_SPLITS = [
     {
         id: 'full_body_3',
         name: 'Full Body (3 Day)',
+        pattern: 'full_body',
         description: 'Full body workouts',
         days: ['Full Body A', 'Full Body B', 'Full Body C'],
         daysPerWeek: 3,
@@ -46,6 +51,7 @@ const PRESET_SPLITS = [
     {
         id: 'anterior_posterior',
         name: 'Anterior / Posterior',
+        pattern: 'anterior_posterior',
         description: 'Front and back chain',
         days: ['Anterior', 'Posterior', 'Anterior', 'Posterior'],
         daysPerWeek: 4,
@@ -53,6 +59,7 @@ const PRESET_SPLITS = [
     {
         id: 'bro_split',
         name: 'Bro Split (5 Day)',
+        pattern: 'bro_split',
         description: 'One body part per day',
         days: ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs'],
         daysPerWeek: 5,
@@ -105,14 +112,14 @@ export default function WorkoutIntentScreen() {
 
             // Set the intent
             await intentAPI.setIntent({
-                training_pattern: selectedSplit.name,
+                training_pattern: selectedSplit.pattern || 'custom',
                 emphasis: [dayName],
                 session_label: dayName,
                 visibility,
             });
 
             // Navigate back to Home
-            router.replace('/(tabs)/home' as any);
+            router.replace('/(tabs)');
         } catch (error) {
             console.error('Failed to save intent:', error);
         } finally {
@@ -140,15 +147,14 @@ export default function WorkoutIntentScreen() {
             }
 
             const res = await workoutsAPI.startSession({
-                split_id: null,
-                day_name: 'Cardio',
+                split_id: 'custom', // Use a valid ID or generate one if needed for backend
+                day_name: 'Custom',
                 visibility,
+                // We might need to handle custom splits better in backend, but for now this matches existing logic
             });
 
-            router.replace({
-                pathname: '/member/active-workout',
-                params: { sessionId: res.session.id }
-            });
+            // Navigate back to Home
+            router.replace('/(tabs)');
         } catch (error) {
             console.error(error);
         } finally {
@@ -170,6 +176,7 @@ export default function WorkoutIntentScreen() {
         const custom: typeof PRESET_SPLITS[0] = {
             id: 'custom',
             name: customName,
+            pattern: 'custom',
             description: `${customDays.length} days per week`,
             days: customDays,
             daysPerWeek: customDays.length,

@@ -29,7 +29,8 @@ interface Question {
 interface Lesson {
     id: string;
     title: string;
-    description: string; // This is the markdown content
+    description: string;
+    content?: string; // Markdown content
     xp_reward: number;
     questions: Question[];
 }
@@ -98,16 +99,8 @@ const LessonScreen = () => {
         setLoading(true);
         try {
             // Calculate score locally for immediate feedback
-            let correctCount = 0;
-            lesson.questions.forEach((q, idx) => {
-                if (q.correct === finalAnswers[idx] + 1) correctCount++;
-                // Note: API 'correct' is 1-based usually in my seed, let's check seed. 
-                // Seed: "correct": 1 (index 0). Ah, seed "correct": 2 means index 1.
-                // Let's assume seed is 1-based index for "options".
-                // Seed check: "options":["No","Only if sweaty","Always"], "correct": 2 => "Only if sweaty" is wrong. "Always" is 3.
-                // Wait, seed says: "options": ["No", "Only if sweaty", "Always", ...], "correct": 2 (Only if sweaty)?? That's wrong gym etiquette!
-                // Let's assume 1-based index.
-            });
+            // NOTE: We trust the backend to validate as 'correct' is hidden from client
+            const correctCount = 0; // Placeholder
 
             // Submit to API
             const result = await learnAPI.submitAttempt(lesson.id, finalAnswers);
@@ -144,7 +137,7 @@ const LessonScreen = () => {
         <SafeAreaView style={styles.container} edges={['top']}>
             <Celebration
                 visible={showCelebration}
-                type="levelup"
+                type="xp"
                 title="Lesson Complete!"
                 subtitle="Knowledge is gains."
                 value={`+${xpEarned} XP`}
@@ -179,7 +172,7 @@ const LessonScreen = () => {
                                 list_item: { marginBottom: 8 },
                             }}
                         >
-                            {lesson.description}
+                            {lesson.content || lesson.description}
                         </Markdown>
 
                         <View style={{ height: 100 }} />
@@ -189,7 +182,7 @@ const LessonScreen = () => {
                         <Button
                             title="Take Quiz"
                             onPress={handleStartQuiz}
-                            rightIcon={<MaterialIcons name="arrow-forward" size={20} color={colors.text.dark} />}
+                            iconRight={<MaterialIcons name="arrow-forward" size={20} color={colors.text.dark} />}
                             fullWidth
                         />
                     </View>
@@ -356,7 +349,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary,
     },
     optionText: {
-        fontSize: typography.sizes.md,
+        fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.secondary,
     },

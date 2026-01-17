@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -7,42 +7,171 @@ import {
     TouchableOpacity,
     TextInput,
     Pressable,
+    Modal,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { workoutsAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import Button from '../../components/Button';
 import Celebration from '../../components/Celebration';
+import ExerciseList from '../../components/ExerciseList';
 import { useToast } from '../../components/Toast';
-import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
+import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 
-const DURATION_OPTIONS = [15, 30, 45, 60, 90];
-const ENERGY_LEVELS = ['😴', '😐', '😊', '💪', '🔥'];
+interface ExerciseSet {
+    id: string; // unique within session
+    weight_kg?: number | string;
+    reps?: number | string;
+    rir?: number | string; // Reps In Reserve
+    completed: boolean;
+    previous?: string; // e.g., "100kg x 10"
+}
+
+interface UserExercise {
+    id: string; // from DB
+    name: string;
+    gifUrl?: string;
+    target?: string;
+    sets: ExerciseSet[];
+}
 
 const WorkoutLogScreen: React.FC = () => {
     const toast = useToast();
-    const [duration, setDuration] = useState(45);
-    const [energyLevel, setEnergyLevel] = useState(3);
-    const [notes, setNotes] = useState('');
+    const params = useLocalSearchParams();
     const [loading, setLoading] = useState(false);
     const [showCelebration, setShowCelebration] = useState(false);
     const [xpEarned, setXpEarned] = useState(0);
 
-    // Get today's date formatted
-    const today = new Date();
-    const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
-    const dateStr = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    // Initial Intent Data (if any)
+    const initialIntent = params.intent ? JSON.parse(params.intent as string) : null;
+    const [workoutType, setWorkoutType] = useState(initialIntent?.session_label || 'Workout');
 
-    const handleLog = async () => {
+    // Main State
+    const [userExercises, setUserExercises] = useState<UserExercise[]>([]);
+    const [startTime] = useState(new Date());
+
+    // Exercise Picker Modal
+    const [showPicker, setShowPicker] = useState(false);
+
+    // Smart Pre-fill
+    useEffect(() => {
+        if (workoutType) {
+            fetchLatestWorkout();
+        }
+    }, [workoutType]);
+
+    const fetchLatestWorkout = async () => {
+        // Only fetch if we have a type (e.g. "Push" or "Legs")
+        // If it's generic "Workout", maybe skip pre-fill unless user selects a type?
+        try {
+            const res = await workoutsAPI.getLatest(workoutType);
+            if (res.found && res.workout) {
+                const prevExercises = res.workout.exercises; // Ensure this is parsed if stored as JSON
+                // Map previous exercises to current format, but reset completed status
+                if (Array.isArray(prevExercises)) {
+                    const prefilled = prevExercises.map((ex: any) => ({
+                        ...ex,
+                        sets: ex.sets.map((s: any) => ({
+                            ...s,
+                            id: Math.random().toString(), // new IDs for new session
+                            completed: false, // reset completion
+                            previous: `${s.weight_kg}kg x ${s.reps}` // store history
+                        }))
+                    }));
+                    // We could ask user if they want to load it, but "Smart Pre-fill" implies auto
+                    // However, usually we might ghost it. For now, let's pre-fill values.
+                    setUserExercises(prefilled);
+                    toast.success('Smart Load', `Loaded your last ${workoutType} session!`);
+                }
+            }
+        } catch (error) {
+            console.log('No previous workout found or error fetching:', error);
+        }
+    };
+
+    const handleAddExercise = (exercise: any) => {
+        const newExercise: UserExercise = {
+            id: exercise.id,
+            name: exercise.name,
+            gifUrl: exercise.gifUrl,
+            target: exercise.target,
+            sets: [
+                { id: Math.random().toString(), weight_kg: '', reps: '', rir: '', completed: false }
+            ]
+        };
+        setUserExercises([...userExercises, newExercise]);
+        setShowPicker(false);
+    };
+
+    const addSet = (exerciseIndex: number) => {
+        const updated = [...userExercises];
+        const prevSet = updated[exerciseIndex].sets[updated[exerciseIndex].sets.length - 1];
+
+        updated[exerciseIndex].sets.push({
+            id: Math.random().toString(),
+            weight_kg: prevSet ? prevSet.weight_kg : '', // copy previous weight for convenience
+            reps: prevSet ? prevSet.reps : '',
+            rir: '',
+            completed: false
+        });
+        setUserExercises(updated);
+    };
+
+    const removeSet = (exerciseIndex: number, setIndex: number) => {
+        const updated = [...userExercises];
+        updated[exerciseIndex].sets.splice(setIndex, 1);
+        setUserExercises(updated);
+    };
+
+    const updateSet = (exerciseIndex: number, setIndex: number, field: keyof ExerciseSet, value: any) => {
+        const updated = [...userExercises];
+        updated[exerciseIndex].sets[setIndex] = {
+            ...updated[exerciseIndex].sets[setIndex],
+            [field]: value
+        };
+        setUserExercises(updated);
+    };
+
+    const removeExercise = (index: number) => {
+        Alert.alert(
+            'Remove Exercise',
+            'Are you sure you want to remove this exercise?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Remove',
+                    style: 'destructive',
+                    onPress: () => {
+                        const updated = [...userExercises];
+                        updated.splice(index, 1);
+                        setUserExercises(updated);
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleFinish = async () => {
+        // Validate
+        if (userExercises.length === 0) {
+            toast.error('Empty Workout', 'Add at least one exercise to log.');
+            return;
+        }
+
         setLoading(true);
         try {
+            // Calculate duration
+            const durationMinutes = Math.round((new Date().getTime() - startTime.getTime()) / 60000);
+
             const result = await workoutsAPI.log({
-                workout_type: 'general',
-                duration_minutes: duration,
-                energy_level: energyLevel,
-                notes: notes.trim() || undefined,
+                workout_type: workoutType,
+                exercises: JSON.stringify(userExercises), // Send as JSON string for DB
+                notes: `Logged via Smart Log`,
+                // We could add duration to schema later if needed, mostly handled by timestamps
                 visibility: 'friends',
             });
 
@@ -50,11 +179,11 @@ const WorkoutLogScreen: React.FC = () => {
                 setXpEarned(result.xp_earned);
                 setShowCelebration(true);
             } else {
-                toast.success('Workout Logged!', 'Great job staying consistent!');
+                toast.success('Workout Saved!', 'Great session!');
                 router.back();
             }
         } catch (error: any) {
-            toast.error('Error', error.message || 'Failed to log workout');
+            toast.error('Error', error.message || 'Failed to save workout');
         } finally {
             setLoading(false);
         }
@@ -65,8 +194,8 @@ const WorkoutLogScreen: React.FC = () => {
             <Celebration
                 visible={showCelebration}
                 type="workout"
-                title="Workout Logged!"
-                subtitle="Keep up the great work!"
+                title="Workout Complete!"
+                subtitle="Another one in the books."
                 value={`${xpEarned} XP`}
                 onComplete={() => {
                     setShowCelebration(false);
@@ -76,105 +205,145 @@ const WorkoutLogScreen: React.FC = () => {
 
             {/* Header */}
             <View style={styles.header}>
-                <Pressable
-                    onPress={() => router.back()}
-                    style={styles.backBtn}
-                    accessibilityLabel="Close"
-                    accessibilityRole="button"
-                >
-                    <MaterialIcons name="close" size={20} color={colors.text.muted} />
-                </Pressable>
-                <View style={styles.headerCenter}>
-                    <View style={styles.headerLeft}>
-                        <Text style={styles.headerTitle}>LOG</Text>
-                        <View style={styles.headerDot} />
-                        <Text style={styles.headerSubtitle}>WORKOUT</Text>
-                    </View>
+                <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+                    <MaterialIcons name="close" size={24} color={colors.text.muted} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.headerTitle}>LOG WORKOUT</Text>
+                    <Text style={styles.headerSubtitle}>{workoutType}</Text>
                 </View>
-                <View style={{ width: 32 }} />
+                <TouchableOpacity onPress={handleFinish} disabled={loading}>
+                    <Text style={[styles.finishText, loading && { opacity: 0.5 }]}>FINISH</Text>
+                </TouchableOpacity>
             </View>
 
-            <ScrollView
-                style={styles.content}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}
-            >
-                {/* Date Display */}
-                <View style={styles.dateSection}>
-                    <Text style={styles.dayName}>{dayName}</Text>
-                    <Text style={styles.dateStr}>{dateStr}</Text>
-                </View>
-
-                {/* Locked Intent Card */}
-                <GlassCard variant="subtle" style={styles.intentCard}>
-                    <View style={styles.intentHeader}>
-                        <MaterialIcons name="lock" size={14} color={colors.text.muted} />
-                        <Text style={styles.intentLabel}>LOCKED INTENT</Text>
-                    </View>
-                    <Text style={styles.intentValue}>Strength · Push</Text>
-                </GlassCard>
-
-                {/* Duration Selection */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>DURATION</Text>
-                    <View style={styles.durationRow}>
-                        {DURATION_OPTIONS.map((mins) => (
-                            <TouchableOpacity
-                                key={mins}
-                                style={[
-                                    styles.durationPill,
-                                    duration === mins && styles.durationPillActive
-                                ]}
-                                onPress={() => setDuration(mins)}
-                            >
-                                <Text style={[
-                                    styles.durationText,
-                                    duration === mins && styles.durationTextActive
-                                ]}>
-                                    {mins}m
-                                </Text>
+            <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+                {userExercises.map((exercise, exIndex) => (
+                    <GlassCard key={exercise.id + exIndex} style={styles.exerciseCard}>
+                        {/* Exercise Header */}
+                        <View style={styles.cardHeader}>
+                            <Text style={styles.exerciseName}>{exercise.name}</Text>
+                            <TouchableOpacity onPress={() => removeExercise(exIndex)}>
+                                <MaterialIcons name="more-horiz" size={24} color={colors.text.muted} />
                             </TouchableOpacity>
-                        ))}
-                    </View>
-                </View>
+                        </View>
 
-                {/* Energy Level */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>ENERGY LEVEL</Text>
-                    <View style={styles.energyRow}>
-                        {ENERGY_LEVELS.map((emoji, idx) => (
-                            <TouchableOpacity
-                                key={idx}
+                        {/* Sets Header */}
+                        <View style={styles.tableHeader}>
+                            <Text style={[styles.col, styles.colSet]}>SET</Text>
+                            <Text style={[styles.col, styles.colPrev]}>PREVIOUS</Text>
+                            <Text style={[styles.col, styles.colKg]}>KG</Text>
+                            <Text style={[styles.col, styles.colReps]}>REPS</Text>
+                            <Text style={[styles.col, styles.colRir]}>RIR</Text>
+                            <Text style={[styles.col, styles.colCheck]}></Text>
+                        </View>
+
+                        {/* Sets Rows */}
+                        {exercise.sets.map((set, setIndex) => (
+                            <View
+                                key={set.id}
                                 style={[
-                                    styles.energyPill,
-                                    energyLevel === idx && styles.energyPillActive
+                                    styles.setRow,
+                                    set.completed ? styles.setRowCompleted : undefined
                                 ]}
-                                onPress={() => setEnergyLevel(idx)}
                             >
-                                <Text style={styles.energyEmoji}>{emoji}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </View>
+                                <View style={[styles.col, styles.colSet]}>
+                                    <View style={styles.setBadge}>
+                                        <Text style={styles.setNumber}>{setIndex + 1}</Text>
+                                    </View>
+                                </View>
 
-                {/* Session Notes */}
-                <TouchableOpacity style={styles.notesBtn}>
-                    <MaterialIcons name="add" size={16} color={colors.text.muted} />
-                    <Text style={styles.notesBtnText}>Add session note</Text>
+                                <View style={[styles.col, styles.colPrev]}>
+                                    <Text style={styles.prevText}>{set.previous || '-'}</Text>
+                                </View>
+
+                                <View style={[styles.col, styles.colKg]}>
+                                    <TextInput
+                                        style={styles.input}
+                                        keyboardType="numeric"
+                                        placeholder="-"
+                                        placeholderTextColor={colors.text.subtle}
+                                        value={set.weight_kg?.toString()}
+                                        onChangeText={(v) => updateSet(exIndex, setIndex, 'weight_kg', v)}
+                                    />
+                                </View>
+
+                                <View style={[styles.col, styles.colReps]}>
+                                    <TextInput
+                                        style={styles.input}
+                                        keyboardType="numeric"
+                                        placeholder="-"
+                                        placeholderTextColor={colors.text.subtle}
+                                        value={set.reps?.toString()}
+                                        onChangeText={(v) => updateSet(exIndex, setIndex, 'reps', v)}
+                                    />
+                                </View>
+
+                                <View style={[styles.col, styles.colRir]}>
+                                    <TextInput
+                                        style={styles.input}
+                                        keyboardType="numeric"
+                                        placeholder="-"
+                                        placeholderTextColor={colors.text.subtle}
+                                        value={set.rir?.toString()}
+                                        onChangeText={(v) => updateSet(exIndex, setIndex, 'rir', v)}
+                                    />
+                                </View>
+
+                                <TouchableOpacity
+                                    style={[styles.col, styles.colCheck]}
+                                    onPress={() => updateSet(exIndex, setIndex, 'completed', !set.completed)}
+                                >
+                                    <View style={[styles.checkbox, set.completed && styles.checked]}>
+                                        {set.completed && <MaterialIcons name="check" size={16} color={colors.background} />}
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+
+                        {/* Add Set Button */}
+                        <TouchableOpacity
+                            style={styles.addSetBtn}
+                            onPress={() => addSet(exIndex)}
+                        >
+                            <Text style={styles.addSetText}>+ Add Set</Text>
+                        </TouchableOpacity>
+                    </GlassCard>
+                ))}
+
+                {/* Add Exercise Button */}
+                <TouchableOpacity
+                    style={styles.addExerciseBtn}
+                    onPress={() => setShowPicker(true)}
+                >
+                    <MaterialIcons name="add" size={24} color={colors.primary} />
+                    <Text style={styles.addExerciseText}>ADD EXERCISE</Text>
                 </TouchableOpacity>
 
                 <View style={{ height: 100 }} />
             </ScrollView>
 
-            {/* Confirm Button */}
-            <View style={styles.footer}>
-                <Button
-                    title="Confirm Session"
-                    onPress={handleLog}
-                    loading={loading}
-                    fullWidth
-                />
-            </View>
+            {/* Exercise Picker Modal */}
+            <Modal
+                visible={showPicker}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setShowPicker(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Select Exercise</Text>
+                        <TouchableOpacity onPress={() => setShowPicker(false)}>
+                            <MaterialIcons name="close" size={24} color={colors.text.primary} />
+                        </TouchableOpacity>
+                    </View>
+                    <ExerciseList
+                        mode="select"
+                        onSelect={handleAddExercise}
+                        initialFilter={workoutType !== 'Workout' ? workoutType : undefined}
+                    />
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -189,163 +358,172 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.lg,
+        paddingVertical: spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: colors.glass.border,
     },
-    backBtn: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerCenter: {
-        alignItems: 'center',
-    },
-    headerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
+    closeBtn: {
+        padding: spacing.xs,
     },
     headerTitle: {
-        fontSize: typography.sizes.lg,
-        fontFamily: typography.fontFamily.regular,
-        color: colors.text.primary,
-        letterSpacing: 2,
-    },
-    headerDot: {
-        width: 4,
-        height: 4,
-        borderRadius: 2,
-        backgroundColor: colors.text.subtle,
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.muted,
+        letterSpacing: 1,
     },
     headerSubtitle: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
-        letterSpacing: 2,
+        fontSize: typography.sizes.lg,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+    },
+    finishText: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.primary,
     },
     content: {
         flex: 1,
     },
     scrollContent: {
-        paddingHorizontal: spacing.xl,
-        paddingTop: spacing['2xl'],
+        padding: spacing.md,
+        gap: spacing.md,
     },
-    dateSection: {
+    exerciseCard: {
+        padding: 0, // Reset default padding
+        overflow: 'hidden',
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing['2xl'],
+        padding: spacing.md,
+        backgroundColor: colors.glass.surfaceLight,
     },
-    dayName: {
-        fontSize: 48,
-        fontFamily: typography.fontFamily.light,
-        color: colors.text.primary,
-        letterSpacing: -1,
-        lineHeight: 52,
+    exerciseName: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.primary,
     },
-    dateStr: {
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.medium,
+    tableHeader: {
+        flexDirection: 'row',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.glass.border,
+    },
+    col: {
+        textAlign: 'center',
+        fontSize: 10,
+        fontFamily: typography.fontFamily.bold,
         color: colors.text.muted,
-        letterSpacing: 1,
-        marginTop: spacing.xs,
     },
-    intentCard: {
-        marginBottom: spacing.xl,
-    },
-    intentHeader: {
+    colSet: { width: 30 },
+    colPrev: { flex: 1, textAlign: 'center' },
+    colKg: { width: 60 },
+    colReps: { width: 60 },
+    colRir: { width: 40 },
+    colCheck: { width: 40, alignItems: 'center' },
+
+    setRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.sm,
-        marginBottom: spacing.sm,
+        paddingVertical: spacing.xs,
+        paddingHorizontal: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.glass.border,
+        minHeight: 44,
     },
-    intentLabel: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
-        letterSpacing: 1.5,
+    setRowCompleted: {
+        backgroundColor: colors.primary + '10',
     },
-    intentValue: {
-        fontSize: typography.sizes.lg,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.primary,
-        letterSpacing: 0.5,
-    },
-    section: {
-        marginBottom: spacing.xl,
-    },
-    sectionLabel: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.subtle,
-        letterSpacing: 2,
-        marginBottom: spacing.md,
-    },
-    durationRow: {
-        flexDirection: 'row',
-        gap: spacing.sm,
-    },
-    durationPill: {
-        flex: 1,
-        paddingVertical: spacing.md,
-        alignItems: 'center',
+    setBadge: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
         backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius.xl,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
+        justifyContent: 'center',
+        alignItems: 'center',
+        alignSelf: 'center',
     },
-    durationPillActive: {
+    setNumber: {
+        fontSize: 10,
+        color: colors.text.secondary,
+        fontFamily: typography.fontFamily.medium,
+    },
+    prevText: {
+        fontSize: 12,
+        color: colors.text.muted,
+        textAlign: 'center',
+    },
+    input: {
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.sm,
+        textAlign: 'center',
+        color: colors.text.primary,
+        fontSize: 14,
+        paddingVertical: 4,
+        marginHorizontal: 2,
+    },
+    checkbox: {
+        width: 24,
+        height: 24,
+        borderRadius: 6,
+        borderWidth: 2,
+        borderColor: colors.text.muted,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    checked: {
         backgroundColor: colors.primary,
         borderColor: colors.primary,
     },
-    durationText: {
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
-        letterSpacing: 0.5,
-    },
-    durationTextActive: {
-        color: colors.background,
-    },
-    energyRow: {
-        flexDirection: 'row',
-        gap: spacing.sm,
-    },
-    energyPill: {
-        flex: 1,
-        paddingVertical: spacing.md,
+    addSetBtn: {
+        padding: spacing.md,
         alignItems: 'center',
-        backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius.xl,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
     },
-    energyPillActive: {
-        backgroundColor: colors.glass.surfaceHover,
-        borderColor: colors.glass.borderLight,
+    addSetText: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.primary,
+        letterSpacing: 1,
     },
-    energyEmoji: {
-        fontSize: 20,
-    },
-    notesBtn: {
+    addExerciseBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: spacing.sm,
-        paddingVertical: spacing.lg,
+        padding: spacing.lg,
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.primary,
+        borderStyle: 'dashed',
         marginTop: spacing.md,
     },
-    notesBtnText: {
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
-        letterSpacing: 0.5,
+    addExerciseText: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.primary,
+        letterSpacing: 1,
     },
-    footer: {
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.lg,
-        paddingBottom: spacing['2xl'],
+
+    // Modal
+    modalContainer: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: spacing.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.glass.border,
+    },
+    modalTitle: {
+        fontSize: typography.sizes.lg,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
     },
 });
 
