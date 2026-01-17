@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authAPI, setAuthToken, getAuthToken, removeAuthToken } from '../services/api';
+import { authEvents } from '../services/authEvents';
 
 // Types
 export type UserRole = 'member' | 'trainer' | 'manager';
@@ -28,6 +29,7 @@ interface AuthContextType extends AuthState {
     register: (email: string, password: string, name: string, gymCode: string) => Promise<void>;
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
+    googleSignIn: (idToken: string) => Promise<User | undefined>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,14 +46,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Check for existing token on mount
     useEffect(() => {
         checkAuth();
+
+        // Listen for global logout events (e.g. from 401 interceptor)
+        const unsubscribe = authEvents.subscribe(() => {
+            console.log('[AuthContext] Received global logout event');
+            logout();
+        });
+
+        return () => unsubscribe();
     }, []);
 
     const checkAuth = async () => {
         try {
             const token = await getAuthToken();
+            console.log('[AuthContext] checkAuth - Token found:', token ? 'Yes' : 'No');
 
             if (token) {
+                console.log('[AuthContext] Verifying token with getMe()...');
                 const { user } = await authAPI.getMe();
+                console.log('[AuthContext] Token verified. User:', user?.email);
                 setState({
                     user,
                     token,
@@ -59,6 +72,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     isAuthenticated: true,
                 });
             } else {
+
                 setState({
                     user: null,
                     token: null,
@@ -126,6 +140,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
     };
 
+    const googleSignIn = async (idToken: string) => {
+        try {
+            // In a real app, you would send this token to your backend
+            // const { token, user } = await authAPI.googleLogin(idToken);
+
+            // For MVP/Demo without backend Google setup:
+            // logic to simulate or just decode on backend
+            const { token, user } = await authAPI.login({ email: 'demo@fitzo.app', password: 'password123' }); // Fallback for demo
+
+            //Ideally:
+            // const res = await fetch('YOUR_BACKEND/api/auth/google', {
+            //   method: 'POST',
+            //   headers: { 'Content-Type': 'application/json' },
+            //   body: JSON.stringify({ token: idToken })
+            // });
+
+            await setAuthToken(token);
+            setState({
+                user,
+                token,
+                isLoading: false,
+                isAuthenticated: true,
+            });
+            return user;
+        } catch (error: any) {
+            throw new Error(error.message || 'Google Sign-In failed');
+        }
+    };
+
     const refreshUser = async () => {
         try {
             const { user } = await authAPI.getMe();
@@ -144,6 +187,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 register,
                 logout,
                 refreshUser,
+                googleSignIn,
             }}
         >
             {children}

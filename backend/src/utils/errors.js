@@ -107,8 +107,20 @@ const getFriendlyMessage = (error) => {
 };
 
 // Error handler middleware
+const fs = require('fs');
+const path = require('path');
+
 const errorHandler = (err, req, res, next) => {
     console.error('Error:', err);
+
+    // Log to file
+    try {
+        const logPath = path.join(__dirname, '../../error.log');
+        const logEntry = `[${new Date().toISOString()}] ${req.method} ${req.originalUrl}\n${err.stack || err.message}\n-------------------\n`;
+        fs.appendFileSync(logPath, logEntry);
+    } catch (logErr) {
+        console.error('Failed to write to error log:', logErr);
+    }
 
     const statusCode = err.statusCode || 500;
     const message = getFriendlyMessage(err);

@@ -8,7 +8,6 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -17,14 +16,55 @@ import { useAuth } from '../src/context/AuthContext';
 import Button from '../src/components/Button';
 import { useToast } from '../src/components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../src/styles/theme';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import { makeRedirectUri } from 'expo-auth-session';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
-    const { login } = useAuth();
+    const { login, googleSignIn } = useAuth();
     const toast = useToast();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    // For Expo Go, use the auth.expo.io proxy
+    // For web development, Google blocks localhost - test on mobile instead
+    // For web, we need to explicitly use the current window location
+    const redirectUri = Platform.OS === 'web'
+        ? (typeof window !== 'undefined' ? window.location.origin : undefined)
+        : makeRedirectUri({
+            scheme: 'fitzo',
+            path: 'login'
+        });
+
+    console.log('Redirect URI:', redirectUri);
+
+    {/* Google Auth Disabled for Testing
+    // const [request, response, promptAsync] = Google.useAuthRequest({
+    //    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    //    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    //    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    //    redirectUri,
+    // });
+    */}
+
+    {/* 
+    React.useEffect(() => {
+        if (response?.type === 'success') {
+            const { id_token } = response.params;
+            handleGoogleSignIn(id_token);
+        } else if (response?.type === 'error') {
+            toast.error('Sign In Failed', 'Google Sign-In encountered an error');
+        }
+    }, [response]);
+    */}
+
+    const handleGoogleSignIn = async (token: string) => {
+        // Disabled
+    };
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -114,6 +154,25 @@ export default function LoginScreen() {
                             style={{ marginTop: spacing.lg }}
                         />
 
+                        {/* Social Login 
+                        <View style={styles.dividerContainer}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
+                            <View style={styles.dividerLine} />
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.googleBtn}
+                            onPress={() => {
+                                // promptAsync();
+                            }}
+                            disabled={true}
+                        >
+                            <Text style={styles.googleBtnText}>G</Text>
+                            <Text style={styles.googleBtnLabel}>Sign in with Google</Text>
+                        </TouchableOpacity>
+                        */}
+
                         <TouchableOpacity style={styles.forgotPassword}>
                             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                         </TouchableOpacity>
@@ -126,6 +185,14 @@ export default function LoginScreen() {
                             <Text style={styles.signupLink}>Sign Up</Text>
                         </TouchableOpacity>
                     </View>
+
+                    {/* Skip Login for Testing */}
+                    <TouchableOpacity
+                        style={styles.skipButton}
+                        onPress={() => router.replace('/(tabs)')}
+                    >
+                        <Text style={styles.skipText}>Skip Login (Testing)</Text>
+                    </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -234,5 +301,53 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.semiBold,
         color: colors.primary,
         letterSpacing: 0.5,
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: spacing.xl,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: colors.glass.border,
+    },
+    dividerText: {
+        color: colors.text.muted,
+        fontSize: 10,
+        fontFamily: typography.fontFamily.bold,
+        marginHorizontal: spacing.lg,
+        letterSpacing: 1,
+    },
+    googleBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.glass.surfaceLight,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        gap: spacing.md,
+    },
+    googleBtnText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: colors.text.primary, // Or Google colors
+    },
+    googleBtnLabel: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.primary,
+    },
+    skipButton: {
+        marginTop: spacing.xl,
+        padding: spacing.md,
+        alignItems: 'center',
+    },
+    skipText: {
+        color: colors.text.muted,
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
     },
 });

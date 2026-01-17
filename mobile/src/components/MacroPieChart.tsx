@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { colors, typography, spacing, borderRadius } from '../../styles/theme';
+import { colors, typography, spacing, borderRadius } from '../styles/theme';
 
 interface MacroPieChartProps {
     calories: number;

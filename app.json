@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "30c3c5e6-e055-4640-9daa-ae04f9c32ac8"
+      }
+    },
+    "android": {
+      "package": "com.fiskerr.fitzo"
+    }
+  }
+}

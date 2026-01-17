@@ -70,7 +70,7 @@ export default function ProfileScreen() {
                 </View>
                 <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
                     <View style={{ alignItems: 'center', marginBottom: spacing.xl }}>
-                        <Skeleton width={100} height={100} radius={50} />
+                        <Skeleton width={100} height={100} borderRadius={50} />
                         <Skeleton width={150} height={24} style={{ marginTop: spacing.md }} />
                         <Skeleton width={200} height={16} style={{ marginTop: spacing.sm }} />
                     </View>
@@ -140,10 +140,7 @@ export default function ProfileScreen() {
                     <WorkoutCalendar history={stats.history} />
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Nutrition Goal</Text>
-                    <NutritionAnalytics calories={stats.calories} />
-                </View>
+
 
                 {/* Fitness Profile Section */}
                 <View style={styles.section}>
@@ -269,6 +266,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         padding: spacing.xl,
+        paddingBottom: 200,
     },
     profileCard: {
         alignItems: 'center',

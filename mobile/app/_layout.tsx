@@ -14,6 +14,7 @@ import {
 import { useEffect } from 'react';
 import { AuthProvider } from '../src/context/AuthContext';
 import { ToastProvider } from '../src/components/Toast';
+import OfflineBanner from '../src/components/OfflineBanner';
 import { colors } from '../src/styles/theme';
 
 // Prevent splash screen from auto-hiding
@@ -44,6 +45,7 @@ export default function RootLayout() {
 
     return (
         <SafeAreaProvider>
+            <OfflineBanner />
             <AuthProvider>
                 <ToastProvider>
                     <StatusBar style="light" />

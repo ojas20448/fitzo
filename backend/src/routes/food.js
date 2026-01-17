@@ -8,6 +8,8 @@ const router = express.Router();
 const indianFood = require('../services/indianFood');
 const usda = require('../services/usda');
 const fatsecret = require('../services/fatsecret');
+const foodAnalyzer = require('../services/food-analyzer');
+const barcodeService = require('../services/barcode');
 const { asyncHandler } = require('../utils/errors');
 const { authenticate } = require('../middleware/auth');
 
@@ -123,6 +125,79 @@ router.get('/gym-foods', authenticate, asyncHandler(async (req, res) => {
             servingSize: f.servingSize,
         }))
     });
+}));
+
+/**
+ * POST /api/food/analyze-photo
+ * Analyze food from photo using AI vision
+ */
+router.post('/analyze-photo', authenticate, asyncHandler(async (req, res) => {
+    const { image_url } = req.body;
+
+    console.log('📸 AI Food Photo Analysis:', image_url);
+
+    if (!image_url || image_url.trim().length === 0) {
+        return res.status(400).json({
+            error: 'image_url is required',
+            message: 'Please provide an image URL to analyze'
+        });
+    }
+
+    try {
+        const rawResult = await foodAnalyzer.analyzeFoodFromImage(image_url);
+        console.log('🤖 AI detected:', rawResult);
+
+        const formattedFood = foodAnalyzer.formatFoodAnalysis(rawResult);
+
+        res.json({
+            success: true,
+            food: formattedFood,
+            raw_ai_response: rawResult,
+            source: 'ai_vision'
+        });
+    } catch (error) {
+        console.error('❌ AI Food Analysis failed:', error.message);
+        res.status(500).json({
+            error: 'Failed to analyze food image',
+            message: error.message
+        });
+    }
+}));
+
+/**
+ * POST /api/food/barcode
+ * Look up food by barcode
+ */
+router.post('/barcode', authenticate, asyncHandler(async (req, res) => {
+    const { barcode } = req.body;
+
+    console.log('🔍 Barcode lookup:', barcode);
+
+    if (!barcode || barcode.trim().length === 0) {
+        return res.status(400).json({
+            error: 'barcode is required',
+            message: 'Please provide a barcode to look up'
+        });
+    }
+
+    try {
+        const rawResult = await barcodeService.lookupBarcode(barcode);
+        console.log('📦 Product found:', rawResult);
+
+        const formattedFood = barcodeService.formatBarcodeFood(rawResult);
+
+        res.json({
+            success: true,
+            food: formattedFood,
+            source: 'barcode'
+        });
+    } catch (error) {
+        console.error('❌ Barcode lookup failed:', error.message);
+        res.status(500).json({
+            error: 'Failed to lookup barcode',
+            message: error.message
+        });
+    }
 }));
 
 module.exports = router;

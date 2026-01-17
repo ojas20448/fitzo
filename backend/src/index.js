@@ -60,6 +60,11 @@ app.use('/api/nutrition', require('./routes/nutrition'));
 app.use('/api/workout-sessions', require('./routes/workout-sessions'));
 app.use('/api/workouts/published', require('./routes/workouts-published'));
 app.use('/api/recipes', require('./routes/recipes'));
+app.use('/api/ai', require('./routes/ai'));
+app.use('/api/exercises', require('./routes/exercises'));
+app.use('/api/videos', require('./routes/videos'));
+app.use('/api/measurements', require('./routes/measurements'));
+app.use('/api/workouts', require('./routes/calories-burned'));
 
 // 404 handler
 app.use((req, res) => {

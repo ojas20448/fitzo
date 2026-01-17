@@ -1,0 +1,1638 @@
+[2026-01-17T17:21:53.140Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T17:21:53.153Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T17:21:53.158Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T17:21:53.238Z] GET /api/calories/history?limit=7
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T17:21:53.245Z] GET /api/nutrition/profile
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T17:22:21.353Z] POST /api/workouts/sessions
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T17:22:21.839Z] POST /api/intent
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T17:22:27.428Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T17:22:27.434Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T17:22:31.223Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T17:22:31.229Z] GET /api/intent/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T17:22:31.234Z] GET /api/workouts/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T17:35:30.100Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T17:35:30.107Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T17:35:30.115Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T17:35:30.204Z] GET /api/calories/history?limit=7
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T17:35:30.208Z] GET /api/nutrition/profile
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T17:35:34.701Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T17:35:34.707Z] GET /api/intent/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T17:35:34.710Z] GET /api/workouts/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T17:35:35.849Z] GET /api/learn/lessons
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:00:26.279Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:00:26.291Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:00:26.296Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:00:26.374Z] GET /api/calories/history?limit=7
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:00:26.380Z] GET /api/nutrition/profile
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:00:58.265Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:00:58.271Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:01:05.713Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:01:05.720Z] GET /api/intent/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:01:05.725Z] GET /api/workouts/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:02:28.776Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:02:28.780Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:02:28.785Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:02:28.790Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:02:28.857Z] GET /api/calories/history?limit=7
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:02:28.861Z] GET /api/nutrition/profile
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:03:02.384Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:03:02.388Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:03:02.392Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:03:02.396Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:03:33.197Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:03:33.203Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:03:33.207Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:03:33.211Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:05:04.731Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:05:04.737Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:05:46.081Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:05:46.086Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:05:46.091Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:05:46.096Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:06:02.529Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:06:02.536Z] GET /api/intent/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:06:02.540Z] GET /api/workouts/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:06:39.984Z] GET /api/nutrition/profile
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:07:03.894Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:07:03.898Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:07:43.175Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:07:43.179Z] GET /api/intent/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:07:43.182Z] GET /api/workouts/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:07:45.172Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:07:45.175Z] GET /api/intent/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:07:45.179Z] GET /api/workouts/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:08:05.264Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:08:05.268Z] GET /api/intent/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:08:05.272Z] GET /api/workouts/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:08:06.972Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:08:06.977Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:09:09.184Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:09:09.190Z] GET /api/intent/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:09:09.194Z] GET /api/workouts/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:09:57.750Z] GET /api/nutrition/profile
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:15:21.249Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:15:21.262Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:15:21.266Z] GET /api/nutrition/profile
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:15:35.273Z] GET /api/nutrition/profile
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:07.848Z] GET /api/nutrition/profile
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:27.740Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:27.747Z] GET /api/intent/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:27.751Z] GET /api/workouts/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:16:28.737Z] GET /api/learn/lessons
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:34.657Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:34.665Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:16:34.670Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:34.674Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:16:34.741Z] GET /api/calories/history?limit=7
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:16:34.744Z] GET /api/nutrition/profile
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:38.654Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:38.659Z] GET /api/intent/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:38.664Z] GET /api/workouts/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:16:42.976Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:42.984Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:16:42.989Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:16:42.992Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:43.046Z] GET /api/calories/history?limit=7
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:16:43.050Z] GET /api/nutrition/profile
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:44.576Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:44.580Z] GET /api/intent/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:16:44.585Z] GET /api/workouts/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:17:33.401Z] GET /api/learn/lessons
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:17:37.275Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:17:37.280Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:20:55.454Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:20:55.461Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:20:55.465Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:20:55.469Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:20:55.566Z] GET /api/calories/history?limit=7
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:20:55.573Z] GET /api/nutrition/profile
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:22:09.478Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:22:09.483Z] GET /api/workouts/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:22:09.489Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:22:09.497Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:22:15.964Z] POST /api/workouts/sessions
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:24:26.279Z] GET /api/friends
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:24:26.285Z] GET /api/intent/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:24:26.290Z] GET /api/workouts/feed
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:24:41.334Z] GET /api/learn/lessons
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:24:45.696Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:24:45.702Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:25:33.206Z] GET /api/member/home
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:25:33.212Z] GET /api/calories/today
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:32:28.314Z] POST /api/intent
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:32:40.948Z] POST /api/intent
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-01-17T19:33:46.126Z] GET /api/calories/frequent?limit=10
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:33:48.019Z] GET /api/recipes
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------
+[2026-01-17T19:34:02.028Z] GET /api/recipes
+Error: Please log in to continue
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:15:19)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at trim_prefix (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:328:13)
+-------------------

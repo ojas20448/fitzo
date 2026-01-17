@@ -2,6 +2,7 @@
   "expo": {
     "name": "Fitzo",
     "slug": "fitzo",
+    "owner": "fiskerr",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -29,7 +30,8 @@
       },
       "package": "com.fitzo.app",
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -59,6 +61,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "30c3c5e6-e055-4640-9daa-ae04f9c32ac8"
+      }
     }
   }
 }

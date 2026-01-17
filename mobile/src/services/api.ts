@@ -1,12 +1,13 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import { authEvents } from './authEvents';
 
 // API base URL - change for production
 // Use your computer's IP for physical devices, localhost only works in web/emulator
 const API_BASE_URL = __DEV__
-    ? 'http://172.29.224.1:3001/api' // Your computer's IP for mobile devices
-    : 'https://api.fitzo.app/api';
+    ? (Platform.OS === 'web' ? 'http://localhost:3001/api' : 'http://172.29.224.1:3001/api')
+    : 'https://fitzo-api.onrender.com/api';
 
 
 // Create axios instance
@@ -45,9 +46,11 @@ export const removeAuthToken = async (): Promise<void> => {
 };
 
 // Request interceptor - add auth token
+// Request interceptor - add auth token
 api.interceptors.request.use(
     async (config) => {
         const token = await getAuthToken();
+        console.log('[API Request] URL:', config.url, 'Token:', token ? 'Present' : 'Missing');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -57,6 +60,8 @@ api.interceptors.request.use(
         return Promise.reject(error);
     }
 );
+
+
 
 // Response interceptor - handle errors
 api.interceptors.response.use(
@@ -68,7 +73,7 @@ api.interceptors.response.use(
         if (error.response?.status === 401 && !originalRequest._retry) {
             // Token expired or invalid - clear it
             await removeAuthToken();
-            // The app will redirect to login via AuthContext
+            authEvents.emitLogout();
         }
 
         // Transform error to user-friendly message
@@ -539,6 +544,151 @@ export const recipesAPI = {
 
     delete: async (id: string) => {
         const response = await api.delete(`/recipes/${id}`);
+        return response.data;
+    },
+};
+
+// ===========================================
+// AI COACH ENDPOINTS
+// ===========================================
+
+export const aiAPI = {
+    generateWorkoutPlan: async (profile: any) => {
+        const response = await api.post('/ai/workout-plan', profile);
+        return response.data;
+    },
+
+    getNutritionAdvice: async (profile: any) => {
+        const response = await api.post('/ai/nutrition-advice', profile);
+        return response.data;
+    },
+
+    chat: async (question: string, context?: any) => {
+        const response = await api.post('/ai/chat', { question, context });
+        return response.data;
+    },
+
+    analyzeForm: async (exerciseName: string, description: string) => {
+        const response = await api.post('/ai/analyze-form', { exerciseName, description });
+        return response.data;
+    },
+};
+
+// ===========================================
+// EXERCISE LIBRARY ENDPOINTS
+// ===========================================
+
+export const exerciseAPI = {
+    getAll: async (limit = 20, offset = 0) => {
+        const response = await api.get(`/exercises?limit=${limit}&offset=${offset}`);
+        return response.data;
+    },
+
+    search: async (query: string) => {
+        const response = await api.get(`/exercises/search/${query}`);
+        return response.data;
+    },
+
+    getByBodyPart: async (bodyPart: string) => {
+        const response = await api.get(`/exercises/bodypart/${bodyPart}`);
+        return response.data;
+    },
+
+    getByTarget: async (target: string) => {
+        const response = await api.get(`/exercises/target/${target}`);
+        return response.data;
+    },
+
+    getByEquipment: async (equipment: string) => {
+        const response = await api.get(`/exercises/equipment/${equipment}`);
+        return response.data;
+    },
+
+    getById: async (id: string) => {
+        const response = await api.get(`/exercises/${id}`);
+        return response.data;
+    },
+
+    getBodyParts: async () => {
+        const response = await api.get('/exercises/lists/bodyparts');
+        return response.data;
+    },
+
+    getTargets: async () => {
+        const response = await api.get('/exercises/lists/targets');
+        return response.data;
+    },
+};
+
+// ===========================================
+// FOOD PHOTO ANALYSIS ENDPOINTS
+// ===========================================
+
+export const foodPhotoAPI = {
+    analyzePhoto: async (imageUrl: string) => {
+        const response = await api.post('/food/analyze-photo', { image_url: imageUrl });
+        return response.data;
+    },
+
+    lookupBarcode: async (barcode: string) => {
+        const response = await api.post('/food/barcode', { barcode });
+        return response.data;
+    },
+};
+
+// ===========================================
+// VIDEO ENDPOINTS
+// ===========================================
+
+export const videoAPI = {
+    search: async (query: string, limit = 10) => {
+        const response = await api.get(`/videos/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+        return response.data;
+    },
+
+    getTrending: async (limit = 20) => {
+        const response = await api.get(`/videos/trending?limit=${limit}`);
+        return response.data;
+    },
+
+    getDetails: async (videoId: string) => {
+        const response = await api.get(`/videos/${videoId}`);
+        return response.data;
+    },
+};
+
+// ===========================================
+// CALORIES BURNED ENDPOINTS
+// ===========================================
+
+export const caloriesBurnedAPI = {
+    calculate: async (activity: string, duration: number, weight?: number) => {
+        const response = await api.post('/workouts/calculate-calories', {
+            activity,
+            duration,
+            weight
+        });
+        return response.data;
+    },
+};
+
+// ===========================================
+// MEASUREMENTS ENDPOINTS
+// ===========================================
+
+export const measurementsAPI = {
+    getLatest: async () => {
+        const response = await api.get('/measurements/latest');
+        return response.data;
+    },
+
+    log: async (data: any) => {
+        const response = await api.post('/measurements', data);
+        return response.data;
+    },
+
+    getHistory: async () => {
+        const response = await api.get('/measurements/history');
         return response.data;
     },
 };

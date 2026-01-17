@@ -9,11 +9,13 @@ const { ValidationError, NotFoundError, asyncHandler } = require('../utils/error
  * Get all lessons grouped by unit
  */
 router.get('/lessons', authenticate, asyncHandler(async (req, res) => {
-    const userId = req.user.id;
+    try {
+        const userId = req.user.id;
+        console.log('GET /lessons request for user:', userId);
 
-    // Get all lessons with completion status
-    const lessonsResult = await query(
-        `SELECT 
+        // Get all lessons with completion status
+        const lessonsResult = await query(
+            `SELECT 
        l.id,
        l.title,
        l.unit,
@@ -31,56 +33,64 @@ router.get('/lessons', authenticate, asyncHandler(async (req, res) => {
        ORDER BY lesson_id, attempted_at DESC
      ) la ON l.id = la.lesson_id
      ORDER BY l.unit, l.order_index`,
-        [userId]
-    );
+            [userId]
+        );
 
-    // Group by unit
-    const unitsMap = new Map();
-    let foundNext = false;
+        console.log('Lessons query successful, row count:', lessonsResult.rows.length);
 
-    for (const lesson of lessonsResult.rows) {
-        if (!unitsMap.has(lesson.unit)) {
-            unitsMap.set(lesson.unit, {
-                number: lesson.unit,
-                title: lesson.unit_title,
-                lessons: []
+        // Group by unit
+        const unitsMap = new Map();
+        let foundNext = false;
+
+        for (const lesson of lessonsResult.rows) {
+            if (!unitsMap.has(lesson.unit)) {
+                unitsMap.set(lesson.unit, {
+                    number: lesson.unit,
+                    title: lesson.unit_title,
+                    lessons: []
+                });
+            }
+
+            const isNext = !foundNext && !lesson.completed;
+            if (isNext) foundNext = true;
+
+            unitsMap.get(lesson.unit).lessons.push({
+                id: lesson.id,
+                title: lesson.title,
+                description: lesson.description,
+                completed: lesson.completed,
+                last_score: lesson.last_score,
+                xp_reward: lesson.xp_reward,
+                is_next: isNext
             });
         }
 
-        const isNext = !foundNext && !lesson.completed;
-        if (isNext) foundNext = true;
-
-        unitsMap.get(lesson.unit).lessons.push({
-            id: lesson.id,
-            title: lesson.title,
-            description: lesson.description,
-            completed: lesson.completed,
-            last_score: lesson.last_score,
-            xp_reward: lesson.xp_reward,
-            is_next: isNext
-        });
-    }
-
-    // Get user progress
-    const progressResult = await query(
-        `SELECT 
+        // Get user progress
+        const progressResult = await query(
+            `SELECT 
        (SELECT xp_points FROM users WHERE id = $1) as total_xp,
        COUNT(*) FILTER (WHERE la.completed) as lessons_completed
      FROM learn_attempts la
      WHERE la.user_id = $1`,
-        [userId]
-    );
+            [userId]
+        );
 
-    const progress = progressResult.rows[0];
+        console.log('Progress query successful');
 
-    res.json({
-        units: Array.from(unitsMap.values()),
-        progress: {
-            total_xp: progress.total_xp || 0,
-            lessons_completed: parseInt(progress.lessons_completed) || 0,
-            current_streak: 0 // Could track learning streak separately
-        }
-    });
+        const progress = progressResult.rows[0];
+
+        res.json({
+            units: Array.from(unitsMap.values()),
+            progress: {
+                total_xp: progress.total_xp || 0,
+                lessons_completed: parseInt(progress.lessons_completed) || 0,
+                current_streak: 0 // Could track learning streak separately
+            }
+        });
+    } catch (error) {
+        console.error('CRITICAL ERROR in GET /lessons:', error);
+        throw error;
+    }
 }));
 
 /**

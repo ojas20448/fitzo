@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
-import { memberAPI, workoutsAPI, caloriesAPI } from '../../services/api';
+import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import Badge from '../../components/Badge';
@@ -59,6 +59,12 @@ interface HomeData {
     };
 }
 
+interface Friend {
+    id: string;
+    name: string;
+    avatar_url: string | null;
+}
+
 interface TodayWorkout {
     id: string;
     workout_type: string;
@@ -85,8 +91,16 @@ const HomeScreen: React.FC = () => {
         total_fat: 0,
         entry_count: 0
     });
+    const [friends, setFriends] = useState<Friend[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+
+    const DUMMY_FRIENDS: Friend[] = [
+        { id: '1', name: 'Sarah Jones', avatar_url: 'https://i.pravatar.cc/150?u=sarah' },
+        { id: '2', name: 'Mike Chen', avatar_url: 'https://i.pravatar.cc/150?u=mike' },
+        { id: '3', name: 'Jessica Day', avatar_url: 'https://i.pravatar.cc/150?u=jess' },
+        { id: '4', name: 'Tom Hardy', avatar_url: 'https://i.pravatar.cc/150?u=tom' },
+    ];
 
     useEffect(() => {
         loadHomeData();
@@ -94,10 +108,11 @@ const HomeScreen: React.FC = () => {
 
     const loadHomeData = async () => {
         try {
-            const [homeRes, workoutsRes, caloriesRes] = await Promise.all([
+            const [homeRes, workoutsRes, caloriesRes, friendsRes] = await Promise.all([
                 memberAPI.getHome(),
                 workoutsAPI.getToday().catch(() => ({ workouts: [], summary: { count: 0, types: [] } })),
                 caloriesAPI.getToday().catch(() => ({ entries: [], totals: { calories: 0, entry_count: 0 } })),
+                friendsAPI.getFriends().catch(() => ({ friends: [] })),
             ]);
             setData(homeRes);
             setTodayWorkouts(workoutsRes.workouts || []);
@@ -108,6 +123,8 @@ const HomeScreen: React.FC = () => {
                 total_fat: caloriesRes.totals?.fat || 0,
                 entry_count: caloriesRes.totals?.entry_count || 0,
             });
+            const fetchedFriends = friendsRes?.friends || [];
+            setFriends(fetchedFriends.length > 0 ? fetchedFriends : DUMMY_FRIENDS);
         } catch (error) {
             console.error('Failed to load home data:', error);
         } finally {
@@ -126,15 +143,7 @@ const HomeScreen: React.FC = () => {
     };
 
     // Time-based greeting
-    const getGreeting = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return 'Good Morning';
-        if (hour < 17) return 'Good Afternoon';
-        if (hour < 21) return 'Good Evening';
-        return 'Night Owl';
-    };
-
-    const greeting = getGreeting();
+    const greeting = 'Every day counts.';
 
     if (loading) {
         return (
@@ -185,10 +194,23 @@ const HomeScreen: React.FC = () => {
                         </View>
                     </Pressable>
 
-                    {/* Streak Badge */}
-                    <View style={styles.streakBadge}>
-                        <MaterialIcons name="local-fire-department" size={16} color={colors.primary} />
-                        <Text style={styles.streakText}>{data?.streak.current || 0}</Text>
+                    {/* Right side: Gym + Streak */}
+                    <View style={styles.headerRight}>
+                        {/* Gym Badge */}
+                        <Pressable
+                            style={styles.gymBadge}
+                            onPress={() => router.push('/qr-checkin' as any)}
+                        >
+                            <MaterialIcons name="location-on" size={14} color={colors.text.muted} />
+                            <Text style={styles.gymBadgeText}>{data?.gym?.name || 'Your Gym'}</Text>
+                            <MaterialIcons name="qr-code-2" size={14} color={colors.text.muted} />
+                        </Pressable>
+
+                        {/* Streak Badge */}
+                        <View style={styles.streakBadge}>
+                            <MaterialIcons name="local-fire-department" size={16} color="#FF6B35" />
+                            <Text style={styles.streakText}>{data?.streak.current || 0}</Text>
+                        </View>
                     </View>
                 </View>
 
@@ -336,51 +358,34 @@ const HomeScreen: React.FC = () => {
                     </Pressable>
                 </View>
 
-                {/* Squad Pulse - Friend Avatars */}
+                {/* Gym Buddies - Friend Avatars */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Squad Pulse</Text>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Gym Buddies</Text>
+                    </View>
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={styles.squadList}
                     >
-                        {['Sarah', 'Mike', 'Jess', 'Tom'].map((name, idx) => (
-                            <View key={name} style={[styles.squadMember, idx === 3 && styles.squadMemberInactive]}>
-                                <View style={styles.squadAvatar}>
-                                    <Avatar size="lg" name={name} />
+                        {friends.length > 0 ? (
+                            friends.map((friend) => (
+                                <View key={friend.id} style={styles.squadMember}>
+                                    <View style={styles.squadAvatar}>
+                                        <Avatar size="lg" uri={friend.avatar_url} name={friend.name} />
+                                    </View>
+                                    <Text style={styles.squadName} numberOfLines={1}>
+                                        {friend.name.split(' ')[0]}
+                                    </Text>
                                 </View>
-                                <Text style={styles.squadName}>{name}</Text>
-                            </View>
-                        ))}
+                            ))
+                        ) : (
+                            <Text style={{ color: colors.text.muted, fontSize: typography.sizes.sm, paddingLeft: spacing.sm }}>
+                                No buddies added yet.
+                            </Text>
+                        )}
                     </ScrollView>
                 </View>
-
-                {/* Gym Status */}
-                <Pressable
-                    style={({ pressed }) => [
-                        styles.gymCard,
-                        pressed && styles.gymCardPressed,
-                    ]}
-                    onPress={() => router.push('/qr-checkin' as any)}
-                    accessibilityLabel={`Check in at ${data?.gym?.name || 'your gym'}`}
-                >
-                    <View style={styles.gymLeft}>
-                        <MaterialIcons name="location-on" size={20} color={colors.text.muted} />
-                        <View>
-                            <Text style={styles.gymName}>{data?.gym?.name || 'Your Gym'}</Text>
-                            <View style={styles.crowdRow}>
-                                <View style={[
-                                    styles.crowdDot,
-                                    { backgroundColor: data?.gym?.crowd_level === 'low' ? colors.crowd.low : data?.gym?.crowd_level === 'medium' ? colors.crowd.medium : colors.crowd.high }
-                                ]} />
-                                <Text style={styles.crowdText}>
-                                    {data?.gym?.crowd_level === 'low' ? 'Not busy' : data?.gym?.crowd_level === 'medium' ? 'Moderate' : 'Busy'}
-                                </Text>
-                            </View>
-                        </View>
-                    </View>
-                    <MaterialIcons name="qr-code-2" size={24} color={colors.text.muted} />
-                </Pressable>
 
                 <View style={{ height: 120 }} />
             </ScrollView>
@@ -443,6 +448,28 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
         letterSpacing: -0.5,
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+    },
+    gymBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: colors.glass.surface,
+        paddingVertical: 8,
+        paddingHorizontal: 10,
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    gymBadgeText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.secondary,
+        maxWidth: 80,
     },
     streakBadge: {
         flexDirection: 'row',

@@ -5,7 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { workoutsAPI } from '../../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../components/Toast';
 import GlassCard from '../../components/GlassCard';
 import PublishSplitModal from '../../components/PublishSplitModal';
 

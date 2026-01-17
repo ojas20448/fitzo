@@ -43,7 +43,7 @@ export default function TabLayout() {
                         title: 'Buddies',
                         tabBarIcon: ({ color, focused }) => (
                             <MaterialIcons
-                                name="groups"
+                                name="people"
                                 size={24}
                                 color={color}
                                 style={focused ? styles.activeIcon : undefined}
@@ -69,12 +69,12 @@ export default function TabLayout() {
                     })}
                 />
                 <Tabs.Screen
-                    name="stats"
+                    name="learn"
                     options={{
-                        title: 'Progress',
+                        title: 'Learn',
                         tabBarIcon: ({ color, focused }) => (
                             <MaterialIcons
-                                name="bar-chart"
+                                name="menu-book"
                                 size={24}
                                 color={color}
                                 style={focused ? styles.activeIcon : undefined}
@@ -94,6 +94,12 @@ export default function TabLayout() {
                                 style={focused ? styles.activeIcon : undefined}
                             />
                         ),
+                    }}
+                />
+                <Tabs.Screen
+                    name="stats"
+                    options={{
+                        href: null,
                     }}
                 />
             </Tabs>
@@ -137,6 +143,34 @@ export default function TabLayout() {
                             <View style={styles.optionInfo}>
                                 <Text style={styles.optionTitle}>Log Calories</Text>
                                 <Text style={styles.optionSubtitle}>Track your nutrition</Text>
+                            </View>
+                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.modalOption}
+                            onPress={() => handleLogOption('/food-scanner')}
+                        >
+                            <View style={styles.optionIcon}>
+                                <MaterialIcons name="camera-alt" size={28} color={colors.primary} />
+                            </View>
+                            <View style={styles.optionInfo}>
+                                <Text style={styles.optionTitle}>Scan Food</Text>
+                                <Text style={styles.optionSubtitle}>Use AI to detect food from photo</Text>
+                            </View>
+                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.modalOption}
+                            onPress={() => handleLogOption('/exercise-library')}
+                        >
+                            <View style={styles.optionIcon}>
+                                <MaterialIcons name="fitness-center" size={28} color={colors.primary} />
+                            </View>
+                            <View style={styles.optionInfo}>
+                                <Text style={styles.optionTitle}>Exercise Library</Text>
+                                <Text style={styles.optionSubtitle}>Browse 1,300+ exercises with GIFs</Text>
                             </View>
                             <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                         </TouchableOpacity>

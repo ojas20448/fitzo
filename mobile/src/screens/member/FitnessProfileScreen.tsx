@@ -5,7 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { nutritionAPI } from '../../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../components/Toast';
 
 const GOALS = [
     { id: 'fat_loss', label: 'Lose Fat', icon: 'trending-down', color: '#FF6B6B' },

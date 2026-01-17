@@ -91,29 +91,30 @@ export default function WorkoutIntentScreen() {
         setStep('day');
     };
 
-    const handleDaySelect = async (dayIndex: number) => {
+    const handleDaySelect = (dayIndex: number) => {
         if (!selectedSplit) return;
-
         setSelectedDayIndex(dayIndex);
+    };
+
+    const handleSave = async () => {
+        if (!selectedSplit || selectedDayIndex === null) return;
+
         setLoading(true);
-
         try {
-            const dayName = selectedSplit.days[dayIndex];
+            const dayName = selectedSplit.days[selectedDayIndex];
 
-            // Start the session directly
-            const res = await workoutsAPI.startSession({
-                split_id: selectedSplit.id === 'custom' ? null : selectedSplit.id,
-                day_name: dayName,
+            // Set the intent
+            await intentAPI.setIntent({
+                training_pattern: selectedSplit.name,
+                emphasis: [dayName],
+                session_label: dayName,
                 visibility,
             });
 
-            // Navigate to active workout
-            router.replace({
-                pathname: '/member/active-workout',
-                params: { sessionId: res.session.id }
-            });
+            // Navigate back to Home
+            router.replace('/(tabs)/home' as any);
         } catch (error) {
-            console.error(error);
+            console.error('Failed to save intent:', error);
         } finally {
             setLoading(false);
         }
@@ -433,6 +434,19 @@ export default function WorkoutIntentScreen() {
                     >
                         <Text style={styles.confirmButtonText}>
                             Use This Split
+                        </Text>
+                    </TouchableOpacity>
+                )}
+
+                {/* Save Button for Day Selection */}
+                {step === 'day' && selectedDayIndex !== null && (
+                    <TouchableOpacity
+                        style={styles.confirmButton}
+                        onPress={handleSave}
+                        disabled={loading}
+                    >
+                        <Text style={styles.confirmButtonText}>
+                            {loading ? 'Saving...' : 'Save Session'}
                         </Text>
                     </TouchableOpacity>
                 )}

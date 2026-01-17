@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: colors.primary,
         paddingVertical: spacing.lg,
-        paddingHorizontal: spacing.2xl,
+        paddingHorizontal: spacing['2xl'],
         borderRadius: borderRadius.full,
         gap: spacing.sm,
         ...shadows.glow,

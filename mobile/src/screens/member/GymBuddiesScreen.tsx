@@ -202,7 +202,7 @@ const GymBuddiesScreen: React.FC = () => {
                         <Text style={styles.headerSubtitle}>FRIENDS ONLY</Text>
                     </View>
                     <TouchableOpacity style={styles.filterBtn}>
-                        <MaterialIcons name="tune" size={20} color={colors.text.muted} />
+                        <MaterialIcons name="person-add" size={20} color={colors.text.muted} />
                     </TouchableOpacity>
                 </View>
                 <View style={styles.content}>
@@ -221,11 +221,11 @@ const GymBuddiesScreen: React.FC = () => {
                     <View style={styles.headerDot} />
                     <Text style={styles.headerSubtitle}>FRIENDS ONLY</Text>
                 </View>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.filterBtn}
-                    onPress={() => setShowSearch(!showSearch)}
+                    onPress={() => router.push('/member/add-buddy' as any)}
                 >
-                    <MaterialIcons name={showSearch ? "close" : "tune"} size={20} color={colors.text.muted} />
+                    <MaterialIcons name="person-add" size={20} color={colors.text.muted} />
                 </TouchableOpacity>
             </View>
 
@@ -322,7 +322,7 @@ const GymBuddiesScreen: React.FC = () => {
                             <EmptyState
                                 variant="no-friends"
                                 title="No Activity Yet"
-                                description="Add gym buddies to see their workouts and progress!"
+                                message="Add gym buddies to see their workouts and progress!"
                                 actionLabel="Find Buddies"
                                 onAction={() => router.push('/member/add-buddy' as any)}
                             />
@@ -400,7 +400,7 @@ const GymBuddiesScreen: React.FC = () => {
                             <EmptyState
                                 variant="no-friends"
                                 title="No Gym Buddies Yet"
-                                description="Find friends to train together and stay motivated!"
+                                message="Find friends to train together and stay motivated!"
                                 actionLabel="Add Buddy"
                                 onAction={() => router.push('/member/add-buddy' as any)}
                             />
