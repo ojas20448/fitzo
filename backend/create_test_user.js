@@ -35,10 +35,10 @@ async function createTestUser() {
         const hash = await bcrypt.hash(password, 10);
 
         const userRes = await client.query(
-            `INSERT INTO users (email, password_hash, name, role, gym_id, xp_points)
-             VALUES ($1, $2, $3, 'member', $4, 0)
+            `INSERT INTO users (email, password_hash, name, username, role, gym_id, xp_points)
+             VALUES ($1, $2, $3, $5, 'member', $4, 0)
              RETURNING id, email`,
-            [email, hash, 'Rahul', gymId]
+            [email, hash, 'Rahul', gymId, 'rahul']
         );
 
         console.log('✅ Created User:', userRes.rows[0]);
