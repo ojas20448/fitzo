@@ -4,7 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import Button from './Button';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
 
-type EmptyStateVariant = 
+type EmptyStateVariant =
     | 'no-data'
     | 'no-friends'
     | 'no-workouts'
@@ -12,6 +12,7 @@ type EmptyStateVariant =
     | 'no-notifications'
     | 'no-results'
     | 'error'
+    | 'welcome'
     | 'offline';
 
 interface EmptyStateProps {
@@ -77,6 +78,13 @@ const getVariantConfig = (variant: EmptyStateVariant) => {
                 message: 'Check your internet connection and try again.',
                 actionLabel: 'Retry',
             };
+        case 'welcome':
+            return {
+                icon: 'auto-awesome' as const,
+                title: 'Welcome to Fitzo',
+                message: 'Your fitness journey starts here. Let\'s make today count.',
+                actionLabel: 'Log Your First Workout',
+            };
         case 'no-data':
         default:
             return {
@@ -100,7 +108,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
     style,
 }) => {
     const config = getVariantConfig(variant);
-    
+
     const displayTitle = title || config.title;
     const displayMessage = message || config.message;
     const displayIcon = icon || config.icon;

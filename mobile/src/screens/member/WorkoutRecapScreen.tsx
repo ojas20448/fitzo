@@ -1,25 +1,93 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ImageBackground, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Modal, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import ViewShot, { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import GlassCard from '../../components/GlassCard';
+import WorkoutShareCard from '../../components/WorkoutShareCard';
+import { memberAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { useXP } from '../../context/XPContext';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function WorkoutRecapScreen() {
+    const { awardXP } = useXP();
     const params = useLocalSearchParams();
+    const { user } = useAuth();
 
     // Parse the recap data passed as string
     const recap = params.recap ? JSON.parse(params.recap as string) : null;
     const session = params.session ? JSON.parse(params.session as string) : null;
 
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [streak, setStreak] = useState(0);
+    const [capturedImage, setCapturedImage] = useState<string | null>(null);
+    const [sharing, setSharing] = useState(false);
+
+    const viewShotRef = useRef<View>(null);
+
+    // Fetch streak for the card
+    useEffect(() => {
+        const fetchStreak = async () => {
+            try {
+                const homeData = await memberAPI.getHome();
+                if (homeData?.streak?.current) {
+                    setStreak(homeData.streak.current);
+                }
+            } catch (e) {
+                console.log('Failed to fetch streak', e);
+            }
+        };
+        fetchStreak();
+
+        // Auto-show share card after a moment
+        const timer = setTimeout(() => {
+            setShowShareModal(true);
+        }, 800);
+        return () => clearTimeout(timer);
+    }, []);
+
+    const handleShare = async () => {
+        if (sharing) return;
+        setSharing(true);
+        try {
+            // Capture the card
+            // We use the ref on the View wrapping WorkoutShareCard inside ViewShot (or just ViewShot ref if component supports it)
+            // But ViewShot component itself is easiest.
+            if (!viewShotRef.current) return;
+
+            const uri = await captureRef(viewShotRef, {
+                format: 'png',
+                quality: 0.9,
+                result: 'tmpfile',
+            });
+
+            setCapturedImage(uri);
+
+            // Share
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(uri, {
+                    mimeType: 'image/png',
+                    dialogTitle: 'Share your workout',
+                    UTI: 'public.png', // for iOS
+                });
+            }
+        } catch (error) {
+            console.error('Sharing failed', error);
+        } finally {
+            setSharing(false);
+        }
+    };
+
     if (!recap) {
         return (
             <SafeAreaView style={styles.container}>
                 <Text style={{ color: 'white' }}>No recap data found.</Text>
-                <TouchableOpacity onPress={() => router.replace('/(tabs)')}>
+                <TouchableOpacity onPress={() => router.replace('/' as any)}>
                     <Text style={{ color: 'white' }}>Go Home</Text>
                 </TouchableOpacity>
             </SafeAreaView>
@@ -104,20 +172,85 @@ export default function WorkoutRecapScreen() {
 
                 {/* Action Buttons */}
                 <View style={styles.actions}>
-                    <TouchableOpacity style={styles.shareBtn}>
+                    <TouchableOpacity
+                        style={styles.shareBtn}
+                        onPress={() => setShowShareModal(true)}
+                    >
                         <MaterialIcons name="share" size={20} color={colors.text.primary} />
                         <Text style={styles.shareText}>SHARE</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={styles.finishBtn}
-                        onPress={() => router.replace('/(tabs)/home')}
+                        onPress={async () => {
+                            // Award XP on finish
+                            const xpEarned = recap.xp_earned || 50;
+                            awardXP(xpEarned, width / 2, height - 100);
+
+                            // Small delay before navigating away to show animation
+                            setTimeout(() => {
+                                router.replace('/' as any);
+                            }, 1000);
+                        }}
                     >
                         <Text style={styles.finishText}>FINISH</Text>
                     </TouchableOpacity>
                 </View>
 
             </ScrollView>
+
+            {/* Share Card Modal */}
+            <Modal
+                visible={showShareModal}
+                animationType="slide"
+                presentationStyle="pageSheet" // or overFullScreen
+                onRequestClose={() => setShowShareModal(false)}
+            >
+                <View style={styles.modalContainer}>
+                    {/* Capture Area */}
+                    <View style={styles.cardPreviewContainer}>
+                        <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 0.9 }}>
+                            <WorkoutShareCard
+                                recap={recap}
+                                user={{ name: user?.name || 'Athlete', streak }}
+                                intent={session} // Assuming session object has similar structure or mapping
+                                date={new Date()}
+                            />
+                        </ViewShot>
+
+                        {/* Overlay Gradient/Shadow for controls visibility? */}
+                    </View>
+
+                    {/* Controls Overlay */}
+                    <SafeAreaView style={styles.modalOverlay} pointerEvents="box-none">
+                        <View style={styles.modalHeader}>
+                            <TouchableOpacity style={styles.closeButton} onPress={() => setShowShareModal(false)}>
+                                <MaterialIcons name="close" size={24} color="white" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.modalControls}>
+                            <Text style={styles.shareTitle}>Share Your Victory</Text>
+
+                            <TouchableOpacity style={styles.instagramBtn} onPress={handleShare} disabled={sharing}>
+                                {sharing ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <>
+                                        <MaterialIcons name="share" size={24} color="white" />
+                                        <Text style={styles.instagramBtnText}>SHARE TO STORY</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.skipBtn} onPress={() => setShowShareModal(false)}>
+                                <Text style={styles.skipBtnText}>SKIP</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </SafeAreaView>
+                </View>
+            </Modal>
+
         </SafeAreaView>
     );
 }
@@ -136,7 +269,7 @@ const styles = StyleSheet.create({
         marginVertical: spacing.xl,
     },
     headerTitle: {
-        fontSize: typography.sizes['3xl'], // condensed font?
+        fontSize: typography.sizes['3xl'],
         fontFamily: typography.fontFamily.extraBold,
         color: colors.primary,
         textAlign: 'center',
@@ -215,7 +348,7 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: colors.primary, // Gold?
+        backgroundColor: colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: spacing.md,
@@ -246,7 +379,7 @@ const styles = StyleSheet.create({
     },
     prImprovement: {
         fontSize: typography.sizes.xs,
-        color: colors.crowd.low, // Green
+        color: colors.crowd.low,
         marginTop: 2,
     },
     prValue: {
@@ -287,6 +420,70 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.dark,
+        letterSpacing: 1,
+    },
+    // Modal Styles
+    modalContainer: {
+        flex: 1,
+        backgroundColor: 'black',
+    },
+    cardPreviewContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'space-between',
+        padding: spacing.xl,
+    },
+    modalHeader: {
+        alignItems: 'flex-end',
+    },
+    closeButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalControls: {
+        width: '100%',
+        alignItems: 'center',
+        gap: spacing.lg,
+        paddingBottom: spacing.xl,
+    },
+    shareTitle: {
+        color: colors.text.primary,
+        fontSize: typography.sizes.lg,
+        fontFamily: typography.fontFamily.bold,
+    },
+    instagramBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#E1306C', // IG Brand Color
+        paddingVertical: spacing.lg,
+        paddingHorizontal: spacing['3xl'],
+        borderRadius: borderRadius.full,
+        gap: spacing.md,
+        width: '100%',
+        ...shadows.glowMd,
+    },
+    instagramBtnText: {
+        color: 'white',
+        fontSize: typography.sizes.lg,
+        fontFamily: typography.fontFamily.bold,
+        letterSpacing: 1,
+    },
+    skipBtn: {
+        padding: spacing.md,
+    },
+    skipBtnText: {
+        color: colors.text.muted,
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
         letterSpacing: 1,
     },
 });

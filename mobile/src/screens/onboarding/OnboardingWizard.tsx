@@ -6,11 +6,14 @@ import { router } from 'expo-router';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import { nutritionAPI, workoutsAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { useXP } from '../../context/XPContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function OnboardingWizard() {
     const toast = useToast();
+    const { awardXP } = useXP();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
 
@@ -102,7 +105,15 @@ export default function OnboardingWizard() {
             }
 
             toast.success('Welcome to Fitzo!', 'Your profile is ready.');
-            router.replace('/(tabs)/home' as any);
+
+            // First XP Gain: "Aha!" Moment
+            // awardXP triggers FlyingXP across the screen
+            awardXP(50, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+
+            // Small delay to let animation start before we wipe the screen
+            setTimeout(() => {
+                router.replace('/(tabs)/home' as any);
+            }, 1500);
         } catch (error) {
             console.error(error);
             toast.error('Error', 'Failed to save profile');

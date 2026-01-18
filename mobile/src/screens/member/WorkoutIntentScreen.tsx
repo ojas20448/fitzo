@@ -86,6 +86,8 @@ export default function WorkoutIntentScreen() {
     // Custom split builder
     const [customDays, setCustomDays] = useState<string[]>([]);
     const [customName, setCustomName] = useState('My Split');
+    const [isAddingCustomDay, setIsAddingCustomDay] = useState(false);
+    const [customDayInput, setCustomDayInput] = useState('');
 
     // Load user's saved split on mount
     useEffect(() => {
@@ -130,10 +132,6 @@ export default function WorkoutIntentScreen() {
     const handleQuickOption = async (type: 'cardio' | 'rest') => {
         setLoading(true);
         try {
-            // Validate: Cardio needs a session, Rest might just be intent?
-            // For now, let's treat Cardio as a session start. Rest probably stays as intent or just logs it.
-            // Simplified: Start session for Cardio.
-
             if (type === 'rest') {
                 // Just go back for rest
                 await intentAPI.setIntent({
@@ -147,10 +145,9 @@ export default function WorkoutIntentScreen() {
             }
 
             const res = await workoutsAPI.startSession({
-                split_id: 'custom', // Use a valid ID or generate one if needed for backend
+                split_id: 'custom',
                 day_name: 'Custom',
                 visibility,
-                // We might need to handle custom splits better in backend, but for now this matches existing logic
             });
 
             // Navigate back to Home
@@ -165,6 +162,14 @@ export default function WorkoutIntentScreen() {
     const addCustomDay = (part: string) => {
         if (customDays.length < 7) {
             setCustomDays([...customDays, part]);
+        }
+    };
+
+    const handleAddCustomDay = () => {
+        if (customDayInput.trim() && customDays.length < 7) {
+            setCustomDays([...customDays, customDayInput.trim()]);
+            setCustomDayInput('');
+            setIsAddingCustomDay(false);
         }
     };
 
@@ -361,6 +366,35 @@ export default function WorkoutIntentScreen() {
                                         <Text style={styles.bodyPartText}>{part}</Text>
                                     </Pressable>
                                 ))}
+
+                                {/* Custom Day Button/Input */}
+                                {isAddingCustomDay ? (
+                                    <View style={[styles.bodyPartChip, styles.customDayInputContainer]}>
+                                        <TextInput
+                                            style={styles.customDayInput}
+                                            value={customDayInput}
+                                            onChangeText={setCustomDayInput}
+                                            placeholder="Limitless..."
+                                            placeholderTextColor={colors.text.muted}
+                                            autoFocus
+                                            onSubmitEditing={handleAddCustomDay}
+                                            onBlur={() => {
+                                                if (!customDayInput.trim()) setIsAddingCustomDay(false);
+                                            }}
+                                        />
+                                        <TouchableOpacity onPress={handleAddCustomDay}>
+                                            <MaterialIcons name="check" size={16} color={colors.primary} />
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : (
+                                    <Pressable
+                                        style={[styles.bodyPartChip, { borderColor: colors.primary }]}
+                                        onPress={() => setIsAddingCustomDay(true)}
+                                    >
+                                        <MaterialIcons name="edit" size={14} color={colors.primary} />
+                                        <Text style={[styles.bodyPartText, { color: colors.primary }]}>Custom</Text>
+                                    </Pressable>
+                                )}
                             </View>
                         </View>
                     </>
@@ -772,31 +806,44 @@ const styles = StyleSheet.create({
         paddingTop: spacing.xl,
         paddingBottom: spacing['3xl'],
         paddingHorizontal: spacing.xl,
+        elevation: 10,
+        shadowColor: 'black',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
     },
     privacyToggle: {
         flexDirection: 'row',
-        justifyContent: 'center',
-        backgroundColor: colors.surfaceLight,
+        justifyContent: 'space-between',
+        backgroundColor: colors.glass.surface,
         borderRadius: borderRadius.full,
-        padding: 4,
+        padding: spacing.xs,
         marginBottom: spacing.lg,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
     },
     privacyOption: {
-        paddingHorizontal: spacing.lg,
+        flex: 1,
+        alignItems: 'center',
         paddingVertical: spacing.sm,
         borderRadius: borderRadius.full,
     },
     privacyOptionActive: {
         backgroundColor: colors.primary,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 2,
     },
     privacyText: {
-        fontSize: 10,
-        fontFamily: typography.fontFamily.bold,
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
-        letterSpacing: 2,
     },
     privacyTextActive: {
         color: colors.text.dark,
+        fontFamily: typography.fontFamily.bold,
     },
     confirmButton: {
         backgroundColor: colors.primary,
@@ -812,5 +859,20 @@ const styles = StyleSheet.create({
         color: colors.text.dark,
         letterSpacing: 1,
         textTransform: 'uppercase',
+    },
+
+    // Custom Day Input Styles
+    customDayInputContainer: {
+        borderColor: colors.primary,
+        paddingRight: spacing.sm,
+        minWidth: 120,
+    },
+    customDayInput: {
+        color: colors.text.primary,
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        minWidth: 80,
+        padding: 0,
+        height: 20,
     },
 });

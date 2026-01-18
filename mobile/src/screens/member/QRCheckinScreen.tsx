@@ -11,6 +11,13 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withRepeat,
+    withTiming,
+    Easing
+} from 'react-native-reanimated';
 import { checkinAPI } from '../../services/api';
 import Button from '../../components/Button';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
@@ -21,6 +28,24 @@ const QRCheckinScreen: React.FC = () => {
     const [processing, setProcessing] = useState(false);
     const [success, setSuccess] = useState(false);
     const [streak, setStreak] = useState<number | null>(null);
+    const [torch, setTorch] = useState(false);
+
+    // Animation
+    const translateY = useSharedValue(0);
+
+    useEffect(() => {
+        translateY.value = withRepeat(
+            withTiming(FRAME_SIZE, { duration: 1500, easing: Easing.linear }),
+            -1,
+            false // no reverse, just restart
+        );
+    }, []);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: translateY.value }]
+    }));
+
+    // ... handleBarCodeScanned ... (keep existing)
 
     const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
         if (scanned || processing) return;
@@ -61,6 +86,8 @@ const QRCheckinScreen: React.FC = () => {
             setProcessing(false);
         }
     };
+
+    // ... permissions checks ... (keep existing)
 
     if (!permission) {
         return (
@@ -136,12 +163,24 @@ const QRCheckinScreen: React.FC = () => {
                     <View style={styles.headerDot} />
                     <Text style={styles.headerSubtitle}>CHECK IN</Text>
                 </View>
+
+                <TouchableOpacity
+                    style={[styles.torchButton, torch && styles.torchButtonActive]}
+                    onPress={() => setTorch(!torch)}
+                >
+                    <MaterialIcons
+                        name={torch ? "flash-on" : "flash-off"}
+                        size={20}
+                        color={torch ? colors.background : colors.text.primary}
+                    />
+                </TouchableOpacity>
             </View>
 
             {/* Camera View */}
             <View style={styles.cameraContainer}>
                 <CameraView
                     style={styles.camera}
+                    enableTorch={torch}
                     barcodeScannerSettings={{
                         barcodeTypes: ['qr'],
                     }}
@@ -158,6 +197,9 @@ const QRCheckinScreen: React.FC = () => {
                                 <View style={[styles.corner, styles.cornerTR]} />
                                 <View style={[styles.corner, styles.cornerBL]} />
                                 <View style={[styles.corner, styles.cornerBR]} />
+
+                                {/* Animated Scan Line */}
+                                <Animated.View style={[styles.scanLine, animatedStyle]} />
                             </View>
                             <View style={styles.overlaySide} />
                         </View>
@@ -189,10 +231,30 @@ const FRAME_SIZE = 280;
 const CORNER_SIZE = 40;
 
 const styles = StyleSheet.create({
+    // ... (keep existing styles)
+    // Add scanLine style
+    scanLine: {
+        width: '100%',
+        height: 2,
+        backgroundColor: colors.primary,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 1,
+        shadowRadius: 10,
+        elevation: 5,
+    },
     container: {
         flex: 1,
         backgroundColor: colors.background,
     },
+    message: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.secondary,
+        marginTop: spacing.md,
+    },
+    // ...
+
     centered: {
         flex: 1,
         justifyContent: 'center',
@@ -202,18 +264,36 @@ const styles = StyleSheet.create({
     closeButton: {
         position: 'absolute',
         top: 60,
-        right: 20,
+        left: 20,
         zIndex: 10,
         width: 36,
         height: 36,
         borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.3)',
+    },
+    torchButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.glass.surface,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    torchButtonActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
     },
     header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
         paddingTop: spacing['3xl'],
         paddingBottom: spacing.xl,
+        paddingHorizontal: spacing.xl,
     },
     headerLeft: {
         flexDirection: 'row',

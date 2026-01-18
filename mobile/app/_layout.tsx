@@ -14,6 +14,8 @@ import {
 import { useEffect } from 'react';
 import { AuthProvider } from '../src/context/AuthContext';
 import { ToastProvider } from '../src/components/Toast';
+import { NutritionProvider } from '../src/context/NutritionContext';
+import { XPProvider } from '../src/context/XPContext';
 import OfflineBanner from '../src/components/OfflineBanner';
 import { colors } from '../src/styles/theme';
 
@@ -48,14 +50,67 @@ export default function RootLayout() {
             <OfflineBanner />
             <AuthProvider>
                 <ToastProvider>
-                    <StatusBar style="light" />
-                    <Stack
-                        screenOptions={{
-                            headerShown: false,
-                            contentStyle: { backgroundColor: colors.background },
-                            animation: 'slide_from_right',
-                        }}
-                    />
+                    <XPProvider>
+                        <NutritionProvider>
+                            <StatusBar style="light" />
+                            <Stack
+                                screenOptions={{
+                                    headerShown: false,
+                                    contentStyle: { backgroundColor: colors.background },
+                                    animation: 'slide_from_right',
+                                    animationDuration: 200,
+                                }}
+                            >
+                                <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+                                <Stack.Screen name="index" options={{ animation: 'fade' }} />
+                                <Stack.Screen name="login" options={{ animation: 'fade' }} />
+                                <Stack.Screen name="register" options={{ animation: 'fade_from_bottom' }} />
+
+                                {/* Modals and Sheets */}
+                                <Stack.Screen
+                                    name="qr-checkin"
+                                    options={{
+                                        presentation: 'modal',
+                                        animation: 'slide_from_bottom',
+                                    }}
+                                />
+                                <Stack.Screen
+                                    name="exercise-library"
+                                    options={{
+                                        presentation: 'modal',
+                                        animation: 'slide_from_bottom',
+                                    }}
+                                />
+                                <Stack.Screen
+                                    name="workout-intent"
+                                    options={{
+                                        animation: 'slide_from_bottom',
+                                    }}
+                                />
+                                <Stack.Screen
+                                    name="food-scanner"
+                                    options={{
+                                        presentation: 'modal',
+                                        animation: 'slide_from_bottom',
+                                    }}
+                                />
+                                <Stack.Screen
+                                    name="log/workout"
+                                    options={{
+                                        presentation: 'modal',
+                                        animation: 'slide_from_bottom',
+                                    }}
+                                />
+                                <Stack.Screen
+                                    name="log/calories"
+                                    options={{
+                                        presentation: 'modal',
+                                        animation: 'slide_from_bottom',
+                                    }}
+                                />
+                            </Stack>
+                        </NutritionProvider>
+                    </XPProvider>
                 </ToastProvider>
             </AuthProvider>
         </SafeAreaProvider>

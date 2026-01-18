@@ -12,20 +12,20 @@ INSERT INTO gyms (id, name, qr_code) VALUES
 -- USERS (password: test123)
 -- Hash generated with bcrypt for: test123
 -- ===========================================
-INSERT INTO users (id, email, password_hash, name, role, gym_id, xp_points) VALUES
+INSERT INTO users (id, email, password_hash, name, role, gym_id, xp_points, username) VALUES
   -- Manager
-  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'manager@fitzo.app', '$2a$10$8KVq8OdKL5y8PPdPFpDiC.tKgqKxHdNrqIxPwV0QfZQ0yHUX0F.Aa', 'Sanjay Kumar', 'manager', '11111111-1111-1111-1111-111111111111', 0),
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'manager@fitzo.app', '$2a$10$mPcDSNI2ZhsxIE7db7SYLO3HT9QHPv0WxwNrN9HOmiWaC0EzjIiL2', 'Sanjay Kumar', 'manager', '11111111-1111-1111-1111-111111111111', 0, 'sanjay_manager'),
   
   -- Trainers
-  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'trainer1@fitzo.app', '$2a$10$8KVq8OdKL5y8PPdPFpDiC.tKgqKxHdNrqIxPwV0QfZQ0yHUX0F.Aa', 'Rahul Kapoor', 'trainer', '11111111-1111-1111-1111-111111111111', 200),
-  ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'trainer2@fitzo.app', '$2a$10$8KVq8OdKL5y8PPdPFpDiC.tKgqKxHdNrqIxPwV0QfZQ0yHUX0F.Aa', 'Priya Sharma', 'trainer', '11111111-1111-1111-1111-111111111111', 150);
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'trainer1@fitzo.app', '$2a$10$mPcDSNI2ZhsxIE7db7SYLO3HT9QHPv0WxwNrN9HOmiWaC0EzjIiL2', 'Rahul Kapoor', 'trainer', '11111111-1111-1111-1111-111111111111', 200, 'rahul_trainer'),
+  ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'trainer2@fitzo.app', '$2a$10$mPcDSNI2ZhsxIE7db7SYLO3HT9QHPv0WxwNrN9HOmiWaC0EzjIiL2', 'Priya Sharma', 'trainer', '11111111-1111-1111-1111-111111111111', 150, 'priya_trainer');
 
 -- Members (assigned to trainers)
-INSERT INTO users (id, email, password_hash, name, role, gym_id, trainer_id, xp_points) VALUES
-  ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'rahul@example.com', '$2a$10$8KVq8OdKL5y8PPdPFpDiC.tKgqKxHdNrqIxPwV0QfZQ0yHUX0F.Aa', 'Rahul Kumar', 'member', '11111111-1111-1111-1111-111111111111', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 450),
-  ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'priya@example.com', '$2a$10$8KVq8OdKL5y8PPdPFpDiC.tKgqKxHdNrqIxPwV0QfZQ0yHUX0F.Aa', 'Priya Singh', 'member', '11111111-1111-1111-1111-111111111111', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 320),
-  ('ffffffff-ffff-ffff-ffff-ffffffffffff', 'amit@example.com', '$2a$10$8KVq8OdKL5y8PPdPFpDiC.tKgqKxHdNrqIxPwV0QfZQ0yHUX0F.Aa', 'Amit Patel', 'member', '11111111-1111-1111-1111-111111111111', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 180),
-  ('00000000-0000-0000-0000-000000000001', 'sneha@example.com', '$2a$10$8KVq8OdKL5y8PPdPFpDiC.tKgqKxHdNrqIxPwV0QfZQ0yHUX0F.Aa', 'Sneha Kapoor', 'member', '11111111-1111-1111-1111-111111111111', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 520);
+INSERT INTO users (id, email, password_hash, name, role, gym_id, trainer_id, xp_points, username) VALUES
+  ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'rahul@example.com', '$2a$10$mPcDSNI2ZhsxIE7db7SYLO3HT9QHPv0WxwNrN9HOmiWaC0EzjIiL2', 'Rahul Kumar', 'member', '11111111-1111-1111-1111-111111111111', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 450, 'rahul_k'),
+  ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'priya@example.com', '$2a$10$mPcDSNI2ZhsxIE7db7SYLO3HT9QHPv0WxwNrN9HOmiWaC0EzjIiL2', 'Priya Singh', 'member', '11111111-1111-1111-1111-111111111111', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 320, 'priya_s'),
+  ('ffffffff-ffff-ffff-ffff-ffffffffffff', 'amit@example.com', '$2a$10$mPcDSNI2ZhsxIE7db7SYLO3HT9QHPv0WxwNrN9HOmiWaC0EzjIiL2', 'Amit Patel', 'member', '11111111-1111-1111-1111-111111111111', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 180, 'amit_p'),
+  ('00000000-0000-0000-0000-000000000001', 'sneha@example.com', '$2a$10$mPcDSNI2ZhsxIE7db7SYLO3HT9QHPv0WxwNrN9HOmiWaC0EzjIiL2', 'Sneha Kapoor', 'member', '11111111-1111-1111-1111-111111111111', 'cccccccc-cccc-cccc-cccc-cccccccccccc', 520, 'sneha_k');
 
 -- ===========================================
 -- FRIENDSHIPS (Gym Buddies)

@@ -21,6 +21,9 @@ import { foodAPI, caloriesAPI, nutritionAPI } from '../../services/api';
 import Celebration from '../../components/Celebration';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
+import { defaultFoods } from '../../data/defaultFoods';
+import { useNutrition } from '../../context/NutritionContext';
+import { FoodCacheService } from '../../services/FoodCacheService';
 
 const { width } = Dimensions.get('window');
 
@@ -31,6 +34,9 @@ interface FoodItem {
     description: string;
     source?: string;
     calories?: number;
+    category?: string;
+    isLocal?: boolean;
+    isAiTrigger?: boolean;
 }
 
 interface Serving {
@@ -54,6 +60,7 @@ interface FoodDetails {
 
 const CalorieLogScreen: React.FC = () => {
     const toast = useToast();
+    const { logFoodOptimistic } = useNutrition();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<FoodItem[]>([]);
     const [searching, setSearching] = useState(false);
@@ -122,6 +129,8 @@ const CalorieLogScreen: React.FC = () => {
         setShowDetail(true);
     };
 
+
+
     // Debounced search
     useEffect(() => {
         if (!searchQuery.trim()) {
@@ -130,48 +139,82 @@ const CalorieLogScreen: React.FC = () => {
             return;
         }
 
-        const timer = setTimeout(async () => {
+        const runSearch = async () => {
+            // 1. Instant Local Search (Cache + Defaults)
+            const queryLower = searchQuery.toLowerCase();
+
+            // Search Cache
+            const cachedMatches = await FoodCacheService.searchLocal(queryLower);
+
+            // Search Default Hardcoded DB
+            const defaultMatches = defaultFoods.filter(f =>
+                f.name.toLowerCase().includes(queryLower) ||
+                (f.brand && f.brand.toLowerCase().includes(queryLower)) ||
+                (f.category && f.category?.toLowerCase().includes(queryLower))
+            );
+
+            // Combine (Cache first)
+            const mappedCache = cachedMatches.map(c => ({
+                id: c.id,
+                name: c.name,
+                brand: c.brand,
+                description: c.description || `${c.calories} kcal`,
+                calories: c.calories,
+                isLocal: true,
+                source: 'recent'
+            }));
+
+            // Dedupe by name roughly
+            // We want to prefer mappedCache items over defaultMatches if names collide
+            const cacheNames = new Set(mappedCache.map(c => c.name.toLowerCase()));
+            const uniqueDefaults = defaultMatches.filter(d => !cacheNames.has(d.name.toLowerCase()));
+
+            const allLocal = [...mappedCache, ...uniqueDefaults];
+
+            // Sort
+            allLocal.sort((a, b) => {
+                const aStarts = a.name.toLowerCase().startsWith(queryLower);
+                const bStarts = b.name.toLowerCase().startsWith(queryLower);
+                if (aStarts && !bStarts) return -1;
+                if (!aStarts && bStarts) return 1;
+                return 0;
+            });
+
+            // Add AI Trigger Option
+            const aiOption: FoodItem = {
+                id: 'ai-trigger',
+                name: `Ask AI: "${searchQuery}"`,
+                brand: 'Smart Analysis',
+                description: 'Get macros from description',
+                isAiTrigger: true
+            } as any;
+
+            // Show local immediately
+            setSearchResults([aiOption, ...allLocal]);
+
+            // 2. Fetch API results in background if needed
             setSearching(true);
-            setSearchError(null);
             try {
-                console.log('Searching for:', searchQuery);
-                const result = await foodAPI.search(searchQuery);
+                // Only call API if we don't have many local matches
+                if (allLocal.length < 5) {
+                    const result = await foodAPI.search(searchQuery);
+                    const apiFoods = result.foods || [];
 
-                // Add AI Trigger Option at the top
-                const aiOption: FoodItem = {
-                    id: 'ai-trigger',
-                    name: `Ask AI: "${searchQuery}"`,
-                    brand: 'Smart Analysis',
-                    description: 'Get macros from description',
-                    // custom flag
-                    isAiTrigger: true
-                } as any;
-
-                setSearchResults([aiOption, ...(result.foods || [])]);
-
-                if (result.foods?.length === 0) {
-                    // Even if no results, we show AI option, so don't show error yet
-                    // setSearchError('No foods found. Try a different search term.');
+                    setSearchResults(prev => {
+                        const existingIds = new Set(prev.map(p => p.id));
+                        // Prevent ID collisions
+                        const newApi = apiFoods.filter((f: any) => !existingIds.has(f.id));
+                        return [...prev, ...newApi];
+                    });
                 }
-            } catch (error: any) {
-                console.error('Search error:', error);
-
-                // Still show AI option on error
-                const aiOption: FoodItem = {
-                    id: 'ai-trigger',
-                    name: `Ask AI: "${searchQuery}"`,
-                    brand: 'Smart Analysis',
-                    description: 'Retry with AI',
-                    isAiTrigger: true
-                } as any;
-                setSearchResults([aiOption]);
-
-                // setSearchError(error.message || 'Search failed. Please try again.');
+            } catch (err) {
+                // ignore
             } finally {
                 setSearching(false);
             }
-        }, 400);
+        };
 
+        const timer = setTimeout(runSearch, 300); // 300ms debounce
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
@@ -223,6 +266,18 @@ const CalorieLogScreen: React.FC = () => {
             return;
         }
 
+        // Handle Local Food Selection (Instant)
+        if (food.isLocal) {
+            setSelectedFood(food);
+            if (food.servings && food.servings.length > 0) {
+                setSelectedServing(food.servings[0]);
+            }
+            setServingCount(1);
+            setShowDetail(true);
+            return;
+        }
+
+        // Handle API Food Selection
         setLoadingDetail(true);
         setShowDetail(true);
         try {
@@ -249,9 +304,14 @@ const CalorieLogScreen: React.FC = () => {
         const totalCarbs = Math.round(selectedServing.carbs * servingCount);
         const totalFat = Math.round(selectedServing.fat * servingCount);
 
-        setLogging(true);
         try {
-            const result = await nutritionAPI.logFood({
+            // Optimistic Log - Instant UI Update
+            // Fire API in background but await just for basic validation catch
+            // Actually, for true instant feel, we should close modal immediately or show celebration immediately depending on UX
+            // User requested: "Home ring animates within <300ms"
+
+            // 1. Kick off optimistic update
+            const { isGoalHit } = await logFoodOptimistic({
                 calories: totalCalories,
                 protein: totalProtein,
                 carbs: totalCarbs,
@@ -261,17 +321,20 @@ const CalorieLogScreen: React.FC = () => {
                 meal_type: 'snack'
             });
 
-            if (result.xp_earned > 0) {
-                setXpEarned(result.xp_earned);
-                setShowCelebration(true);
+            // 2. Success Feedback
+            if (isGoalHit) {
+                // If we hit the goal, delay the toast and navigation to let XP fly
+                setTimeout(() => {
+                    toast.success('GOAL REACHED!', `You've hit your daily targets. +100 XP`);
+                    router.back();
+                }, 1500);
             } else {
                 toast.success('Logged!', `${totalCalories} kcal from ${selectedFood.name}`);
                 router.back();
             }
+
         } catch (error: any) {
             toast.error('Error', error.message || 'Failed to log calories');
-        } finally {
-            setLogging(false);
         }
     };
 

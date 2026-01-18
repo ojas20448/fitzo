@@ -74,9 +74,9 @@ export const SkeletonCard: React.FC<{ style?: ViewStyle }> = ({ style }) => (
     </View>
 );
 
-export const SkeletonList: React.FC<{ count?: number; style?: ViewStyle }> = ({ 
-    count = 3, 
-    style 
+export const SkeletonList: React.FC<{ count?: number; style?: ViewStyle }> = ({
+    count = 3,
+    style
 }) => (
     <View style={style}>
         {Array.from({ length: count }).map((_, index) => (
@@ -189,6 +189,23 @@ export const SkeletonHomeScreen: React.FC = () => (
                     </View>
                 </View>
             </View>
+        </View>
+    </View>
+);
+
+export const SkeletonLesson: React.FC = () => (
+    <View style={styles.homeContainer}>
+        <View style={styles.cardHeader}>
+            <Skeleton width={180} height={24} />
+        </View>
+        <Skeleton width="100%" height={250} borderRadius={borderRadius.xl} style={{ marginTop: 20 }} />
+        <View style={{ marginTop: 24, gap: 12 }}>
+            <Skeleton width="100%" height={14} />
+            <Skeleton width="100%" height={14} />
+            <Skeleton width="60%" height={14} />
+        </View>
+        <View style={{ marginTop: 40 }}>
+            <Skeleton width="100%" height={56} borderRadius={28} />
         </View>
     </View>
 );

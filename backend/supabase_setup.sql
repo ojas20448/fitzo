@@ -22,6 +22,11 @@ DROP TYPE IF EXISTS user_role CASCADE;
 DROP TYPE IF EXISTS friendship_status CASCADE;
 DROP TYPE IF EXISTS muscle_group CASCADE;
 DROP TYPE IF EXISTS intent_visibility CASCADE;
+DROP TYPE IF EXISTS fitness_goal CASCADE;
+DROP TYPE IF EXISTS nutrition_goal CASCADE;
+DROP TYPE IF EXISTS activity_level CASCADE;
+DROP TYPE IF EXISTS split_type CASCADE;
+DROP TYPE IF EXISTS session_type CASCADE;
 
 CREATE TYPE user_role AS ENUM ('member', 'trainer', 'manager');
 CREATE TYPE friendship_status AS ENUM ('pending', 'accepted', 'rejected');
@@ -228,11 +233,13 @@ CREATE INDEX idx_workout_log_visibility ON workout_logs(visibility, logged_date 
 CREATE TABLE calorie_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  food_name VARCHAR(100) NOT NULL,
   calories INTEGER NOT NULL CHECK (calories >= 0),
   protein INTEGER DEFAULT 0, -- grams
   carbs INTEGER DEFAULT 0,   -- grams
   fat INTEGER DEFAULT 0,     -- grams
-  meal_name VARCHAR(100),
+  serving_size VARCHAR(100),
+  meal_type VARCHAR(20) DEFAULT 'snack',
   visibility intent_visibility DEFAULT 'friends',
   logged_date DATE NOT NULL DEFAULT CURRENT_DATE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -246,6 +253,7 @@ CREATE INDEX idx_calorie_log_visibility ON calorie_logs(visibility, logged_date 
 -- ===========================================
 
 -- Function to get streak count for a user
+DROP FUNCTION IF EXISTS get_user_streak(UUID);
 CREATE OR REPLACE FUNCTION get_user_streak(p_user_id UUID)
 RETURNS INTEGER AS $$
 DECLARE

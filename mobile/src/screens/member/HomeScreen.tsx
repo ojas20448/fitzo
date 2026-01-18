@@ -13,17 +13,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 
-// ... other imports
-
 import { useAuth } from '../../context/AuthContext';
+import { useNutrition } from '../../context/NutritionContext';
 import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import Badge from '../../components/Badge';
+import AnimatedFire from '../../components/AnimatedFire';
 import WeeklyProgress from '../../components/WeeklyProgress';
 import NutritionAnalytics from '../../components/NutritionAnalytics';
 import { SkeletonHomeScreen } from '../../components/Skeleton';
-import EmptyState from '../../components/EmptyState';
+import EmptyState, { EmptyStateInline } from '../../components/EmptyState';
 import MacroPieChart from '../../components/MacroPieChart';
 import WeeklyCharts from '../../components/WeeklyCharts';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
@@ -75,25 +75,11 @@ interface TodayWorkout {
     completed: boolean;
 }
 
-interface TodayCalories {
-    total_calories: number;
-    total_protein: number;
-    total_carbs: number;
-    total_fat: number;
-    entry_count: number;
-}
-
 const HomeScreen: React.FC = () => {
     const { user } = useAuth();
+    const { todayMacros, refreshToday } = useNutrition(); // Use global nutrition state
     const [data, setData] = useState<HomeData | null>(null);
     const [todayWorkouts, setTodayWorkouts] = useState<TodayWorkout[]>([]);
-    const [todayCalories, setTodayCalories] = useState<TodayCalories>({
-        total_calories: 0,
-        total_protein: 0,
-        total_carbs: 0,
-        total_fat: 0,
-        entry_count: 0
-    });
     const [friends, setFriends] = useState<Friend[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -112,26 +98,22 @@ const HomeScreen: React.FC = () => {
     useFocusEffect(
         React.useCallback(() => {
             loadHomeData();
-        }, [])
+            refreshToday(); // Ensure explicit refresh on focus
+        }, [refreshToday])
     );
 
     const loadHomeData = async () => {
         try {
-            const [homeRes, workoutsRes, caloriesRes, friendsRes] = await Promise.all([
+            // Updated Promise.all to exclude caloriesAPI fetch since it's now handled by context
+            const [homeRes, workoutsRes, friendsRes] = await Promise.all([
                 memberAPI.getHome(),
                 workoutsAPI.getToday().catch(() => ({ workouts: [], summary: { count: 0, types: [] } })),
-                caloriesAPI.getToday().catch(() => ({ entries: [], totals: { calories: 0, entry_count: 0 } })),
                 friendsAPI.getFriends().catch(() => ({ friends: [] })),
             ]);
             setData(homeRes);
             setTodayWorkouts(workoutsRes.workouts || []);
-            setTodayCalories({
-                total_calories: caloriesRes.totals?.calories || 0,
-                total_protein: caloriesRes.totals?.protein || 0,
-                total_carbs: caloriesRes.totals?.carbs || 0,
-                total_fat: caloriesRes.totals?.fat || 0,
-                entry_count: caloriesRes.totals?.entry_count || 0,
-            });
+            // todayCalories is now derived from context
+
             const fetchedFriends = friendsRes?.friends || [];
             setFriends(fetchedFriends.length > 0 ? fetchedFriends : DUMMY_FRIENDS);
         } catch (error) {
@@ -217,23 +199,30 @@ const HomeScreen: React.FC = () => {
 
                         {/* Streak Badge */}
                         <View style={styles.streakBadge}>
-                            <MaterialIcons name="local-fire-department" size={16} color="#FF6B35" />
+                            <AnimatedFire size={18} color="#FF6B35" />
                             <Text style={styles.streakText}>{data?.streak.current || 0}</Text>
                         </View>
                     </View>
                 </View>
 
-                {/* Smart Insight */}
-                {data?.insight && (
-                    <GlassCard style={{ marginBottom: spacing.xl, flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderColor: data.insight.type === 'warning' ? colors.crowd.medium : colors.success }}>
-                        <MaterialIcons
-                            name={data.insight.type === 'warning' ? 'warning' : 'emoji-events'}
-                            size={24}
-                            color={data.insight.type === 'warning' ? colors.crowd.medium : colors.success}
-                        />
-                        <Text style={{ flex: 1, color: colors.text.primary, fontSize: typography.sizes.sm }}>
-                            {data.insight.message}
-                        </Text>
+                {/* Welcome Card for First Session */}
+                {data?.streak.current === 0 && !hasLoggedWorkoutToday && (
+                    <GlassCard style={styles.welcomeCard}>
+                        <View style={styles.welcomeInfo}>
+                            <View style={styles.welcomeIconContainer}>
+                                <MaterialIcons name="auto-awesome" size={24} color={colors.primary} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.welcomeTitle}>Welcome, {firstName}!</Text>
+                                <Text style={styles.welcomeDesc}>Start your streak today. Log a workout or scan the gym QR to check in.</Text>
+                            </View>
+                        </View>
+                        <View style={styles.welcomeActions}>
+                            <TouchableOpacity style={styles.welcomeButton} onPress={() => router.push('/log/workout' as any)}>
+                                <Text style={styles.welcomeButtonText}>LOG WORKOUT</Text>
+                                <MaterialIcons name="arrow-forward" size={16} color={colors.text.dark} />
+                            </TouchableOpacity>
+                        </View>
                     </GlassCard>
                 )}
 
@@ -284,7 +273,7 @@ const HomeScreen: React.FC = () => {
                             </View>
                             <View style={styles.statItem}>
                                 <Text style={styles.statLabel}>CALORIES</Text>
-                                <Text style={styles.statValue}>{todayCalories.total_calories}<Text style={styles.statUnit}>kcal</Text></Text>
+                                <Text style={styles.statValue}>{todayMacros.calories}<Text style={styles.statUnit}>kcal</Text></Text>
                             </View>
                         </View>
                     </View>
@@ -321,13 +310,13 @@ const HomeScreen: React.FC = () => {
                     </View>
                     <TouchableOpacity onPress={() => router.push('/log/calories' as any)} activeOpacity={0.8}>
                         <MacroPieChart
-                            calories={todayCalories.total_calories || 0}
+                            calories={todayMacros.calories || 0}
                             calorieTarget={2000}
-                            protein={todayCalories.total_protein || 0}
+                            protein={todayMacros.protein || 0}
                             proteinTarget={150}
-                            carbs={todayCalories.total_carbs || 0}
+                            carbs={todayMacros.carbs || 0}
                             carbsTarget={200}
-                            fat={todayCalories.total_fat || 0}
+                            fat={todayMacros.fat || 0}
                             fatTarget={65}
                         />
                     </TouchableOpacity>
@@ -391,9 +380,11 @@ const HomeScreen: React.FC = () => {
                                 </View>
                             ))
                         ) : (
-                            <Text style={{ color: colors.text.muted, fontSize: typography.sizes.sm, paddingLeft: spacing.sm }}>
-                                No buddies added yet.
-                            </Text>
+                            <EmptyStateInline
+                                message="No buddies added yet."
+                                icon="person-add"
+                                style={{ paddingVertical: 10 }}
+                            />
                         )}
                     </ScrollView>
                 </View>
@@ -821,6 +812,58 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
+    },
+    welcomeCard: {
+        marginBottom: spacing['2xl'],
+        padding: spacing.xl,
+        borderWidth: 1,
+        borderColor: colors.primary + '30',
+        ...shadows.glowMd,
+    },
+    welcomeInfo: {
+        flexDirection: 'row',
+        gap: spacing.lg,
+        alignItems: 'flex-start',
+        marginBottom: spacing.xl,
+    },
+    welcomeIconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: colors.primary + '15',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    welcomeTitle: {
+        fontSize: typography.sizes.lg,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+        marginBottom: 4,
+    },
+    welcomeDesc: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.secondary,
+        lineHeight: 20,
+    },
+    welcomeActions: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+    },
+    welcomeButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.primary,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        borderRadius: borderRadius.md,
+        gap: spacing.sm,
+    },
+    welcomeButtonText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.dark,
+        letterSpacing: 1,
     },
 });
 

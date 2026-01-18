@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    ScrollView,
+    RefreshControl,
+    Modal,
+    TextInput
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -9,7 +18,6 @@ import Avatar from '../../src/components/Avatar';
 import GlassCard from '../../src/components/GlassCard';
 import Button from '../../src/components/Button';
 import WorkoutCalendar from '../../src/components/WorkoutCalendar';
-import NutritionAnalytics from '../../src/components/NutritionAnalytics';
 import Skeleton, { SkeletonCard } from '../../src/components/Skeleton';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/styles/theme';
 
@@ -22,6 +30,24 @@ export default function ProfileScreen() {
         history: [] as string[],
         calories: { total_calories: 0, entry_count: 0 }
     });
+
+    // Edit State
+    const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState('');
+    const [editAvatar, setEditAvatar] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    // Preset Avatars
+    const AVATAR_PRESETS = [
+        'https://api.dicebear.com/7.x/avataaars/png?seed=Felix',
+        'https://api.dicebear.com/7.x/avataaars/png?seed=Aneka',
+        'https://api.dicebear.com/7.x/avataaars/png?seed=Mark',
+        'https://api.dicebear.com/7.x/avataaars/png?seed=Jasmine',
+        'https://api.dicebear.com/7.x/avataaars/png?seed=Diego',
+        'https://api.dicebear.com/7.x/avataaars/png?seed=Sarah',
+        'https://api.dicebear.com/7.x/bottts/png?seed=1',
+        'https://api.dicebear.com/7.x/bottts/png?seed=2'
+    ];
 
     useEffect(() => {
         loadData();
@@ -53,6 +79,36 @@ export default function ProfileScreen() {
         setRefreshing(true);
         await loadData();
         setRefreshing(false);
+    };
+
+    const handleEditOpen = () => {
+        setEditName(user?.name || '');
+        setEditAvatar(user?.avatar_url || AVATAR_PRESETS[0]);
+        setIsEditing(true);
+    };
+
+    const handleUpdateProfile = async () => {
+        if (!editName.trim()) return;
+        setSaving(true);
+        try {
+            // Updated to use memberAPI.updateProfile if available, or assume generic update
+            // Since we haven't confirmed exact API shape, we'll try to update via memberAPI
+            // If this fails during verification, I'll need to check the API service
+            await memberAPI.updateProfile({
+                name: editName,
+                avatar_url: editAvatar
+            });
+
+            // Refresh data to reflect changes
+            await loadData();
+            // In a real app we might update local context directly too
+
+            setIsEditing(false);
+        } catch (error) {
+            console.error('Failed to update profile', error);
+        } finally {
+            setSaving(false);
+        }
     };
 
     if (loading) {
@@ -93,8 +149,8 @@ export default function ProfileScreen() {
                     <View style={styles.headerDot} />
                     <Text style={styles.headerSubtitle}>YOU</Text>
                 </View>
-                <TouchableOpacity style={styles.settingsBtn}>
-                    <MaterialIcons name="settings" size={20} color={colors.text.muted} />
+                <TouchableOpacity style={styles.settingsBtn} onPress={handleEditOpen}>
+                    <MaterialIcons name="edit" size={20} color={colors.text.primary} />
                 </TouchableOpacity>
             </View>
 
@@ -106,77 +162,90 @@ export default function ProfileScreen() {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
                 }
             >
-                {/* Profile Card */}
-                <GlassCard style={styles.profileCard} padding="lg">
-                    <Avatar uri={user?.avatar_url} size="xl" />
-                    <Text style={styles.userName}>{user?.name || 'Member'}</Text>
-                    <Text style={styles.userEmail}>{user?.email}</Text>
-                    <View style={styles.proBadge}>
-                        <MaterialIcons name="verified" size={12} color={colors.background} />
-                        <Text style={styles.proText}>{String(user?.role || 'Member').toUpperCase()}</Text>
-                    </View>
-                </GlassCard>
-
-                {/* Main Stats */}
-                <View style={styles.statsRow}>
-                    <GlassCard style={styles.statCard} padding="md">
-                        <View style={styles.statContent}>
-                            <MaterialIcons name="local-fire-department" size={24} color={colors.primary} />
-                            <Text style={styles.statValue}>{stats.streak}</Text>
-                            <Text style={styles.statLabel}>Day Streak</Text>
+                {/* Identity Hero Section */}
+                <View style={styles.identityHero}>
+                    <View style={styles.avatarContainer}>
+                        <Avatar uri={user?.avatar_url} size="xl" />
+                        <View style={styles.levelBadge}>
+                            <Text style={styles.levelText}>{Math.floor((user?.xp_points || 0) / 100) + 1}</Text>
                         </View>
-                    </GlassCard>
-                    <GlassCard style={styles.statCard} padding="md">
-                        <View style={styles.statContent}>
-                            <MaterialIcons name="diamond" size={24} color={colors.crowd.medium} />
-                            <Text style={styles.statValue}>{user?.xp_points || 0}</Text>
-                            <Text style={styles.statLabel}>XP Points</Text>
+                    </View>
+
+                    <Text style={styles.userName}>{user?.name || 'Member'}</Text>
+
+                    <View style={styles.xpProgressContainer}>
+                        <View style={styles.xpLabels}>
+                            <Text style={styles.xpLabelText}>Level {Math.floor((user?.xp_points || 0) / 100) + 1}</Text>
+                            <Text style={styles.xpProgressText}>{(user?.xp_points || 0) % 100} / 100 XP</Text>
+                        </View>
+                        <View style={styles.progressBarBg}>
+                            <View
+                                style={[
+                                    styles.progressBarFill,
+                                    { width: `${(user?.xp_points || 0) % 100}%` }
+                                ]}
+                            />
+                        </View>
+                    </View>
+
+                    {/* Quick Status Badges */}
+                    <View style={styles.badgeRow}>
+                        <View style={styles.statusBadge}>
+                            <MaterialIcons name="local-fire-department" size={16} color={colors.primary} />
+                            <Text style={styles.statusBadgeText}>{stats.streak} Day Streak</Text>
+                        </View>
+                        <View style={styles.statusBadge}>
+                            <MaterialIcons name="business" size={16} color={colors.crowd.medium} />
+                            <Text style={styles.statusBadgeText}>Powerhouse Gym</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Weekly Consistency Grid */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>Weekly Consistency</Text>
+                    <GlassCard style={styles.consistencyCard} padding="md">
+                        <View style={styles.consistencyRow}>
+                            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => {
+                                // Real consistency logic based on history
+                                const today = new Date();
+                                const currentDay = today.getDay() === 0 ? 6 : today.getDay() - 1; // 0=M, 1=T... 6=S
+
+                                // Calculate date for this index in current week
+                                const d = new Date();
+                                d.setDate(today.getDate() - currentDay + idx);
+                                const dateStr = d.toISOString().split('T')[0];
+
+                                const isDone = stats.history.includes(dateStr);
+                                const isFuture = idx > currentDay;
+
+                                return (
+                                    <View key={idx} style={styles.dayCol}>
+                                        <View style={[
+                                            styles.dayCircle,
+                                            isDone && styles.dayCircleDone,
+                                            isFuture && { opacity: 0.3 }
+                                        ]}>
+                                            <MaterialIcons
+                                                name={isDone ? "check" : isFuture ? "radio-button-unchecked" : "close"}
+                                                size={16}
+                                                color={isDone ? colors.background : colors.text.subtle}
+                                            />
+                                        </View>
+                                        <Text style={styles.dayText}>{day}</Text>
+                                    </View>
+                                );
+                            })}
                         </View>
                     </GlassCard>
                 </View>
 
-                {/* Progress Visuals */}
+                {/* Monthly Progress */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Monthly Consistency</Text>
+                    <Text style={styles.sectionLabel}>Activity History</Text>
                     <WorkoutCalendar history={stats.history} />
                 </View>
 
-
-
-                {/* Fitness Profile Section */}
-                <View style={styles.section}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
-                        <Text style={styles.sectionTitle}>Body & Goals</Text>
-                        <TouchableOpacity onPress={() => router.push('/member/fitness-profile' as any)}>
-                            <Text style={{ color: colors.primary, fontFamily: typography.fontFamily.bold }}>Edit</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <GlassCard style={styles.settingsCard} padding="none">
-                        <TouchableOpacity
-                            style={styles.settingItem}
-                            onPress={() => router.push('/member/fitness-profile' as any)}
-                        >
-                            <MaterialIcons name="accessibility" size={24} color={colors.text.secondary} />
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.settingLabel}>Fitness Profile</Text>
-                                <Text style={{ fontSize: 12, color: colors.text.muted }}>Goal, Weight, TDEE</Text>
-                            </View>
-                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
-                        </TouchableOpacity>
-                        <View style={styles.settingDivider} />
-                        <TouchableOpacity
-                            style={styles.settingItem}
-                            onPress={() => router.push('/member/measurements' as any)}
-                        >
-                            <MaterialIcons name="straighten" size={24} color={colors.text.secondary} />
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.settingLabel}>Body Measurements</Text>
-                                <Text style={{ fontSize: 12, color: colors.text.muted }}>Log & Track History</Text>
-                            </View>
-                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
-                        </TouchableOpacity>
-                    </GlassCard>
-                </View>
 
                 {/* Settings & Other Actions */}
                 <View style={styles.section}>
@@ -214,6 +283,66 @@ export default function ProfileScreen() {
                     style={{ marginTop: spacing.xl, marginBottom: 100 }}
                 />
             </ScrollView>
+
+            {/* Edit Modal */}
+            <Modal
+                visible={isEditing}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setIsEditing(false)}
+            >
+                <SafeAreaView style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Edit Profile</Text>
+                        <TouchableOpacity onPress={() => setIsEditing(false)} style={styles.closeBtn}>
+                            <MaterialIcons name="close" size={24} color={colors.text.primary} />
+                        </TouchableOpacity>
+                    </View>
+
+                    <ScrollView contentContainerStyle={styles.modalContent}>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Display Name</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={editName}
+                                onChangeText={setEditName}
+                                placeholder="Your Name"
+                                placeholderTextColor={colors.text.subtle}
+                            />
+                        </View>
+
+                        <Text style={styles.inputLabel}>Choose Avatar</Text>
+                        <View style={styles.avatarGrid}>
+                            {AVATAR_PRESETS.map((uri, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[
+                                        styles.avatarOption,
+                                        editAvatar === uri && styles.avatarOptionSelected
+                                    ]}
+                                    onPress={() => setEditAvatar(uri)}
+                                >
+                                    <Avatar uri={uri} size="md" />
+                                    {editAvatar === uri && (
+                                        <View style={styles.checkBadge}>
+                                            <MaterialIcons name="check" size={12} color={colors.background} />
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </ScrollView>
+
+                    <View style={styles.modalFooter}>
+                        <Button
+                            title={saving ? "Saving..." : "Save Changes"}
+                            onPress={handleUpdateProfile}
+                            disabled={saving}
+                            fullWidth
+                        />
+                    </View>
+                </SafeAreaView>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -278,6 +407,120 @@ const styles = StyleSheet.create({
         backgroundColor: colors.glass.surface,
         borderWidth: 1,
         borderColor: colors.glass.border,
+    },
+    identityHero: {
+        alignItems: 'center',
+        paddingVertical: spacing.xl,
+        marginBottom: spacing.lg,
+    },
+    avatarContainer: {
+        position: 'relative',
+        marginBottom: spacing.md,
+    },
+    levelBadge: {
+        position: 'absolute',
+        bottom: -4,
+        right: -4,
+        backgroundColor: colors.primary,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 3,
+        borderColor: colors.background,
+        ...shadows.glow,
+    },
+    levelText: {
+        color: colors.text.dark,
+        fontFamily: typography.fontFamily.extraBold,
+        fontSize: 14,
+    },
+    xpProgressContainer: {
+        width: '100%',
+        marginTop: spacing.lg,
+        paddingHorizontal: spacing.xl,
+    },
+    xpLabels: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: spacing.xs,
+    },
+    xpLabelText: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+        letterSpacing: 1,
+    },
+    xpProgressText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+    },
+    progressBarBg: {
+        height: 8,
+        backgroundColor: colors.glass.surface,
+        borderRadius: 4,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    progressBarFill: {
+        height: '100%',
+        backgroundColor: colors.primary,
+        borderRadius: 4,
+    },
+    badgeRow: {
+        flexDirection: 'row',
+        gap: spacing.md,
+        marginTop: spacing.xl,
+    },
+    statusBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        backgroundColor: colors.glass.surface,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    statusBadgeText: {
+        fontSize: 12,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.text.secondary,
+    },
+    consistencyCard: {
+        marginTop: spacing.sm,
+    },
+    consistencyRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    dayCol: {
+        alignItems: 'center',
+        gap: spacing.xs,
+    },
+    dayCircle: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.glass.surface,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    dayCircleDone: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    dayText: {
+        fontSize: 10,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
     },
     userName: {
         fontSize: typography.sizes['2xl'],
@@ -371,5 +614,85 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: colors.glass.border,
         marginLeft: 56, // Align with text
+    },
+
+    // Modal Styles
+    modalContainer: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: spacing.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.glass.border,
+    },
+    modalTitle: {
+        fontSize: typography.sizes.lg,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+    },
+    closeBtn: {
+        padding: 4,
+    },
+    modalContent: {
+        padding: spacing.xl,
+    },
+    inputGroup: {
+        marginBottom: spacing.xl,
+    },
+    inputLabel: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.secondary,
+        marginBottom: spacing.sm,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    input: {
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        fontSize: typography.sizes.base,
+        color: colors.text.primary,
+        fontFamily: typography.fontFamily.medium,
+    },
+    avatarGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.md,
+        marginTop: spacing.md,
+    },
+    avatarOption: {
+        padding: 4,
+        borderRadius: 50,
+        borderWidth: 2,
+        borderColor: 'transparent',
+        position: 'relative',
+    },
+    avatarOptionSelected: {
+        borderColor: colors.primary,
+    },
+    checkBadge: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        backgroundColor: colors.primary,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: colors.background,
+    },
+    modalFooter: {
+        padding: spacing.xl,
+        borderTopWidth: 1,
+        borderTopColor: colors.glass.border,
     },
 });

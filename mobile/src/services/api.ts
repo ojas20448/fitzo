@@ -5,13 +5,9 @@ import { authEvents } from './authEvents';
 
 // API base URL - change for production
 // Use your computer's IP for physical devices, localhost only works in web/emulator
-// User requested to run without PC, so we point to the deployed backend on Render
-const API_BASE_URL = 'https://fitzo-api.onrender.com/api';
-/* 
 const API_BASE_URL = __DEV__
     ? (Platform.OS === 'web' ? 'http://localhost:3001/api' : 'http://192.168.1.23:3001/api')
-    : 'https://fitzo-api.onrender.com/api'; 
-*/
+    : 'https://fitzo-api.onrender.com/api';
 
 
 // Create axios instance
@@ -50,11 +46,9 @@ export const removeAuthToken = async (): Promise<void> => {
 };
 
 // Request interceptor - add auth token
-// Request interceptor - add auth token
 api.interceptors.request.use(
     async (config) => {
         const token = await getAuthToken();
-        console.log('[API Request] URL:', config.url, 'Token:', token ? 'Present' : 'Missing');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -119,6 +113,11 @@ export const authAPI = {
 export const memberAPI = {
     getHome: async () => {
         const response = await api.get('/member/home');
+        return response.data;
+    },
+
+    updateProfile: async (data: { name?: string; avatar_url?: string }) => {
+        const response = await api.put('/member/profile', data);
         return response.data;
     },
 };

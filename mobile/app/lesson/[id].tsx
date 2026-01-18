@@ -6,19 +6,14 @@ import {
     ScrollView,
     TouchableOpacity,
     Modal,
-    ActivityIndicator
+    ActivityIndicator,
+    Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Markdown from 'react-native-markdown-display';
 import * as Haptics from 'expo-haptics';
-
-import { learnAPI } from '../../src/services/api';
-import { colors, typography, spacing, borderRadius, shadows } from '../../src/styles/theme';
-import Button from '../../src/components/Button';
-import Confetti from '../../src/components/Celebration'; // Re-using celebration component
-import Celebration from '../../src/components/Celebration';
 
 interface Question {
     question: string;
@@ -35,8 +30,19 @@ interface Lesson {
     questions: Question[];
 }
 
+import { learnAPI } from '../../src/services/api';
+import { colors, typography, spacing, borderRadius, shadows } from '../../src/styles/theme';
+import Button from '../../src/components/Button';
+import Celebration from '../../src/components/Celebration';
+import { useXP } from '../../src/context/XPContext';
+
+import { SkeletonLesson } from '../../src/components/Skeleton';
+
+const { width, height } = Dimensions.get('window');
+
 const LessonScreen = () => {
     const { id } = useLocalSearchParams();
+    const { awardXP } = useXP();
     const [lesson, setLesson] = useState<Lesson | null>(null);
     const [loading, setLoading] = useState(true);
     const [mode, setMode] = useState<'reading' | 'quiz'>('reading');
@@ -98,21 +104,25 @@ const LessonScreen = () => {
         if (!lesson) return;
         setLoading(true);
         try {
-            // Calculate score locally for immediate feedback
-            // NOTE: We trust the backend to validate as 'correct' is hidden from client
-            const correctCount = 0; // Placeholder
-
             // Submit to API
             const result = await learnAPI.submitAttempt(lesson.id, finalAnswers);
 
             if (result.passed) {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                setXpEarned(result.xp_earned);
+
+                // Award XP with animation
+                const xpEarned = result.xp_earned || lesson.xp_reward || 50;
+                awardXP(xpEarned, width / 2, height / 2);
+
+                setXpEarned(xpEarned);
                 setQuizCompleted(true);
-                setShowCelebration(true);
+
+                // Delay showing completion screen to allow XP to fly
+                setTimeout(() => {
+                    setShowCelebration(true);
+                }, 1000);
             } else {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-                // Reset to try again
                 alert('You didn\'t pass. Try reading again!');
                 setMode('reading');
                 setCurrentQ(0);
@@ -128,7 +138,7 @@ const LessonScreen = () => {
     if (loading || !lesson) {
         return (
             <SafeAreaView style={styles.container}>
-                <ActivityIndicator color={colors.primary} />
+                <SkeletonLesson />
             </SafeAreaView>
         );
     }

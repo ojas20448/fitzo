@@ -31,86 +31,96 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
     const [bodyParts, setBodyParts] = useState<string[]>([]);
     const [isOffline, setIsOffline] = useState(false);
 
+    // Load initial data
     useEffect(() => {
         loadBodyParts();
         loadExercises();
     }, []);
 
+    // Also reload when filter changes
+    useEffect(() => {
+        loadExercises();
+    }, [selectedBodyPart]);
+
     const loadBodyParts = async () => {
         try {
-            const cached = await getCachedData(CACHE_KEYS.EXERCISE_FILTERS);
-            if (cached) {
-                setBodyParts(cached);
-                return;
-            }
+            // Use local body parts + any from API if needed
+            const { bodyPartsList } = require('../data/defaultExercises');
+            setBodyParts(bodyPartsList);
+
+            // Optionally fetch more from API
             const response = await exerciseAPI.getBodyParts();
-            const parts = response.bodyParts || [];
-            setBodyParts(parts);
-            await cacheData(CACHE_KEYS.EXERCISE_FILTERS, parts, CACHE_DURATION.LONG);
+            if (response.bodyParts) {
+                // Merge unique
+                const combined = Array.from(new Set([...bodyPartsList, ...response.bodyParts]));
+                setBodyParts(combined);
+            }
         } catch (error) {
-            console.error('Error loading body parts:', error);
+            console.log('Using local body parts only due to error');
         }
     };
 
     const loadExercises = async () => {
         setLoading(true);
         try {
+            const { defaultExercises } = require('../data/defaultExercises');
+            let results = [...defaultExercises];
+
+            // 1. Filter by Body Part (Local)
             if (selectedBodyPart) {
-                await handleBodyPartFilter(selectedBodyPart);
-                return;
+                results = results.filter((ex: any) =>
+                    ex.bodyPart.toLowerCase() === selectedBodyPart.toLowerCase()
+                );
             }
 
-            const cached = await getCachedData(CACHE_KEYS.EXERCISES);
-            if (cached && !searchQuery && !selectedBodyPart) {
-                setExercises(cached);
-                setIsOffline(true);
-                setLoading(false);
-                return;
+            // 2. Filter by Search Query (Local)
+            if (searchQuery.trim()) {
+                const q = searchQuery.toLowerCase().trim();
+                results = results.filter((ex: any) =>
+                    ex.name.toLowerCase().includes(q) ||
+                    ex.target.toLowerCase().includes(q)
+                );
             }
 
-            const response = await exerciseAPI.getAll(50, 0);
-            const exerciseData = response.exercises || [];
-            setExercises(exerciseData);
-            setIsOffline(false);
+            // 3. If local results are few, TRY fetching from API to supplement
+            // Only if we are online and have a search query (to avoid fetching ALL)
+            if (searchQuery.trim().length > 2) {
+                try {
+                    const apiRes = await exerciseAPI.search(searchQuery);
+                    if (apiRes.exercises) {
+                        // Merge API results, avoiding duplicates by ID or Name
+                        const existingIds = new Set(results.map(r => r.id));
+                        const existingNames = new Set(results.map(r => r.name.toLowerCase()));
 
-            if (!searchQuery && !selectedBodyPart) {
-                await cacheData(CACHE_KEYS.EXERCISES, exerciseData, CACHE_DURATION.LONG);
+                        const newFromApi = apiRes.exercises.filter((ex: any) =>
+                            !existingIds.has(ex.id) && !existingNames.has(ex.name.toLowerCase())
+                        );
+                        results = [...results, ...newFromApi];
+                    }
+                } catch (e) {
+                    console.log('API search failed, using local only');
+                }
             }
-        } catch (error: any) {
-            console.error('Error loading exercises:', error);
-            Alert.alert('Connection Error', 'Failed to load exercises.');
-        } finally {
+
+            setExercises(results);
+            setLoading(false);
+        } catch (error) {
+            console.error('Error in loadExercises:', error);
             setLoading(false);
         }
     };
 
-    const handleSearch = async () => {
-        if (!searchQuery.trim()) {
-            loadExercises();
-            return;
-        }
-        setLoading(true);
-        try {
-            const response = await exerciseAPI.search(searchQuery);
-            setExercises(response.exercises || []);
-        } catch (error) {
-            console.error('Error searching exercises:', error);
-        } finally {
-            setLoading(false);
-        }
+    const handleSearch = () => {
+        loadExercises();
     };
 
-    const handleBodyPartFilter = async (bodyPart: string) => {
-        setSelectedBodyPart(bodyPart);
-        setLoading(true);
-        try {
-            const response = await exerciseAPI.getByBodyPart(bodyPart);
-            setExercises(response.exercises || []);
-        } catch (error) {
-            console.error('Error filtering by body part:', error);
-        } finally {
-            setLoading(false);
+    const handleBodyPartFilter = (bodyPart: string) => {
+        if (selectedBodyPart === bodyPart) {
+            setSelectedBodyPart(null);
+        } else {
+            setSelectedBodyPart(bodyPart);
         }
+        // useEffect will trigger loadExercises
     };
 
     const handlePress = (item: any) => {
@@ -229,9 +239,39 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
                 <FlatList
                     data={exercises}
                     renderItem={renderExerciseCard}
-                    keyExtractor={(item, index) => item.id || `exercise-${index}`}
+                    keyExtractor={(item, index) => `${item.id}-${index}`}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        !loading && searchQuery.trim().length > 0 ? (
+                            <View style={styles.emptyContainer}>
+                                <Text style={styles.emptyText}>No exercises found for "{searchQuery}"</Text>
+                                <TouchableOpacity
+                                    style={styles.createBtn}
+                                    onPress={() => {
+                                        const newExercise = {
+                                            id: `custom-${Date.now()}`,
+                                            name: searchQuery,
+                                            bodyPart: 'other',
+                                            target: 'custom',
+                                            gifUrl: null,
+                                            custom: true
+                                        };
+                                        handlePress(newExercise);
+                                    }}
+                                >
+                                    <MaterialIcons name="add" size={20} color={colors.primary} />
+                                    <Text style={styles.createBtnText}>Create "{searchQuery}"</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            !loading ? (
+                                <View style={styles.emptyContainer}>
+                                    <Text style={styles.emptyText}>No exercises found.</Text>
+                                </View>
+                            ) : null
+                        )
+                    }
                 />
             )}
         </View>
@@ -355,5 +395,32 @@ const styles = StyleSheet.create({
     },
     loadingText: {
         color: colors.text.muted,
+    },
+    emptyContainer: {
+        padding: spacing.xl,
+        alignItems: 'center',
+        gap: spacing.md,
+    },
+    emptyText: {
+        color: colors.text.muted,
+        fontSize: typography.sizes.base,
+        textAlign: 'center',
+    },
+    createBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.primary,
+        borderStyle: 'dashed',
+    },
+    createBtnText: {
+        color: colors.primary,
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
     },
 });
