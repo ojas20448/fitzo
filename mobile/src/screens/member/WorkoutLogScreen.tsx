@@ -5,6 +5,7 @@ import {
     StyleSheet,
     ScrollView,
     TouchableOpacity,
+    Image,
     TextInput,
     Pressable,
     Modal,
@@ -222,20 +223,32 @@ const WorkoutLogScreen: React.FC = () => {
                     <GlassCard key={exercise.id + exIndex} style={styles.exerciseCard}>
                         {/* Exercise Header */}
                         <View style={styles.cardHeader}>
-                            <Text style={styles.exerciseName}>{exercise.name}</Text>
-                            <TouchableOpacity onPress={() => removeExercise(exIndex)}>
-                                <MaterialIcons name="more-horiz" size={24} color={colors.text.muted} />
+                            <View style={styles.exerciseHeaderInfo}>
+                                {exercise.gifUrl && (
+                                    <Image
+                                        source={{ uri: exercise.gifUrl }}
+                                        style={styles.exerciseHeaderGif}
+                                        resizeMode="cover"
+                                    />
+                                )}
+                                <View>
+                                    <Text style={styles.exerciseName}>{exercise.name}</Text>
+                                    <Text style={styles.exerciseTarget}>{exercise.target}</Text>
+                                </View>
+                            </View>
+                            <TouchableOpacity onPress={() => removeExercise(exIndex)} style={styles.moreBtn}>
+                                <MaterialIcons name="delete-outline" size={20} color={colors.text.muted} />
                             </TouchableOpacity>
                         </View>
 
                         {/* Sets Header */}
                         <View style={styles.tableHeader}>
-                            <Text style={[styles.col, styles.colSet]}>SET</Text>
-                            <Text style={[styles.col, styles.colPrev]}>PREVIOUS</Text>
-                            <Text style={[styles.col, styles.colKg]}>KG</Text>
-                            <Text style={[styles.col, styles.colReps]}>REPS</Text>
-                            <Text style={[styles.col, styles.colRir]}>RIR</Text>
-                            <Text style={[styles.col, styles.colCheck]}></Text>
+                            <Text style={[styles.colText, styles.colSet]}>SET</Text>
+                            <Text style={[styles.colText, styles.colPrev]}>PREVIOUS</Text>
+                            <Text style={[styles.colText, styles.colKg]}>KG</Text>
+                            <Text style={[styles.colText, styles.colReps]}>REPS</Text>
+                            <Text style={[styles.colText, styles.colRir]}>RIR</Text>
+                            <View style={[styles.colView, styles.colCheck]}></View>
                         </View>
 
                         {/* Sets Rows */}
@@ -247,17 +260,17 @@ const WorkoutLogScreen: React.FC = () => {
                                     set.completed ? styles.setRowCompleted : undefined
                                 ]}
                             >
-                                <View style={[styles.col, styles.colSet]}>
+                                <View style={[styles.colView, styles.colSet]}>
                                     <View style={styles.setBadge}>
                                         <Text style={styles.setNumber}>{setIndex + 1}</Text>
                                     </View>
                                 </View>
 
-                                <View style={[styles.col, styles.colPrev]}>
+                                <View style={[styles.colView, styles.colPrev]}>
                                     <Text style={styles.prevText}>{set.previous || '-'}</Text>
                                 </View>
 
-                                <View style={[styles.col, styles.colKg]}>
+                                <View style={[styles.colView, styles.colKg]}>
                                     <TextInput
                                         style={styles.input}
                                         keyboardType="numeric"
@@ -268,7 +281,7 @@ const WorkoutLogScreen: React.FC = () => {
                                     />
                                 </View>
 
-                                <View style={[styles.col, styles.colReps]}>
+                                <View style={[styles.colView, styles.colReps]}>
                                     <TextInput
                                         style={styles.input}
                                         keyboardType="numeric"
@@ -279,7 +292,7 @@ const WorkoutLogScreen: React.FC = () => {
                                     />
                                 </View>
 
-                                <View style={[styles.col, styles.colRir]}>
+                                <View style={[styles.colView, styles.colRir]}>
                                     <TextInput
                                         style={styles.input}
                                         keyboardType="numeric"
@@ -291,7 +304,7 @@ const WorkoutLogScreen: React.FC = () => {
                                 </View>
 
                                 <TouchableOpacity
-                                    style={[styles.col, styles.colCheck]}
+                                    style={[styles.colView, styles.colCheck]}
                                     onPress={() => updateSet(exIndex, setIndex, 'completed', !set.completed)}
                                 >
                                     <View style={[styles.checkbox, set.completed && styles.checked]}>
@@ -399,10 +412,32 @@ const styles = StyleSheet.create({
         padding: spacing.md,
         backgroundColor: colors.glass.surfaceLight,
     },
+    exerciseHeaderInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        flex: 1,
+    },
+    exerciseHeaderGif: {
+        width: 44,
+        height: 44,
+        borderRadius: borderRadius.sm,
+        backgroundColor: colors.glass.surface,
+    },
     exerciseName: {
         fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.semiBold,
         color: colors.primary,
+        textTransform: 'capitalize',
+    },
+    exerciseTarget: {
+        fontSize: 10,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+        textTransform: 'capitalize',
+    },
+    moreBtn: {
+        padding: spacing.xs,
     },
     tableHeader: {
         flexDirection: 'row',
@@ -411,18 +446,22 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: colors.glass.border,
     },
-    col: {
+    colText: {
         textAlign: 'center',
         fontSize: 10,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.muted,
     },
+    colView: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     colSet: { width: 30 },
-    colPrev: { flex: 1, textAlign: 'center' },
+    colPrev: { flex: 1 },
     colKg: { width: 60 },
     colReps: { width: 60 },
     colRir: { width: 40 },
-    colCheck: { width: 40, alignItems: 'center' },
+    colCheck: { width: 40 },
 
     setRow: {
         flexDirection: 'row',

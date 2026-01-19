@@ -1,87 +1,47 @@
 import React from 'react';
-import { View, ViewStyle, StyleSheet } from 'react-native';
-import { colors, borderRadius, commonStyles, shadows, spacing } from '../styles/theme';
+import { View, StyleSheet, ViewProps, ViewStyle } from 'react-native';
+import { colors, borderRadius, commonStyles } from '../styles/theme';
 
-interface GlassCardProps {
-    children: React.ReactNode;
+interface GlassCardProps extends ViewProps {
+    variant?: 'default' | 'light' | 'inactive';
     style?: ViewStyle;
-    variant?: 'default' | 'active' | 'inactive' | 'primary' | 'subtle';
-    padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+    children: React.ReactNode;
 }
 
-/**
- * Glass morphism card component with refined aesthetics
- * Uses subtle transparency and borders for depth
- */
 const GlassCard: React.FC<GlassCardProps> = ({
     children,
     style,
     variant = 'default',
-    padding = 'md',
+    ...props
 }) => {
-    const getVariantStyles = (): ViewStyle => {
+    const getVariantStyle = () => {
         switch (variant) {
-            case 'active':
-            case 'primary':
-                return {
-                    backgroundColor: colors.primary,
-                    borderColor: colors.primary,
-                    ...shadows.glowMd,
-                };
+            case 'light':
+                return commonStyles.glassPanelLight;
             case 'inactive':
-                return {
-                    backgroundColor: colors.glass.surface,
-                    borderColor: colors.glass.border,
-                    opacity: 0.5,
-                };
-            case 'subtle':
-                return {
-                    backgroundColor: colors.glass.surface,
-                    borderColor: 'transparent',
-                };
+                return styles.inactive;
             default:
-                return {
-                    backgroundColor: colors.glass.surface,
-                    borderColor: colors.glass.border,
-                };
-        }
-    };
-
-    const getPadding = (): number => {
-        switch (padding) {
-            case 'none':
-                return 0;
-            case 'sm':
-                return spacing.sm;
-            case 'lg':
-                return spacing.xl;
-            case 'xl':
-                return spacing['2xl'];
-            default:
-                return spacing.lg;
+                return commonStyles.glassPanel;
         }
     };
 
     return (
-        <View
-            style={[
-                styles.base,
-                getVariantStyles(),
-                { padding: getPadding() },
-                style,
-            ]}
-        >
+        <View style={[getVariantStyle(), styles.card, style]} {...props}>
             {children}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    base: {
-        borderRadius: borderRadius['2xl'],
-        borderWidth: 1,
+    card: {
         overflow: 'hidden',
     },
+    inactive: {
+        backgroundColor: 'rgba(20, 20, 20, 0.4)', // Slightly darker/more transparent than default
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: borderRadius.xl,
+    }
 });
 
 export default GlassCard;

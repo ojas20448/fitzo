@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View,
     Text,
@@ -11,9 +11,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
-import { memberAPI, caloriesAPI } from '../../src/services/api';
+import { memberAPI, caloriesAPI, nutritionAPI, measurementsAPI } from '../../src/services/api';
 import Avatar from '../../src/components/Avatar';
 import GlassCard from '../../src/components/GlassCard';
 import Button from '../../src/components/Button';
@@ -28,7 +28,10 @@ export default function ProfileScreen() {
     const [stats, setStats] = useState({
         streak: 0,
         history: [] as string[],
-        calories: { total_calories: 0, entry_count: 0 }
+        foodHistory: [] as string[],
+        calories: { total_calories: 0, entry_count: 0 },
+        profile: null as any,
+        latestMeasurement: null as any
     });
 
     // Edit State
@@ -49,24 +52,40 @@ export default function ProfileScreen() {
         'https://api.dicebear.com/7.x/bottts/png?seed=2'
     ];
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            loadData();
+        }, [])
+    );
 
     const loadData = async () => {
         try {
-            const [homeRes, caloriesRes] = await Promise.all([
+            const [homeRes, caloriesRes, profileRes, measurementsRes, calHistoryRes] = await Promise.all([
                 memberAPI.getHome(),
-                caloriesAPI.getToday().catch(() => ({ totals: { calories: 0, entry_count: 0 } }))
+                caloriesAPI.getToday().catch(() => ({ totals: { calories: 0, entry_count: 0 } })),
+                nutritionAPI.getProfile().catch(() => ({ profile: null })),
+                measurementsAPI.getLatest().catch(() => ({ measurement: null })),
+                caloriesAPI.getHistory(30).catch(() => ({ history: [] }))
             ]);
+
+            // Extract unique dates from calorie entries
+            const foodDates = calHistoryRes.history
+                ? [...new Set(calHistoryRes.history.map((entry: any) => {
+                    const date = entry.logged_date || entry.created_at;
+                    return date ? new Date(date).toISOString().split('T')[0] : null;
+                }).filter(Boolean))] as string[]
+                : [];
 
             setStats({
                 streak: homeRes.streak.current,
                 history: homeRes.streak.history || [],
+                foodHistory: foodDates,
                 calories: {
                     total_calories: caloriesRes.totals?.calories || 0,
                     entry_count: caloriesRes.totals?.entry_count || 0,
-                }
+                },
+                profile: profileRes.profile,
+                latestMeasurement: measurementsRes.measurement
             });
         } catch (error) {
             console.error('Failed to load profile data:', error);
@@ -201,49 +220,64 @@ export default function ProfileScreen() {
                     </View>
                 </View>
 
-                {/* Weekly Consistency Grid */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Weekly Consistency</Text>
-                    <GlassCard style={styles.consistencyCard} padding="md">
-                        <View style={styles.consistencyRow}>
-                            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => {
-                                // Real consistency logic based on history
-                                const today = new Date();
-                                const currentDay = today.getDay() === 0 ? 6 : today.getDay() - 1; // 0=M, 1=T... 6=S
-
-                                // Calculate date for this index in current week
-                                const d = new Date();
-                                d.setDate(today.getDate() - currentDay + idx);
-                                const dateStr = d.toISOString().split('T')[0];
-
-                                const isDone = stats.history.includes(dateStr);
-                                const isFuture = idx > currentDay;
-
-                                return (
-                                    <View key={idx} style={styles.dayCol}>
-                                        <View style={[
-                                            styles.dayCircle,
-                                            isDone && styles.dayCircleDone,
-                                            isFuture && { opacity: 0.3 }
-                                        ]}>
-                                            <MaterialIcons
-                                                name={isDone ? "check" : isFuture ? "radio-button-unchecked" : "close"}
-                                                size={16}
-                                                color={isDone ? colors.background : colors.text.subtle}
-                                            />
-                                        </View>
-                                        <Text style={styles.dayText}>{day}</Text>
-                                    </View>
-                                );
-                            })}
-                        </View>
-                    </GlassCard>
-                </View>
 
                 {/* Monthly Progress */}
                 <View style={styles.section}>
                     <Text style={styles.sectionLabel}>Activity History</Text>
-                    <WorkoutCalendar history={stats.history} />
+                    <WorkoutCalendar history={stats.history} foodHistory={stats.foodHistory} />
+                </View>
+
+                {/* Biometrics & Health Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>Health & Biometrics</Text>
+                    <GlassCard style={styles.biometricsCard} padding="none">
+                        <View style={styles.biometricsHeader}>
+                            <View style={styles.biometricStat}>
+                                <Text style={styles.biometricValue}>
+                                    {stats.profile?.height_cm && stats.profile?.weight_kg
+                                        ? (stats.profile.weight_kg / Math.pow(stats.profile.height_cm / 100, 2)).toFixed(1)
+                                        : '—'
+                                    }
+                                </Text>
+                                <Text style={styles.biometricLabel}>BMI</Text>
+                            </View>
+                            <View style={styles.biometricDivider} />
+                            <View style={styles.biometricStat}>
+                                <Text style={styles.biometricValue}>
+                                    {stats.profile?.target_calories || '—'}
+                                </Text>
+                                <Text style={styles.biometricLabel}>MAINTENANCE</Text>
+                            </View>
+                            <View style={styles.biometricDivider} />
+                            <View style={styles.biometricStat}>
+                                <Text style={styles.biometricValue}>
+                                    {stats.latestMeasurement?.weight || stats.profile?.weight_kg || '—'}
+                                    <Text style={styles.biometricUnit}>kg</Text>
+                                </Text>
+                                <Text style={styles.biometricLabel}>WEIGHT</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.settingDivider} />
+
+                        <TouchableOpacity
+                            style={styles.settingItem}
+                            onPress={() => router.push('/member/fitness-profile' as any)}
+                        >
+                            <MaterialIcons name="calculate" size={24} color={colors.text.secondary} />
+                            <Text style={styles.settingLabel}>Calculator & Goal Settings</Text>
+                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                        </TouchableOpacity>
+                        <View style={styles.settingDivider} />
+                        <TouchableOpacity
+                            style={styles.settingItem}
+                            onPress={() => router.push('/member/measurements' as any)}
+                        >
+                            <MaterialIcons name="straighten" size={24} color={colors.text.secondary} />
+                            <Text style={styles.settingLabel}>Body Measurements</Text>
+                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                        </TouchableOpacity>
+                    </GlassCard>
                 </View>
 
 
@@ -522,6 +556,12 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
     },
+    dateLabel: {
+        fontSize: 9,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.subtle,
+        marginBottom: 2,
+    },
     userName: {
         fontSize: typography.sizes['2xl'],
         fontFamily: typography.fontFamily.semiBold,
@@ -614,6 +654,44 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: colors.glass.border,
         marginLeft: 56, // Align with text
+    },
+    biometricsCard: {
+        marginTop: spacing.sm,
+    },
+    biometricsHeader: {
+        flexDirection: 'row',
+        paddingVertical: spacing.xl,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.glass.border,
+    },
+    biometricStat: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    biometricValue: {
+        fontSize: typography.sizes.xl,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+        marginBottom: 2,
+    },
+    biometricUnit: {
+        fontSize: 10,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+        marginLeft: 2,
+    },
+    biometricLabel: {
+        fontSize: 8,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.muted,
+        letterSpacing: 0.5,
+    },
+    biometricDivider: {
+        width: 1,
+        height: '60%',
+        backgroundColor: colors.glass.border,
+        alignSelf: 'center',
     },
 
     // Modal Styles

@@ -100,9 +100,14 @@ export default function ActiveWorkoutScreen() {
     };
 
     const handleComplete = async () => {
+        const hasExercises = session?.exercises && session.exercises.length > 0;
+        const confirmMessage = hasExercises
+            ? 'Are you sure you want to finish?'
+            : 'Mark as done without logging? You still get streak credit!';
+
         Alert.alert(
             'Finish Workout?',
-            'Are you sure you want to finish?',
+            confirmMessage,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {

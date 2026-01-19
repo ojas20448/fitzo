@@ -5,9 +5,10 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+import * as Haptics from 'expo-haptics';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import GlassCard from '../../components/GlassCard';
-import WorkoutShareCard from '../../components/WorkoutShareCard';
+import ShareCard from '../../components/ShareCard';
 import { memberAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useXP } from '../../context/XPContext';
@@ -30,9 +31,12 @@ export default function WorkoutRecapScreen() {
 
     const viewShotRef = useRef<View>(null);
 
-    // Fetch streak for the card
+    // Fetch streak and trigger Haptics
     useEffect(() => {
-        const fetchStreak = async () => {
+        const init = async () => {
+            // Haptics
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
             try {
                 const homeData = await memberAPI.getHome();
                 if (homeData?.streak?.current) {
@@ -42,12 +46,12 @@ export default function WorkoutRecapScreen() {
                 console.log('Failed to fetch streak', e);
             }
         };
-        fetchStreak();
+        init();
 
         // Auto-show share card after a moment
         const timer = setTimeout(() => {
             setShowShareModal(true);
-        }, 800);
+        }, 1200);
         return () => clearTimeout(timer);
     }, []);
 
@@ -55,9 +59,6 @@ export default function WorkoutRecapScreen() {
         if (sharing) return;
         setSharing(true);
         try {
-            // Capture the card
-            // We use the ref on the View wrapping WorkoutShareCard inside ViewShot (or just ViewShot ref if component supports it)
-            // But ViewShot component itself is easiest.
             if (!viewShotRef.current) return;
 
             const uri = await captureRef(viewShotRef, {
@@ -68,12 +69,11 @@ export default function WorkoutRecapScreen() {
 
             setCapturedImage(uri);
 
-            // Share
             if (await Sharing.isAvailableAsync()) {
                 await Sharing.shareAsync(uri, {
                     mimeType: 'image/png',
                     dialogTitle: 'Share your workout',
-                    UTI: 'public.png', // for iOS
+                    UTI: 'public.png',
                 });
             }
         } catch (error) {
@@ -94,18 +94,21 @@ export default function WorkoutRecapScreen() {
         );
     }
 
+    // Determine workout type name
+    const workoutTypeName = session?.name || 'Custom Workout';
+
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
 
                 {/* Header Section */}
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>WORKOUT COMPLETE!</Text>
-                    <Text style={styles.headerSub}>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
+                    <Text style={styles.headerTitle}>WORKOUT COMPLETE</Text>
+                    <Text style={styles.headerSub}>{workoutTypeName}</Text>
 
                     <View style={styles.badge}>
                         <MaterialIcons name="local-fire-department" size={20} color={colors.text.dark} />
-                        <Text style={styles.badgeText}>Great Job!</Text>
+                        <Text style={styles.badgeText}>{streak} Day Streak</Text>
                     </View>
                 </View>
 
@@ -113,14 +116,14 @@ export default function WorkoutRecapScreen() {
                 <View style={styles.grid}>
                     <GlassCard style={styles.gridItem}>
                         <MaterialIcons name="timer" size={24} color={colors.primary} style={{ marginBottom: 8 }} />
-                        <Text style={styles.statValue}>{recap.duration}m</Text>
-                        <Text style={styles.statLabel}>DURATION</Text>
+                        <Text style={styles.statValue}>{recap.duration}</Text>
+                        <Text style={styles.statLabel}>MINUTES</Text>
                     </GlassCard>
 
                     <GlassCard style={styles.gridItem}>
-                        <MaterialIcons name="fitness-center" size={24} color={colors.crowd.medium} style={{ marginBottom: 8 }} />
-                        <Text style={styles.statValue}>{(recap.volume / 1000).toFixed(1)}k</Text>
-                        <Text style={styles.statLabel}>VOL (kg)</Text>
+                        <MaterialIcons name="auto-awesome" size={24} color={colors.text.primary} style={{ marginBottom: 8 }} />
+                        <Text style={styles.statValue}>{recap.xp_earned || 0}</Text>
+                        <Text style={styles.statLabel}>XP GAINED</Text>
                     </GlassCard>
 
                     <GlassCard style={styles.gridItem}>
@@ -143,6 +146,7 @@ export default function WorkoutRecapScreen() {
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.achievementsRow}>
                             {recap.achievements.map((ach: any, i: number) => (
                                 <View key={i} style={styles.achievementCard}>
+
                                     <View style={styles.achievementIcon}>
                                         <MaterialIcons name={ach.icon} size={32} color={colors.text.dark} />
                                     </View>
@@ -159,7 +163,7 @@ export default function WorkoutRecapScreen() {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>NEW RECORDS 🏆</Text>
                         {recap.prs.map((pr: any, i: number) => (
-                            <GlassCard key={i} style={styles.prCard} padding="md">
+                            <GlassCard key={i} style={styles.prCard}>
                                 <View>
                                     <Text style={styles.prExercise}>{pr.exerciseName}</Text>
                                     <Text style={styles.prImprovement}>+{pr.improvement}kg improvement</Text>
@@ -210,11 +214,11 @@ export default function WorkoutRecapScreen() {
                     {/* Capture Area */}
                     <View style={styles.cardPreviewContainer}>
                         <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 0.9 }}>
-                            <WorkoutShareCard
-                                recap={recap}
-                                user={{ name: user?.name || 'Athlete', streak }}
-                                intent={session} // Assuming session object has similar structure or mapping
-                                date={new Date()}
+                            <ShareCard
+                                workoutType={workoutTypeName}
+                                duration={recap.duration ? `${recap.duration}m` : '0m'}
+                                streak={streak}
+                                date={new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
                             />
                         </ViewShot>
 

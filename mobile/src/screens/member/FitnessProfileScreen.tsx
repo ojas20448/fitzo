@@ -48,8 +48,8 @@ export default function FitnessProfileScreen() {
         try {
             const { profile } = await nutritionAPI.getProfile();
             if (profile) {
-                setHeight(String(profile.height_cm || 170));
-                setWeight(String(profile.weight_kg || 70));
+                setHeight(String(Math.round(profile.height_cm || 170)));
+                setWeight(String(Math.round(profile.weight_kg || 70)));
                 setAge(String(profile.age || 25));
                 setGender(profile.gender || 'male');
                 setGoalType(profile.goal_type || 'maintenance');
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.lg,
         borderWidth: 1,
         borderColor: colors.glass.border,
-        paddingHorizontal: spacing.md,
+        paddingHorizontal: spacing.sm, // Reduced padding
     },
     input: {
         flex: 1,
@@ -398,9 +398,10 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.md,
     },
     inputUnit: {
-        fontSize: typography.sizes.sm,
+        fontSize: 10, // Smaller unit font
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
+        marginLeft: 2,
     },
 
     // Goals

@@ -134,7 +134,7 @@ const HomeScreen: React.FC = () => {
     };
 
     // Time-based greeting
-    const greeting = 'Every day counts.';
+    const greeting = 'Consistency matters.';
 
     if (loading) {
         return (
@@ -147,6 +147,7 @@ const HomeScreen: React.FC = () => {
     const firstName = data?.user.name.split(' ')[0] || user?.name.split(' ')[0] || 'there';
     const hasLoggedWorkoutToday = todayWorkouts.length > 0;
     const currentIntent = data?.intent;
+    const activeFriendsCount = 3; // Mocked for social proof
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -187,19 +188,9 @@ const HomeScreen: React.FC = () => {
 
                     {/* Right side: Gym + Streak */}
                     <View style={styles.headerRight}>
-                        {/* Gym Badge */}
-                        <Pressable
-                            style={styles.gymBadge}
-                            onPress={() => router.push('/qr-checkin' as any)}
-                        >
-                            <MaterialIcons name="location-on" size={14} color={colors.text.muted} />
-                            <Text style={styles.gymBadgeText}>{data?.gym?.name || 'Your Gym'}</Text>
-                            <MaterialIcons name="qr-code-2" size={14} color={colors.text.muted} />
-                        </Pressable>
-
-                        {/* Streak Badge */}
+                        {/* Streak Badge - Promoted */}
                         <View style={styles.streakBadge}>
-                            <AnimatedFire size={18} color="#FF6B35" />
+                            <AnimatedFire size={24} color="#FF6B35" />
                             <Text style={styles.streakText}>{data?.streak.current || 0}</Text>
                         </View>
                     </View>
@@ -292,11 +283,68 @@ const HomeScreen: React.FC = () => {
 
                     <TouchableOpacity
                         style={styles.secondaryActionBtn}
-                        onPress={() => router.push('/log/calories' as any)}
-                        accessibilityLabel="Log calories"
+                        onPress={() => router.push('/qr-checkin' as any)}
+                        accessibilityLabel="QR Check-in"
                     >
-                        <MaterialIcons name="restaurant" size={20} color={colors.primary} />
-                        <Text style={styles.secondaryActionText}>LOG CALORIES</Text>
+                        <MaterialIcons name="qr-code-2" size={20} color={colors.text.primary} />
+                        <Text style={[styles.secondaryActionText, { color: colors.text.primary }]}>GYM CHECK-IN</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Gym Buddies - Friend Avatars */}
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <View>
+                            <Text style={styles.sectionTitle}>Gym Buddies</Text>
+                            <Text style={styles.sectionSub}>{activeFriendsCount} of your gym squads worked out today</Text>
+                        </View>
+                    </View>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.squadList}
+                    >
+                        {friends.length > 0 ? (
+                            friends.map((friend) => (
+                                <View key={friend.id} style={styles.squadMember}>
+                                    <View style={styles.squadAvatar}>
+                                        <Avatar size="lg" uri={friend.avatar_url} name={friend.name} />
+                                    </View>
+                                    <Text style={styles.squadName} numberOfLines={1}>
+                                        {friend.name.split(' ')[0]}
+                                    </Text>
+                                </View>
+                            ))
+                        ) : (
+                            <EmptyStateInline
+                                message="No buddies added yet."
+                                icon="person-add"
+                                style={{ paddingVertical: 10 }}
+                            />
+                        )}
+                    </ScrollView>
+                </View>
+
+                {/* Add Buddy Button */}
+                <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing['3xl'] }}>
+                    <TouchableOpacity
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: spacing.md,
+                            borderWidth: 1,
+                            borderColor: colors.glass.border,
+                            borderRadius: borderRadius.lg,
+                            backgroundColor: colors.glass.surface,
+                            gap: spacing.sm
+                        }}
+                        onPress={() => router.push('/member/add-buddy' as any)}
+                    >
+                        <MaterialIcons name="person-add" size={20} color={colors.primary} />
+                        <Text style={{ color: colors.primary, fontFamily: typography.fontFamily.semiBold }}>
+                            Add Gym Buddy
+                        </Text>
                     </TouchableOpacity>
                 </View>
 
@@ -356,60 +404,6 @@ const HomeScreen: React.FC = () => {
                             </View>
                         </View>
                     </Pressable>
-                </View>
-
-                {/* Gym Buddies - Friend Avatars */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Gym Buddies</Text>
-                    </View>
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.squadList}
-                    >
-                        {friends.length > 0 ? (
-                            friends.map((friend) => (
-                                <View key={friend.id} style={styles.squadMember}>
-                                    <View style={styles.squadAvatar}>
-                                        <Avatar size="lg" uri={friend.avatar_url} name={friend.name} />
-                                    </View>
-                                    <Text style={styles.squadName} numberOfLines={1}>
-                                        {friend.name.split(' ')[0]}
-                                    </Text>
-                                </View>
-                            ))
-                        ) : (
-                            <EmptyStateInline
-                                message="No buddies added yet."
-                                icon="person-add"
-                                style={{ paddingVertical: 10 }}
-                            />
-                        )}
-                    </ScrollView>
-                </View>
-
-                {/* Add Buddy Button */}
-                <View style={{ paddingHorizontal: spacing.xl, marginBottom: spacing['3xl'] }}>
-                    <TouchableOpacity
-                        style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: spacing.md,
-                            borderWidth: 1,
-                            borderColor: colors.glass.border,
-                            borderRadius: borderRadius.lg,
-                            backgroundColor: colors.glass.surface,
-                            gap: spacing.sm
-                        }}
-                        onPress={() => router.push('/member/add-buddy' as any)}
-                    >
-                        <MaterialIcons name="person-add" size={20} color={colors.primary} />
-                        <Text style={{ color: colors.primary, fontFamily: typography.fontFamily.semiBold }}>
-                            Add Gym Buddy
-                        </Text>
-                    </TouchableOpacity>
                 </View>
 
                 <View style={{ height: 120 }} />
@@ -686,6 +680,12 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
         letterSpacing: -0.3,
+    },
+    sectionSub: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+        marginTop: 4,
     },
     viewAllLink: {
         fontSize: 10,

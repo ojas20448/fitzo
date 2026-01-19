@@ -9,10 +9,11 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 interface WorkoutCalendarProps {
-    history: string[]; // Array of date strings 'YYYY-MM-DD'
+    history: string[]; // Workout dates 'YYYY-MM-DD'
+    foodHistory?: string[]; // Food dates 'YYYY-MM-DD'
 }
 
-const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history = [] }) => {
+const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history = [], foodHistory = [] }) => {
     const [expanded, setExpanded] = useState(false);
     const today = new Date();
     const currentMonth = today.getMonth();
@@ -39,7 +40,8 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history = [] }) => {
             day,
             dateStr,
             isToday: day === today.getDate(),
-            isDone: history.includes(dateStr)
+            isWorkoutDone: history.includes(dateStr),
+            isFoodDone: (foodHistory || []).includes(dateStr)
         };
     });
 
@@ -72,24 +74,48 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history = [] }) => {
                 </View>
 
                 <View style={styles.grid}>
-                    {visibleDays.map((d) => (
-                        <View key={d.day} style={styles.dayContainer}>
-                            <View style={[
-                                styles.dot,
-                                d.isDone && styles.dotDone,
-                                d.isToday && !d.isDone && styles.dotToday
-                            ]}>
-                                <Text style={[
-                                    styles.dayText,
-                                    d.isDone && styles.dayTextDone,
-                                    d.isToday && !d.isDone && styles.dayTextToday
+                    {visibleDays.map((d) => {
+                        const status = d.isWorkoutDone && d.isFoodDone
+                            ? 'both'
+                            : (d.isWorkoutDone || d.isFoodDone ? 'partial' : 'none');
+
+                        const isPast = new Date(d.dateStr) < new Date(today.toDateString());
+
+                        return (
+                            <View key={d.day} style={styles.dayContainer}>
+                                <View style={[
+                                    styles.dot,
+                                    status === 'both' && styles.dotBoth,
+                                    status === 'partial' && styles.dotPartial,
+                                    status === 'none' && isPast && styles.dotNone,
+                                    d.isToday && styles.dotToday
                                 ]}>
-                                    {d.day}
-                                </Text>
+                                    <Text style={[
+                                        styles.dayText,
+                                        status !== 'none' && styles.dayTextDone,
+                                        d.isToday && status === 'none' && styles.dayTextToday
+                                    ]}>
+                                        {d.day}
+                                    </Text>
+                                </View>
                             </View>
-                            {/* Optional: Add day label (M, T, W...) for week view if needed, but numbers are cleaner */}
-                        </View>
-                    ))}
+                        );
+                    })}
+                </View>
+
+                <View style={styles.legend}>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, styles.dotBoth]} />
+                        <Text style={styles.legendText}>Full Day</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, styles.dotPartial]} />
+                        <Text style={styles.legendText}>Partial</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, styles.dotNone]} />
+                        <Text style={styles.legendText}>Missed</Text>
+                    </View>
                 </View>
 
                 {!expanded && (
@@ -142,13 +168,20 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    dotDone: {
-        backgroundColor: colors.primary,
+    dotBoth: {
+        backgroundColor: colors.crowd.low,
+    },
+    dotPartial: {
+        backgroundColor: colors.crowd.medium,
+    },
+    dotNone: {
+        backgroundColor: colors.crowd.high + '40', // Semi-transparent red
+        borderColor: colors.crowd.high,
+        borderWidth: 1,
     },
     dotToday: {
-        borderWidth: 1,
         borderColor: colors.primary,
-        backgroundColor: 'transparent',
+        borderWidth: 2,
     },
     dayText: {
         fontSize: 12,
@@ -162,6 +195,31 @@ const styles = StyleSheet.create({
     dayTextToday: {
         color: colors.primary,
         fontFamily: typography.fontFamily.bold,
+    },
+    legend: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: spacing.lg,
+        marginTop: spacing.md,
+        paddingTop: spacing.md,
+        borderTopWidth: 1,
+        borderTopColor: colors.glass.border,
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    legendDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+    legendText: {
+        fontSize: 9,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+        textTransform: 'uppercase',
     },
     hint: {
         fontSize: 10,
