@@ -8,21 +8,42 @@
             "distribution": "internal",
             "android": {
                 "buildType": "apk"
+            },
+            "env": {
+                "EXPO_PUBLIC_API_URL": "http://192.168.1.16:3001/api"
             }
         },
         "preview": {
             "distribution": "internal",
             "android": {
                 "buildType": "apk"
+            },
+            "env": {
+                "EXPO_PUBLIC_API_URL": "https://fitzo-backend.onrender.com/api"
             }
         },
         "production": {
             "android": {
-                "buildType": "apk"
+                "buildType": "app-bundle"
+            },
+            "ios": {
+                "resourceClass": "m-medium"
+            },
+            "env": {
+                "EXPO_PUBLIC_API_URL": "https://fitzo-backend.onrender.com/api"
             }
         }
     },
     "submit": {
-        "production": {}
+        "production": {
+            "android": {
+                "serviceAccountKeyPath": "./google-services-key.json",
+                "track": "production"
+            },
+            "ios": {
+                "appleId": "your-apple-id@email.com",
+                "ascAppId": "your-app-store-connect-app-id"
+            }
+        }
     }
 }

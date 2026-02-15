@@ -1,7 +1,7 @@
 services:
   - type: web
     name: fitzo-backend
-    env: node
+    runtime: node
     plan: free
     buildCommand: npm install
     startCommand: node src/index.js
@@ -18,3 +18,9 @@ services:
         sync: false
       - key: USDA_API_KEY
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: RAPIDAPI_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        value: "*"

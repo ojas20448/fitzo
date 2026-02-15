@@ -18,12 +18,12 @@ export const colors = {
     primary: '#FFFFFF',
     primaryMuted: 'rgba(255, 255, 255, 0.8)',
 
-    // Text colors
+    // Text colors - contrast ratios improved for accessibility
     text: {
         primary: '#FFFFFF',
-        secondary: 'rgba(255, 255, 255, 0.6)',
-        muted: 'rgba(255, 255, 255, 0.4)',
-        subtle: 'rgba(255, 255, 255, 0.3)',
+        secondary: 'rgba(255, 255, 255, 0.7)',  // Improved from 0.6
+        muted: 'rgba(255, 255, 255, 0.55)',     // Improved from 0.4 for better contrast
+        subtle: 'rgba(255, 255, 255, 0.45)',    // Improved from 0.3 for better contrast
         dark: '#000000', // for white backgrounds
     },
 
@@ -47,7 +47,8 @@ export const colors = {
     // Additional
     active: '#FFFFFF',
     inactive: 'rgba(255, 255, 255, 0.3)',
-    success: '#FFFFFF',
+    success: '#22C55E',
+    warning: '#F59E0B',
     error: '#EF4444',
 };
 
@@ -65,6 +66,7 @@ export const typography = {
         '2xs': 10,
         xs: 11,
         sm: 12,
+        md: 14,
         base: 14,
         lg: 16,
         xl: 18,

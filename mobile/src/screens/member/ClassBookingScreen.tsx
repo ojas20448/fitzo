@@ -114,12 +114,12 @@ const ClassBookingScreen: React.FC = () => {
                         <View style={styles.headerDot} />
                         <Text style={styles.headerSubtitle}>BOOK</Text>
                     </View>
-                    <Skeleton width={36} height={36} radius={18} />
+                    <Skeleton width={36} height={36} borderRadius={18} />
                 </View>
                 <View style={styles.dateSelector}>
                     <View style={styles.dateSelectorContent}>
                         {[1, 2, 3, 4].map((_, i) => (
-                            <Skeleton key={i} width={80} height={36} radius={18} />
+                            <Skeleton key={i} width={80} height={36} borderRadius={18} />
                         ))}
                     </View>
                 </View>

@@ -134,7 +134,7 @@ CREATE INDEX idx_calorie_plan_member ON calorie_plans(member_id);
 CREATE TABLE workout_intents (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  muscle_group muscle_group NOT NULL,
+  muscle_group muscle_group,
   visibility intent_visibility DEFAULT 'friends',
   note VARCHAR(200),
   expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -446,17 +446,29 @@ CREATE OR REPLACE FUNCTION calculate_daily_calories(
     p_goal nutrition_goal
 ) RETURNS INTEGER AS $$
 DECLARE
+    mifflin_bmr DECIMAL;
+    harris_bmr DECIMAL;
     bmr DECIMAL;
     tdee DECIMAL;
     activity_multiplier DECIMAL;
     goal_adjustment INTEGER;
 BEGIN
-    -- Harris-Benedict BMR calculation
+    -- 1. Mifflin-St Jeor Equation (most accurate for general population)
     IF p_gender = 'male' THEN
-        bmr := 88.362 + (13.397 * p_weight_kg) + (4.799 * p_height_cm) - (5.677 * p_age);
+        mifflin_bmr := 10 * p_weight_kg + 6.25 * p_height_cm - 5 * p_age + 5;
     ELSE
-        bmr := 447.593 + (9.247 * p_weight_kg) + (3.098 * p_height_cm) - (4.330 * p_age);
+        mifflin_bmr := 10 * p_weight_kg + 6.25 * p_height_cm - 5 * p_age - 161;
     END IF;
+
+    -- 2. Revised Harris-Benedict Equation
+    IF p_gender = 'male' THEN
+        harris_bmr := 13.397 * p_weight_kg + 4.799 * p_height_cm - 5.677 * p_age + 88.362;
+    ELSE
+        harris_bmr := 9.247 * p_weight_kg + 3.098 * p_height_cm - 4.330 * p_age + 447.593;
+    END IF;
+
+    -- Average both equations for more accurate BMR
+    bmr := (mifflin_bmr + harris_bmr) / 2;
     
     -- Activity multiplier
     activity_multiplier := CASE p_activity
@@ -472,7 +484,7 @@ BEGIN
     
     -- Goal adjustment
     goal_adjustment := CASE p_goal
-        WHEN 'fat_loss' THEN -400
+        WHEN 'fat_loss' THEN -500
         WHEN 'muscle_gain' THEN 300
         ELSE 0
     END;
@@ -522,9 +534,9 @@ SELECT 'Migration complete!' as status;
 ALTER TABLE workout_intents 
 ADD COLUMN IF NOT EXISTS emphasis TEXT[] DEFAULT '{}';
 
--- Add session_label column (A or B)
+-- Add session_label column (e.g. 'Push Day', 'Upper A')
 ALTER TABLE workout_intents 
-ADD COLUMN IF NOT EXISTS session_label VARCHAR(1) DEFAULT NULL;
+ADD COLUMN IF NOT EXISTS session_label VARCHAR(100) DEFAULT NULL;
 
 -- Migrate existing session_type data to emphasis array
 UPDATE workout_intents 

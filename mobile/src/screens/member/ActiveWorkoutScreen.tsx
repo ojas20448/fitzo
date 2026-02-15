@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { colors, typography, spacing, borderRadius } from '../../styles/theme';
+import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import { workoutsAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import GlassCard from '../../components/GlassCard';
 import ExercisePicker from '../../components/ExercisePicker';
 
 export default function ActiveWorkoutScreen() {
@@ -134,227 +136,335 @@ export default function ActiveWorkoutScreen() {
         );
     };
 
-    if (loading || !session) return <View style={styles.container}><Text style={{ color: 'white', padding: 20 }}>Loading workout...</Text></View>;
+    if (loading || !session) return (
+        <View style={styles.container}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>Loading workout...</Text>
+        </View>
+    );
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()}>
-                    <MaterialIcons name="close" size={24} color={colors.text.primary} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Active Workout</Text>
-                <TouchableOpacity style={styles.finishBtn} onPress={handleComplete}>
-                    <Text style={styles.finishText}>FINISH</Text>
-                </TouchableOpacity>
-            </View>
+        <View style={styles.container}>
+            {/* Immersive Background */}
+            <LinearGradient
+                colors={['#000000', '#111111']}
+                style={StyleSheet.absoluteFill}
+            />
 
-            <ScrollView contentContainerStyle={styles.content}>
-                {session.exercises?.length === 0 && (
-                    <View style={styles.emptyState}>
-                        <Text style={styles.emptyText}>No exercises added yet.</Text>
-                        <Text style={styles.emptySub}>Start by adding an exercise below.</Text>
+            <SafeAreaView style={styles.safeArea} edges={['top']}>
+                {/* HUD Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
+                        <MaterialIcons name="close" size={24} color={colors.text.muted} />
+                    </TouchableOpacity>
+                    <View style={styles.headerCenter}>
+                        <Text style={styles.headerTitle}>ACTIVE SESSION</Text>
+                        <Text style={styles.headerSubtitle}>{session.day_name || 'Workout'}</Text>
                     </View>
-                )}
+                    <TouchableOpacity style={styles.finishBtn} onPress={handleComplete}>
+                        <Text style={styles.finishText}>FINISH</Text>
+                    </TouchableOpacity>
+                </View>
 
-                {session.exercises?.map((ex: any, i: number) => (
-                    <View key={i} style={styles.exerciseCard}>
-                        <Text style={styles.exerciseName}>{ex.name}</Text>
+                <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                    {session.exercises?.length === 0 && (
+                        <GlassCard style={styles.emptyState}>
+                            <MaterialIcons name="fitness-center" size={48} color={colors.text.subtle} style={{ marginBottom: spacing.md }} />
+                            <Text style={styles.emptyText}>READY TO LIFT?</Text>
+                            <Text style={styles.emptySub}>Add your first exercise to start tracking.</Text>
+                        </GlassCard>
+                    )}
 
-                        <View style={styles.setsContainer}>
-                            <View style={styles.setRowHeader}>
-                                <Text style={styles.colHeader}>SET</Text>
-                                <Text style={styles.colHeader}>KG</Text>
-                                <Text style={styles.colHeader}>REPS</Text>
-                                <Text style={styles.colHeader}>RPE</Text>
-                                <Text style={styles.colHeader}>DONE</Text>
+                    {session.exercises?.map((ex: any, i: number) => (
+                        <GlassCard key={i} style={styles.exerciseCard}>
+                            <View style={styles.cardHeader}>
+                                <Text style={styles.exerciseName}>{ex.name}</Text>
+                                <TouchableOpacity>
+                                    <MaterialIcons name="more-horiz" size={24} color={colors.text.subtle} />
+                                </TouchableOpacity>
                             </View>
 
-                            {ex.sets?.map((set: any, j: number) => (
-                                <View key={set.id || j} style={[styles.setRow, completedSets.has(set.id) && styles.setRowDone]}>
-                                    <View style={styles.setNumBadge}>
-                                        <Text style={styles.setNum}>{j + 1}</Text>
-                                    </View>
+                            <View style={styles.setsHeader}>
+                                <Text style={[styles.colHeader, { flex: 0.5 }]}>SET</Text>
+                                <Text style={[styles.colHeader, { flex: 1 }]}>KG</Text>
+                                <Text style={[styles.colHeader, { flex: 1 }]}>REPS</Text>
+                                <Text style={[styles.colHeader, { flex: 0.8 }]}>RPE</Text>
+                                <Text style={[styles.colHeader, { flex: 0.5 }]}>✓</Text>
+                            </View>
 
-                                    <TextInput
-                                        style={styles.input}
-                                        keyboardType="numeric"
-                                        defaultValue={set.weight_kg?.toString()}
-                                        onEndEditing={(e) => handleUpdateSet(set.id, 'weight_kg', e.nativeEvent.text)}
-                                        placeholder="0"
-                                        placeholderTextColor={colors.text.subtle}
-                                    />
-
-                                    <TextInput
-                                        style={styles.input}
-                                        keyboardType="numeric"
-                                        defaultValue={set.reps?.toString()}
-                                        onEndEditing={(e) => handleUpdateSet(set.id, 'reps', e.nativeEvent.text)}
-                                        placeholder="0"
-                                        placeholderTextColor={colors.text.subtle}
-                                    />
-
-                                    <TextInput
-                                        style={styles.input}
-                                        keyboardType="numeric"
-                                        defaultValue={set.rpe?.toString()}
-                                        onEndEditing={(e) => handleUpdateSet(set.id, 'rpe', e.nativeEvent.text)}
-                                        placeholder="-"
-                                        placeholderTextColor={colors.text.subtle}
-                                    />
-
-                                    <TouchableOpacity
-                                        style={[styles.checkBox, completedSets.has(set.id) && styles.checkBoxChecked]}
-                                        onPress={() => toggleSet(set.id)}
+                            {ex.sets?.map((set: any, j: number) => {
+                                const isDone = completedSets.has(set.id);
+                                return (
+                                    <View
+                                        key={set.id || j}
+                                        style={[styles.setRow, isDone && styles.setRowDone]}
                                     >
-                                        {completedSets.has(set.id) && <MaterialIcons name="check" size={16} color="black" />}
-                                    </TouchableOpacity>
-                                </View>
-                            ))}
+                                        <View style={styles.setNumCol}>
+                                            <View style={[styles.setBadge, isDone && styles.setBadgeDone]}>
+                                                <Text style={[styles.setNumText, isDone && styles.setNumTextDone]}>{j + 1}</Text>
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.inputCol}>
+                                            <TextInput
+                                                style={[styles.input, isDone && styles.inputDone]}
+                                                keyboardType="numeric"
+                                                defaultValue={set.weight_kg?.toString()}
+                                                onEndEditing={(e) => handleUpdateSet(set.id, 'weight_kg', e.nativeEvent.text)}
+                                                placeholder="0"
+                                                placeholderTextColor={colors.text.subtle}
+                                                selectTextOnFocus
+                                            />
+                                        </View>
+
+                                        <View style={styles.inputCol}>
+                                            <TextInput
+                                                style={[styles.input, isDone && styles.inputDone]}
+                                                keyboardType="numeric"
+                                                defaultValue={set.reps?.toString()}
+                                                onEndEditing={(e) => handleUpdateSet(set.id, 'reps', e.nativeEvent.text)}
+                                                placeholder="0"
+                                                placeholderTextColor={colors.text.subtle}
+                                                selectTextOnFocus
+                                            />
+                                        </View>
+
+                                        <View style={styles.inputCol}>
+                                            <TextInput
+                                                style={[styles.input, styles.rpeInput, isDone && styles.inputDone]}
+                                                keyboardType="numeric"
+                                                defaultValue={set.rpe?.toString()}
+                                                onEndEditing={(e) => handleUpdateSet(set.id, 'rpe', e.nativeEvent.text)}
+                                                placeholder="-"
+                                                placeholderTextColor={colors.text.subtle}
+                                                selectTextOnFocus
+                                            />
+                                        </View>
+
+                                        <TouchableOpacity
+                                            style={styles.checkCol}
+                                            onPress={() => toggleSet(set.id)}
+                                        >
+                                            <View style={[styles.checkBox, isDone && styles.checkBoxChecked]}>
+                                                <MaterialIcons name="check" size={14} color={isDone ? "#000" : "transparent"} />
+                                            </View>
+                                        </TouchableOpacity>
+                                    </View>
+                                );
+                            })}
 
                             <TouchableOpacity
                                 style={styles.addSetBtn}
                                 onPress={() => handleAddSet(ex.id, ex.sets?.[ex.sets.length - 1])}
                             >
-                                <Text style={styles.addSetText}>+ Add Set</Text>
+                                <Text style={styles.addSetText}>+ ADD SET</Text>
                             </TouchableOpacity>
-                        </View>
-                    </View>
-                ))}
+                        </GlassCard>
+                    ))}
 
-                <TouchableOpacity
-                    style={styles.addExerciseBtn}
-                    onPress={() => setPickerVisible(true)}
-                >
-                    <MaterialIcons name="add" size={24} color={colors.primary} />
-                    <Text style={styles.addExerciseText}>Add Exercise</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.addExerciseBtn}
+                        onPress={() => setPickerVisible(true)}
+                    >
+                        <LinearGradient
+                            colors={[colors.primary + '20', colors.primary + '05']}
+                            style={styles.addExerciseGradient}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                        >
+                            <MaterialIcons name="add" size={24} color={colors.primary} />
+                            <Text style={styles.addExerciseText}>ADD EXERCISE</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
 
-                <View style={{ height: 40 }} />
-            </ScrollView>
+                    <View style={{ height: 100 }} />
+                </ScrollView>
+            </SafeAreaView>
 
             <ExercisePicker
                 visible={pickerVisible}
                 onClose={() => setPickerVisible(false)}
                 onSelect={handleAddExercise}
             />
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.background,
+        backgroundColor: '#000000',
+    },
+    safeArea: {
+        flex: 1,
+    },
+    loadingText: {
+        color: colors.text.muted,
+        marginTop: spacing.md,
+        fontFamily: typography.fontFamily.medium,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.glass.border,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.md,
+        marginBottom: spacing.sm,
+    },
+    headerCenter: {
+        alignItems: 'center',
     },
     headerTitle: {
+        color: colors.primary,
+        fontFamily: typography.fontFamily.bold,
+        fontSize: 10,
+        letterSpacing: 2,
+    },
+    headerSubtitle: {
         color: colors.text.primary,
         fontFamily: typography.fontFamily.bold,
         fontSize: typography.sizes.lg,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    iconBtn: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     finishBtn: {
         backgroundColor: colors.primary,
-        paddingHorizontal: spacing.md,
-        paddingVertical: 6,
-        borderRadius: borderRadius.md,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: 8,
+        borderRadius: borderRadius.full,
+        ...shadows.glow,
     },
     finishText: {
-        color: 'black',
-        fontFamily: typography.fontFamily.bold,
-        fontSize: typography.sizes.sm,
+        color: '#000000',
+        fontFamily: typography.fontFamily.extraBold,
+        fontSize: 10,
+        letterSpacing: 1,
     },
     content: {
         padding: spacing.md,
     },
     emptyState: {
         alignItems: 'center',
-        padding: spacing.xl,
+        padding: spacing['2xl'],
         marginTop: spacing.xl,
     },
     emptyText: {
-        color: colors.text.muted,
-        fontSize: typography.sizes.lg,
-        fontFamily: typography.fontFamily.medium,
+        color: colors.text.primary,
+        fontSize: typography.sizes.xl,
+        fontFamily: typography.fontFamily.bold,
+        letterSpacing: 1,
+        marginBottom: spacing.xs,
     },
     emptySub: {
-        color: colors.text.subtle,
+        color: colors.text.muted,
         fontSize: typography.sizes.sm,
-        marginTop: spacing.sm,
     },
     exerciseCard: {
-        marginBottom: spacing.xl,
-        backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius.lg,
-        padding: spacing.md,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
+        marginBottom: spacing.lg,
+        padding: 0, // Reset default padding
+        overflow: 'hidden',
     },
-    exerciseName: {
-        color: colors.primary,
-        fontFamily: typography.fontFamily.bold,
-        fontSize: typography.sizes.lg,
-        marginBottom: spacing.md,
-    },
-    setsContainer: {
-        gap: spacing.sm,
-    },
-    setRowHeader: {
+    cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingHorizontal: spacing.xs,
-        marginBottom: 4,
+        alignItems: 'center',
+        padding: spacing.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: 'rgba(255,255,255,0.02)',
+    },
+    exerciseName: {
+        color: colors.text.primary,
+        fontFamily: typography.fontFamily.bold,
+        fontSize: typography.sizes.lg,
+        letterSpacing: 0.5,
+    },
+    setsHeader: {
+        flexDirection: 'row',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.03)',
     },
     colHeader: {
-        color: colors.text.muted,
-        fontSize: 10,
-        width: 50,
+        color: colors.text.subtle,
+        fontSize: 9,
+        fontFamily: typography.fontFamily.bold,
         textAlign: 'center',
+        letterSpacing: 1,
     },
     setRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: colors.surfaceLight,
-        padding: spacing.sm,
-        borderRadius: borderRadius.md,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.03)',
     },
     setRowDone: {
-        backgroundColor: 'rgba(34, 197, 94, 0.1)', // Green tint
+        backgroundColor: 'rgba(34, 197, 94, 0.05)',
     },
-    setNumBadge: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: colors.glass.surface,
+    setNumCol: {
+        flex: 0.5,
+        alignItems: 'center',
+    },
+    setBadge: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: 'rgba(255,255,255,0.1)',
         alignItems: 'center',
         justifyContent: 'center',
     },
-    setNum: {
-        color: colors.text.muted,
+    setBadgeDone: {
+        backgroundColor: colors.primary,
+    },
+    setNumText: {
+        color: colors.text.subtle,
         fontSize: 10,
+        fontFamily: typography.fontFamily.bold,
+    },
+    setNumTextDone: {
+        color: '#000',
+    },
+    inputCol: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    checkCol: {
+        flex: 0.5,
+        alignItems: 'center',
     },
     input: {
-        width: 50,
-        backgroundColor: colors.glass.surface,
+        width: '80%',
+        backgroundColor: 'rgba(0,0,0,0.3)',
         color: colors.text.primary,
         textAlign: 'center',
-        borderRadius: 4,
-        paddingVertical: 2,
-        fontSize: typography.sizes.base,
-        fontFamily: typography.fontFamily.medium,
+        borderRadius: 6,
+        paddingVertical: 8,
+        fontSize: typography.sizes.lg,
+        fontFamily: typography.fontFamily.bold,
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    inputDone: {
+        color: colors.primary,
+        opacity: 0.8,
+    },
+    rpeInput: {
+        flex: 0.8,
     },
     checkBox: {
         width: 24,
         height: 24,
-        borderRadius: 4,
-        borderWidth: 1,
+        borderRadius: 12,
+        borderWidth: 2,
         borderColor: colors.text.muted,
         alignItems: 'center',
         justifyContent: 'center',
@@ -365,31 +475,35 @@ const styles = StyleSheet.create({
     },
     addSetBtn: {
         alignItems: 'center',
-        paddingVertical: spacing.sm,
-        marginTop: spacing.xs,
-        backgroundColor: colors.surfaceLight,
-        borderRadius: borderRadius.md,
+        paddingVertical: spacing.md,
+        backgroundColor: 'rgba(255,255,255,0.02)',
     },
     addSetText: {
-        color: colors.primary,
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.medium,
+        color: colors.text.secondary,
+        fontSize: 10,
+        fontFamily: typography.fontFamily.bold,
+        letterSpacing: 1,
     },
     addExerciseBtn: {
+        marginTop: spacing.md,
+        borderRadius: borderRadius.xl,
+        overflow: 'hidden',
+    },
+    addExerciseGradient: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.glass.surface,
-        padding: spacing.md,
-        borderRadius: borderRadius.lg,
-        borderWidth: 1,
-        borderColor: colors.primary,
-        borderStyle: 'dashed',
+        padding: spacing.xl,
         gap: spacing.sm,
+        borderWidth: 1,
+        borderColor: colors.primary + '30',
+        borderRadius: borderRadius.xl,
+        borderStyle: 'dashed',
     },
     addExerciseText: {
         color: colors.primary,
-        fontSize: typography.sizes.base,
-        fontFamily: typography.fontFamily.semiBold,
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.extraBold,
+        letterSpacing: 2,
     },
 });

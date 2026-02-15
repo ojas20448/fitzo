@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { learnAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import Skeleton, { SkeletonCard } from '../../components/Skeleton';
@@ -23,16 +24,24 @@ const LearnScreen: React.FC = () => {
     const [progress, setProgress] = useState<any>({ total_xp: 0, lessons_completed: 0 });
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [totalLessons, setTotalLessons] = useState(0);
 
-    useEffect(() => {
-        loadLessons();
-    }, []);
+    // Reload lessons whenever screen comes into focus (e.g. after completing a lesson)
+    useFocusEffect(
+        useCallback(() => {
+            loadLessons();
+        }, [])
+    );
 
     const loadLessons = async () => {
         try {
             const response = await learnAPI.getLessons();
-            setUnits(response.units || []);
+            const unitsData = response.units || [];
+            setUnits(unitsData);
             setProgress(response.progress || { total_xp: 0, lessons_completed: 0 });
+            // Count total lessons across all units
+            const total = unitsData.reduce((sum: number, u: any) => sum + (u.lessons?.length || 0), 0);
+            setTotalLessons(total);
         } catch (error) {
             console.error('Failed to load lessons:', error);
         } finally {
@@ -52,15 +61,6 @@ const LearnScreen: React.FC = () => {
         }
     };
 
-    // Calculate overall progress for the current unit
-    const getCurrentUnitProgress = () => {
-        if (units.length === 0) return 0;
-        const currentUnit = units.find(u => u.lessons.some((l: any) => l.is_next)) || units[0];
-        if (!currentUnit) return 0;
-        const completed = currentUnit.lessons.filter((l: any) => l.completed).length;
-        return (completed / currentUnit.lessons.length) * 100;
-    };
-
     if (loading) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
@@ -70,13 +70,13 @@ const LearnScreen: React.FC = () => {
                         <View style={styles.headerDot} />
                         <Text style={styles.headerSubtitle}>PATH</Text>
                     </View>
-                    <Skeleton width={80} height={28} radius={14} />
+                    <Skeleton width={80} height={28} borderRadius={14} />
                 </View>
                 <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
                     {[1, 2, 3, 4].map((_, idx) => (
                         <View key={idx} style={styles.timelineItem}>
                             <View style={styles.timelineLeft}>
-                                <Skeleton width={32} height={32} radius={16} />
+                                <Skeleton width={32} height={32} borderRadius={16} />
                             </View>
                             <View style={styles.timelineRight}>
                                 <SkeletonCard />
@@ -111,6 +111,25 @@ const LearnScreen: React.FC = () => {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
                 }
             >
+                {/* Overall Progress Card */}
+                {totalLessons > 0 && (
+                    <View style={styles.overallProgress}>
+                        <View style={styles.overallProgressHeader}>
+                            <Text style={styles.overallProgressTitle}>
+                                {progress.lessons_completed}/{totalLessons} Lessons
+                            </Text>
+                            <Text style={styles.overallProgressPercent}>
+                                {Math.round((progress.lessons_completed / totalLessons) * 100)}%
+                            </Text>
+                        </View>
+                        <View style={styles.overallProgressBar}>
+                            <View style={[styles.overallProgressFill, { 
+                                width: `${Math.round((progress.lessons_completed / totalLessons) * 100)}%` 
+                            }]} />
+                        </View>
+                    </View>
+                )}
+
                 {units.map((unit, unitIndex) => (
                     <View key={unit.number} style={styles.unitSection}>
                         {/* Unit Title */}
@@ -128,6 +147,8 @@ const LearnScreen: React.FC = () => {
                                 const isActive = lesson.is_next;
                                 const isCompleted = lesson.completed;
                                 const isLast = index === unit.lessons.length - 1;
+                                // Completed and active lessons are accessible
+                                const canAccess = isCompleted || isActive;
 
                                 return (
                                     <View key={lesson.id} style={styles.timelineItem}>
@@ -159,8 +180,8 @@ const LearnScreen: React.FC = () => {
                                         {/* Right side - lesson card */}
                                         <TouchableOpacity
                                             activeOpacity={0.8}
-                                            onPress={() => handleLessonPress(lesson.id, !isLocked)}
-                                            disabled={isLocked}
+                                            onPress={() => handleLessonPress(lesson.id, canAccess)}
+                                            disabled={!canAccess}
                                             style={styles.timelineRight}
                                         >
                                             <View style={[
@@ -193,17 +214,7 @@ const LearnScreen: React.FC = () => {
                                                     </Text>
                                                 )}
 
-                                                {/* Progress bar for active lesson */}
-                                                {isActive && (
-                                                    <View style={styles.progressContainer}>
-                                                        <View style={styles.progressBar}>
-                                                            <View style={[styles.progressFill, { width: '30%' }]} />
-                                                        </View>
-                                                        <Text style={styles.progressText}>30%</Text>
-                                                    </View>
-                                                )}
-
-                                                {/* XP indicator */}
+                                                {/* XP indicator + meta */}
                                                 <View style={styles.lessonMeta}>
                                                     <View style={styles.xpIndicator}>
                                                         <MaterialIcons 
@@ -218,7 +229,13 @@ const LearnScreen: React.FC = () => {
                                                             +{lesson.xp_reward || 50} XP
                                                         </Text>
                                                     </View>
-                                                    {isCompleted && (
+                                                    {isCompleted && lesson.last_score != null && (
+                                                        <View style={styles.scoreContainer}>
+                                                            <MaterialIcons name="check-circle" size={14} color={colors.success} />
+                                                            <Text style={styles.scoreText}>{lesson.last_score}%</Text>
+                                                        </View>
+                                                    )}
+                                                    {isCompleted && !lesson.last_score && (
                                                         <Text style={styles.completedText}>Completed</Text>
                                                     )}
                                                 </View>
@@ -440,30 +457,6 @@ const styles = StyleSheet.create({
     lessonDescriptionLocked: {
         color: colors.text.subtle,
     },
-    progressContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-        marginBottom: spacing.md,
-    },
-    progressBar: {
-        flex: 1,
-        height: 4,
-        backgroundColor: colors.glass.border,
-        borderRadius: 2,
-        overflow: 'hidden',
-    },
-    progressFill: {
-        height: '100%',
-        backgroundColor: colors.primary,
-        borderRadius: 2,
-    },
-    progressText: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
-        letterSpacing: 0.5,
-    },
     lessonMeta: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -488,6 +481,51 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.medium,
         color: colors.success,
         letterSpacing: 0.5,
+    },
+    scoreContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    scoreText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.success,
+    },
+    overallProgress: {
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.xl,
+        padding: spacing.lg,
+        marginBottom: spacing['2xl'],
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    overallProgressHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
+    overallProgressTitle: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.secondary,
+    },
+    overallProgressPercent: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.primary,
+    },
+    overallProgressBar: {
+        height: 6,
+        backgroundColor: colors.glass.border,
+        borderRadius: 3,
+        overflow: 'hidden',
+    },
+    overallProgressFill: {
+        height: '100%',
+        backgroundColor: colors.primary,
+        borderRadius: 3,
     },
 });
 

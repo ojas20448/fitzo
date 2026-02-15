@@ -1,8 +1,9 @@
 import { Tabs, router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { View, StyleSheet, TouchableOpacity, Modal, Text } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Modal, Text, Pressable } from 'react-native';
 import { useState } from 'react';
 import { colors, typography, spacing, borderRadius } from '../../src/styles/theme';
+import { AnimatedTabIcon } from '../../src/components/AnimatedTabIcon';
 
 export default function TabLayout() {
     const [showLogModal, setShowLogModal] = useState(false);
@@ -27,13 +28,9 @@ export default function TabLayout() {
                     name="index"
                     options={{
                         title: 'Home',
+                        tabBarAccessibilityLabel: 'Home tab',
                         tabBarIcon: ({ color, focused }) => (
-                            <MaterialIcons
-                                name="home"
-                                size={24}
-                                color={color}
-                                style={focused ? styles.activeIcon : undefined}
-                            />
+                            <AnimatedTabIcon name="home" color={color} focused={focused} />
                         ),
                     }}
                 />
@@ -41,13 +38,9 @@ export default function TabLayout() {
                     name="buddies"
                     options={{
                         title: 'Buddies',
+                        tabBarAccessibilityLabel: 'Gym buddies tab',
                         tabBarIcon: ({ color, focused }) => (
-                            <MaterialIcons
-                                name="people"
-                                size={24}
-                                color={color}
-                                style={focused ? styles.activeIcon : undefined}
-                            />
+                            <AnimatedTabIcon name="people" color={color} focused={focused} />
                         ),
                     }}
                 />
@@ -55,8 +48,9 @@ export default function TabLayout() {
                     name="scan"
                     options={{
                         title: '',
+                        tabBarAccessibilityLabel: 'Log action menu',
                         tabBarIcon: ({ focused }) => (
-                            <View style={styles.logButton}>
+                            <View style={styles.logButton} accessibilityLabel="Open log menu" accessibilityRole="button">
                                 <MaterialIcons name="add" size={32} color={colors.background} />
                             </View>
                         ),
@@ -72,13 +66,9 @@ export default function TabLayout() {
                     name="learn"
                     options={{
                         title: 'Learn',
+                        tabBarAccessibilityLabel: 'Learning path tab',
                         tabBarIcon: ({ color, focused }) => (
-                            <MaterialIcons
-                                name="menu-book"
-                                size={24}
-                                color={color}
-                                style={focused ? styles.activeIcon : undefined}
-                            />
+                            <AnimatedTabIcon name="menu-book" color={color} focused={focused} />
                         ),
                     }}
                 />
@@ -86,13 +76,9 @@ export default function TabLayout() {
                     name="profile"
                     options={{
                         title: 'Profile',
+                        tabBarAccessibilityLabel: 'Your profile tab',
                         tabBarIcon: ({ color, focused }) => (
-                            <MaterialIcons
-                                name="person"
-                                size={24}
-                                color={color}
-                                style={focused ? styles.activeIcon : undefined}
-                            />
+                            <AnimatedTabIcon name="person" color={color} focused={focused} />
                         ),
                     }}
                 />
@@ -111,17 +97,19 @@ export default function TabLayout() {
                 animationType="fade"
                 onRequestClose={() => setShowLogModal(false)}
             >
-                <TouchableOpacity
+                <Pressable
                     style={styles.modalOverlay}
-                    activeOpacity={1}
                     onPress={() => setShowLogModal(false)}
                 >
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>What would you like to log?</Text>
+                    <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+                        <Text style={styles.modalTitle} accessibilityRole="header">What would you like to log?</Text>
 
                         <TouchableOpacity
                             style={styles.modalOption}
                             onPress={() => handleLogOption('/log/workout')}
+                            accessibilityLabel="Log workout"
+                            accessibilityHint="Track what you trained today"
+                            accessibilityRole="menuitem"
                         >
                             <View style={styles.optionIcon}>
                                 <MaterialIcons name="fitness-center" size={28} color={colors.primary} />
@@ -136,6 +124,9 @@ export default function TabLayout() {
                         <TouchableOpacity
                             style={styles.modalOption}
                             onPress={() => handleLogOption('/log/calories')}
+                            accessibilityLabel="Log calories"
+                            accessibilityHint="Track your nutrition"
+                            accessibilityRole="menuitem"
                         >
                             <View style={styles.optionIcon}>
                                 <MaterialIcons name="restaurant" size={28} color={colors.primary} />
@@ -150,6 +141,9 @@ export default function TabLayout() {
                         <TouchableOpacity
                             style={styles.modalOption}
                             onPress={() => handleLogOption('/food-scanner')}
+                            accessibilityLabel="Scan food"
+                            accessibilityHint="Use AI to detect food from photo"
+                            accessibilityRole="menuitem"
                         >
                             <View style={styles.optionIcon}>
                                 <MaterialIcons name="camera-alt" size={28} color={colors.primary} />
@@ -164,6 +158,9 @@ export default function TabLayout() {
                         <TouchableOpacity
                             style={styles.modalOption}
                             onPress={() => handleLogOption('/exercise-library')}
+                            accessibilityLabel="Exercise library"
+                            accessibilityHint="Browse 1,300+ exercises with GIFs"
+                            accessibilityRole="menuitem"
                         >
                             <View style={styles.optionIcon}>
                                 <MaterialIcons name="fitness-center" size={28} color={colors.primary} />
@@ -178,11 +175,13 @@ export default function TabLayout() {
                         <TouchableOpacity
                             style={styles.cancelBtn}
                             onPress={() => setShowLogModal(false)}
+                            accessibilityLabel="Cancel"
+                            accessibilityRole="button"
                         >
                             <Text style={styles.cancelText}>Cancel</Text>
                         </TouchableOpacity>
-                    </View>
-                </TouchableOpacity>
+                    </Pressable>
+                </Pressable>
             </Modal>
         </>
     );

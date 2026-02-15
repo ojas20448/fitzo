@@ -2,12 +2,15 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { authEvents } from './authEvents';
+import { useOfflineStore } from '../stores/offlineStore';
 
-// API base URL - change for production
-// Use your computer's IP for physical devices, localhost only works in web/emulator
-const API_BASE_URL = __DEV__
-    ? (Platform.OS === 'web' ? 'http://localhost:3001/api' : 'http://192.168.1.23:3001/api')
-    : 'https://fitzo-api.onrender.com/api';
+// API base URL
+// EAS Build injects EXPO_PUBLIC_API_URL at build time from eas.json env config.
+// In dev, use localhost (web) or LAN IP (native device).
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL
+    || (__DEV__
+        ? (Platform.OS === 'web' ? 'http://localhost:3001/api' : 'http://192.168.1.16:3001/api')
+        : 'https://fitzo-backend.onrender.com/api');
 
 
 // Create axios instance
@@ -67,20 +70,26 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        // Handle token expiry
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Handle token expiry - but NOT on auth endpoints (login/register)
+        const isAuthEndpoint = originalRequest?.url?.includes('/auth/login') || 
+                               originalRequest?.url?.includes('/auth/register') ||
+                               originalRequest?.url?.includes('/auth/google');
+        
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
             // Token expired or invalid - clear it
             await removeAuthToken();
             authEvents.emitLogout();
         }
 
         // Transform error to user-friendly message
-        const message = error.response?.data?.message || 'Something went wrong. Please try again.';
+        const message = error.response?.data?.message || 
+                       error.response?.data?.error ||
+                       (error.code === 'ERR_NETWORK' ? 'Cannot connect to server. Please check your internet connection.' : 'Something went wrong. Please try again.');
 
         return Promise.reject({
             message,
-            code: error.response?.data?.code || 'NETWORK_ERROR',
-            status: error.response?.status || 500,
+            code: error.response?.data?.code || (error.code === 'ERR_NETWORK' ? 'NETWORK_ERROR' : 'UNKNOWN'),
+            status: error.response?.status || 0,
         });
     }
 );
@@ -100,6 +109,21 @@ export const authAPI = {
         return response.data;
     },
 
+    devLogin: async () => {
+        const response = await api.post('/auth/dev-login', {});
+        return response.data;
+    },
+
+    googleLogin: async (token: string) => {
+        const response = await api.post('/auth/google', { token });
+        return response.data;
+    },
+
+    forgotPassword: async (email: string) => {
+        const response = await api.post('/auth/forgot-password', { email });
+        return response.data;
+    },
+
     getMe: async () => {
         const response = await api.get('/auth/me');
         return response.data;
@@ -112,8 +136,19 @@ export const authAPI = {
 
 export const memberAPI = {
     getHome: async () => {
-        const response = await api.get('/member/home');
-        return response.data;
+        try {
+            const response = await api.get('/member/home');
+            // Cache for offline use
+            useOfflineStore.getState().cacheHomeData(response.data);
+            return response.data;
+        } catch (error: any) {
+            // On network error, return cached data if available
+            if (error.code === 'NETWORK_ERROR') {
+                const cached = useOfflineStore.getState().getHomeData();
+                if (cached) return cached;
+            }
+            throw error;
+        }
     },
 
     updateProfile: async (data: { name?: string; avatar_url?: string }) => {
@@ -214,6 +249,11 @@ export const friendsAPI = {
         const response = await api.get(`/friends/search?q=${encodeURIComponent(query)}`);
         return response.data;
     },
+
+    getSuggested: async (limit = 5) => {
+        const response = await api.get(`/friends/suggested?limit=${limit}`);
+        return response.data;
+    },
 };
 
 // ===========================================
@@ -222,13 +262,37 @@ export const friendsAPI = {
 
 export const learnAPI = {
     getLessons: async () => {
-        const response = await api.get('/learn/lessons');
-        return response.data;
+        try {
+            const response = await api.get('/learn/lessons');
+            // Cache units for offline use
+            if (response.data?.units) {
+                useOfflineStore.getState().cacheUnits(response.data.units);
+            }
+            return response.data;
+        } catch (error: any) {
+            if (error.code === 'NETWORK_ERROR') {
+                const units = useOfflineStore.getState().getUnits();
+                if (units.length > 0) return { units, progress: {} };
+            }
+            throw error;
+        }
     },
 
     getLesson: async (lessonId: string) => {
-        const response = await api.get(`/learn/lessons/${lessonId}`);
-        return response.data;
+        try {
+            const response = await api.get(`/learn/lessons/${lessonId}`);
+            // Cache lesson for offline use
+            if (response.data?.lesson) {
+                useOfflineStore.getState().cacheLesson(response.data.lesson);
+            }
+            return response.data;
+        } catch (error: any) {
+            if (error.code === 'NETWORK_ERROR') {
+                const cached = useOfflineStore.getState().getLesson(lessonId);
+                if (cached) return { lesson: cached };
+            }
+            throw error;
+        }
     },
 
     submitAttempt: async (lessonId: string, answers: number[]) => {
@@ -425,6 +489,16 @@ export const workoutsAPI = {
         tags: string[];
     }) => {
         const response = await api.post('/workouts/published', data);
+        return response.data;
+    },
+
+    like: async (workoutId: string) => {
+        const response = await api.post(`/workouts/${workoutId}/like`);
+        return response.data;
+    },
+
+    unlike: async (workoutId: string) => {
+        const response = await api.delete(`/workouts/${workoutId}/like`);
         return response.data;
     },
 };

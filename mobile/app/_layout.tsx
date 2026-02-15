@@ -1,29 +1,32 @@
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import {
     useFonts,
+    Lexend_300Light,
     Lexend_400Regular,
     Lexend_500Medium,
     Lexend_600SemiBold,
     Lexend_700Bold,
     Lexend_800ExtraBold,
 } from '@expo-google-fonts/lexend';
-import { useEffect } from 'react';
+
 import { AuthProvider } from '../src/context/AuthContext';
 import { ToastProvider } from '../src/components/Toast';
-import { NutritionProvider } from '../src/context/NutritionContext';
 import { XPProvider } from '../src/context/XPContext';
-import OfflineBanner from '../src/components/OfflineBanner';
+import { NutritionProvider } from '../src/context/NutritionContext';
 import { colors } from '../src/styles/theme';
 
-// Prevent splash screen from auto-hiding
+// Keep splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
     const [fontsLoaded] = useFonts({
+        Lexend_300Light,
         Lexend_400Regular,
         Lexend_500Medium,
         Lexend_600SemiBold,
@@ -31,88 +34,85 @@ export default function RootLayout() {
         Lexend_800ExtraBold,
     });
 
+    const [appReady, setAppReady] = useState(false);
+
     useEffect(() => {
         if (fontsLoaded) {
+            setAppReady(true);
             SplashScreen.hideAsync();
         }
     }, [fontsLoaded]);
 
-    if (!fontsLoaded) {
+    if (!appReady) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+            <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
     }
 
     return (
-        <SafeAreaProvider>
-            <OfflineBanner />
-            <AuthProvider>
-                <ToastProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <SafeAreaProvider>
+                <AuthProvider>
                     <XPProvider>
                         <NutritionProvider>
-                            <StatusBar style="light" />
-                            <Stack
-                                screenOptions={{
-                                    headerShown: false,
-                                    contentStyle: { backgroundColor: colors.background },
-                                    animation: 'slide_from_right',
-                                    animationDuration: 200,
-                                }}
-                            >
-                                <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
-                                <Stack.Screen name="index" options={{ animation: 'fade' }} />
-                                <Stack.Screen name="login" options={{ animation: 'fade' }} />
-                                <Stack.Screen name="register" options={{ animation: 'fade_from_bottom' }} />
-
-                                {/* Modals and Sheets */}
-                                <Stack.Screen
-                                    name="qr-checkin"
-                                    options={{
-                                        presentation: 'modal',
-                                        animation: 'slide_from_bottom',
+                            <ToastProvider>
+                                <StatusBar style="light" />
+                                <Stack
+                                    screenOptions={{
+                                        headerShown: false,
+                                        contentStyle: { backgroundColor: colors.background },
+                                        animation: 'fade',
                                     }}
-                                />
-                                <Stack.Screen
-                                    name="exercise-library"
-                                    options={{
-                                        presentation: 'modal',
-                                        animation: 'slide_from_bottom',
-                                    }}
-                                />
-                                <Stack.Screen
-                                    name="workout-intent"
-                                    options={{
-                                        animation: 'slide_from_bottom',
-                                    }}
-                                />
-                                <Stack.Screen
-                                    name="food-scanner"
-                                    options={{
-                                        presentation: 'modal',
-                                        animation: 'slide_from_bottom',
-                                    }}
-                                />
-                                <Stack.Screen
-                                    name="log/workout"
-                                    options={{
-                                        presentation: 'modal',
-                                        animation: 'slide_from_bottom',
-                                    }}
-                                />
-                                <Stack.Screen
-                                    name="log/calories"
-                                    options={{
-                                        presentation: 'modal',
-                                        animation: 'slide_from_bottom',
-                                    }}
-                                />
-                            </Stack>
+                                >
+                                    {/* Root level screens */}
+                                    <Stack.Screen name="index" />
+                                    <Stack.Screen name="login" />
+                                    <Stack.Screen name="register" />
+                                    <Stack.Screen name="forgot-password" />
+                                    <Stack.Screen name="(tabs)" />
+                                    <Stack.Screen name="onboarding" />
+                                    <Stack.Screen name="manager-dashboard" />
+                                    <Stack.Screen name="trainer-home" />
+                                    <Stack.Screen name="qr-checkin" />
+                                    <Stack.Screen name="workout-intent" />
+                                    <Stack.Screen name="workout-videos" />
+                                    <Stack.Screen name="food-scanner" />
+                                    <Stack.Screen name="classes" />
+                                    <Stack.Screen name="ai-coach" />
+                                    <Stack.Screen name="exercise-library" />
+                                    {/* Nested route groups - use full path */}
+                                    <Stack.Screen name="trainer" />
+                                    <Stack.Screen name="manager/people" />
+                                    <Stack.Screen name="member/active-workout" />
+                                    <Stack.Screen name="member/add-buddy" />
+                                    <Stack.Screen name="member/fitness-profile" />
+                                    <Stack.Screen name="member/measurements" />
+                                    <Stack.Screen name="member/published-splits" />
+                                    <Stack.Screen name="member/recipe-builder" />
+                                    <Stack.Screen name="member/recipes" />
+                                    <Stack.Screen name="member/settings" />
+                                    <Stack.Screen name="member/workout-recap" />
+                                    <Stack.Screen name="member-detail/[id]" />
+                                    <Stack.Screen name="lesson/[id]" />
+                                    <Stack.Screen name="log/calories" />
+                                    <Stack.Screen name="log/workout" />
+                                </Stack>
+                            </ToastProvider>
                         </NutritionProvider>
                     </XPProvider>
-                </ToastProvider>
-            </AuthProvider>
-        </SafeAreaProvider>
+                </AuthProvider>
+            </SafeAreaProvider>
+        </GestureHandlerRootView>
     );
 }
+
+const styles = StyleSheet.create({
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.background,
+    },
+});

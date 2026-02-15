@@ -3,8 +3,9 @@
     "name": "Fitzo",
     "slug": "fitzo",
     "owner": "fiskerr",
-    "version": "1.0.0",
-    "orientation": "portrait",
+    "version": "1.1.0",
+    "sdkVersion": "54.0.0",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "fitzo",
     "userInterfaceStyle": "dark",
@@ -20,7 +21,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.fitzo.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "We need camera access to scan the gym QR code for check-in"
+        "NSCameraUsageDescription": "We need camera access to scan the gym QR code for check-in",
+        "UIBackgroundModes": ["remote-notification"]
       }
     },
     "android": {

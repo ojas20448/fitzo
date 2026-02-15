@@ -11,12 +11,14 @@ import Button from '../../components/Button';
 import { friendsAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
+import { useLocalSearchParams } from 'expo-router';
 
 type Tab = 'search' | 'scan' | 'code';
 
 export default function AddBuddyScreen() {
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState<Tab>('search');
+    const { tab } = useLocalSearchParams<{ tab?: string }>();
+    const [activeTab, setActiveTab] = useState<Tab>((tab as Tab) || 'search');
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searching, setSearching] = useState(false);

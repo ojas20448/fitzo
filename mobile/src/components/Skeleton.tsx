@@ -1,47 +1,49 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, ViewStyle, DimensionValue } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, StyleSheet, ViewStyle, DimensionValue } from 'react-native';
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withTiming,
+    Easing,
+} from 'react-native-reanimated';
 import { colors, borderRadius } from '../styles/theme';
 
 interface SkeletonProps {
     width?: DimensionValue;
-    height?: number;
+    height?: DimensionValue;
     borderRadius?: number;
     style?: ViewStyle;
+    color?: string;
+    lightColor?: string;
 }
 
-/**
- * Shimmer skeleton loading placeholder
- */
-const Skeleton: React.FC<SkeletonProps> = ({
+export const Skeleton = ({
     width = '100%',
     height = 20,
     borderRadius: radius = borderRadius.md,
     style,
-}) => {
-    const shimmerAnim = useRef(new Animated.Value(0)).current;
+    color = 'rgba(255, 255, 255, 0.1)',
+    lightColor = 'rgba(255, 255, 255, 0.2)',
+}: SkeletonProps) => {
+    const opacity = useSharedValue(0.3);
 
     useEffect(() => {
-        const animation = Animated.loop(
-            Animated.sequence([
-                Animated.timing(shimmerAnim, {
-                    toValue: 1,
-                    duration: 1000,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(shimmerAnim, {
-                    toValue: 0,
-                    duration: 1000,
-                    useNativeDriver: true,
-                }),
-            ])
+        opacity.value = withRepeat(
+            withSequence(
+                withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+                withTiming(0.3, { duration: 1000, easing: Easing.inOut(Easing.ease) })
+            ),
+            -1,
+            true
         );
-        animation.start();
-        return () => animation.stop();
-    }, [shimmerAnim]);
+    }, []);
 
-    const opacity = shimmerAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0.3, 0.7],
+    const animatedStyle = useAnimatedStyle(() => {
+        return {
+            opacity: opacity.value,
+        };
     });
 
     return (
@@ -52,246 +54,122 @@ const Skeleton: React.FC<SkeletonProps> = ({
                     width,
                     height,
                     borderRadius: radius,
-                    opacity,
+                    backgroundColor: color,
                 },
+                animatedStyle,
                 style,
             ]}
         />
     );
+
 };
 
-// Pre-built skeleton patterns
-export const SkeletonCard: React.FC<{ style?: ViewStyle }> = ({ style }) => (
-    <View style={[styles.card, style]}>
-        <View style={styles.cardHeader}>
-            <Skeleton width={48} height={48} borderRadius={24} />
-            <View style={styles.cardHeaderText}>
-                <Skeleton width={120} height={16} />
-                <Skeleton width={80} height={12} style={{ marginTop: 8 }} />
-            </View>
+export const SkeletonCard = ({ style }: { style?: ViewStyle }) => {
+    return (
+        <View style={[styles.card, style]}>
+            <Skeleton width="60%" height={24} style={{ marginBottom: 12 }} />
+            <Skeleton width="40%" height={16} />
         </View>
-        <Skeleton width="100%" height={60} style={{ marginTop: 16 }} />
-    </View>
-);
-
-export const SkeletonList: React.FC<{ count?: number; style?: ViewStyle }> = ({
-    count = 3,
-    style
-}) => (
-    <View style={style}>
-        {Array.from({ length: count }).map((_, index) => (
-            <View key={index} style={styles.listItem}>
-                <Skeleton width={44} height={44} borderRadius={22} />
-                <View style={styles.listItemContent}>
-                    <Skeleton width="70%" height={14} />
-                    <Skeleton width="50%" height={12} style={{ marginTop: 6 }} />
-                </View>
-            </View>
-        ))}
-    </View>
-);
-
-export const SkeletonStats: React.FC<{ style?: ViewStyle }> = ({ style }) => (
-    <View style={[styles.statsRow, style]}>
-        <View style={styles.statBox}>
-            <Skeleton width={60} height={32} />
-            <Skeleton width={40} height={12} style={{ marginTop: 8 }} />
-        </View>
-        <View style={styles.statBox}>
-            <Skeleton width={60} height={32} />
-            <Skeleton width={40} height={12} style={{ marginTop: 8 }} />
-        </View>
-        <View style={styles.statBox}>
-            <Skeleton width={60} height={32} />
-            <Skeleton width={40} height={12} style={{ marginTop: 8 }} />
-        </View>
-    </View>
-);
-
-export const SkeletonHomeScreen: React.FC = () => (
-    <View style={styles.homeContainer}>
-        {/* Header */}
-        <View style={styles.homeHeader}>
-            <View style={styles.cardHeader}>
-                <Skeleton width={48} height={48} borderRadius={24} />
-                <View style={styles.cardHeaderText}>
-                    <Skeleton width={60} height={12} />
-                    <Skeleton width={100} height={18} style={{ marginTop: 6 }} />
-                </View>
-            </View>
-            <Skeleton width={100} height={40} borderRadius={borderRadius.lg} />
-        </View>
-
-        {/* Today's Focus */}
-        <View style={styles.section}>
-            <Skeleton width={100} height={14} style={{ marginBottom: 12 }} />
-            <View style={styles.card}>
-                <View style={styles.cardRow}>
-                    <View style={{ flex: 1 }}>
-                        <Skeleton width="80%" height={18} />
-                        <Skeleton width="60%" height={14} style={{ marginTop: 8 }} />
-                    </View>
-                    <Skeleton width={32} height={32} borderRadius={16} />
-                </View>
-            </View>
-        </View>
-
-        {/* Weekly Progress */}
-        <View style={styles.section}>
-            <View style={styles.card}>
-                <Skeleton width={120} height={14} />
-                <View style={styles.weekRow}>
-                    {Array.from({ length: 7 }).map((_, i) => (
-                        <View key={i} style={styles.dayColumn}>
-                            <Skeleton width={16} height={12} />
-                            <Skeleton width={24} height={24} borderRadius={12} style={{ marginTop: 8 }} />
-                        </View>
-                    ))}
-                </View>
-            </View>
-        </View>
-
-        {/* Nutrition */}
-        <View style={styles.section}>
-            <View style={styles.card}>
-                <Skeleton width={80} height={14} />
-                <View style={styles.nutritionRow}>
-                    <View style={{ flex: 1 }}>
-                        <Skeleton width={80} height={28} />
-                        <Skeleton width={60} height={10} style={{ marginTop: 6 }} />
-                    </View>
-                    <Skeleton width={1} height={30} />
-                    <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                        <Skeleton width={60} height={20} />
-                        <Skeleton width={50} height={10} style={{ marginTop: 6 }} />
-                    </View>
-                </View>
-                <Skeleton width="100%" height={8} borderRadius={4} style={{ marginTop: 16 }} />
-            </View>
-        </View>
-
-        {/* Quick Log */}
-        <View style={styles.section}>
-            <Skeleton width={80} height={14} style={{ marginBottom: 12 }} />
-            <View style={styles.logRow}>
-                <View style={styles.logButton}>
-                    <Skeleton width={36} height={36} borderRadius={18} />
-                    <View style={{ marginLeft: 12 }}>
-                        <Skeleton width={60} height={14} />
-                        <Skeleton width={40} height={10} style={{ marginTop: 4 }} />
-                    </View>
-                </View>
-                <View style={styles.logButton}>
-                    <Skeleton width={36} height={36} borderRadius={18} />
-                    <View style={{ marginLeft: 12 }}>
-                        <Skeleton width={60} height={14} />
-                        <Skeleton width={40} height={10} style={{ marginTop: 4 }} />
-                    </View>
-                </View>
-            </View>
-        </View>
-    </View>
-);
-
-export const SkeletonLesson: React.FC = () => (
-    <View style={styles.homeContainer}>
-        <View style={styles.cardHeader}>
-            <Skeleton width={180} height={24} />
-        </View>
-        <Skeleton width="100%" height={250} borderRadius={borderRadius.xl} style={{ marginTop: 20 }} />
-        <View style={{ marginTop: 24, gap: 12 }}>
-            <Skeleton width="100%" height={14} />
-            <Skeleton width="100%" height={14} />
-            <Skeleton width="60%" height={14} />
-        </View>
-        <View style={{ marginTop: 40 }}>
-            <Skeleton width="100%" height={56} borderRadius={28} />
-        </View>
-    </View>
-);
+    );
+};
 
 const styles = StyleSheet.create({
     skeleton: {
-        backgroundColor: colors.glass.surface,
+        backgroundColor: colors.surface,
+        overflow: 'hidden',
     },
     card: {
+        padding: 16,
         backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius.xl,
+        borderRadius: borderRadius.lg,
         borderWidth: 1,
         borderColor: colors.glass.border,
-        padding: 16,
     },
-    cardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    cardHeaderText: {
-        marginLeft: 12,
-        flex: 1,
-    },
-    cardRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    listItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.glass.border,
-    },
-    listItemContent: {
-        marginLeft: 12,
-        flex: 1,
-    },
-    statsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    statBox: {
-        alignItems: 'center',
-    },
+    // Home Skeleton Styles
     homeContainer: {
-        flex: 1,
         paddingHorizontal: 20,
-        paddingTop: 16,
+        paddingTop: 20,
     },
     homeHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 30,
     },
-    section: {
-        marginBottom: 24,
+    homeHeaderLeft: {
+        gap: 8,
     },
-    weekRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 16,
-    },
-    dayColumn: {
-        alignItems: 'center',
-    },
-    nutritionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 12,
-    },
-    logRow: {
+    row: {
         flexDirection: 'row',
         gap: 12,
-    },
-    logButton: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius.lg,
-        padding: 12,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
+        marginBottom: 24,
     },
 });
+
+// ... styles
+
+export const SkeletonHomeScreen = () => {
+    return (
+        <View style={styles.homeContainer}>
+            {/* Header */}
+            <View style={styles.homeHeader}>
+                <View style={styles.homeHeaderLeft}>
+                    <Skeleton width={48} height={48} borderRadius={24} />
+                    <View style={{ gap: 4 }}>
+                        <Skeleton width={100} height={12} />
+                        <Skeleton width={140} height={24} />
+                    </View>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <Skeleton width={40} height={40} borderRadius={20} />
+                    <Skeleton width={60} height={40} borderRadius={20} />
+                </View>
+            </View>
+
+            {/* Today's Training */}
+            <Skeleton width="100%" height={24} style={{ marginBottom: 12 }} />
+            <Skeleton width="80%" height={40} style={{ marginBottom: 32 }} />
+
+            {/* Actions */}
+            <View style={styles.row}>
+                <Skeleton width="48%" height={64} borderRadius={16} />
+                <Skeleton width="48%" height={64} borderRadius={16} />
+            </View>
+
+            {/* Sections */}
+            <SkeletonCard style={{ marginBottom: 24 }} />
+            <SkeletonCard style={{ marginBottom: 24 }} />
+        </View>
+    );
+};
+
+
+
+export const SkeletonList = ({ count = 3 }: { count?: number }) => {
+    return (
+        <View>
+            {Array.from({ length: count }).map((_, index) => (
+                <SkeletonCard key={index} style={{ marginBottom: 16 }} />
+            ))}
+        </View>
+    );
+};
+
+export const SkeletonLesson = () => {
+    return (
+        <View style={{ padding: 20 }}>
+            {/* Title */}
+            <Skeleton width="80%" height={32} style={{ marginBottom: 16 }} />
+            {/* Description */}
+            <Skeleton width="60%" height={16} style={{ marginBottom: 32 }} />
+            {/* Content blocks */}
+            <Skeleton width="100%" height={120} style={{ marginBottom: 16 }} />
+            <Skeleton width="100%" height={80} style={{ marginBottom: 16 }} />
+            <Skeleton width="90%" height={60} style={{ marginBottom: 32 }} />
+            {/* Button */}
+            <Skeleton width="100%" height={52} borderRadius={26} />
+        </View>
+    );
+};
 
 export default Skeleton;

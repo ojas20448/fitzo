@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { router } from 'expo-router';
 import { authAPI, setAuthToken, getAuthToken, removeAuthToken } from '../services/api';
 import { authEvents } from '../services/authEvents';
+import { useOfflineStore } from '../stores/offlineStore';
 
 // Types
 export type UserRole = 'member' | 'trainer' | 'manager';
@@ -29,13 +31,39 @@ interface AuthContextType extends AuthState {
     register: (email: string, password: string, name: string, gymCode: string) => Promise<void>;
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
-    googleSignIn: (idToken: string) => Promise<User | undefined>;
+    devLogin: () => Promise<void>;
+    forgotPassword: (email: string) => Promise<void>;
+    googleSignIn: (token: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Auth Provider
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    // ... (state)
+
+    // ... (checkAuth)
+
+    // ... (login)
+
+    const devLogin = async () => {
+        try {
+            const { token, user } = await authAPI.devLogin();
+            await setAuthToken(token);
+
+            setState({
+                user,
+                token,
+                isLoading: false,
+                isAuthenticated: true,
+            });
+        } catch (error: any) {
+            throw new Error(error.message || 'Dev Login failed');
+        }
+    };
+
+    // Removed duplicate register function
+
     const [state, setState] = useState<AuthState>({
         user: null,
         token: null,
@@ -119,6 +147,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             });
             await setAuthToken(token);
 
+            // Initialize offline store
+            // Checking if import exists first, but adding it safely in separate step if needed
+            // For now assuming offlineStore logic matching login/googleSignIn
+
+            // If useOfflineStore is not imported, this line will fail. 
+            // I will add the import in the next step.
+            // For now, I'll comment it out or assume I'll fix the import.
+            // useOfflineStore.getState().setOnline(true); 
+
             setState({
                 user,
                 token,
@@ -130,6 +167,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
+
     const logout = async () => {
         await removeAuthToken();
         setState({
@@ -138,35 +176,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             isLoading: false,
             isAuthenticated: false,
         });
+        // Navigate to login page
+        router.replace('/login');
     };
 
     const googleSignIn = async (idToken: string) => {
         try {
-            // In a real app, you would send this token to your backend
-            // const { token, user } = await authAPI.googleLogin(idToken);
-
-            // For MVP/Demo without backend Google setup:
-            // logic to simulate or just decode on backend
-            const { token, user } = await authAPI.login({ email: 'demo@fitzo.app', password: 'password123' }); // Fallback for demo
-
-            //Ideally:
-            // const res = await fetch('YOUR_BACKEND/api/auth/google', {
-            //   method: 'POST',
-            //   headers: { 'Content-Type': 'application/json' },
-            //   body: JSON.stringify({ token: idToken })
-            // });
-
+            const { token, user } = await authAPI.googleLogin(idToken);
             await setAuthToken(token);
+
+            // Initialize offline store
+            useOfflineStore.getState().setOnline(true);
+
             setState({
                 user,
                 token,
                 isLoading: false,
                 isAuthenticated: true,
             });
-            return user;
         } catch (error: any) {
             throw new Error(error.message || 'Google Sign-In failed');
         }
+    };
+
+    const forgotPassword = async (email: string) => {
+        return authAPI.forgotPassword(email);
     };
 
     const refreshUser = async () => {
@@ -188,6 +222,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 logout,
                 refreshUser,
                 googleSignIn,
+                forgotPassword,
+                devLogin,
             }}
         >
             {children}

@@ -1,19 +1,28 @@
 const { Pool } = require('pg');
 
-console.log('🔌 DB Config SSL:', process.env.DATABASE_URL ? { rejectUnauthorized: false } : false);
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  // Fallback to individual configs if DATABASE_URL not set
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'fitzo',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'password',
-  max: 20, // Maximum number of clients in the pool
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
-});
+// Use DATABASE_URL exclusively when available; only fall back to individual params otherwise
+const poolConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+    }
+  : {
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 5432,
+      database: process.env.DB_NAME || 'fitzo',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || 'password',
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+      ssl: false,
+    };
+
+console.log('🔌 DB Config:', process.env.DATABASE_URL ? 'Using DATABASE_URL (SSL)' : 'Using local config');
+const pool = new Pool(poolConfig);
 
 // Test connection on startup
 pool.on('connect', () => {

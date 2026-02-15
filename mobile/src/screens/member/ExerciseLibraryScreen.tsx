@@ -4,16 +4,18 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    Image,
     Modal,
     ActivityIndicator,
     ScrollView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import ExerciseList from '../../components/ExerciseList';
+
+import GlassCard from '../../components/GlassCard';
 
 export default function ExerciseLibraryScreen() {
     const router = useRouter();
@@ -43,9 +45,10 @@ export default function ExerciseLibraryScreen() {
                                 router.replace('/home' as any);
                             }
                         }}
-                        style={styles.backButton}
                     >
-                        <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
+                        <GlassCard style={styles.backButton}>
+                            <MaterialIcons name="arrow-back" size={20} color={colors.text.primary} />
+                        </GlassCard>
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Exercise Library</Text>
                 </View>
@@ -67,15 +70,16 @@ export default function ExerciseLibraryScreen() {
                         <Text style={styles.modalTitle}>Exercise Detail</Text>
                         <TouchableOpacity
                             onPress={() => setSelectedExercise(null)}
-                            style={styles.closeButton}
                         >
-                            <MaterialIcons name="close" size={24} color={colors.text.primary} />
+                            <GlassCard style={styles.closeButton}>
+                                <MaterialIcons name="close" size={20} color={colors.text.primary} />
+                            </GlassCard>
                         </TouchableOpacity>
                     </View>
 
                     {selectedExercise && (
                         <ScrollView contentContainerStyle={styles.modalContent}>
-                            <View style={styles.modalImageContainer}>
+                            <GlassCard style={styles.modalImageContainer}>
                                 {imageLoading && (
                                     <View style={styles.modalImageLoader}>
                                         <ActivityIndicator size="large" color={colors.primary} />
@@ -85,22 +89,23 @@ export default function ExerciseLibraryScreen() {
                                     <Image
                                         source={{ uri: selectedExercise.gifUrl }}
                                         style={styles.modalGif}
-                                        resizeMode="contain"
+                                        contentFit="contain"
+                                        transition={200}
+                                        cachePolicy="memory-disk"
                                         onLoadStart={() => setImageLoading(true)}
-                                        onLoadEnd={() => setImageLoading(false)}
-                                        onError={(e) => {
-                                            console.log('Modal Image error:', e.nativeEvent.error);
+                                        onLoad={() => setImageLoading(false)}
+                                        onError={() => {
                                             setImageError('Failed to load GIF');
                                             setImageLoading(false);
                                         }}
                                     />
                                 ) : (
-                                    <View style={styles.errorContainer}>
-                                        <MaterialIcons name="broken-image" size={50} color={colors.text.muted} />
-                                        <Text style={styles.errorText}>Image unavailable</Text>
+                                    <View style={styles.placeholderContainer}>
+                                        <MaterialIcons name="fitness-center" size={60} color={colors.primary} />
+                                        <Text style={styles.placeholderText}>{selectedExercise.target || selectedExercise.bodyPart}</Text>
                                     </View>
                                 )}
-                            </View>
+                            </GlassCard>
 
                             <Text style={styles.modalExerciseName}>{selectedExercise.name}</Text>
 
@@ -117,7 +122,7 @@ export default function ExerciseLibraryScreen() {
                             </View>
 
                             {selectedExercise.instructions && selectedExercise.instructions.length > 0 && (
-                                <View style={styles.instructionsContainer}>
+                                <GlassCard style={styles.instructionsContainer}>
                                     <Text style={styles.sectionTitle}>Instructions</Text>
                                     {selectedExercise.instructions.map((instruction: string, index: number) => (
                                         <View key={index} style={styles.instructionStep}>
@@ -125,7 +130,7 @@ export default function ExerciseLibraryScreen() {
                                             <Text style={styles.instructionText}>{instruction}</Text>
                                         </View>
                                     ))}
-                                </View>
+                                </GlassCard>
                             )}
                         </ScrollView>
                     )}
@@ -152,8 +157,11 @@ const styles = StyleSheet.create({
         marginBottom: spacing.xs,
     },
     backButton: {
-        padding: spacing.xs,
-        marginLeft: -spacing.xs,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     headerTitle: {
         fontSize: typography.sizes['2xl'],
@@ -176,8 +184,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: spacing.xl,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.glass.border,
+        // Remove border as header blends
     },
     modalTitle: {
         fontSize: typography.sizes.xl,
@@ -185,7 +192,11 @@ const styles = StyleSheet.create({
         color: colors.text.primary,
     },
     closeButton: {
-        padding: spacing.sm,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     modalContent: {
         padding: spacing.xl,
@@ -194,36 +205,39 @@ const styles = StyleSheet.create({
     modalImageContainer: {
         width: '100%',
         aspectRatio: 1,
-        backgroundColor: colors.glass.surface,
         borderRadius: borderRadius.xl,
         overflow: 'hidden',
+        // Background color handled by GlassCard
     },
     modalGif: {
         width: '100%',
         height: '100%',
     },
     modalExerciseName: {
-        fontSize: typography.sizes['2xl'],
+        fontSize: typography.sizes['3xl'], // Larger
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
         textTransform: 'capitalize',
+        letterSpacing: -1,
     },
     tags: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: spacing.xs,
+        gap: spacing.sm,
     },
     tag: {
-        paddingHorizontal: spacing.sm,
+        paddingHorizontal: spacing.md,
         paddingVertical: spacing.xs,
-        borderRadius: borderRadius.sm,
-        backgroundColor: colors.primary + '20',
+        borderRadius: borderRadius.full,
+        backgroundColor: colors.glass.surfaceLight,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
     },
     tagSecondary: {
-        backgroundColor: colors.primary + '30',
+        backgroundColor: colors.glass.surface,
     },
     tagEquipment: {
-        backgroundColor: colors.glass.surfaceLight,
+        backgroundColor: colors.glass.surface,
     },
     tagText: {
         fontSize: typography.sizes.xs,
@@ -232,7 +246,9 @@ const styles = StyleSheet.create({
         textTransform: 'capitalize',
     },
     instructionsContainer: {
-        gap: spacing.md,
+        padding: spacing.lg,
+        borderRadius: borderRadius.xl,
+        gap: spacing.lg,
     },
     sectionTitle: {
         fontSize: typography.sizes.lg,
@@ -267,6 +283,20 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         gap: spacing.sm,
+    },
+    placeholderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: spacing.md,
+        backgroundColor: colors.glass.surfaceLight,
+        borderRadius: borderRadius.xl,
+    },
+    placeholderText: {
+        fontSize: typography.sizes.lg,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.text.secondary,
+        textTransform: 'capitalize',
     },
     errorText: {
         fontSize: typography.sizes.sm,

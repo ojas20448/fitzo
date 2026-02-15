@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { nutritionAPI } from '../../services/api';
+import { useNutrition } from '../../context/NutritionContext';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import { useToast } from '../../components/Toast';
 
@@ -40,9 +41,16 @@ export default function FitnessProfileScreen() {
     const bmiCategory = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
     const bmiColor = bmi < 18.5 || bmi >= 30 ? '#FF6B6B' : bmi < 25 ? '#4ECDC4' : '#FFE66D';
 
+    const { weeklyWorkoutGoal, updateWeeklyGoal } = useNutrition();
+    const [weeklyGoal, setWeeklyGoal] = useState('4');
+
+    // ... existing state ...
+
     useEffect(() => {
         loadProfile();
-    }, []);
+        // Set initial weekly goal from context
+        setWeeklyGoal(String(weeklyWorkoutGoal));
+    }, [weeklyWorkoutGoal]);
 
     const loadProfile = async () => {
         try {
@@ -75,6 +83,9 @@ export default function FitnessProfileScreen() {
                 goal_type: goalType as any,
                 is_vegetarian: isVegetarian,
             });
+
+            // Save weekly goal
+            await updateWeeklyGoal(parseInt(weeklyGoal));
 
             toast.success('Profile Updated!', `Daily target: ${result.profile.target_calories} kcal`);
             router.back();
@@ -210,6 +221,31 @@ export default function FitnessProfileScreen() {
                                 ]}>{goal.label}</Text>
                             </Pressable>
                         ))}
+                    </View>
+                </View>
+
+                {/* Weekly Goal Selection */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>WEEKLY WORKOUT TARGET</Text>
+                    <View style={styles.weeklyGoalContainer}>
+                        <Text style={styles.weeklyGoalValue}>{weeklyGoal} days/week</Text>
+                        <View style={styles.daysRow}>
+                            {[1, 2, 3, 4, 5, 6, 7].map((days) => (
+                                <Pressable
+                                    key={days}
+                                    style={[
+                                        styles.dayBtn,
+                                        weeklyGoal === String(days) && styles.dayBtnActive
+                                    ]}
+                                    onPress={() => setWeeklyGoal(String(days))}
+                                >
+                                    <Text style={[
+                                        styles.dayBtnText,
+                                        weeklyGoal === String(days) && styles.dayBtnTextActive
+                                    ]}>{days}</Text>
+                                </Pressable>
+                            ))}
+                        </View>
                     </View>
                 </View>
 
@@ -534,5 +570,50 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.bold,
         color: colors.text.dark,
         letterSpacing: 1,
+    },
+
+    // Weekly Goal
+    weeklyGoalContainer: {
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        alignItems: 'center',
+    },
+    weeklyGoalValue: {
+        fontSize: typography.sizes.xl,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.primary,
+        marginBottom: spacing.md,
+    },
+    daysRow: {
+        flexDirection: 'row',
+        gap: 8,
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+    },
+    dayBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    dayBtnActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    dayBtnText: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+    },
+    dayBtnTextActive: {
+        color: colors.text.dark,
+        fontFamily: typography.fontFamily.bold,
     },
 });

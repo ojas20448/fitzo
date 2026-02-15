@@ -72,10 +72,20 @@ export default function OnboardingWizard() {
 
         if (!weight || !height || !age) return 2000;
 
-        let bmr = 10 * weight + 6.25 * height - 5 * age;
-        bmr += formData.gender === 'male' ? 5 : -161;
+        // 1. Mifflin-St Jeor Equation
+        const mifflinBMR = formData.gender === 'male'
+            ? 10 * weight + 6.25 * height - 5 * age + 5
+            : 10 * weight + 6.25 * height - 5 * age - 161;
 
-        const multipliers = {
+        // 2. Revised Harris-Benedict Equation
+        const harrisBMR = formData.gender === 'male'
+            ? 13.397 * weight + 4.799 * height - 5.677 * age + 88.362
+            : 9.247 * weight + 3.098 * height - 4.330 * age + 447.593;
+
+        // Average both equations for more accurate BMR
+        const bmr = (mifflinBMR + harrisBMR) / 2;
+
+        const multipliers: Record<string, number> = {
             sedentary: 1.2,
             light: 1.375,
             moderate: 1.55,
@@ -83,7 +93,7 @@ export default function OnboardingWizard() {
             very_active: 1.9,
         };
 
-        return Math.round(bmr * multipliers[formData.activity_level]);
+        return Math.round(bmr * (multipliers[formData.activity_level] || 1.55));
     };
 
     const handleComplete = async () => {

@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
 const express = require('express');
 const cors = require('cors');
@@ -58,12 +59,40 @@ app.get('/health', (req, res) => {
     });
 });
 
+// API Health check (more detailed)
+app.get('/api/health', async (req, res) => {
+    const health = {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        version: '1.0.0',
+        services: {
+            database: 'unknown',
+            api: 'ok'
+        }
+    };
+
+    // Check database connection
+    try {
+        const pool = require('./config/database');
+        await pool.query('SELECT 1');
+        health.services.database = 'ok';
+    } catch (err) {
+        health.services.database = 'error';
+        health.status = 'degraded';
+    }
+
+    res.status(health.status === 'ok' ? 200 : 503).json(health);
+});
+
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/member', require('./routes/member'));
 app.use('/api/checkin', require('./routes/checkin'));
 app.use('/api/intent', require('./routes/intent'));
 app.use('/api/friends', require('./routes/friends'));
+app.use('/api/comments', require('./routes/comments'));
+app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/learn', require('./routes/learn'));
 app.use('/api/classes', require('./routes/classes'));
 app.use('/api/trainer', require('./routes/trainer'));

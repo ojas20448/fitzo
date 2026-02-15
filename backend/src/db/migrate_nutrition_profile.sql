@@ -66,6 +66,7 @@ CREATE TRIGGER nutrition_profile_updated
     EXECUTE FUNCTION update_nutrition_profile_timestamp();
 
 -- Function to calculate daily calorie target based on profile
+-- Uses averaged Mifflin-St Jeor + Revised Harris-Benedict equations
 CREATE OR REPLACE FUNCTION calculate_daily_calories(
     p_weight_kg DECIMAL,
     p_height_cm DECIMAL,
@@ -75,17 +76,29 @@ CREATE OR REPLACE FUNCTION calculate_daily_calories(
     p_goal nutrition_goal
 ) RETURNS INTEGER AS $$
 DECLARE
+    mifflin_bmr DECIMAL;
+    harris_bmr DECIMAL;
     bmr DECIMAL;
     tdee DECIMAL;
     activity_multiplier DECIMAL;
     goal_adjustment INTEGER;
 BEGIN
-    -- Harris-Benedict BMR calculation
+    -- 1. Mifflin-St Jeor Equation
     IF p_gender = 'male' THEN
-        bmr := 88.362 + (13.397 * p_weight_kg) + (4.799 * p_height_cm) - (5.677 * p_age);
+        mifflin_bmr := 10 * p_weight_kg + 6.25 * p_height_cm - 5 * p_age + 5;
     ELSE
-        bmr := 447.593 + (9.247 * p_weight_kg) + (3.098 * p_height_cm) - (4.330 * p_age);
+        mifflin_bmr := 10 * p_weight_kg + 6.25 * p_height_cm - 5 * p_age - 161;
     END IF;
+
+    -- 2. Revised Harris-Benedict Equation
+    IF p_gender = 'male' THEN
+        harris_bmr := 13.397 * p_weight_kg + 4.799 * p_height_cm - 5.677 * p_age + 88.362;
+    ELSE
+        harris_bmr := 9.247 * p_weight_kg + 3.098 * p_height_cm - 4.330 * p_age + 447.593;
+    END IF;
+
+    -- Average both for more accurate BMR
+    bmr := (mifflin_bmr + harris_bmr) / 2;
     
     -- Activity multiplier
     activity_multiplier := CASE p_activity
@@ -99,9 +112,9 @@ BEGIN
     
     tdee := bmr * activity_multiplier;
     
-    -- Goal adjustment
+    -- Goal adjustment (500 cal deficit = ~1 lb/week loss)
     goal_adjustment := CASE p_goal
-        WHEN 'fat_loss' THEN -400
+        WHEN 'fat_loss' THEN -500
         WHEN 'muscle_gain' THEN 300
         ELSE 0
     END;

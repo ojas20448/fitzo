@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { nutritionAPI } from '../services/api';
 import { useAuth } from './AuthContext';
 import { useXP } from './XPContext';
@@ -13,6 +14,8 @@ interface Macros {
 interface NutritionContextType {
     todayMacros: Macros;
     calorieGoal: number;
+    weeklyWorkoutGoal: number;
+    updateWeeklyGoal: (days: number) => Promise<void>;
     lastUpdatedAt: number;
     isLoading: boolean;
     refreshToday: () => Promise<void>;
@@ -46,18 +49,47 @@ export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
             // Also refresh profile for goal
             const profile = await nutritionAPI.getProfile();
-            if (profile?.daily_targets?.calories) {
-                setCalorieGoal(profile.daily_targets.calories);
+            if (profile?.profile?.target_calories) {
+                setCalorieGoal(profile.profile.target_calories);
             }
         } catch (error) {
             console.error('Failed to refresh nutrition:', error);
         }
     }, [user]);
 
+    const [weeklyWorkoutGoal, setWeeklyWorkoutGoal] = useState<number>(4);
+
     // Initial load
     useEffect(() => {
-        if (user) refreshToday();
+        if (user) {
+            refreshToday();
+            loadWeeklyGoal();
+        }
     }, [user, refreshToday]);
+
+    const loadWeeklyGoal = async () => {
+        try {
+            const stored = await AsyncStorage.getItem(`weekly_goal_${user?.id}`);
+            if (stored) {
+                setWeeklyWorkoutGoal(parseInt(stored));
+            }
+        } catch (e) {
+            console.warn('Failed to load weekly goal', e);
+        }
+    };
+
+    const updateWeeklyGoal = async (days: number) => {
+        setWeeklyWorkoutGoal(days);
+        try {
+            if (user?.id) {
+                await AsyncStorage.setItem(`weekly_goal_${user.id}`, String(days));
+            }
+        } catch (e) {
+            console.error('Failed to save weekly goal', e);
+        }
+    };
+
+
 
     const logFoodOptimistic = async (food: {
         calories: number;
@@ -106,6 +138,8 @@ export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         <NutritionContext.Provider value={{
             todayMacros,
             calorieGoal,
+            weeklyWorkoutGoal,
+            updateWeeklyGoal,
             lastUpdatedAt,
             isLoading,
             refreshToday,

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
-const { asyncHandler } = require('../utils/errors');
+const { ValidationError, NotFoundError, asyncHandler } = require('../utils/errors');
 
 /**
  * GET /api/member/home
@@ -208,5 +208,35 @@ async function safeGenerateInsight(userId, streak) {
 
     return null;
 }
+
+/**
+ * PUT /api/member/profile
+ * Update user profile (name, avatar)
+ */
+router.put('/profile', authenticate, asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const { name, avatar_url } = req.body;
+
+    if (!name) {
+        throw new ValidationError('Name is required');
+    }
+
+    const result = await query(
+        `UPDATE users 
+         SET name = $1, avatar_url = $2, updated_at = NOW() 
+         WHERE id = $3 
+         RETURNING id, name, email, role, avatar_url, xp_points`,
+        [name, avatar_url, userId]
+    );
+
+    if (result.rows.length === 0) {
+        throw new NotFoundError('User not found');
+    }
+
+    res.json({
+        success: true,
+        user: result.rows[0]
+    });
+}));
 
 module.exports = router;

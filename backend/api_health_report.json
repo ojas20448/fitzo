@@ -1,0 +1,225 @@
+{
+  "timestamp": "2026-02-14T20:13:25.435Z",
+  "summary": {
+    "total": 43,
+    "passed": 39,
+    "failed": 4
+  },
+  "results": [
+    {
+      "name": "Health Check",
+      "pass": true,
+      "detail": "200 {\"status\":\"ok\",\"message\":\"💪 Fitzo API is running!\",\"timestamp\":\"2026-02-14T20:13:15.073Z\"}"
+    },
+    {
+      "name": "Dev Login",
+      "pass": true,
+      "detail": "200 {\"message\":\"Dev Login: Welcome Rahul Kapoor! 🛠️\",\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJiYmJiYmJi"
+    },
+    {
+      "name": "Get Me",
+      "pass": true,
+      "detail": "200 {\"user\":{\"id\":\"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\",\"email\":\"trainer1@fitzo.app\",\"name\":\"Rahul Kapoor\",\"role\":\"trainer\""
+    },
+    {
+      "name": "Login (test)",
+      "pass": true,
+      "detail": "200 {\"message\":\"Welcome back, Rahul Kumar! 💪\",\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkZGRkZGRkZC1kZGR"
+    },
+    {
+      "name": "Google OAuth (exists?)",
+      "pass": false,
+      "detail": "401 {\"error\":true,\"message\":\"Google login failed: Wrong number of segments in token: test\",\"code\":\"AUTH_REQUIRED\",\"stack\":\"E"
+    },
+    {
+      "name": "Member Home",
+      "pass": true,
+      "detail": "200 {\"user\":{\"name\":\"Rahul Kapoor\",\"avatar_url\":null,\"xp_points\":200},\"checkin\":{\"status\":\"not_checked_in\",\"checked_in_at\":n"
+    },
+    {
+      "name": "Check-in Status",
+      "pass": true,
+      "detail": "200 {\"checked_in\":false,\"checked_in_at\":null}"
+    },
+    {
+      "name": "Check-in History",
+      "pass": true,
+      "detail": "200 {\"dates\":[],\"current_streak\":0,\"total_check_ins\":0}"
+    },
+    {
+      "name": "Get Intent",
+      "pass": true,
+      "detail": "200 {\"intent\":null}"
+    },
+    {
+      "name": "Intent Feed",
+      "pass": true,
+      "detail": "200 {\"intents\":[]}"
+    },
+    {
+      "name": "Get Friends",
+      "pass": true,
+      "detail": "200 {\"friends\":[],\"pending_requests\":[],\"sent_requests\":[]}"
+    },
+    {
+      "name": "Search Friends",
+      "pass": true,
+      "detail": "200 {\"users\":[]}"
+    },
+    {
+      "name": "Suggested Friends (exists?)",
+      "pass": false,
+      "detail": "200 {\"suggested\":[{\"id\":\"ffffffff-ffff-ffff-ffff-ffffffffffff\",\"name\":\"Amit Patel\",\"avatar_url\":null,\"xp_points\":180,\"last_c"
+    },
+    {
+      "name": "Get Lessons",
+      "pass": true,
+      "detail": "200 {\"units\":[{\"number\":1,\"title\":\"Nutrition Fundamentals\",\"lessons\":[{\"id\":\"27e0d3b3-6cf6-47eb-8963-0f8e27d95bb6\",\"title\":\""
+    },
+    {
+      "name": "Learn Progress",
+      "pass": true,
+      "detail": "200 {\"xp_points\":200,\"lessons_completed\":0,\"total_lessons\":22,\"percentage\":0}"
+    },
+    {
+      "name": "Get Classes",
+      "pass": true,
+      "detail": "200 {\"sessions\":[]}"
+    },
+    {
+      "name": "My Bookings",
+      "pass": true,
+      "detail": "200 {\"bookings\":[]}"
+    },
+    {
+      "name": "Trainer Members",
+      "pass": true,
+      "detail": "200 {\"members\":[{\"id\":\"eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee\",\"name\":\"Priya Singh\",\"avatar_url\":null,\"xp_points\":320,\"joined_"
+    },
+    {
+      "name": "Trainer Schedule",
+      "pass": true,
+      "detail": "200 {\"sessions\":[]}"
+    },
+    {
+      "name": "Manager Dashboard",
+      "pass": false,
+      "detail": "403 {\"error\":true,\"message\":\"You don't have access to this feature\",\"code\":\"FORBIDDEN\",\"stack\":\"Error: You don't have access"
+    },
+    {
+      "name": "Workouts Today",
+      "pass": true,
+      "detail": "200 {\"workouts\":[],\"summary\":{\"count\":0,\"types\":[]}}"
+    },
+    {
+      "name": "Workout History",
+      "pass": true,
+      "detail": "200 {\"history\":[]}"
+    },
+    {
+      "name": "Workout Feed",
+      "pass": true,
+      "detail": "200 {\"feed\":[]}"
+    },
+    {
+      "name": "My Splits",
+      "pass": true,
+      "detail": "200 {\"splits\":[]}"
+    },
+    {
+      "name": "Published Splits",
+      "pass": true,
+      "detail": "200 {\"splits\":[{\"id\":\"fd8c0e00-7bcb-4d4a-818d-5577fe546461\",\"name\":\"PPL (6 Day) - High Volume\",\"description\":\"Classic Push P"
+    },
+    {
+      "name": "Calories Today",
+      "pass": true,
+      "detail": "200 {\"entries\":[],\"totals\":{\"calories\":0,\"protein\":0,\"carbs\":0,\"fat\":0,\"entry_count\":0}}"
+    },
+    {
+      "name": "Calories History",
+      "pass": true,
+      "detail": "200 {\"history\":[]}"
+    },
+    {
+      "name": "Frequent Foods",
+      "pass": true,
+      "detail": "200 {\"frequent\":[]}"
+    },
+    {
+      "name": "Food Search",
+      "pass": true,
+      "detail": "200 {\"foods\":[{\"id\":\"454004\",\"name\":\"APPLE\",\"brand\":\"TREECRISP 2 GO\",\"type\":\"Branded\",\"description\":\"Calories: 52kcal\",\"calo"
+    },
+    {
+      "name": "Food Categories",
+      "pass": true,
+      "detail": "200 {\"categories\":[{\"id\":\"bread\",\"name\":\"Breads\",\"icon\":\"🫓\"},{\"id\":\"grains\",\"name\":\"Rice & Grains\",\"icon\":\"🍚\"},{\"id\":\"lent"
+    },
+    {
+      "name": "Gym Foods",
+      "pass": true,
+      "detail": "200 {\"foods\":[{\"id\":\"ind_004\",\"name\":\"Chicken Curry\",\"calories\":243,\"protein\":25,\"carbs\":6,\"fat\":14,\"servingSize\":\"1 cup (20"
+    },
+    {
+      "name": "Nutrition Profile",
+      "pass": true,
+      "detail": "200 {\"profile\":null}"
+    },
+    {
+      "name": "Nutrition Today",
+      "pass": true,
+      "detail": "200 {\"targets\":{\"calories\":2000,\"protein\":150,\"carbs\":200,\"fat\":67},\"logged\":{\"calories\":0,\"protein\":0,\"carbs\":0,\"fat\":0},\"r"
+    },
+    {
+      "name": "Get Recipes",
+      "pass": true,
+      "detail": "200 {\"recipes\":[]}"
+    },
+    {
+      "name": "AI Chat",
+      "pass": true,
+      "detail": "200 {\"success\":true,\"response\":\"[AI Monitor]: The advanced AI service is currently unavailable. \\n\\nHowever, regarding \\\"Wha"
+    },
+    {
+      "name": "Exercise List",
+      "pass": true,
+      "detail": "200 {\"success\":true,\"exercises\":[{\"bodyPart\":\"waist\",\"equipment\":\"body weight\",\"id\":\"0001\",\"name\":\"3/4 sit-up\",\"target\":\"abs"
+    },
+    {
+      "name": "Body Parts List",
+      "pass": true,
+      "detail": "200 {\"success\":true,\"bodyParts\":[\"back\",\"cardio\",\"chest\",\"lower arms\",\"lower legs\",\"neck\",\"shoulders\",\"upper arms\",\"upper le"
+    },
+    {
+      "name": "Video Search",
+      "pass": true,
+      "detail": "200 {\"success\":true,\"videos\":[{\"id\":\"mock_vid_1\",\"title\":\"15 Min Full Body Workout (No Equipment)\",\"description\":\"A quick an"
+    },
+    {
+      "name": "Trending Videos",
+      "pass": true,
+      "detail": "200 {\"success\":true,\"videos\":[{\"id\":\"mock_vid_1\",\"title\":\"15 Min Full Body Workout (No Equipment)\",\"description\":\"A quick an"
+    },
+    {
+      "name": "Measurements Latest",
+      "pass": true,
+      "detail": "200 {\"measurement\":null}"
+    },
+    {
+      "name": "Measurements History",
+      "pass": true,
+      "detail": "200 {\"history\":[]}"
+    },
+    {
+      "name": "Get Profile",
+      "pass": false,
+      "detail": "404 {\"error\":true,\"message\":\"This endpoint doesn't exist\",\"code\":\"NOT_FOUND\"}"
+    },
+    {
+      "name": "Calculate Burned",
+      "pass": true,
+      "detail": "200 {\"success\":true,\"calories\":[{\"name\":\"Running, 5 mph (12 minute mile)\",\"calories_per_hour\":253,\"duration_minutes\":30,\"tot"
+    }
+  ]
+}

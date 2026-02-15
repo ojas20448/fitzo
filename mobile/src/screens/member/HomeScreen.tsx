@@ -7,8 +7,8 @@ import {
     TouchableOpacity,
     RefreshControl,
     Pressable,
-    Animated,
 } from 'react-native';
+import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
@@ -164,7 +164,7 @@ const HomeScreen: React.FC = () => {
                 }
             >
                 {/* Header - Refined with blur effect */}
-                <View style={styles.header}>
+                <Animated.View entering={FadeInDown.duration(600).springify()} style={styles.header}>
                     <Pressable
                         style={styles.userInfo}
                         onPress={() => router.push('/(tabs)/profile' as any)}
@@ -186,66 +186,57 @@ const HomeScreen: React.FC = () => {
                         </View>
                     </Pressable>
 
-                    {/* Right side: Gym + Streak */}
+                    {/* Right side: Check-in + Streak */}
                     <View style={styles.headerRight}>
-                        {/* Streak Badge - Promoted */}
+                        {/* QR Check-in Button */}
+                        <TouchableOpacity
+                            style={styles.checkinBadge}
+                            onPress={() => router.push('/qr-checkin' as any)}
+                            accessibilityLabel="QR Check-in"
+                        >
+                            <MaterialIcons name="qr-code-2" size={20} color={colors.text.primary} />
+                        </TouchableOpacity>
+
+                        {/* Streak Badge */}
                         <View style={styles.streakBadge}>
                             <AnimatedFire size={24} color="#FF6B35" />
                             <Text style={styles.streakText}>{data?.streak.current || 0}</Text>
                         </View>
                     </View>
-                </View>
-
-                {/* Welcome Card for First Session */}
-                {data?.streak.current === 0 && !hasLoggedWorkoutToday && (
-                    <GlassCard style={styles.welcomeCard}>
-                        <View style={styles.welcomeInfo}>
-                            <View style={styles.welcomeIconContainer}>
-                                <MaterialIcons name="auto-awesome" size={24} color={colors.primary} />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.welcomeTitle}>Welcome, {firstName}!</Text>
-                                <Text style={styles.welcomeDesc}>Start your streak today. Log a workout or scan the gym QR to check in.</Text>
-                            </View>
-                        </View>
-                        <View style={styles.welcomeActions}>
-                            <TouchableOpacity style={styles.welcomeButton} onPress={() => router.push('/log/workout' as any)}>
-                                <Text style={styles.welcomeButtonText}>LOG WORKOUT</Text>
-                                <MaterialIcons name="arrow-forward" size={16} color={colors.text.dark} />
-                            </TouchableOpacity>
-                        </View>
-                    </GlassCard>
-                )}
+                </Animated.View>
 
                 {/* Today's Training - Large Typography */}
-                <Pressable
-                    style={styles.todaySection}
-                    onPress={handleIntentPress}
-                    accessibilityLabel={currentIntent ? "View or change workout intent" : "Set today's workout focus"}
-                    accessibilityRole="button"
-                >
-                    <View style={styles.todayLabelRow}>
-                        <Text style={styles.todayLabel}>Today's Training</Text>
-                        {!currentIntent && (
-                            <View style={styles.tapHintPill}>
-                                <Text style={styles.tapHintText}>TAP TO SET</Text>
+                {/* Today's Training - Large Typography */}
+                <Animated.View entering={FadeInDown.delay(100).duration(600).springify()}>
+                    <Pressable
+                        style={styles.todaySection}
+                        onPress={handleIntentPress}
+                        accessibilityLabel={currentIntent ? "View or change workout intent" : "Set today's workout focus"}
+                        accessibilityRole="button"
+                    >
+                        <View style={styles.todayLabelRow}>
+                            <Text style={styles.todayLabel}>Today's Training</Text>
+                            {!currentIntent && (
+                                <View style={styles.tapHintPill}>
+                                    <Text style={styles.tapHintText}>TAP TO SET</Text>
+                                </View>
+                            )}
+                        </View>
+                        <Text style={[styles.todayTitle, !currentIntent && styles.todayTitleMuted]}>
+                            {currentIntent ? (
+                                `${currentIntent.emphasis?.[0] || 'Training'} • ${currentIntent.training_pattern || 'Session'}`
+                            ) : (
+                                'Set Your Focus'
+                            )}
+                        </Text>
+                        {currentIntent && (
+                            <View style={styles.editIntentRow}>
+                                <MaterialIcons name="edit" size={12} color={colors.text.muted} />
+                                <Text style={styles.editIntentText}>Tap to change</Text>
                             </View>
                         )}
-                    </View>
-                    <Text style={[styles.todayTitle, !currentIntent && styles.todayTitleMuted]}>
-                        {currentIntent ? (
-                            `${currentIntent.emphasis?.[0] || 'Training'} • ${currentIntent.training_pattern || 'Session'}`
-                        ) : (
-                            'Set Your Focus'
-                        )}
-                    </Text>
-                    {currentIntent && (
-                        <View style={styles.editIntentRow}>
-                            <MaterialIcons name="edit" size={12} color={colors.text.muted} />
-                            <Text style={styles.editIntentText}>Tap to change</Text>
-                        </View>
-                    )}
-                </Pressable>
+                    </Pressable>
+                </Animated.View>
 
                 {/* Active Session Card - Glass Effect */}
                 {currentIntent && hasLoggedWorkoutToday && (
@@ -270,8 +261,8 @@ const HomeScreen: React.FC = () => {
                     </View>
                 )}
 
-                {/* Quick Action Buttons - Refined */}
-                <View style={styles.actionButtons}>
+                {/* Quick Action Buttons */}
+                <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} style={styles.actionButtons}>
                     <TouchableOpacity
                         style={styles.primaryActionBtn}
                         onPress={() => router.push('/log/workout' as any)}
@@ -282,13 +273,48 @@ const HomeScreen: React.FC = () => {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={styles.secondaryActionBtn}
-                        onPress={() => router.push('/qr-checkin' as any)}
-                        accessibilityLabel="QR Check-in"
+                        style={styles.primaryActionBtn}
+                        onPress={() => router.push('/log/calories' as any)}
+                        accessibilityLabel="Log calories"
                     >
-                        <MaterialIcons name="qr-code-2" size={20} color={colors.text.primary} />
-                        <Text style={[styles.secondaryActionText, { color: colors.text.primary }]}>GYM CHECK-IN</Text>
+                        <MaterialIcons name="add" size={20} color={colors.text.dark} />
+                        <Text style={styles.primaryActionText}>LOG CALORIES</Text>
                     </TouchableOpacity>
+                </Animated.View>
+
+                {/* Nutrition Summary with Macros */}
+                <Animated.View entering={FadeInDown.delay(300).duration(600).springify()} style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Today's Nutrition</Text>
+                        <TouchableOpacity onPress={() => router.push('/log/calories' as any)}>
+                            <Text style={styles.viewAllLink}>LOG FOOD</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <TouchableOpacity onPress={() => router.push('/log/calories' as any)} activeOpacity={0.8}>
+                        <MacroPieChart
+                            calories={todayMacros.calories || 0}
+                            calorieTarget={2000}
+                            protein={todayMacros.protein || 0}
+                            proteinTarget={150}
+                            carbs={todayMacros.carbs || 0}
+                            carbsTarget={200}
+                            fat={todayMacros.fat || 0}
+                            fatTarget={65}
+                        />
+                    </TouchableOpacity>
+                </Animated.View>
+
+                {/* Weekly Workout Progress */}
+                <View style={styles.section}>
+                    <WeeklyProgress history={data?.streak.history || []} />
+                </View>
+
+                {/* Weekly Nutrition Analytics - Lose It Style */}
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Nutrition History</Text>
+                    </View>
+                    <WeeklyCharts />
                 </View>
 
                 {/* Gym Buddies - Friend Avatars */}
@@ -346,36 +372,6 @@ const HomeScreen: React.FC = () => {
                             Add Gym Buddy
                         </Text>
                     </TouchableOpacity>
-                </View>
-
-                {/* Nutrition Summary with Macros */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Today's Nutrition</Text>
-                        <TouchableOpacity onPress={() => router.push('/log/calories' as any)}>
-                            <Text style={styles.viewAllLink}>LOG FOOD</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <TouchableOpacity onPress={() => router.push('/log/calories' as any)} activeOpacity={0.8}>
-                        <MacroPieChart
-                            calories={todayMacros.calories || 0}
-                            calorieTarget={2000}
-                            protein={todayMacros.protein || 0}
-                            proteinTarget={150}
-                            carbs={todayMacros.carbs || 0}
-                            carbsTarget={200}
-                            fat={todayMacros.fat || 0}
-                            fatTarget={65}
-                        />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Weekly Analytics - Lose It Style */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Weekly Progress</Text>
-                    </View>
-                    <WeeklyCharts />
                 </View>
 
                 {/* Continuing Learning Card */}
@@ -500,6 +496,16 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.full,
         borderWidth: 1,
         borderColor: colors.glass.border,
+    },
+    checkinBadge: {
+        width: 40,
+        height: 40,
+        borderRadius: borderRadius.full,
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     streakText: {
         fontSize: typography.sizes.sm,

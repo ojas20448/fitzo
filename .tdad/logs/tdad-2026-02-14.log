@@ -1,0 +1,28 @@
+
+================================================================================
+TDAD Session Started: 2026-02-14T21:29:58.809Z
+================================================================================
+[2026-02-14T21:29:59.574Z] [EXTENSION] 🚀 TDAD extension is now ACTIVATED! Version with comprehensive logging
+[2026-02-14T21:29:59.574Z] [EXTENSION] 📁 Log file location: c:\Users\PC\Documents\Code\Fitzo\.tdad\logs\tdad-2026-02-14.log
+[2026-02-14T21:29:59.575Z] [EXTENSION] 📊 Workspace folders: c:\Users\PC\Documents\Code\Fitzo
+[2026-02-14T21:29:59.575Z] [EXTENSION] Creating WorkflowController...
+[2026-02-14T21:29:59.575Z] [EXTENSION] MVP: Using simple JSON storage (.tdad/workflows/workflow.json)
+[2026-02-14T21:29:59.576Z] [EXTENSION] TDAD Extension activated successfully
+[2026-02-14T21:29:59.576Z] [EXTENSION] Registering commands...
+[2026-02-14T21:29:59.932Z] [EXTENSION] FeedbackManager: Session 2
+[2026-02-14T21:29:59.935Z] [EXTENSION] TDAD structure already initialized
+[2026-02-14T21:29:59.935Z] [EXTENSION] Auto-opening TDAD Canvas...
+[2026-02-14T21:29:59.936Z] [CANVAS] Created directory: c:\Users\PC\Documents\Code\Fitzo\.tdad\workflows
+[2026-02-14T21:29:59.937Z] [CANVAS] Sprint 13: Agent Orchestrator initialized
+[2026-02-14T21:29:59.938Z] [CANVAS] [FileStatusSync] File watchers initialized
+[2026-02-14T21:29:59.938Z] [CANVAS] [FileStatusSync] Synced 0 nodes
+[2026-02-14T21:30:01.335Z] [CANVAS] WEBVIEW
+Data: Using stylesheets: index-WTAp2nbL.css
+[2026-02-14T21:30:01.336Z] [CANVAS] MVP: Canvas initialized with simple JSON storage
+[2026-02-14T21:30:01.736Z] [CANVAS] [FitView] isLoading=true, nodes.length=0, folderId=null
+[2026-02-14T21:30:01.749Z] [CANVAS] [FileStatusSync] Synced 0 nodes
+[2026-02-14T21:30:01.846Z] [CANVAS] [FitView] isLoading=false, nodes.length=0, folderId=null
+[2026-02-14T21:32:41.366Z] [CANVAS] saveNow: Saving 0 nodes to folder root - statuses: []
+[2026-02-14T21:32:41.368Z] [CANVAS] [FileStatusSync] File watchers disposed
+[2026-02-14T21:32:41.449Z] [EXTENSION] Blueprint workflow created: c:\Users\PC\Documents\Code\Fitzo\.tdad\workflows\root.workflow.json
+[2026-02-14T21:32:41.466Z] [EXTENSION] Scaffolded 1 files from blueprint

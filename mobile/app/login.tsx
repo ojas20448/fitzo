@@ -14,34 +14,62 @@ import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
 import Button from '../src/components/Button';
+import GlassCard from '../src/components/GlassCard';
 import { useToast } from '../src/components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../src/styles/theme';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
+
 
 export default function LoginScreen() {
-    const { login, register } = useAuth();
+    const { login, googleSignIn, devLogin } = useAuth();
     const toast = useToast();
+    
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+
+    // Google Auth
+    const [request, response, promptAsync] = Google.useAuthRequest({
+        clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    });
+
+    React.useEffect(() => {
+        if (response?.type === 'success') {
+            const { id_token } = response.params;
+            handleGoogleLogin(id_token);
+        }
+    }, [response]);
+
+    const handleGoogleLogin = async (token: string) => {
+        setLoading(true);
+        try {
+            await googleSignIn(token);
+            // Redirect based on role not readily available here without extra call, 
+            // but AuthContext updates state. We can just redirect to tabs.
+            // A better way is to return user from googleSignIn
+            router.replace('/(tabs)');
+        } catch (error: any) {
+            toast.error('Google Login Failed', error.message);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     const handleDemoLogin = async () => {
         setLoading(true);
-        const demoEmail = 'demo@fitzo.com';
-        const demoPass = 'password123';
-
         try {
-            await login(demoEmail, demoPass);
+            await devLogin();
+            // devLogin updates state, so we just redirect
             router.replace('/(tabs)');
-        } catch (loginError: any) {
-            try {
-                console.log('Demo login failed, registering...', loginError.message);
-                await register(demoEmail, demoPass, 'Demo User', 'FITZOHQ');
-                router.replace('/(tabs)');
-            } catch (regError: any) {
-                console.error('Demo registration failed:', regError);
-                toast.error('Demo Failed', 'Could not sign in as demo user.');
-            }
+        } catch (error: any) {
+            console.error('Dev/Demo login failed:', error);
+            toast.error('Dev Login Failed', error.message || 'Could not bypass auth.');
         } finally {
             setLoading(false);
         }
@@ -91,10 +119,10 @@ export default function LoginScreen() {
                     </View>
 
                     {/* Login Form */}
-                    <View style={styles.formSection}>
+                    <GlassCard style={styles.formSection}>
                         <Text style={styles.formLabel}>WELCOME BACK</Text>
 
-                        <View style={styles.inputContainer}>
+                        <GlassCard variant="light" style={styles.inputContainer}>
                             <MaterialIcons name="email" size={20} color={colors.text.muted} />
                             <TextInput
                                 style={styles.input}
@@ -106,9 +134,9 @@ export default function LoginScreen() {
                                 autoCapitalize="none"
                                 autoCorrect={false}
                             />
-                        </View>
+                        </GlassCard>
 
-                        <View style={styles.inputContainer}>
+                        <GlassCard variant="light" style={styles.inputContainer}>
                             <MaterialIcons name="lock" size={20} color={colors.text.muted} />
                             <TextInput
                                 style={styles.input}
@@ -125,7 +153,7 @@ export default function LoginScreen() {
                                     color={colors.text.muted}
                                 />
                             </TouchableOpacity>
-                        </View>
+                        </GlassCard>
 
                         <Button
                             title="Log In"
@@ -135,10 +163,29 @@ export default function LoginScreen() {
                             style={{ marginTop: spacing.lg }}
                         />
 
-                        <TouchableOpacity style={styles.forgotPassword}>
+                        <TouchableOpacity
+                            style={styles.forgotPassword}
+                            onPress={() => router.push('/forgot-password')}
+                        >
                             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                         </TouchableOpacity>
-                    </View>
+
+                        <View style={styles.dividerContainer}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
+                            <View style={styles.dividerLine} />
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.googleBtn}
+                            onPress={() => promptAsync()}
+                            disabled={!request || loading}
+                        >
+                            <MaterialIcons name="g-translate" size={24} color={colors.text.primary} />
+                            <Text style={styles.googleBtnText}>Google</Text>
+                        </TouchableOpacity>
+
+                    </GlassCard>
 
                     {/* Sign Up Link */}
                     <View style={styles.signupSection}>
@@ -154,7 +201,7 @@ export default function LoginScreen() {
                         onPress={handleDemoLogin}
                         disabled={loading}
                     >
-                        <Text style={styles.skipText}>Demo Login (Test User)</Text>
+                        <Text style={styles.skipText}>Skip Login (Dev Mode)</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -203,11 +250,8 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     formSection: {
-        backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius['2xl'],
         padding: spacing.xl,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
+        // Removed explicit borders/bg as GlassCard handles it
     },
     formLabel: {
         fontSize: typography.sizes.xs,
@@ -220,13 +264,10 @@ const styles = StyleSheet.create({
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.glass.surfaceLight,
-        borderRadius: borderRadius.xl,
         paddingHorizontal: spacing.lg,
         marginBottom: spacing.md,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
         height: 52,
+        // Removed explicit borders/bg
     },
     input: {
         flex: 1,
@@ -294,13 +335,8 @@ const styles = StyleSheet.create({
         gap: spacing.md,
     },
     googleBtnText: {
-        fontSize: 20,
+        fontSize: 16,
         fontWeight: 'bold',
-        color: colors.text.primary, // Or Google colors
-    },
-    googleBtnLabel: {
-        fontSize: typography.sizes.base,
-        fontFamily: typography.fontFamily.medium,
         color: colors.text.primary,
     },
     skipButton: {

@@ -3,25 +3,45 @@ import {
     View,
     Text,
     StyleSheet,
-    FlatList,
     TouchableOpacity,
-    Image,
     TextInput,
     ActivityIndicator,
     Alert,
     ScrollView,
 } from 'react-native';
+import { Image } from 'expo-image';
+import { FlashList, FlashListProps } from '@shopify/flash-list';
 import { MaterialIcons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
 import GlassCard from './GlassCard';
 import { exerciseAPI } from '../services/api';
-import { cacheData, getCachedData, CACHE_KEYS, CACHE_DURATION } from '../utils/cache';
+import useOfflineStore from '../stores/offlineStore';
+
+// FlashList wrapper to handle typing issues
+const TypedFlashList = FlashList as React.ComponentType<FlashListProps<any> & { estimatedItemSize?: number }>;
 
 interface ExerciseListProps {
     mode?: 'view' | 'select';
     onSelect?: (exercise: any) => void;
     initialFilter?: string; // e.g., 'legs', 'push' (mapped to bodies)
 }
+
+// Helper function to get icon based on body part
+const getExerciseIcon = (bodyPart: string): keyof typeof MaterialIcons.glyphMap => {
+    const iconMap: Record<string, keyof typeof MaterialIcons.glyphMap> = {
+        'chest': 'fitness-center',
+        'back': 'fitness-center',
+        'shoulders': 'fitness-center',
+        'upper arms': 'fitness-center',
+        'lower arms': 'fitness-center',
+        'upper legs': 'directions-run',
+        'lower legs': 'directions-run',
+        'waist': 'accessibility-new',
+        'cardio': 'favorite',
+        'neck': 'accessibility-new',
+    };
+    return iconMap[bodyPart?.toLowerCase()] || 'fitness-center';
+};
 
 export default function ExerciseList({ mode = 'view', onSelect, initialFilter }: ExerciseListProps) {
     const [exercises, setExercises] = useState<any[]>([]);
@@ -64,7 +84,21 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
         setLoading(true);
         try {
             const { defaultExercises } = require('../data/defaultExercises');
-            let results = [...defaultExercises];
+            // Check offline store first
+            const cachedExercises = useOfflineStore.getState().getExercises();
+            const isStale = useOfflineStore.getState().isExercisesStale();
+
+            let baseExercises = [];
+
+            if (cachedExercises && cachedExercises.length > 0 && !isStale && !searchQuery) {
+                console.log('Using cached exercises');
+                baseExercises = cachedExercises;
+            } else {
+                // If no cache or stale, start with default/local
+                baseExercises = [...defaultExercises];
+            }
+
+            let results = [...baseExercises];
 
             // 1. Filter by Body Part (Local)
             if (selectedBodyPart) {
@@ -100,6 +134,16 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
                 } catch (e) {
                     console.log('API search failed, using local only');
                 }
+            } else if (!searchQuery && (!cachedExercises || cachedExercises.length === 0 || isStale)) {
+                // Background fetch to update cache if we are just browsing (no search)
+                // and cache is empty or stale
+                exerciseAPI.getAll().then(res => {
+                    if (res.exercises) {
+                        useOfflineStore.getState().cacheExercises(res.exercises);
+                        // Optional: update state immediately if we want live refresh
+                        // setExercises(res.exercises); 
+                    }
+                }).catch(err => console.log('Background fetch failed', err));
             }
 
             setExercises(results);
@@ -127,10 +171,6 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
         if (mode === 'select' && onSelect) {
             onSelect(item);
         } else {
-            // If view mode, we probably want to show details. 
-            // Since this is a component, we can emit an 'onDetail' event or handle modal internally.
-            // For now, let's bubble up if onSelect is provided, otherwise ignore or TODO.
-            // Actually, best to expose onSelect for both, and parent decides what to do.
             if (onSelect) onSelect(item);
         }
     };
@@ -141,12 +181,22 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
             onPress={() => handlePress(item)}
         >
             <GlassCard style={styles.exerciseCard}>
-                {item.gifUrl && (
+                {item.gifUrl ? (
                     <Image
                         source={{ uri: item.gifUrl }}
                         style={styles.exerciseGif}
-                        resizeMode="cover"
+                        contentFit="cover"
+                        transition={200}
+                        cachePolicy="memory-disk"
                     />
+                ) : (
+                    <View style={styles.exerciseIconContainer}>
+                        <MaterialIcons 
+                            name={getExerciseIcon(item.bodyPart)} 
+                            size={32} 
+                            color={colors.primary} 
+                        />
+                    </View>
                 )}
                 <View style={styles.exerciseInfo}>
                     <Text style={styles.exerciseName}>{item.name}</Text>
@@ -236,11 +286,12 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
                     <Text style={styles.loadingText}>Loading...</Text>
                 </View>
             ) : (
-                <FlatList
+                <TypedFlashList
                     data={exercises}
                     renderItem={renderExerciseCard}
-                    keyExtractor={(item, index) => `${item.id}-${index}`}
+                    keyExtractor={(item: any, index: number) => `${item.id}-${index}`}
                     contentContainerStyle={styles.listContent}
+                    estimatedItemSize={100}
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={
                         !loading && searchQuery.trim().length > 0 ? (
@@ -350,6 +401,14 @@ const styles = StyleSheet.create({
         height: 80,
         borderRadius: borderRadius.lg,
         backgroundColor: colors.glass.surfaceLight,
+    },
+    exerciseIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.glass.surfaceLight,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     exerciseInfo: {
         flex: 1,

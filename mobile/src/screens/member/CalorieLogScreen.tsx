@@ -14,6 +14,7 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
+import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -346,40 +347,42 @@ const CalorieLogScreen: React.FC = () => {
         return match ? match[1] : null;
     };
 
-    const renderSearchItem = ({ item }: { item: any }) => {
+    const renderSearchItem = ({ item, index }: { item: any, index: number }) => {
         const calories = parseDescription(item.description);
         const isAi = item.isAiTrigger;
 
         return (
-            <Pressable
-                style={({ pressed }) => [
-                    styles.foodItem,
-                    isAi && styles.aiItem, // New style
-                    pressed && styles.foodItemPressed
-                ]}
-                onPress={() => handleFoodSelect(item)}
-            >
-                <View style={[styles.foodIcon, isAi && styles.aiIcon]}>
-                    <MaterialIcons
-                        name={isAi ? "auto-awesome" : "restaurant"}
-                        size={20}
-                        color={isAi ? colors.background : colors.primary}
-                    />
-                </View>
-                <View style={styles.foodInfo}>
-                    <Text style={styles.foodName} numberOfLines={1}>{item.name}</Text>
-                    {item.brand && (
-                        <Text style={styles.foodBrand} numberOfLines={1}>{item.brand}</Text>
-                    )}
-                </View>
-                {calories && (
-                    <View style={styles.caloriesBadge}>
-                        <Text style={styles.caloriesBadgeText}>{calories}</Text>
-                        <Text style={styles.caloriesBadgeUnit}>cal</Text>
+            <Animated.View entering={FadeInDown.delay(index * 50).duration(400).springify()}>
+                <Pressable
+                    style={({ pressed }) => [
+                        styles.foodItem,
+                        isAi && styles.aiItem, // New style
+                        pressed && styles.foodItemPressed
+                    ]}
+                    onPress={() => handleFoodSelect(item)}
+                >
+                    <View style={[styles.foodIcon, isAi && styles.aiIcon]}>
+                        <MaterialIcons
+                            name={isAi ? "auto-awesome" : "restaurant"}
+                            size={20}
+                            color={isAi ? colors.background : colors.primary}
+                        />
                     </View>
-                )}
-                <MaterialIcons name="chevron-right" size={20} color={colors.text.muted} />
-            </Pressable>
+                    <View style={styles.foodInfo}>
+                        <Text style={styles.foodName} numberOfLines={1}>{item.name}</Text>
+                        {item.brand && (
+                            <Text style={styles.foodBrand} numberOfLines={1}>{item.brand}</Text>
+                        )}
+                    </View>
+                    {calories && (
+                        <View style={styles.caloriesBadge}>
+                            <Text style={styles.caloriesBadgeText}>{calories}</Text>
+                            <Text style={styles.caloriesBadgeUnit}>cal</Text>
+                        </View>
+                    )}
+                    <MaterialIcons name="chevron-right" size={20} color={colors.text.muted} />
+                </Pressable>
+            </Animated.View>
         );
     };
 
@@ -435,7 +438,7 @@ const CalorieLogScreen: React.FC = () => {
             </View>
 
             {/* AI Meal Describer */}
-            <View style={styles.aiContainer}>
+            <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.aiContainer}>
                 <View style={styles.aiInputWrapper}>
                     <MaterialIcons name="auto-awesome" size={20} color={colors.primary} />
                     <TextInput
@@ -492,12 +495,12 @@ const CalorieLogScreen: React.FC = () => {
                         }}
                     />
                 </View>
-            </View>
+            </Animated.View>
 
             {/* Frequent Foods */}
             {
                 !searching && searchQuery === '' && frequentFoods.length > 0 && (
-                    <View style={styles.frequentContainer}>
+                    <Animated.View entering={FadeIn.duration(500)} style={styles.frequentContainer}>
                         <Text style={styles.sectionTitle}>QUICK ADD</Text>
                         <ScrollView
                             horizontal
@@ -505,20 +508,21 @@ const CalorieLogScreen: React.FC = () => {
                             contentContainerStyle={styles.frequentScroll}
                         >
                             {frequentFoods.map((food, index) => (
-                                <TouchableOpacity
-                                    key={index}
-                                    style={styles.frequentCard}
-                                    onPress={() => handleQuickAdd(food)}
-                                >
-                                    <View style={styles.frequentIcon}>
-                                        <MaterialIcons name="restaurant" size={16} color={colors.primary} />
-                                    </View>
-                                    <Text style={styles.frequentName} numberOfLines={1}>{food.name}</Text>
-                                    <Text style={styles.frequentCals}>{food.calories} cal</Text>
-                                </TouchableOpacity>
+                                <Animated.View key={index} entering={ZoomIn.delay(index * 50).springify()}>
+                                    <TouchableOpacity
+                                        style={styles.frequentCard}
+                                        onPress={() => handleQuickAdd(food)}
+                                    >
+                                        <View style={styles.frequentIcon}>
+                                            <MaterialIcons name="restaurant" size={16} color={colors.primary} />
+                                        </View>
+                                        <Text style={styles.frequentName} numberOfLines={1}>{food.name}</Text>
+                                        <Text style={styles.frequentCals}>{food.calories} cal</Text>
+                                    </TouchableOpacity>
+                                </Animated.View>
                             ))}
                         </ScrollView>
-                    </View>
+                    </Animated.View>
                 )
             }
 

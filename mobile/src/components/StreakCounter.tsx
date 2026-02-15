@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
 
 interface StreakCounterProps {
@@ -38,6 +39,25 @@ const StreakCounter: React.FC<StreakCounterProps> = ({
 
     const sizeStyles = getSizeStyles();
 
+    const scale = useSharedValue(1);
+
+    useEffect(() => {
+        scale.value = withRepeat(
+            withSequence(
+                withTiming(1.2, { duration: 1000 }),
+                withTiming(1, { duration: 1000 })
+            ),
+            -1,
+            true
+        );
+    }, []);
+
+    const animatedStyle = useAnimatedStyle(() => {
+        return {
+            transform: [{ scale: scale.value }],
+        };
+    });
+
     return (
         <View style={styles.container}>
             {showLabel && (
@@ -48,7 +68,7 @@ const StreakCounter: React.FC<StreakCounterProps> = ({
                     {count}
                 </Text>
                 <Text style={[styles.unit, { fontSize: sizeStyles.unit }]}>Days</Text>
-                <Text style={[styles.fireIcon, { fontSize: sizeStyles.icon }]}>🔥</Text>
+                <Animated.Text style={[styles.fireIcon, { fontSize: sizeStyles.icon }, animatedStyle]}>🔥</Animated.Text>
             </View>
         </View>
     );

@@ -364,4 +364,41 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
     });
 }));
 
+/**
+ * GET /api/friends/suggested
+ * Get suggested friends (people in same gym, not yet friends)
+ */
+router.get('/suggested', authenticate, asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const gymId = req.user.gym_id;
+    const limit = parseInt(req.query.limit) || 5;
+
+    // Find users in same gym who are NOT my friends and NOT me
+    // Also excluding pending requests
+    const result = await query(
+        `SELECT u.id, u.name, u.avatar_url, u.xp_points,
+                a.checked_in_at as last_checkin
+         FROM users u
+         LEFT JOIN friendships f ON (
+             (f.user_id = $1 AND f.friend_id = u.id)
+             OR (f.friend_id = $1 AND f.user_id = u.id)
+         )
+         LEFT JOIN attendances a ON (
+             u.id = a.user_id 
+             AND DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+         )
+         WHERE u.gym_id = $2 
+           AND u.id != $1
+           AND u.role = 'member'
+           AND f.id IS NULL -- No existing friendship relation
+         ORDER BY a.checked_in_at DESC NULLS LAST, RANDOM()
+         LIMIT $3`,
+        [userId, gymId, limit]
+    );
+
+    res.json({
+        suggested: result.rows
+    });
+}));
+
 module.exports = router;

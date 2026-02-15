@@ -1,5 +1,7 @@
+
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
+import { useNutrition } from '../context/NutritionContext';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
 import GlassCard from './GlassCard';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -8,66 +10,14 @@ interface WeeklyProgressProps {
     history: string[]; // ['YYYY-MM-DD', ...]
 }
 
-// Animated day dot component
-const AnimatedDayDot: React.FC<{
-    visited: boolean;
-    active: boolean;
-    index: number;
-}> = ({ visited, active, index }) => {
-    const scaleAnim = useRef(new Animated.Value(0)).current;
-    const checkAnim = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-        // Staggered entrance animation
-        Animated.sequence([
-            Animated.delay(index * 50),
-            Animated.spring(scaleAnim, {
-                toValue: 1,
-                tension: 100,
-                friction: 8,
-                useNativeDriver: true,
-            }),
-        ]).start();
-
-        // Check mark pop animation
-        if (visited) {
-            Animated.sequence([
-                Animated.delay(index * 50 + 200),
-                Animated.spring(checkAnim, {
-                    toValue: 1,
-                    tension: 150,
-                    friction: 6,
-                    useNativeDriver: true,
-                }),
-            ]).start();
-        }
-    }, [visited]);
-
-    return (
-        <Animated.View
-            style={[
-                styles.dayDot,
-                visited && styles.dayDotVisited,
-                active && !visited && styles.dayDotActive,
-                { transform: [{ scale: scaleAnim }] },
-            ]}
-        >
-            {visited && (
-                <Animated.View style={{ transform: [{ scale: checkAnim }] }}>
-                    <MaterialIcons name="check" size={12} color={colors.background} />
-                </Animated.View>
-            )}
-        </Animated.View>
-    );
-};
+const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 const WeeklyProgress: React.FC<WeeklyProgressProps> = ({ history }) => {
-    // Get current week dates (Sun-Sat or Mon-Sun)
+    // Get current सप्ताह dates
     const today = new Date();
-    const currentDay = today.getDay(); // 0 = Sun, 1 = Mon...
+    const currentDay = today.getDay(); // 0 = Sun
     const weekStart = new Date(today);
-    // Adjust to Monday start if preferred, defaulting to Sunday start for now or standard getDay()
-    // Let's do Monday start for fitness usually
+    // Start from Monday (or user preference? keeping simple for now)
     const dist = currentDay === 0 ? 6 : currentDay - 1;
     weekStart.setDate(today.getDate() - dist);
 
@@ -77,46 +27,44 @@ const WeeklyProgress: React.FC<WeeklyProgressProps> = ({ history }) => {
         return d;
     });
 
-    const isToday = (date: Date) => {
-        return date.toISOString().split('T')[0] === today.toISOString().split('T')[0];
-    };
-
     const hasWorkout = (date: Date) => {
         const dateStr = date.toISOString().split('T')[0];
         return history.includes(dateStr);
     };
 
+    const { weeklyWorkoutGoal } = useNutrition();
     const workoutsThisWeek = weekDates.filter(d => hasWorkout(d)).length;
-    const weeklyTarget = 4; // This could be dynamic later
 
     return (
-        <GlassCard padding="lg">
+        <GlassCard style={{ padding: spacing.lg }}>
             <View style={styles.header}>
                 <View>
                     <Text style={styles.title}>Weekly Progress</Text>
-                    <Text style={styles.subtitle}>{workoutsThisWeek} / {weeklyTarget} workouts completed</Text>
+                    <Text style={styles.subtitle}>{workoutsThisWeek} / {weeklyWorkoutGoal} workouts</Text>
                 </View>
-                <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{Math.round((workoutsThisWeek / weeklyTarget) * 100)}%</Text>
-                </View>
+                {workoutsThisWeek >= weeklyWorkoutGoal && (
+                    <View style={styles.badge}>
+                        <Text style={styles.badgeText}>GOAL HIT!</Text>
+                    </View>
+                )}
             </View>
 
-            <View style={styles.weekRow}>
+            <View style={styles.daysRow}>
                 {weekDates.map((date, index) => {
-                    const visited = hasWorkout(date);
-                    const active = isToday(date);
-                    const dayLabel = date.toLocaleDateString('en-US', { weekday: 'narrow' });
-
+                    const active = hasWorkout(date);
+                    const isToday = date.toDateString() === new Date().toDateString();
                     return (
-                        <View key={index} style={styles.dayContainer}>
-                            <Text style={[styles.dayLabel, active && styles.dayLabelActive]}>
-                                {dayLabel}
+                        <View key={index} style={styles.dayCol}>
+                            <View style={[
+                                styles.dayCircle,
+                                active && styles.dayCircleActive,
+                                isToday && !active && styles.dayCircleToday
+                            ]}>
+                                {active && <Text style={styles.check}>✓</Text>}
+                            </View>
+                            <Text style={[styles.dayLabel, isToday && styles.dayLabelToday]}>
+                                {DAYS[date.getDay()]}
                             </Text>
-                            <AnimatedDayDot
-                                visited={visited}
-                                active={active}
-                                index={index}
-                            />
                         </View>
                     );
                 })}
@@ -144,53 +92,57 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     badge: {
-        backgroundColor: colors.glass.surface,
-        paddingVertical: 2,
+        backgroundColor: 'rgba(78, 205, 196, 0.2)',
+        paddingVertical: 4,
         paddingHorizontal: 8,
         borderRadius: borderRadius.sm,
         borderWidth: 1,
-        borderColor: colors.glass.border,
+        borderColor: '#4ECDC4',
     },
     badgeText: {
         fontSize: 10,
         fontFamily: typography.fontFamily.bold,
-        color: colors.primary,
+        color: '#4ECDC4',
     },
-    weekRow: {
+    daysRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
     },
-    dayContainer: {
+    dayCol: {
         alignItems: 'center',
         gap: 8,
+    },
+    dayCircle: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.glass.surface,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    dayCircleActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    dayCircleToday: {
+        borderColor: colors.text.muted,
+        borderWidth: 1,
+    },
+    check: {
+        color: colors.text.dark,
+        fontSize: 12,
+        fontWeight: 'bold',
     },
     dayLabel: {
         fontSize: 10,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
-        textTransform: 'uppercase',
     },
-    dayLabelActive: {
-        color: colors.primary,
+    dayLabelToday: {
+        color: colors.text.primary,
         fontFamily: typography.fontFamily.bold,
-    },
-    dayDot: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: colors.glass.surface,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'transparent',
-    },
-    dayDotVisited: {
-        backgroundColor: colors.crowd.low, // Green
-    },
-    dayDotActive: {
-        borderColor: colors.primary,
-        backgroundColor: 'transparent',
     },
 });
 

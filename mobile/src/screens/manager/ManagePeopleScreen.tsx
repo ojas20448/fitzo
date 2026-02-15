@@ -420,6 +420,15 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         gap: spacing.sm,
     },
+    inputGroup: {
+        marginBottom: spacing.lg,
+    },
+    label: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.secondary,
+        marginBottom: spacing.sm,
+    },
     trainerOption: {
         paddingVertical: spacing.xs,
         paddingHorizontal: spacing.md,

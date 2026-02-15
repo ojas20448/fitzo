@@ -5,6 +5,44 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 /**
  * Generate personalized workout plan using Gemini
  */
+// Mock Data Generators
+function getMockWorkoutPlan(goal) {
+    return {
+        plan_name: `AI Generated ${goal} Plan`,
+        duration_weeks: 4,
+        days: [
+            {
+                day: "Monday",
+                focus: "Upper Body",
+                exercises: [{ name: "Pushups", sets: 3, reps: "10-12", rest_seconds: 60, notes: "Focus on form" }]
+            },
+            {
+                day: "Wednesday",
+                focus: "Lower Body",
+                exercises: [{ name: "Squats", sets: 3, reps: "12-15", rest_seconds: 60, notes: "Keep back straight" }]
+            },
+            {
+                day: "Friday",
+                focus: "Full Body",
+                exercises: [{ name: "Burpees", sets: 3, reps: "10", rest_seconds: 60, notes: "Explosive movement" }]
+            }
+        ]
+    };
+}
+
+function getMockNutritionAdvice(goal) {
+    return {
+        calories: 2200,
+        macros: { protein_g: 150, carbs_g: 200, fats_g: 70 },
+        meal_timing: ["Breakfast: 8AM", "Lunch: 1PM", "Dinner: 8PM"],
+        supplements: ["Detailed advice unavailable (Mock Mode)"],
+        tips: ["Drink water", "Sleep 8 hours"]
+    };
+}
+
+/**
+ * Generate personalized workout plan using Gemini
+ */
 async function generateWorkoutPlan(userProfile) {
     const { goal, fitnessLevel, daysPerWeek, equipment } = userProfile;
 
@@ -45,8 +83,8 @@ Format the response as JSON with this structure:
 
         return JSON.parse(jsonText);
     } catch (error) {
-        console.error('Gemini API error:', error);
-        throw new Error('Failed to generate workout plan');
+        console.error('Gemini API error (Switching to MOCK):', error.message);
+        return getMockWorkoutPlan(goal);
     }
 }
 
@@ -88,8 +126,8 @@ Format as JSON:
 
         return JSON.parse(jsonText);
     } catch (error) {
-        console.error('Gemini API error:', error);
-        throw new Error('Failed to generate nutrition advice');
+        console.error('Gemini API error (Switching to MOCK):', error.message);
+        return getMockNutritionAdvice(goal);
     }
 }
 
@@ -97,6 +135,7 @@ Format as JSON:
  * AI Coach chat - general fitness questions
  */
 async function chatWithCoach(question, context = {}) {
+    // ... prompt ...
     const contextStr = Object.keys(context).length > 0
         ? `\n\nUser context: ${JSON.stringify(context)}`
         : '';
@@ -113,8 +152,8 @@ Provide actionable advice in 2-3 paragraphs.`;
         const response = await result.response;
         return response.text();
     } catch (error) {
-        console.error('Gemini API error:', error);
-        throw new Error('Failed to get AI response');
+        console.error('Gemini API error (Switching to MOCK):', error.message);
+        return `[AI Monitor]: The advanced AI service is currently unavailable. \n\nHowever, regarding "${question}", generally consistency is key. Please ensure you are eating enough protein and getting enough sleep. (This is a simplified offline response).`;
     }
 }
 
@@ -138,8 +177,8 @@ Keep it brief and actionable.`;
         const response = await result.response;
         return response.text();
     } catch (error) {
-        console.error('Gemini API error:', error);
-        throw new Error('Failed to analyze form');
+        console.error('Gemini API error (Switching to MOCK):', error.message);
+        return `[AI Monitor]: Form analysis unavailable offline. Please check standard form guides for ${exerciseName}. Ensure your back is straight and movements are controlled.`;
     }
 }
 

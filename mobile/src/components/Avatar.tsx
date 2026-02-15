@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Image, Text, StyleSheet, ViewStyle, Animated } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { Image } from 'expo-image';
 import { colors, borderRadius, typography } from '../styles/theme';
 
 interface AvatarProps {
@@ -11,6 +12,9 @@ interface AvatarProps {
     style?: ViewStyle;
 }
 
+// BlurHash placeholder - neutral gray pattern
+const PLACEHOLDER_BLURHASH = 'L5H2EC=PM+yV0g-mq.wG9c010J}I';
+
 const Avatar: React.FC<AvatarProps> = ({
     uri,
     name,
@@ -19,10 +23,6 @@ const Avatar: React.FC<AvatarProps> = ({
     grayscale = false,
     style,
 }) => {
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(false);
-    const fadeAnim = React.useRef(new Animated.Value(0)).current;
-
     const getSize = (): number => {
         switch (size) {
             case 'sm':
@@ -61,26 +61,10 @@ const Avatar: React.FC<AvatarProps> = ({
     const dimension = getSize();
     const onlineIndicatorSize = Math.max(dimension / 5, 10);
 
-    const handleLoad = () => {
-        setLoading(false);
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-        }).start();
-    };
-
-    const handleError = () => {
-        setLoading(false);
-        setError(true);
-    };
-
-    const shouldShowImage = uri && !error;
-
     return (
-        <View 
+        <View
             style={[
-                styles.container, 
+                styles.container,
                 { width: dimension, height: dimension },
                 style
             ]}
@@ -89,9 +73,9 @@ const Avatar: React.FC<AvatarProps> = ({
             {/* Initials fallback / loading background */}
             <View style={[
                 styles.initialsContainer,
-                { 
-                    width: dimension, 
-                    height: dimension, 
+                {
+                    width: dimension,
+                    height: dimension,
                     borderRadius: dimension / 2,
                 },
                 grayscale && styles.grayscale,
@@ -101,22 +85,23 @@ const Avatar: React.FC<AvatarProps> = ({
                 </Text>
             </View>
 
-            {/* Image overlay */}
-            {shouldShowImage && (
-                <Animated.Image
+            {/* Image overlay - using expo-image for automatic caching */}
+            {uri && (
+                <Image
                     source={{ uri }}
                     style={[
                         styles.image,
-                        { 
-                            width: dimension, 
-                            height: dimension, 
+                        {
+                            width: dimension,
+                            height: dimension,
                             borderRadius: dimension / 2,
-                            opacity: fadeAnim,
                         },
                         grayscale && styles.grayscale,
                     ]}
-                    onLoad={handleLoad}
-                    onError={handleError}
+                    placeholder={PLACEHOLDER_BLURHASH}
+                    contentFit="cover"
+                    transition={200}
+                    cachePolicy="memory-disk"
                 />
             )}
 

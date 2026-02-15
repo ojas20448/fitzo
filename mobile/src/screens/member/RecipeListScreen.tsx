@@ -1,11 +1,16 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, Pressable, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlashList, FlashListProps } from '@shopify/flash-list';
 import { router, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { recipesAPI, caloriesAPI } from '../../services/api';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { useToast } from '../../components/Toast';
+import useOfflineStore from '../../stores/offlineStore';
+
+// FlashList wrapper to handle typing issues
+const TypedFlashList = FlashList as React.ComponentType<FlashListProps<any> & { estimatedItemSize?: number }>;
 
 const RecipeListScreen = () => {
     const [recipes, setRecipes] = useState<any[]>([]);
@@ -15,11 +20,41 @@ const RecipeListScreen = () => {
 
     const loadRecipes = async () => {
         try {
-            const data = await recipesAPI.getAll();
-            setRecipes(data.recipes || []);
+            // Check offline first
+            const cachedRecipes = useOfflineStore.getState().getRecipes();
+            const isStale = useOfflineStore.getState().isRecipesStale();
+
+            if (cachedRecipes && cachedRecipes.length > 0 && !isStale) {
+                console.log('Using cached recipes');
+                setRecipes(cachedRecipes);
+                setLoading(false);
+
+                // Background update if online
+                if (useOfflineStore.getState().isOnline) {
+                    recipesAPI.getAll().then(data => {
+                        if (data.recipes) {
+                            useOfflineStore.getState().cacheRecipes(data.recipes);
+                            setRecipes(data.recipes);
+                        }
+                    }).catch(err => console.log('Background recipe update failed', err));
+                }
+            } else {
+                // Fetch fresh
+                const data = await recipesAPI.getAll();
+                const recipesList = data.recipes || [];
+                setRecipes(recipesList);
+                useOfflineStore.getState().cacheRecipes(recipesList);
+            }
         } catch (error) {
             console.error('Failed to load recipes:', error);
-            toast.error('Error', 'Could not load recipes');
+            // Fallback to stale cache if available
+            const cachedRecipes = useOfflineStore.getState().getRecipes();
+            if (cachedRecipes && cachedRecipes.length > 0) {
+                toast.error('Offline', 'Displaying cached recipes');
+                setRecipes(cachedRecipes);
+            } else {
+                toast.error('Error', 'Could not load recipes');
+            }
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -34,7 +69,17 @@ const RecipeListScreen = () => {
 
     const handleRefresh = () => {
         setRefreshing(true);
-        loadRecipes();
+        // Force fetch ignoring cache staleness for refresh
+        recipesAPI.getAll().then(data => {
+            if (data.recipes) {
+                setRecipes(data.recipes);
+                useOfflineStore.getState().cacheRecipes(data.recipes);
+            }
+            setRefreshing(false);
+        }).catch(() => {
+            toast.error('Error', 'Refresh failed');
+            setRefreshing(false);
+        });
     };
 
     const handleLog = async (recipe: any) => {
@@ -122,11 +167,12 @@ const RecipeListScreen = () => {
                 </Pressable>
             </View>
 
-            <FlatList
+            <TypedFlashList
                 data={recipes}
                 renderItem={renderItem}
-                keyExtractor={item => item.id}
+                keyExtractor={(item: any) => item.id}
                 contentContainerStyle={styles.listContent}
+                estimatedItemSize={120}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
                 }
@@ -208,7 +254,7 @@ const styles = StyleSheet.create({
     logBtnText: {
         color: colors.text.dark,
         fontFamily: typography.fontFamily.bold,
-        fontSize: typography.sizes.md,
+        fontSize: typography.sizes.base,
     },
     cardHeader: {
         flexDirection: 'row',

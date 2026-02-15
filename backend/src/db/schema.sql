@@ -129,9 +129,10 @@ CREATE INDEX idx_calorie_plan_member ON calorie_plans(member_id);
 CREATE TABLE workout_intents (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  muscle_group muscle_group NOT NULL,
+  muscle_group muscle_group,
   visibility intent_visibility DEFAULT 'friends',
   note VARCHAR(200),
+  session_label VARCHAR(100) DEFAULT NULL,
   expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -181,6 +182,7 @@ CREATE TABLE learn_lessons (
   unit_title VARCHAR(100) NOT NULL,
   order_index INTEGER NOT NULL,
   description TEXT,
+  content TEXT,  -- Markdown content for lesson reading mode
   questions JSONB NOT NULL DEFAULT '[]',
   xp_reward INTEGER DEFAULT 10,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

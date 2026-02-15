@@ -19,10 +19,12 @@ import GlassCard from '../../src/components/GlassCard';
 import Button from '../../src/components/Button';
 import WorkoutCalendar from '../../src/components/WorkoutCalendar';
 import Skeleton, { SkeletonCard } from '../../src/components/Skeleton';
+import { useToast } from '../../src/components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/styles/theme';
 
 export default function ProfileScreen() {
-    const { user, logout } = useAuth();
+    const { user, logout, refreshUser } = useAuth();
+    const toast = useToast();
     const [refreshing, setRefreshing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
@@ -110,21 +112,19 @@ export default function ProfileScreen() {
         if (!editName.trim()) return;
         setSaving(true);
         try {
-            // Updated to use memberAPI.updateProfile if available, or assume generic update
-            // Since we haven't confirmed exact API shape, we'll try to update via memberAPI
-            // If this fails during verification, I'll need to check the API service
             await memberAPI.updateProfile({
                 name: editName,
                 avatar_url: editAvatar
             });
 
-            // Refresh data to reflect changes
-            await loadData();
-            // In a real app we might update local context directly too
+            // Refresh both the home data AND the AuthContext user state
+            await Promise.all([loadData(), refreshUser()]);
 
             setIsEditing(false);
-        } catch (error) {
+            toast.success('Profile updated', 'Your changes have been saved');
+        } catch (error: any) {
             console.error('Failed to update profile', error);
+            toast.error('Update failed', error?.message || 'Could not save profile changes');
         } finally {
             setSaving(false);
         }
@@ -139,7 +139,7 @@ export default function ProfileScreen() {
                         <View style={styles.headerDot} />
                         <Text style={styles.headerSubtitle}>YOU</Text>
                     </View>
-                    <TouchableOpacity style={styles.settingsBtn}>
+                    <TouchableOpacity style={styles.settingsBtn} onPress={() => router.push('/member/settings' as any)}>
                         <MaterialIcons name="settings" size={20} color={colors.text.muted} />
                     </TouchableOpacity>
                 </View>
@@ -168,8 +168,10 @@ export default function ProfileScreen() {
                     <View style={styles.headerDot} />
                     <Text style={styles.headerSubtitle}>YOU</Text>
                 </View>
-                <TouchableOpacity style={styles.settingsBtn} onPress={handleEditOpen}>
-                    <MaterialIcons name="edit" size={20} color={colors.text.primary} />
+                <TouchableOpacity onPress={handleEditOpen}>
+                    <GlassCard style={styles.settingsBtn}>
+                        <MaterialIcons name="edit" size={20} color={colors.text.primary} />
+                    </GlassCard>
                 </TouchableOpacity>
             </View>
 
@@ -230,7 +232,7 @@ export default function ProfileScreen() {
                 {/* Biometrics & Health Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionLabel}>Health & Biometrics</Text>
-                    <GlassCard style={styles.biometricsCard} padding="none">
+                    <GlassCard style={styles.biometricsCard}>
                         <View style={styles.biometricsHeader}>
                             <View style={styles.biometricStat}>
                                 <Text style={styles.biometricValue}>
@@ -284,20 +286,29 @@ export default function ProfileScreen() {
                 {/* Settings & Other Actions */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Account</Text>
-                    <GlassCard style={styles.settingsCard} padding="none">
-                        <TouchableOpacity style={styles.settingItem}>
+                    <GlassCard style={styles.settingsCard}>
+                        <TouchableOpacity
+                            style={styles.settingItem}
+                            onPress={() => router.push('/member/settings' as any)}
+                        >
                             <MaterialIcons name="notifications" size={24} color={colors.text.secondary} />
                             <Text style={styles.settingLabel}>Notifications</Text>
                             <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                         </TouchableOpacity>
                         <View style={styles.settingDivider} />
-                        <TouchableOpacity style={styles.settingItem}>
+                        <TouchableOpacity
+                            style={styles.settingItem}
+                            onPress={() => router.push('/member/settings' as any)}
+                        >
                             <MaterialIcons name="privacy-tip" size={24} color={colors.text.secondary} />
                             <Text style={styles.settingLabel}>Privacy & Security</Text>
                             <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                         </TouchableOpacity>
                         <View style={styles.settingDivider} />
-                        <TouchableOpacity style={styles.settingItem}>
+                        <TouchableOpacity
+                            style={styles.settingItem}
+                            onPress={() => router.push('/member/settings' as any)}
+                        >
                             <MaterialIcons name="help" size={24} color={colors.text.secondary} />
                             <Text style={styles.settingLabel}>Help & Support</Text>
                             <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
@@ -328,8 +339,10 @@ export default function ProfileScreen() {
                 <SafeAreaView style={styles.modalContainer}>
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>Edit Profile</Text>
-                        <TouchableOpacity onPress={() => setIsEditing(false)} style={styles.closeBtn}>
-                            <MaterialIcons name="close" size={24} color={colors.text.primary} />
+                        <TouchableOpacity onPress={() => setIsEditing(false)}>
+                            <GlassCard style={styles.closeBtn}>
+                                <MaterialIcons name="close" size={20} color={colors.text.primary} />
+                            </GlassCard>
                         </TouchableOpacity>
                     </View>
 
@@ -419,14 +432,11 @@ const styles = StyleSheet.create({
         letterSpacing: 2,
     },
     settingsBtn: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: colors.glass.surface,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: colors.glass.border,
     },
     content: {
         flex: 1,
@@ -713,7 +723,11 @@ const styles = StyleSheet.create({
         color: colors.text.primary,
     },
     closeBtn: {
-        padding: 4,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     modalContent: {
         padding: spacing.xl,

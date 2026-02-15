@@ -81,9 +81,12 @@ export default function RegisterScreen() {
 
         setLoading(true);
         try {
-            await register(email.trim().toLowerCase(), password, name.trim(), gymCode.trim());
+            await register(email.trim().toLowerCase(), password, name.trim(), gymCode.trim() || '');
             toast.success('Account created successfully!');
-            router.replace('/(tabs)');
+            // Small delay to let state update before navigating
+            setTimeout(() => {
+                router.replace('/(tabs)');
+            }, 100);
         } catch (error: any) {
             toast.error(error.message || 'Something went wrong');
         } finally {

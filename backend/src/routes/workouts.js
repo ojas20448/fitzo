@@ -158,7 +158,8 @@ router.get('/feed', asyncHandler(async (req, res) => {
     const result = await query(
         `SELECT w.id, w.workout_type, w.exercises, w.notes, w.completed, 
                 w.logged_date, w.created_at,
-                u.id as user_id, u.name, u.avatar_url
+                u.id as user_id, u.name, u.avatar_url,
+                (SELECT COUNT(*)::int FROM comments c WHERE c.workout_log_id = w.id) as comment_count
          FROM workout_logs w
          JOIN users u ON w.user_id = u.id
          WHERE w.logged_date >= CURRENT_DATE - INTERVAL '7 days'
@@ -200,6 +201,20 @@ router.delete('/:id', asyncHandler(async (req, res) => {
     }
 
     res.json({ success: true });
+}));
+
+// ============================================
+// GET MY SPLITS
+// ============================================
+router.get('/splits', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    const result = await query(
+        `SELECT * FROM user_splits WHERE user_id = $1 ORDER BY is_active DESC, created_at DESC`,
+        [userId]
+    );
+
+    res.json({ splits: result.rows });
 }));
 
 module.exports = router;
