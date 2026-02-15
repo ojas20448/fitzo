@@ -10,7 +10,7 @@ import { useOfflineStore } from '../stores/offlineStore';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL
     || (__DEV__
         ? (Platform.OS === 'web' ? 'http://localhost:3001/api' : 'http://192.168.1.16:3001/api')
-        : 'https://fitzo-backend.onrender.com/api');
+        : 'https://fitzo.onrender.com/api');
 
 
 // Create axios instance

@@ -19,7 +19,7 @@
                 "buildType": "apk"
             },
             "env": {
-                "EXPO_PUBLIC_API_URL": "https://fitzo-backend.onrender.com/api"
+                "EXPO_PUBLIC_API_URL": "https://fitzo.onrender.com/api"
             }
         },
         "production": {
@@ -30,7 +30,7 @@
                 "resourceClass": "m-medium"
             },
             "env": {
-                "EXPO_PUBLIC_API_URL": "https://fitzo-backend.onrender.com/api"
+                "EXPO_PUBLIC_API_URL": "https://fitzo.onrender.com/api"
             }
         }
     },

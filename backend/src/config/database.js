@@ -1,4 +1,8 @@
 const { Pool } = require('pg');
+const dns = require('dns');
+
+// Force IPv4 DNS resolution to avoid ENETUNREACH on Render/cloud hosts
+dns.setDefaultResultOrder('ipv4first');
 
 // Use DATABASE_URL exclusively when available; only fall back to individual params otherwise
 const poolConfig = process.env.DATABASE_URL
