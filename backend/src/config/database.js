@@ -1,25 +1,23 @@
 const { Pool } = require('pg');
 const dns = require('dns');
-const net = require('net');
-const tls = require('tls');
 
-// Force IPv4 DNS resolution globally to avoid ENETUNREACH on Render/cloud hosts
-dns.setDefaultResultOrder('ipv4first');
-
-// Force IPv4 for both net and tls connections (pg uses tls for SSL)
-const origNetConnect = net.connect;
-net.connect = function(...args) {
-  if (args[0] && typeof args[0] === 'object') {
-    args[0].family = 4;
+// Force ALL DNS lookups to resolve IPv4 first.
+// pg uses net.Socket().connect() which calls dns.lookup() internally.
+// This is the only reliable way to force IPv4 on hosts like Render
+// where Supabase's hostname resolves to IPv6 but IPv6 is unreachable.
+const origLookup = dns.lookup;
+dns.lookup = function(hostname, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options = { family: 4 };
+  } else if (typeof options === 'number') {
+    options = { family: 4 };
+  } else if (options && typeof options === 'object') {
+    options = { ...options, family: 4 };
+  } else {
+    options = { family: 4 };
   }
-  return origNetConnect.apply(this, args);
-};
-const origTlsConnect = tls.connect;
-tls.connect = function(...args) {
-  if (args[0] && typeof args[0] === 'object') {
-    args[0].family = 4;
-  }
-  return origTlsConnect.apply(this, args);
+  return origLookup.call(this, hostname, options, callback);
 };
 
 // Use DATABASE_URL exclusively when available; only fall back to individual params otherwise
