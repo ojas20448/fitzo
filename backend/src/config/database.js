@@ -1,17 +1,25 @@
 const { Pool } = require('pg');
 const dns = require('dns');
 const net = require('net');
+const tls = require('tls');
 
 // Force IPv4 DNS resolution globally to avoid ENETUNREACH on Render/cloud hosts
 dns.setDefaultResultOrder('ipv4first');
 
-// Monkey-patch net.connect to force IPv4 for pg connections
-const origConnect = net.connect;
+// Force IPv4 for both net and tls connections (pg uses tls for SSL)
+const origNetConnect = net.connect;
 net.connect = function(...args) {
   if (args[0] && typeof args[0] === 'object') {
     args[0].family = 4;
   }
-  return origConnect.apply(this, args);
+  return origNetConnect.apply(this, args);
+};
+const origTlsConnect = tls.connect;
+tls.connect = function(...args) {
+  if (args[0] && typeof args[0] === 'object') {
+    args[0].family = 4;
+  }
+  return origTlsConnect.apply(this, args);
 };
 
 // Use DATABASE_URL exclusively when available; only fall back to individual params otherwise
