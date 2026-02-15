@@ -59,6 +59,21 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Temporary debug endpoint — remove after fixing DB
+app.get('/api/debug-db', (req, res) => {
+    const rawUrl = process.env.DATABASE_URL || 'NOT SET';
+    // Mask password for safety
+    const masked = rawUrl.replace(/:([^:@]+)@/, ':***@');
+    res.json({
+        raw_url_masked: masked,
+        node_env: process.env.NODE_ENV,
+        raw_url_protocol: rawUrl.split('://')[0],
+        raw_url_has_postgres_prefix: rawUrl.includes('postgresql://') || rawUrl.includes('postgres://'),
+        raw_url_has_db_dot: rawUrl.includes('@db.'),
+        raw_url_has_pooler: rawUrl.includes('pooler.supabase.com'),
+    });
+});
+
 // API Health check (more detailed)
 app.get('/api/health', async (req, res) => {
     const health = {
