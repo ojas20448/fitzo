@@ -1,8 +1,18 @@
 const { Pool } = require('pg');
 const dns = require('dns');
+const net = require('net');
 
-// Force IPv4 DNS resolution to avoid ENETUNREACH on Render/cloud hosts
+// Force IPv4 DNS resolution globally to avoid ENETUNREACH on Render/cloud hosts
 dns.setDefaultResultOrder('ipv4first');
+
+// Monkey-patch net.connect to force IPv4 for pg connections
+const origConnect = net.connect;
+net.connect = function(...args) {
+  if (args[0] && typeof args[0] === 'object') {
+    args[0].family = 4;
+  }
+  return origConnect.apply(this, args);
+};
 
 // Use DATABASE_URL exclusively when available; only fall back to individual params otherwise
 const poolConfig = process.env.DATABASE_URL
