@@ -1,9 +1,20 @@
 const { Pool } = require('pg');
 
-// Use DATABASE_URL as-is. 
-// Supabase direct connection uses IPv6. If the host can't reach IPv6,
-// the DATABASE_URL env var should be set to the pooler URL instead.
+// Supabase direct connection (db.xxx.supabase.co) is IPv6-only.
+// Render and many cloud hosts can't reach IPv6.
+// Auto-convert to Session Pooler URL (IPv4 compatible) when detected.
 let dbUrl = process.env.DATABASE_URL;
+if (dbUrl) {
+  const directMatch = dbUrl.match(
+    /postgresql:\/\/postgres:(.+)@db\.([a-z0-9]+)\.supabase\.co:5432\/postgres/
+  );
+  if (directMatch) {
+    const password = directMatch[1];
+    const projectRef = directMatch[2];
+    dbUrl = `postgresql://postgres.${projectRef}:${password}@aws-1-ap-south-1.pooler.supabase.com:5432/postgres`;
+    console.log('🔄 Auto-converted to Supabase Session Pooler (IPv4)');
+  }
+}
 
 const poolConfig = dbUrl
   ? {

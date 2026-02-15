@@ -59,61 +59,6 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Temporary debug endpoint — remove after fixing DB
-app.get('/api/debug-db', async (req, res) => {
-    const rawUrl = process.env.DATABASE_URL || 'NOT SET';
-    // Mask password for safety
-    const masked = rawUrl.replace(/:([^:@]+)@/, ':***@');
-    
-    // Try DNS resolution
-    const dns = require('dns');
-    let dnsResults = {};
-    try {
-        const url = new URL(rawUrl);
-        const hostname = url.hostname;
-        
-        // Check IPv4
-        try {
-            const ipv4 = await new Promise((resolve, reject) => {
-                dns.resolve4(hostname, (err, addresses) => {
-                    if (err) reject(err); else resolve(addresses);
-                });
-            });
-            dnsResults.ipv4 = ipv4;
-        } catch(e) { dnsResults.ipv4_error = e.message; }
-        
-        // Check IPv6
-        try {
-            const ipv6 = await new Promise((resolve, reject) => {
-                dns.resolve6(hostname, (err, addresses) => {
-                    if (err) reject(err); else resolve(addresses);
-                });
-            });
-            dnsResults.ipv6 = ipv6;
-        } catch(e) { dnsResults.ipv6_error = e.message; }
-        
-        // Try actual DB connect
-        try {
-            const { Pool } = require('pg');
-            const testPool = new Pool({
-                connectionString: rawUrl,
-                ssl: { rejectUnauthorized: false },
-                connectionTimeoutMillis: 5000,
-                max: 1
-            });
-            await testPool.query('SELECT 1');
-            dnsResults.db_connect = 'SUCCESS';
-            await testPool.end();
-        } catch(e) { dnsResults.db_connect_error = e.message; }
-    } catch(e) { dnsResults.parse_error = e.message; }
-    
-    res.json({
-        raw_url_masked: masked,
-        node_env: process.env.NODE_ENV,
-        dns: dnsResults,
-    });
-});
-
 // API Health check (more detailed)
 app.get('/api/health', async (req, res) => {
     const health = {
