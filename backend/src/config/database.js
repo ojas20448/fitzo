@@ -1,33 +1,33 @@
 const { Pool } = require('pg');
-const dns = require('dns');
 
-// Force ALL DNS lookups to resolve IPv4 first.
-// pg uses net.Socket().connect() which calls dns.lookup() internally.
-// This is the only reliable way to force IPv4 on hosts like Render
-// where Supabase's hostname resolves to IPv6 but IPv6 is unreachable.
-const origLookup = dns.lookup;
-dns.lookup = function(hostname, options, callback) {
-  if (typeof options === 'function') {
-    callback = options;
-    options = { family: 4 };
-  } else if (typeof options === 'number') {
-    options = { family: 4 };
-  } else if (options && typeof options === 'object') {
-    options = { ...options, family: 4 };
-  } else {
-    options = { family: 4 };
+// Supabase direct hostname (db.xxx.supabase.co) is IPv6-only.
+// Render's network cannot reach IPv6. We MUST use the Supabase Session Pooler
+// (xxx.pooler.supabase.com:6543) which has IPv4 support.
+// The DATABASE_URL env var on Render must use the pooler URL.
+// Locally, the direct URL works fine (most ISPs support IPv6).
+
+// Auto-convert direct Supabase URL to pooler URL for production
+let dbUrl = process.env.DATABASE_URL;
+if (dbUrl && process.env.NODE_ENV === 'production') {
+  const directMatch = dbUrl.match(
+    /postgresql:\/\/postgres:(.+)@db\.([a-z0-9]+)\.supabase\.co:5432\/postgres/
+  );
+  if (directMatch) {
+    const password = directMatch[1];
+    const projectRef = directMatch[2];
+    // Use Session Mode pooler (port 6543) with the pooler username format
+    dbUrl = `postgresql://postgres.${projectRef}:${password}@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres`;
+    console.log('🔄 Auto-converted to Supabase Session Pooler URL (IPv4 compatible)');
   }
-  return origLookup.call(this, hostname, options, callback);
-};
+}
 
-// Use DATABASE_URL exclusively when available; only fall back to individual params otherwise
-const poolConfig = process.env.DATABASE_URL
+const poolConfig = dbUrl
   ? {
-      connectionString: process.env.DATABASE_URL,
+      connectionString: dbUrl,
       ssl: { rejectUnauthorized: false },
       max: 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000,
+      connectionTimeoutMillis: 10000,
     }
   : {
       host: process.env.DB_HOST || 'localhost',
