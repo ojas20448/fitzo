@@ -6,9 +6,12 @@ const { Pool } = require('pg');
 // The DATABASE_URL env var on Render must use the pooler URL.
 // Locally, the direct URL works fine (most ISPs support IPv6).
 
-// Auto-convert direct Supabase URL to pooler URL for production
+// Auto-convert direct Supabase URL → pooler URL.
+// The direct hostname (db.xxx.supabase.co) is IPv6-only.
+// Render + many cloud providers cannot reach IPv6.
+// The pooler (pooler.supabase.com:6543) has IPv4 and works everywhere.
 let dbUrl = process.env.DATABASE_URL;
-if (dbUrl && process.env.NODE_ENV === 'production') {
+if (dbUrl) {
   const directMatch = dbUrl.match(
     /postgresql:\/\/postgres:(.+)@db\.([a-z0-9]+)\.supabase\.co:5432\/postgres/
   );
@@ -18,6 +21,7 @@ if (dbUrl && process.env.NODE_ENV === 'production') {
     // Use Session Mode pooler (port 6543) with the pooler username format
     dbUrl = `postgresql://postgres.${projectRef}:${password}@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres`;
     console.log('🔄 Auto-converted to Supabase Session Pooler URL (IPv4 compatible)');
+    console.log('🔗 Pooler host: aws-0-ap-southeast-1.pooler.supabase.com:6543');
   }
 }
 
