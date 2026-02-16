@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
-import { memberAPI } from '../../services/api';
+import { memberAPI, workoutsAPI } from '../../services/api';
 
 const SquadFeedScreen = () => {
     const [feed, setFeed] = useState<any[]>([]);
@@ -19,19 +19,22 @@ const SquadFeedScreen = () => {
 
     const loadFeed = async () => {
         try {
-            // Mock feed data for now as backend might not have full 'feed' endpoint
-            // In real implementation: const data = await memberAPI.getSquadFeed();
-            // Simulating network delay
-            await new Promise(r => setTimeout(r, 800));
-
-            setFeed([
-                { id: '1', user: 'Sarah', avatar: null, action: 'finished a workout', detail: 'Leg Day • 45m', time: '2h ago', likes: 5, type: 'workout' },
-                { id: '2', user: 'Mike', avatar: null, action: 'hit a new PR', detail: 'Bench Press: 100kg', time: '4h ago', likes: 12, type: 'pr' },
-                { id: '3', user: 'Jess', avatar: null, action: 'completed a lesson', detail: 'Nutrition 101', time: '5h ago', likes: 2, type: 'learn' },
-                { id: '4', user: 'Tom', avatar: null, action: 'joined the squad', detail: '', time: '1d ago', likes: 8, type: 'social' },
-            ]);
+            const data = await workoutsAPI.getFeed();
+            if (data?.feed) {
+                const mappedFeed = data.feed.map((item: any) => ({
+                    id: item.id,
+                    user: item.name,
+                    avatar: item.avatar_url,
+                    action: 'completed a workout',
+                    detail: `${item.workout_type} • ${item.exercises ? JSON.parse(item.exercises).length + ' exercises' : 'No details'}`,
+                    time: new Date(item.created_at).toLocaleDateString(), // Simplification
+                    likes: 0, // Backend doesn't return likes yet
+                    type: 'workout'
+                }));
+                setFeed(mappedFeed);
+            }
         } catch (error) {
-            console.error(error);
+            console.error('Failed to load feed:', error);
         } finally {
             setLoading(false);
             setRefreshing(false);

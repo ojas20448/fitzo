@@ -2,7 +2,7 @@ import { Tabs, router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { View, StyleSheet, TouchableOpacity, Modal, Text, Pressable } from 'react-native';
 import { useState } from 'react';
-import { colors, typography, spacing, borderRadius } from '../../src/styles/theme';
+import { colors, typography, spacing, borderRadius, shadows } from '../../src/styles/theme';
 import { AnimatedTabIcon } from '../../src/components/AnimatedTabIcon';
 
 export default function TabLayout() {
@@ -189,23 +189,13 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
     tabBar: {
-        position: 'absolute',
-        bottom: 24,
-        left: 20,
-        right: 20,
-        backgroundColor: 'rgba(20, 20, 20, 0.95)',
-        borderTopWidth: 0,
-        borderRadius: 32,
-        height: 64,
-        paddingTop: 0,
-        paddingBottom: 0,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 24,
-        elevation: 20,
+        backgroundColor: colors.surface,
+        borderTopWidth: 1,
+        borderTopColor: colors.glass.border,
+        height: 90,
+        paddingTop: 8,
+        elevation: 0,
+        shadowOpacity: 0,
     },
     tabLabel: {
         fontSize: 9,
@@ -220,20 +210,16 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
     },
     logButton: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: -20,
-        borderWidth: 3,
-        borderColor: 'rgba(20, 20, 20, 0.95)',
-        shadowColor: '#FFFFFF',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 12,
+        marginBottom: 4, // Slight lift
+        borderWidth: 4,
+        borderColor: colors.surface, // Match tab bar background
+        ...shadows.glow,
     },
     modalOverlay: {
         flex: 1,

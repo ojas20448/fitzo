@@ -7,6 +7,7 @@ import { colors, typography, spacing, borderRadius, shadows } from '../../styles
 import api from '../../services/api';
 import { useToast } from '../../components/Toast';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useNutrition } from '../../context/NutritionContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -16,8 +17,8 @@ const StatsScreen = () => {
     const [refreshing, setRefreshing] = useState(false);
     const toast = useToast();
 
-    // Mock targets (should ideally flow from profile)
-    const TARGET_CALS = 2500;
+    const { calorieGoal } = useNutrition();
+    const TARGET_CALS = calorieGoal || 2500;
 
     const loadData = async () => {
         try {

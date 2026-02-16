@@ -10,7 +10,7 @@
                 "buildType": "apk"
             },
             "env": {
-                "EXPO_PUBLIC_API_URL": "http://192.168.1.16:3001/api"
+                "EXPO_PUBLIC_API_URL": "http://192.168.1.18:3001/api"
             }
         },
         "preview": {
@@ -30,7 +30,9 @@
                 "resourceClass": "m-medium"
             },
             "env": {
-                "EXPO_PUBLIC_API_URL": "https://fitzo.onrender.com/api"
+                "EXPO_PUBLIC_API_URL": "https://fitzo.onrender.com/api",
+                "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1030039443378-ek0r7ar68qfjga2dmj5inr7e715g5c1f.apps.googleusercontent.com",
+                "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "1030039443378-lupvhk1v9mrn54068jqu4mhtc0t4ffdq.apps.googleusercontent.com"
             }
         }
     },

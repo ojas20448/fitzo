@@ -147,7 +147,33 @@ const HomeScreen: React.FC = () => {
     const firstName = data?.user.name.split(' ')[0] || user?.name.split(' ')[0] || 'there';
     const hasLoggedWorkoutToday = todayWorkouts.length > 0;
     const currentIntent = data?.intent;
-    const activeFriendsCount = 3; // Mocked for social proof
+    // Calculate active friends from feed (mocked for now, but logical next step would be to fetch feed)
+    // For now, let's use a safe default or fetch if easy
+    // Since we don't fetch feed here, let's use 0 or remove the specific count if not available. 
+    // Actually, let's fetch feed to make it real.
+    const [activeCount, setActiveCount] = useState(0);
+
+    useEffect(() => {
+        const fetchActive = async () => {
+            try {
+                const feed = await workoutsAPI.getFeed();
+                if (feed?.feed) {
+                    const today = new Date().toISOString().split('T')[0];
+                    const uniqueActive = new Set(
+                        feed.feed
+                            .filter((item: any) => item.logged_date.startsWith(today))
+                            .map((item: any) => item.user_id)
+                    );
+                    setActiveCount(uniqueActive.size);
+                }
+            } catch (e) {
+                // ignore
+            }
+        };
+        fetchActive();
+    }, []);
+
+    const activeFriendsCount = activeCount;
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>

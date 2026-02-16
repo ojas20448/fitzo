@@ -9,7 +9,7 @@ import { useOfflineStore } from '../stores/offlineStore';
 // In dev, use localhost (web) or LAN IP (native device).
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL
     || (__DEV__
-        ? (Platform.OS === 'web' ? 'http://localhost:3001/api' : 'http://192.168.1.16:3001/api')
+        ? (Platform.OS === 'web' ? 'http://localhost:3001/api' : 'http://192.168.1.18:3001/api')
         : 'https://fitzo.onrender.com/api');
 
 
@@ -71,10 +71,10 @@ api.interceptors.response.use(
         const originalRequest = error.config;
 
         // Handle token expiry - but NOT on auth endpoints (login/register)
-        const isAuthEndpoint = originalRequest?.url?.includes('/auth/login') || 
-                               originalRequest?.url?.includes('/auth/register') ||
-                               originalRequest?.url?.includes('/auth/google');
-        
+        const isAuthEndpoint = originalRequest?.url?.includes('/auth/login') ||
+            originalRequest?.url?.includes('/auth/register') ||
+            originalRequest?.url?.includes('/auth/google');
+
         if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
             // Token expired or invalid - clear it
             await removeAuthToken();
@@ -82,9 +82,9 @@ api.interceptors.response.use(
         }
 
         // Transform error to user-friendly message
-        const message = error.response?.data?.message || 
-                       error.response?.data?.error ||
-                       (error.code === 'ERR_NETWORK' ? 'Cannot connect to server. Please check your internet connection.' : 'Something went wrong. Please try again.');
+        const message = error.response?.data?.message ||
+            error.response?.data?.error ||
+            (error.code === 'ERR_NETWORK' ? 'Cannot connect to server. Please check your internet connection.' : 'Something went wrong. Please try again.');
 
         return Promise.reject({
             message,
