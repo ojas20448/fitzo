@@ -273,33 +273,39 @@ const WorkoutLogScreen: React.FC = () => {
                                 <View style={[styles.colView, styles.colKg]}>
                                     <TextInput
                                         style={styles.input}
-                                        keyboardType="numeric"
+                                        keyboardType="decimal-pad"
                                         placeholder="-"
                                         placeholderTextColor={colors.text.subtle}
                                         value={set.weight_kg?.toString()}
                                         onChangeText={(v) => updateSet(exIndex, setIndex, 'weight_kg', v)}
+                                        selectTextOnFocus
+                                        hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
                                     />
                                 </View>
 
                                 <View style={[styles.colView, styles.colReps]}>
                                     <TextInput
                                         style={styles.input}
-                                        keyboardType="numeric"
+                                        keyboardType="number-pad"
                                         placeholder="-"
                                         placeholderTextColor={colors.text.subtle}
                                         value={set.reps?.toString()}
                                         onChangeText={(v) => updateSet(exIndex, setIndex, 'reps', v)}
+                                        selectTextOnFocus
+                                        hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
                                     />
                                 </View>
 
                                 <View style={[styles.colView, styles.colRir]}>
                                     <TextInput
                                         style={styles.input}
-                                        keyboardType="numeric"
+                                        keyboardType="decimal-pad"
                                         placeholder="-"
                                         placeholderTextColor={colors.text.subtle}
                                         value={set.rir?.toString()}
                                         onChangeText={(v) => updateSet(exIndex, setIndex, 'rir', v)}
+                                        selectTextOnFocus
+                                        hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
                                     />
                                 </View>
 
@@ -458,19 +464,19 @@ const styles = StyleSheet.create({
     },
     colSet: { width: 30 },
     colPrev: { flex: 1 },
-    colKg: { width: 60 },
-    colReps: { width: 60 },
-    colRir: { width: 40 },
+    colKg: { width: 72 },
+    colReps: { width: 68 },
+    colRir: { width: 56 },
     colCheck: { width: 40 },
 
     setRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: spacing.xs,
+        paddingVertical: spacing.sm,
         paddingHorizontal: spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: colors.glass.border,
-        minHeight: 44,
+        minHeight: 52,
     },
     setRowCompleted: {
         backgroundColor: colors.primary + '10',
@@ -499,9 +505,13 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.sm,
         textAlign: 'center',
         color: colors.text.primary,
-        fontSize: 14,
-        paddingVertical: 4,
+        fontSize: 16,
+        fontFamily: typography.fontFamily.semiBold,
+        paddingVertical: 8,
+        paddingHorizontal: 4,
         marginHorizontal: 2,
+        minHeight: 40,
+        width: '100%',
     },
     checkbox: {
         width: 24,

@@ -182,9 +182,70 @@ Keep it brief and actionable.`;
     }
 }
 
+/**
+ * Analyze food from text description and estimate nutrition
+ */
+async function analyzeFoodFromText(text) {
+    const prompt = `You are a nutrition expert. A user described their meal as:
+"${text}"
+
+Estimate the nutritional content of this meal. Be as accurate as possible.
+If the description mentions a specific quantity, use that. Otherwise assume a standard single serving.
+
+Return ONLY valid JSON (no markdown, no code fences) with this exact structure:
+{
+  "name": "short descriptive name of the food/meal",
+  "calories": number,
+  "protein_g": number,
+  "carbs_g": number,
+  "fat_g": number,
+  "fiber_g": number,
+  "sugar_g": number,
+  "serving_size": "description of serving size"
+}`;
+
+    try {
+        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const responseText = response.text();
+
+        // Extract JSON from markdown if necessary
+        const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/) || responseText.match(/\{[\s\S]*\}/);
+        const jsonText = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : responseText;
+
+        const parsed = JSON.parse(jsonText);
+
+        return {
+            name: parsed.name || text,
+            calories: parseFloat(parsed.calories) || 0,
+            protein_g: parseFloat(parsed.protein_g) || 0,
+            carbs_g: parseFloat(parsed.carbs_g) || 0,
+            fat_g: parseFloat(parsed.fat_g) || 0,
+            fiber_g: parseFloat(parsed.fiber_g) || 0,
+            sugar_g: parseFloat(parsed.sugar_g) || 0,
+            serving_size: parsed.serving_size || '1 serving'
+        };
+    } catch (error) {
+        console.error('Gemini analyzeFoodFromText error:', error.message);
+        // Return a reasonable fallback estimate
+        return {
+            name: text,
+            calories: 250,
+            protein_g: 10,
+            carbs_g: 30,
+            fat_g: 10,
+            fiber_g: 3,
+            sugar_g: 5,
+            serving_size: '1 serving (estimated)'
+        };
+    }
+}
+
 module.exports = {
     generateWorkoutPlan,
     getNutritionAdvice,
     chatWithCoach,
-    analyzeForm
+    analyzeForm,
+    analyzeFoodFromText
 };

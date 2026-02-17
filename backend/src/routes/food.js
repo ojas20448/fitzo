@@ -10,12 +10,41 @@ const usda = require('../services/usda');
 const fatsecret = require('../services/fatsecret');
 const foodAnalyzer = require('../services/food-analyzer');
 const barcodeService = require('../services/barcode');
+const geminiService = require('../services/gemini');
 const { asyncHandler } = require('../utils/errors');
 const { authenticate } = require('../middleware/auth');
 
-// ... (existing imports)
+/**
+ * POST /api/food/analyze-text
+ * Analyze food from text description using Gemini AI
+ */
+router.post('/analyze-text', authenticate, asyncHandler(async (req, res) => {
+    const { text } = req.body;
 
+    console.log('🤖 AI Food Text Analysis:', text);
 
+    if (!text || text.trim().length === 0) {
+        return res.status(400).json({
+            error: 'text is required',
+            message: 'Please provide a food description to analyze'
+        });
+    }
+
+    try {
+        const food = await geminiService.analyzeFoodFromText(text.trim());
+        return res.json({
+            success: true,
+            food,
+            source: 'ai_text'
+        });
+    } catch (error) {
+        console.error('❌ AI Food Text Analysis failed:', error.message);
+        return res.status(500).json({
+            error: 'Failed to analyze food text',
+            message: error.message
+        });
+    }
+}));
 
 /**
  * POST /api/food/analyze-photo
