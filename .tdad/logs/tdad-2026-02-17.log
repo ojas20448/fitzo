@@ -1,0 +1,25 @@
+
+================================================================================
+TDAD Session Started: 2026-02-17T07:13:22.118Z
+================================================================================
+[2026-02-17T07:13:23.149Z] [EXTENSION] 🚀 TDAD extension is now ACTIVATED! Version with comprehensive logging
+[2026-02-17T07:13:23.150Z] [EXTENSION] 📁 Log file location: c:\Users\PC\Documents\Code\Fitzo\.tdad\logs\tdad-2026-02-17.log
+[2026-02-17T07:13:23.150Z] [EXTENSION] 📊 Workspace folders: c:\Users\PC\Documents\Code\Fitzo
+[2026-02-17T07:13:23.151Z] [EXTENSION] Creating WorkflowController...
+[2026-02-17T07:13:23.151Z] [EXTENSION] MVP: Using simple JSON storage (.tdad/workflows/workflow.json)
+[2026-02-17T07:13:23.152Z] [EXTENSION] TDAD Extension activated successfully
+[2026-02-17T07:13:23.152Z] [EXTENSION] Registering commands...
+[2026-02-17T07:13:23.616Z] [EXTENSION] FeedbackManager: Session 4
+[2026-02-17T07:13:23.624Z] [EXTENSION] TDAD structure already initialized
+[2026-02-17T07:13:23.624Z] [EXTENSION] Auto-opening TDAD Canvas...
+[2026-02-17T07:13:23.627Z] [CANVAS] Sprint 13: Agent Orchestrator initialized
+[2026-02-17T07:13:23.628Z] [CANVAS] [FileStatusSync] File watchers initialized
+[2026-02-17T07:13:23.642Z] [CANVAS] [FileStatusSync] Synced 0 nodes
+[2026-02-17T07:13:24.258Z] [CANVAS] WEBVIEW
+Data: Using stylesheets: index-WTAp2nbL.css
+[2026-02-17T07:13:24.260Z] [CANVAS] MVP: Canvas initialized with simple JSON storage
+[2026-02-17T07:13:24.543Z] [CANVAS] [FitView] isLoading=true, nodes.length=0, folderId=null
+[2026-02-17T07:13:24.990Z] [CANVAS] [FitView] isLoading=false, nodes.length=0, folderId=null
+[2026-02-17T07:13:28.991Z] [CANVAS] saveNow: Saving 0 nodes to folder root - statuses: []
+[2026-02-17T07:13:28.993Z] [CANVAS] [FileStatusSync] File watchers disposed
+[2026-02-17T07:13:29.090Z] [EXTENSION] Blueprint workflow changed (suppressed - internal save): c:\Users\PC\Documents\Code\Fitzo\.tdad\workflows\root.workflow.json

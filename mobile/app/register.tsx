@@ -32,7 +32,7 @@ export default function RegisterScreen() {
 
     const validateStep1 = () => {
         const newErrors: Record<string, string> = {};
-        
+
         if (!name.trim()) {
             newErrors.name = 'Name is required';
         } else if (name.trim().length < 2) {
@@ -83,9 +83,10 @@ export default function RegisterScreen() {
         try {
             await register(email.trim().toLowerCase(), password, name.trim(), gymCode.trim() || '');
             toast.success('Account created successfully!');
-            // Small delay to let state update before navigating
+            // Redirect to root and let the auth guard in app/index.tsx decide where to send the user
+            // This prevents conflicts with the onboarding redirect
             setTimeout(() => {
-                router.replace('/(tabs)');
+                router.replace('/');
             }, 100);
         } catch (error: any) {
             toast.error(error.message || 'Something went wrong');
@@ -203,7 +204,7 @@ export default function RegisterScreen() {
                     </TouchableOpacity>
                 </View>
                 {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-                
+
                 {/* Password requirements */}
                 <View style={styles.requirements}>
                     <PasswordRequirement
@@ -280,14 +281,14 @@ export default function RegisterScreen() {
                     >
                         <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
                     </TouchableOpacity>
-                    
+
                     {/* Progress indicator */}
                     <View style={styles.progressContainer}>
                         <View style={[styles.progressDot, step >= 1 && styles.progressDotActive]} />
                         <View style={[styles.progressLine, step >= 2 && styles.progressLineActive]} />
                         <View style={[styles.progressDot, step >= 2 && styles.progressDotActive]} />
                     </View>
-                    
+
                     <View style={{ width: 44 }} />
                 </View>
 

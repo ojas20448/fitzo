@@ -19,6 +19,7 @@ import { useToast } from '../src/components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../src/styles/theme';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -26,23 +27,44 @@ WebBrowser.maybeCompleteAuthSession();
 export default function LoginScreen() {
     const { login, googleSignIn, devLogin } = useAuth();
     const toast = useToast();
-    
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
     // Google Auth
+    const redirectUri = makeRedirectUri({
+        scheme: 'fitzo',
+        path: 'auth',
+    });
+
     const [request, response, promptAsync] = Google.useAuthRequest({
         clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
         iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
         androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+        redirectUri,
+        scopes: ['openid', 'profile', 'email'],
     });
 
     React.useEffect(() => {
         if (response?.type === 'success') {
-            const { id_token } = response.params;
-            handleGoogleLogin(id_token);
+            // Try multiple ways to get the id_token
+            const idToken = response.params?.id_token 
+                || response.authentication?.idToken;
+            
+            if (idToken) {
+                handleGoogleLogin(idToken);
+            } else if (response.params?.access_token || response.authentication?.accessToken) {
+                // Fallback: use access_token if id_token not available
+                const accessToken = response.params?.access_token || response.authentication?.accessToken;
+                handleGoogleLogin(accessToken!);
+            } else {
+                toast.error('Google Login Failed', 'Could not get authentication token');
+            }
+        } else if (response?.type === 'error') {
+            console.error('Google Auth Error:', response.error);
+            toast.error('Google Login Failed', response.error?.message || 'Authentication was cancelled or failed');
         }
     }, [response]);
 
@@ -50,10 +72,7 @@ export default function LoginScreen() {
         setLoading(true);
         try {
             await googleSignIn(token);
-            // Redirect based on role not readily available here without extra call, 
-            // but AuthContext updates state. We can just redirect to tabs.
-            // A better way is to return user from googleSignIn
-            router.replace('/(tabs)');
+            router.replace('/');
         } catch (error: any) {
             toast.error('Google Login Failed', error.message);
         } finally {
@@ -61,19 +80,7 @@ export default function LoginScreen() {
         }
     }
 
-    const handleDemoLogin = async () => {
-        setLoading(true);
-        try {
-            await devLogin();
-            // devLogin updates state, so we just redirect
-            router.replace('/(tabs)');
-        } catch (error: any) {
-            console.error('Dev/Demo login failed:', error);
-            toast.error('Dev Login Failed', error.message || 'Could not bypass auth.');
-        } finally {
-            setLoading(false);
-        }
-    };
+
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -83,15 +90,8 @@ export default function LoginScreen() {
 
         setLoading(true);
         try {
-            const user = await login(email, password);
-
-            if (user?.role === 'manager') {
-                router.replace('/manager-dashboard');
-            } else if (user?.role === 'trainer') {
-                router.replace('/trainer-home');
-            } else {
-                router.replace('/(tabs)');
-            }
+            await login(email, password);
+            router.replace('/');
         } catch (error: any) {
             toast.error('Login Failed', error.message);
         } finally {
@@ -195,14 +195,7 @@ export default function LoginScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Demo Login */}
-                    <TouchableOpacity
-                        style={styles.skipButton}
-                        onPress={handleDemoLogin}
-                        disabled={loading}
-                    >
-                        <Text style={styles.skipText}>Skip Login (Dev Mode)</Text>
-                    </TouchableOpacity>
+
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>

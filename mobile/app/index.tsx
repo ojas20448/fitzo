@@ -16,6 +16,10 @@ export default function Index() {
     }
 
     if (isAuthenticated && user) {
+        if (!user.onboarding_completed) {
+            return <Redirect href="/onboarding" />;
+        }
+
         if (user.role === 'manager') {
             return <Redirect href="/manager-dashboard" />;
         } else if (user.role === 'trainer') {

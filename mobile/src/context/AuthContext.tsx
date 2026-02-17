@@ -17,6 +17,7 @@ export interface User {
     xp_points: number;
     avatar_url?: string;
     username?: string;
+    onboarding_completed: boolean;
 }
 
 interface AuthState {
@@ -34,6 +35,7 @@ interface AuthContextType extends AuthState {
     devLogin: () => Promise<void>;
     forgotPassword: (email: string) => Promise<void>;
     googleSignIn: (token: string) => Promise<void>;
+    completeOnboarding: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -148,21 +150,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             await setAuthToken(token);
 
             // Initialize offline store
-            // Checking if import exists first, but adding it safely in separate step if needed
-            // For now assuming offlineStore logic matching login/googleSignIn
-
-            // If useOfflineStore is not imported, this line will fail. 
-            // I will add the import in the next step.
-            // For now, I'll comment it out or assume I'll fix the import.
-            // useOfflineStore.getState().setOnline(true); 
+            useOfflineStore.getState().setOnline(true);
 
             setState({
-                user,
+                user: {
+                    ...user,
+                    onboarding_completed: user.onboarding_completed ?? false
+                },
                 token,
                 isLoading: false,
                 isAuthenticated: true,
             });
         } catch (error: any) {
+            console.error('Registration Error:', error);
             throw new Error(error.message || 'Registration failed');
         }
     };
@@ -224,6 +224,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 googleSignIn,
                 forgotPassword,
                 devLogin,
+                completeOnboarding: () => setState(prev => prev.user ? ({
+                    ...prev,
+                    user: { ...prev.user, onboarding_completed: true }
+                }) : prev)
             }}
         >
             {children}

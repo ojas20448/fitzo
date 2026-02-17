@@ -83,6 +83,7 @@ const HomeScreen: React.FC = () => {
     const [friends, setFriends] = useState<Friend[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [activeCount, setActiveCount] = useState(0);
 
     const DUMMY_FRIENDS: Friend[] = [
         { id: '1', name: 'Sarah Jones', avatar_url: 'https://i.pravatar.cc/150?u=sarah' },
@@ -93,6 +94,26 @@ const HomeScreen: React.FC = () => {
 
     useEffect(() => {
         loadHomeData();
+    }, []);
+
+    useEffect(() => {
+        const fetchActive = async () => {
+            try {
+                const feed = await workoutsAPI.getFeed();
+                if (feed?.feed) {
+                    const today = new Date().toISOString().split('T')[0];
+                    const uniqueActive = new Set(
+                        feed.feed
+                            .filter((item: any) => item.logged_date.startsWith(today))
+                            .map((item: any) => item.user_id)
+                    );
+                    setActiveCount(uniqueActive.size);
+                }
+            } catch (e) {
+                // ignore
+            }
+        };
+        fetchActive();
     }, []);
 
     useFocusEffect(
@@ -144,35 +165,9 @@ const HomeScreen: React.FC = () => {
         );
     }
 
-    const firstName = data?.user.name.split(' ')[0] || user?.name.split(' ')[0] || 'there';
+    const firstName = data?.user?.name?.split(' ')[0] || user?.name?.split(' ')[0] || 'there';
     const hasLoggedWorkoutToday = todayWorkouts.length > 0;
     const currentIntent = data?.intent;
-    // Calculate active friends from feed (mocked for now, but logical next step would be to fetch feed)
-    // For now, let's use a safe default or fetch if easy
-    // Since we don't fetch feed here, let's use 0 or remove the specific count if not available. 
-    // Actually, let's fetch feed to make it real.
-    const [activeCount, setActiveCount] = useState(0);
-
-    useEffect(() => {
-        const fetchActive = async () => {
-            try {
-                const feed = await workoutsAPI.getFeed();
-                if (feed?.feed) {
-                    const today = new Date().toISOString().split('T')[0];
-                    const uniqueActive = new Set(
-                        feed.feed
-                            .filter((item: any) => item.logged_date.startsWith(today))
-                            .map((item: any) => item.user_id)
-                    );
-                    setActiveCount(uniqueActive.size);
-                }
-            } catch (e) {
-                // ignore
-            }
-        };
-        fetchActive();
-    }, []);
-
     const activeFriendsCount = activeCount;
 
     return (

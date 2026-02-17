@@ -69,10 +69,29 @@ router.post('/:id/adopt', asyncHandler(async (req, res) => {
     const { id } = req.params;
 
     // 1. Get the published split
-    const splitResult = await query(
-        `SELECT * FROM published_splits WHERE id = $1`,
-        [id]
-    );
+    let splitResult;
+
+    // Check if ID is a UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+
+    if (isUUID) {
+        splitResult = await query(
+            `SELECT * FROM published_splits WHERE id = $1`,
+            [id]
+        );
+    } else {
+        // Handle presets used in onboarding
+        const nameMap = {
+            'ppl_6': 'PPL (6 Day)',
+            'ul_4': 'Upper Lower (4 Day)',
+            'fb_3': 'Full Body (3 Day)'
+        };
+        const searchName = nameMap[id] || id;
+        splitResult = await query(
+            `SELECT * FROM published_splits WHERE name ILIKE $1 OR name ILIKE $2 LIMIT 1`,
+            [`%${searchName}%`, `${id}%`]
+        );
+    }
 
     if (splitResult.rows.length === 0) {
         throw new NotFoundError('Split not found');

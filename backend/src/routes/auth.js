@@ -5,6 +5,7 @@ const { query } = require('../config/database');
 const { generateToken } = require('../middleware/auth');
 const { ValidationError, AuthError, asyncHandler } = require('../utils/errors');
 const { OAuth2Client } = require('google-auth-library');
+const axios = require('axios');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID_WEB);
 
@@ -80,7 +81,8 @@ router.post('/register', asyncHandler(async (req, res) => {
             role: user.role,
             gym_id: user.gym_id,
             gym_name: gym ? gym.name : null,
-            xp_points: user.xp_points || 0
+            xp_points: user.xp_points || 0,
+            onboarding_completed: false
         }
     });
 }));
@@ -111,6 +113,10 @@ router.post('/login', asyncHandler(async (req, res) => {
 
     const user = result.rows[0];
 
+    // Check onboarding status
+    const profileResult = await query('SELECT id FROM nutrition_profiles WHERE user_id = $1', [user.id]);
+    const onboarding_completed = profileResult.rows.length > 0;
+
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
 
@@ -131,7 +137,8 @@ router.post('/login', asyncHandler(async (req, res) => {
             gym_id: user.gym_id,
             gym_name: user.gym_name,
             xp_points: user.xp_points || 0,
-            avatar_url: user.avatar_url
+            avatar_url: user.avatar_url,
+            onboarding_completed
         }
     });
 }));
@@ -151,6 +158,10 @@ router.get('/me', require('../middleware/auth').authenticate, asyncHandler(async
 
     const user = result.rows[0];
 
+    // Check onboarding status
+    const profileResult = await query('SELECT id FROM nutrition_profiles WHERE user_id = $1', [user.id]);
+    const onboarding_completed = profileResult.rows.length > 0;
+
     res.json({
         user: {
             id: user.id,
@@ -160,7 +171,8 @@ router.get('/me', require('../middleware/auth').authenticate, asyncHandler(async
             gym_id: user.gym_id,
             gym_name: user.gym_name,
             xp_points: user.xp_points || 0,
-            avatar_url: user.avatar_url
+            avatar_url: user.avatar_url,
+            onboarding_completed
         }
     });
 }));
@@ -212,25 +224,56 @@ router.post('/dev-login', asyncHandler(async (req, res) => {
  * Google OAuth Login
  */
 router.post('/google', asyncHandler(async (req, res) => {
-    const { token } = req.body;
+    const { token, idToken } = req.body;
+    const finalToken = token || idToken;
 
-    if (!token) {
+    if (!finalToken) {
         throw new ValidationError('Google token is required');
     }
 
+    let email, name, picture, googleId;
+
     try {
-        // Verify Google Token
+        // First try: Verify as ID token
         const ticket = await googleClient.verifyIdToken({
-            idToken: token,
+            idToken: finalToken,
             audience: [
                 process.env.GOOGLE_CLIENT_ID_WEB,
                 process.env.GOOGLE_CLIENT_ID_IOS,
                 process.env.GOOGLE_CLIENT_ID_ANDROID
-            ]
+            ].filter(Boolean)
         });
 
         const payload = ticket.getPayload();
-        const { email, name, picture, sub: googleId } = payload;
+        email = payload.email;
+        name = payload.name;
+        picture = payload.picture;
+        googleId = payload.sub;
+    } catch (idTokenError) {
+        console.log('ID token verification failed, trying as access token...', idTokenError.message);
+        
+        try {
+            // Fallback: Treat as access_token and fetch user info from Google
+            const userInfoResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${finalToken}` }
+            });
+            
+            const userInfo = userInfoResponse.data;
+            email = userInfo.email;
+            name = userInfo.name;
+            picture = userInfo.picture;
+            googleId = userInfo.sub;
+            
+            if (!email) {
+                throw new Error('Could not get email from Google token');
+            }
+        } catch (accessTokenError) {
+            console.error('Both token verification methods failed:', accessTokenError.message);
+            throw new AuthError('Google login failed: Invalid authentication token');
+        }
+    }
+
+    try {
 
         // Check if user exists
         const userResult = await query(
@@ -271,6 +314,10 @@ router.post('/google', asyncHandler(async (req, res) => {
             }
         }
 
+        // Check onboarding status
+        const profileCheck = await query('SELECT id FROM nutrition_profiles WHERE user_id = $1', [user.id]);
+        const onboarding_completed = profileCheck.rows.length > 0;
+
         // Generate Token using helper
         const jwtToken = generateToken(user.id);
 
@@ -283,7 +330,8 @@ router.post('/google', asyncHandler(async (req, res) => {
                 name: user.name,
                 role: user.role,
                 avatar_url: user.avatar_url,
-                xp_points: user.xp_points || 0
+                xp_points: user.xp_points || 0,
+                onboarding_completed
             }
         });
 

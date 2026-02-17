@@ -5,7 +5,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import { nutritionAPI, workoutsAPI } from '../../services/api';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../components/Toast';
+import { useAuth } from '../../context/AuthContext';
 import { useXP } from '../../context/XPContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -14,6 +15,7 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 export default function OnboardingWizard() {
     const toast = useToast();
     const { awardXP } = useXP();
+    const { completeOnboarding } = useAuth();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
 
@@ -30,7 +32,7 @@ export default function OnboardingWizard() {
         activity_level: 'moderate' as 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active',
 
         // Split (Optional)
-        split_id: null as string | null,
+        split_id: 'custom' as string | null,
     });
 
     const updateForm = (key: string, value: any) => {
@@ -109,24 +111,35 @@ export default function OnboardingWizard() {
                 activity_level: formData.activity_level,
             });
 
-            // If split selected, adopt it
-            if (formData.split_id) {
-                await workoutsAPI.adoptSplit(formData.split_id);
+            // If split selected, adopt it (non-blocking)
+            if (formData.split_id && formData.split_id !== 'custom') {
+                try {
+                    await workoutsAPI.adoptSplit(formData.split_id);
+                } catch (splitErr) {
+                    console.warn('Could not adopt split, continuing:', splitErr);
+                }
             }
 
             toast.success('Welcome to Fitzo!', 'Your profile is ready.');
 
             // First XP Gain: "Aha!" Moment
-            // awardXP triggers FlyingXP across the screen
-            awardXP(50, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+            try {
+                awardXP(50, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+            } catch (xpErr) {
+                console.warn('XP award failed, continuing:', xpErr);
+            }
 
-            // Small delay to let animation start before we wipe the screen
+            // Mark onboarding as complete in global state
+            // This will trigger app/index.tsx to re-render and redirect
+            completeOnboarding();
+
+            // Safety fallback redirection
             setTimeout(() => {
-                router.replace('/(tabs)/home' as any);
-            }, 1500);
-        } catch (error) {
-            console.error(error);
-            toast.error('Error', 'Failed to save profile');
+                router.replace('/(tabs)');
+            }, 500);
+        } catch (error: any) {
+            console.error('Onboarding Error:', error);
+            toast.error('Error', error?.message || 'Failed to save profile. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -279,9 +292,9 @@ export default function OnboardingWizard() {
 
             <ScrollView contentContainerStyle={{ gap: spacing.md, paddingBottom: 20 }}>
                 {[
-                    { id: '79273950-8b1b-4d7a-9a3b-2c5e5f5f5f5f', name: 'PPL (6 Day)', days: 6, level: 'Advanced' },
-                    { id: 'c1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', name: 'Upper Lower (4 Day)', days: 4, level: 'Intermediate' },
-                    { id: 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', name: 'Full Body (3 Day)', days: 3, level: 'Beginner' }
+                    { id: 'ppl', name: 'PPL (6 Day)', days: 6, level: 'Advanced' },
+                    { id: 'upper_lower', name: 'Upper Lower (4 Day)', days: 4, level: 'Intermediate' },
+                    { id: 'full_body', name: 'Full Body (3 Day)', days: 3, level: 'Beginner' }
                 ].map(opt => (
                     <TouchableOpacity
                         key={opt.id}
@@ -297,10 +310,14 @@ export default function OnboardingWizard() {
                 ))}
 
                 <TouchableOpacity
-                    style={styles.browseBtn}
-                    onPress={() => updateForm('split_id', null)}
+                    style={[styles.splitCard, formData.split_id === 'custom' && styles.splitCardActive, { marginTop: spacing.sm }]}
+                    onPress={() => updateForm('split_id', 'custom')}
                 >
-                    <Text style={styles.browseText}>I'll choose later / Custom</Text>
+                    <View>
+                        <Text style={[styles.splitName, formData.split_id === 'custom' && styles.textDark]}>I'll choose later / Custom</Text>
+                        <Text style={[styles.splitMeta, formData.split_id === 'custom' && styles.textDark]}>Skip now, pick a plan from the library later.</Text>
+                    </View>
+                    {formData.split_id === 'custom' && <MaterialIcons name="check-circle" size={24} color={colors.text.dark} />}
                 </TouchableOpacity>
             </ScrollView>
         </View>
@@ -328,12 +345,20 @@ export default function OnboardingWizard() {
                 )}
 
                 <TouchableOpacity
-                    style={[styles.nextBtn, (!formData.height_cm && step === 1) && styles.disabledBtn]}
+                    style={[styles.nextBtn, (loading || (!formData.height_cm && step === 1)) && styles.disabledBtn]}
                     onPress={step === 4 ? handleComplete : nextStep}
-                    disabled={step === 1 && !formData.height_cm}
+                    disabled={loading || (step === 1 && !formData.height_cm)}
                 >
-                    <Text style={styles.nextText}>{step === 4 ? 'Get Started' : 'Next'}</Text>
-                    {step < 4 && <MaterialIcons name="arrow-forward" size={20} color={colors.text.dark} />}
+                    {loading ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Text style={styles.nextText}>Saving...</Text>
+                        </View>
+                    ) : (
+                        <>
+                            <Text style={styles.nextText}>{step === 4 ? 'Get Started' : 'Next'}</Text>
+                            {step < 4 && <MaterialIcons name="arrow-forward" size={20} color={colors.text.dark} />}
+                        </>
+                    )}
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
