@@ -19,35 +19,39 @@ import GlassCard from './GlassCard'; // This import is not used, but I will keep
 
 interface Comment {
     id: string;
-    content: string;
+    content?: string;
+    comment?: string;
     created_at: string;
     user_id: string;
     user_name: string;
     avatar_url: string | null;
+    user_avatar?: string | null;
 }
 
 interface CommentModalProps {
     visible: boolean;
     onClose: () => void;
-    workoutId: string;
+    itemId: string;
+    type: 'workout' | 'post';
 }
 
-const CommentModal: React.FC<CommentModalProps> = ({ visible, onClose, workoutId }) => {
+const CommentModal: React.FC<CommentModalProps> = ({ visible, onClose, itemId, type }) => {
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
     const [newComment, setNewComment] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        if (visible && workoutId) {
+        if (visible && itemId) {
             loadComments();
         }
-    }, [visible, workoutId]);
+    }, [visible, itemId]);
 
     const loadComments = async () => {
         setLoading(true);
         try {
-            const response = await api.get(`/comments/${workoutId}`);
+            const endpoint = type === 'post' ? `/posts/${itemId}/comments` : `/comments/${itemId}`;
+            const response = await api.get(endpoint);
             setComments(response.data.comments);
         } catch (error) {
             console.error('Failed to load comments:', error);
@@ -61,11 +65,19 @@ const CommentModal: React.FC<CommentModalProps> = ({ visible, onClose, workoutId
 
         setSubmitting(true);
         try {
-            const response = await api.post(`/comments/${workoutId}`, {
-                content: newComment
-            });
+            let response;
+            if (type === 'post') {
+                response = await api.post(`/posts/${itemId}/comments`, {
+                    comment: newComment
+                });
+            } else {
+                response = await api.post(`/comments/${itemId}`, {
+                    content: newComment
+                });
+            }
             // Add new comment to list
-            setComments(prev => [...prev, response.data.comment]);
+            const newCommentData = response.data.comment;
+            setComments(prev => [...prev, newCommentData]);
             setNewComment('');
         } catch (error) {
             console.error('Failed to post comment:', error);
@@ -126,13 +138,13 @@ const CommentModal: React.FC<CommentModalProps> = ({ visible, onClose, workoutId
                                 }
                                 renderItem={({ item }) => (
                                     <View style={styles.commentItem}>
-                                        <Avatar uri={item.avatar_url} size="sm" />
+                                        <Avatar uri={item.avatar_url || item.user_avatar} size="sm" />
                                         <View style={styles.commentContent}>
                                             <View style={styles.commentHeader}>
                                                 <Text style={styles.commentName}>{item.user_name}</Text>
                                                 <Text style={styles.commentTime}>{getTimeAgo(item.created_at)}</Text>
                                             </View>
-                                            <Text style={styles.commentText}>{item.content}</Text>
+                                            <Text style={styles.commentText}>{item.content || item.comment}</Text>
                                         </View>
                                     </View>
                                 )}

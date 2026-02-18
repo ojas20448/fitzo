@@ -49,7 +49,27 @@ const WorkoutLogScreen: React.FC = () => {
 
     // Initial Intent Data (if any)
     const initialIntent = params.intent ? JSON.parse(params.intent as string) : null;
-    const [workoutType, setWorkoutType] = useState(initialIntent?.session_label || 'Workout');
+    
+    // Map common intent labels to valid workout types
+    const mapIntentToType = (label: string) => {
+        const lower = label?.toLowerCase() || '';
+        if (lower.includes('leg')) return 'legs';
+        if (lower.includes('chest') || lower.includes('push')) return 'chest';
+        if (lower.includes('back') || lower.includes('pull')) return 'back';
+        if (lower.includes('shoulder')) return 'shoulders';
+        if (lower.includes('arm')) return 'arms';
+        if (lower.includes('cardio')) return 'cardio';
+        return 'chest'; // Default to chest if unclear
+    };
+
+    const [workoutType, setWorkoutType] = useState(
+        mapIntentToType(initialIntent?.session_label || '')
+    );
+
+    console.log('🏋️ WorkoutLogScreen initialized:', {
+        intentLabel: initialIntent?.session_label,
+        mappedType: workoutType,
+    });
 
     // Main State
     const [userExercises, setUserExercises] = useState<UserExercise[]>([]);
@@ -157,6 +177,11 @@ const WorkoutLogScreen: React.FC = () => {
     };
 
     const handleFinish = async () => {
+        console.log('🏋️ Finishing workout...', { 
+            exercises: userExercises.length,
+            workoutType,
+        });
+        
         // Validate
         if (userExercises.length === 0) {
             toast.error('Empty Workout', 'Add at least one exercise to log.');
@@ -167,6 +192,7 @@ const WorkoutLogScreen: React.FC = () => {
         try {
             // Calculate duration
             const durationMinutes = Math.round((new Date().getTime() - startTime.getTime()) / 60000);
+            console.log('⏱️ Workout duration:', durationMinutes, 'minutes');
 
             const result = await workoutsAPI.log({
                 workout_type: workoutType,
@@ -176,14 +202,19 @@ const WorkoutLogScreen: React.FC = () => {
                 visibility: 'friends',
             });
 
+            console.log('✅ Workout saved:', { xp_earned: result.xp_earned });
+
             if (result.xp_earned > 0) {
                 setXpEarned(result.xp_earned);
                 setShowCelebration(true);
+                console.log('🎉 Showing celebration with XP:', result.xp_earned);
             } else {
+                console.log('📝 No XP earned, navigating back');
                 toast.success('Workout Saved!', 'Great session!');
                 router.back();
             }
         } catch (error: any) {
+            console.error('❌ Failed to save workout:', error);
             toast.error('Error', error.message || 'Failed to save workout');
         } finally {
             setLoading(false);
@@ -199,6 +230,7 @@ const WorkoutLogScreen: React.FC = () => {
                 subtitle="Another one in the books."
                 value={`${xpEarned} XP`}
                 onComplete={() => {
+                    console.log('🎊 Celebration complete, navigating back');
                     setShowCelebration(false);
                     router.back();
                 }}
@@ -211,7 +243,9 @@ const WorkoutLogScreen: React.FC = () => {
                 </TouchableOpacity>
                 <View>
                     <Text style={styles.headerTitle}>LOG WORKOUT</Text>
-                    <Text style={styles.headerSubtitle}>{workoutType}</Text>
+                    <Text style={styles.headerSubtitle}>
+                        {workoutType.charAt(0).toUpperCase() + workoutType.slice(1)}
+                    </Text>
                 </View>
                 <TouchableOpacity onPress={handleFinish} disabled={loading}>
                     <Text style={[styles.finishText, loading && { opacity: 0.5 }]}>FINISH</Text>
@@ -219,6 +253,32 @@ const WorkoutLogScreen: React.FC = () => {
             </View>
 
             <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+                {/* Workout Type Selector */}
+                <View style={styles.typeSelector}>
+                    <Text style={styles.typeSelectorLabel}>Workout Type</Text>
+                    <View style={styles.typeOptions}>
+                        {['legs', 'chest', 'back', 'shoulders', 'arms', 'cardio'].map((type) => (
+                            <TouchableOpacity
+                                key={type}
+                                onPress={() => setWorkoutType(type)}
+                                style={[
+                                    styles.typeOption,
+                                    workoutType === type && styles.typeOptionActive,
+                                ]}
+                            >
+                                <Text
+                                    style={[
+                                        styles.typeOptionText,
+                                        workoutType === type && styles.typeOptionTextActive,
+                                    ]}
+                                >
+                                    {type.toUpperCase()}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+
                 {userExercises.map((exercise, exIndex) => (
                     <GlassCard key={exercise.id + exIndex} style={styles.exerciseCard}>
                         {/* Exercise Header */}
@@ -554,6 +614,44 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.bold,
         color: colors.primary,
         letterSpacing: 1,
+    },
+
+    // Workout Type Selector
+    typeSelector: {
+        marginBottom: spacing.lg,
+    },
+    typeSelectorLabel: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.muted,
+        letterSpacing: 1,
+        marginBottom: spacing.sm,
+        textTransform: 'uppercase',
+    },
+    typeOptions: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.sm,
+    },
+    typeOption: {
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    typeOptionActive: {
+        backgroundColor: colors.primary + '20',
+        borderColor: colors.primary,
+    },
+    typeOptionText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.text.secondary,
+    },
+    typeOptionTextActive: {
+        color: colors.primary,
     },
 
     // Modal

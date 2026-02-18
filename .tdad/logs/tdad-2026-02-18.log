@@ -1,0 +1,27 @@
+
+================================================================================
+TDAD Session Started: 2026-02-18T17:38:01.482Z
+================================================================================
+[2026-02-18T17:38:03.225Z] [EXTENSION] 🚀 TDAD extension is now ACTIVATED! Version with comprehensive logging
+[2026-02-18T17:38:03.225Z] [EXTENSION] 📁 Log file location: c:\Users\PC\Documents\Code\Fitzo\.tdad\logs\tdad-2026-02-18.log
+[2026-02-18T17:38:03.225Z] [EXTENSION] 📊 Workspace folders: c:\Users\PC\Documents\Code\Fitzo
+[2026-02-18T17:38:03.226Z] [EXTENSION] Creating WorkflowController...
+[2026-02-18T17:38:03.226Z] [EXTENSION] MVP: Using simple JSON storage (.tdad/workflows/workflow.json)
+[2026-02-18T17:38:03.227Z] [EXTENSION] TDAD Extension activated successfully
+[2026-02-18T17:38:03.227Z] [EXTENSION] Registering commands...
+[2026-02-18T17:38:03.847Z] [EXTENSION] TDAD structure already initialized
+[2026-02-18T17:38:03.848Z] [EXTENSION] Auto-opening TDAD Canvas...
+[2026-02-18T17:38:03.850Z] [CANVAS] Sprint 13: Agent Orchestrator initialized
+[2026-02-18T17:38:03.852Z] [CANVAS] [FileStatusSync] File watchers initialized
+[2026-02-18T17:38:03.867Z] [CANVAS] [FileStatusSync] Synced 0 nodes
+[2026-02-18T17:38:03.882Z] [EXTENSION] FeedbackManager: Session 7
+[2026-02-18T17:38:04.772Z] [CANVAS] WEBVIEW
+Data: Using stylesheets: index-WTAp2nbL.css
+[2026-02-18T17:38:04.774Z] [CANVAS] MVP: Canvas initialized with simple JSON storage
+[2026-02-18T17:38:05.399Z] [CANVAS] [FitView] isLoading=true, nodes.length=0, folderId=null
+[2026-02-18T17:38:05.413Z] [CANVAS] [FileStatusSync] Synced 0 nodes
+[2026-02-18T17:38:06.156Z] [CANVAS] [FitView] isLoading=false, nodes.length=0, folderId=null
+[2026-02-18T17:38:07.815Z] [CANVAS] Sending templateUpdatesAvailable to webview: 4 templates
+[2026-02-18T17:38:09.724Z] [CANVAS] saveNow: Saving 0 nodes to folder root - statuses: []
+[2026-02-18T17:38:09.727Z] [CANVAS] [FileStatusSync] File watchers disposed
+[2026-02-18T17:38:10.298Z] [EXTENSION] Blueprint workflow changed (suppressed - internal save): c:\Users\PC\Documents\Code\Fitzo\.tdad\workflows\root.workflow.json

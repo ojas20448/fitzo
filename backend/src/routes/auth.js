@@ -100,7 +100,7 @@ router.post('/login', asyncHandler(async (req, res) => {
 
     // Find user
     const result = await query(
-        `SELECT u.id, u.email, u.password_hash, u.name, u.role, u.gym_id, u.xp_points, u.avatar_url, g.name as gym_name
+        `SELECT u.id, u.email, u.password_hash, u.name, u.username, u.role, u.gym_id, u.xp_points, u.avatar_url, g.name as gym_name
      FROM users u
      LEFT JOIN gyms g ON u.gym_id = g.id
      WHERE u.email = $1`,
@@ -133,6 +133,7 @@ router.post('/login', asyncHandler(async (req, res) => {
             id: user.id,
             email: user.email,
             name: user.name,
+            username: user.username,
             role: user.role,
             gym_id: user.gym_id,
             gym_name: user.gym_name,
@@ -149,7 +150,7 @@ router.post('/login', asyncHandler(async (req, res) => {
  */
 router.get('/me', require('../middleware/auth').authenticate, asyncHandler(async (req, res) => {
     const result = await query(
-        `SELECT u.id, u.email, u.name, u.role, u.gym_id, u.xp_points, u.avatar_url, g.name as gym_name
+        `SELECT u.id, u.email, u.name, u.username, u.role, u.gym_id, u.xp_points, u.avatar_url, g.name as gym_name
      FROM users u
      LEFT JOIN gyms g ON u.gym_id = g.id
      WHERE u.id = $1`,
@@ -167,6 +168,7 @@ router.get('/me', require('../middleware/auth').authenticate, asyncHandler(async
             id: user.id,
             email: user.email,
             name: user.name,
+            username: user.username,
             role: user.role,
             gym_id: user.gym_id,
             gym_name: user.gym_name,
@@ -186,7 +188,7 @@ router.post('/dev-login', asyncHandler(async (req, res) => {
     // Dev/demo login - get the demo user for quick access
     // Get any user (preferably demo)
     const result = await query(
-        `SELECT u.id, u.email, u.password_hash, u.name, u.role, u.gym_id, u.xp_points, u.avatar_url, g.name as gym_name
+        `SELECT u.id, u.email, u.password_hash, u.name, u.username, u.role, u.gym_id, u.xp_points, u.avatar_url, g.name as gym_name
          FROM users u
          LEFT JOIN gyms g ON u.gym_id = g.id
          ORDER BY u.created_at ASC
@@ -209,6 +211,7 @@ router.post('/dev-login', asyncHandler(async (req, res) => {
             id: user.id,
             email: user.email,
             name: user.name,
+            username: user.username,
             role: user.role,
             gym_id: user.gym_id,
             gym_name: user.gym_name,
@@ -227,21 +230,35 @@ router.post('/google', asyncHandler(async (req, res) => {
     const { token, idToken } = req.body;
     const finalToken = token || idToken;
 
+    console.log('🔐 Google OAuth request received');
+    console.log('Token type:', idToken ? 'idToken' : 'accessToken');
+    console.log('Token length:', finalToken?.length || 0);
+
     if (!finalToken) {
         throw new ValidationError('Google token is required');
+    }
+
+    // Check if environment variables are set
+    const configuredAudiences = [
+        process.env.GOOGLE_CLIENT_ID_WEB,
+        process.env.GOOGLE_CLIENT_ID_IOS,
+        process.env.GOOGLE_CLIENT_ID_ANDROID
+    ].filter(Boolean);
+
+    console.log('📋 Configured audiences count:', configuredAudiences.length);
+    if (configuredAudiences.length === 0) {
+        console.error('❌ No Google Client IDs configured in environment!');
+        throw new AuthError('Google authentication not configured on server');
     }
 
     let email, name, picture, googleId;
 
     try {
         // First try: Verify as ID token
+        console.log('🔍 Attempting ID token verification...');
         const ticket = await googleClient.verifyIdToken({
             idToken: finalToken,
-            audience: [
-                process.env.GOOGLE_CLIENT_ID_WEB,
-                process.env.GOOGLE_CLIENT_ID_IOS,
-                process.env.GOOGLE_CLIENT_ID_ANDROID
-            ].filter(Boolean)
+            audience: configuredAudiences
         });
 
         const payload = ticket.getPayload();
@@ -249,8 +266,10 @@ router.post('/google', asyncHandler(async (req, res) => {
         name = payload.name;
         picture = payload.picture;
         googleId = payload.sub;
+        console.log('✅ ID token verified successfully for:', email);
     } catch (idTokenError) {
-        console.log('ID token verification failed, trying as access token...', idTokenError.message);
+        console.log('⚠️  ID token verification failed:', idTokenError.message);
+        console.log('🔄 Trying as access token...');
         
         try {
             // Fallback: Treat as access_token and fetch user info from Google
@@ -267,8 +286,14 @@ router.post('/google', asyncHandler(async (req, res) => {
             if (!email) {
                 throw new Error('Could not get email from Google token');
             }
+            console.log('✅ Access token verified successfully for:', email);
         } catch (accessTokenError) {
-            console.error('Both token verification methods failed:', accessTokenError.message);
+            console.error('❌ Both token verification methods failed');
+            console.error('ID Token Error:', idTokenError.message);
+            console.error('Access Token Error:', accessTokenError.message);
+            if (accessTokenError.response) {
+                console.error('Access Token Response:', accessTokenError.response.data);
+            }
             throw new AuthError('Google login failed: Invalid authentication token');
         }
     }
@@ -285,16 +310,23 @@ router.post('/google', asyncHandler(async (req, res) => {
 
         if (!user) {
             // Create new user from Google
+            // Generate unique username from email
+            let username = email.split('@')[0];
+            const existingUsername = await query('SELECT id FROM users WHERE username = $1', [username]);
+            if (existingUsername.rows.length > 0) {
+                username += Math.floor(Math.random() * 1000);
+            }
+
             // Generate random password since they use Google
             const randomPassword = Math.random().toString(36).slice(-8);
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(randomPassword, salt);
 
             const newUser = await query(
-                `INSERT INTO users (email, password_hash, name, avatar_url, role)
-                 VALUES ($1, $2, $3, $4, 'member')
-                 RETURNING id, email, name, role, avatar_url, xp_points`,
-                [email, hashedPassword, name, picture]
+                `INSERT INTO users (email, password_hash, name, username, avatar_url, role)
+                 VALUES ($1, $2, $3, $4, $5, 'member')
+                 RETURNING id, email, name, username, role, avatar_url, xp_points`,
+                [email, hashedPassword, name, username, picture]
             );
             user = newUser.rows[0];
 
@@ -328,6 +360,7 @@ router.post('/google', asyncHandler(async (req, res) => {
                 id: user.id,
                 email: user.email,
                 name: user.name,
+                username: user.username,
                 role: user.role,
                 avatar_url: user.avatar_url,
                 xp_points: user.xp_points || 0,

@@ -91,6 +91,7 @@ app.use('/api/member', require('./routes/member'));
 app.use('/api/checkin', require('./routes/checkin'));
 app.use('/api/intent', require('./routes/intent'));
 app.use('/api/friends', require('./routes/friends'));
+app.use('/api/posts', require('./routes/posts'));
 app.use('/api/comments', require('./routes/comments'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/learn', require('./routes/learn'));

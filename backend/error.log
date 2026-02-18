@@ -5096,3 +5096,214 @@ Error: User not found. Please log in again
     at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:47:19)
     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
 -------------------
+[2026-02-17T14:53:57.457Z] GET /api/workouts/latest?type=Workout
+error: invalid input value for enum muscle_group: "Workout"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:56:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:137:20
+-------------------
+[2026-02-17T14:54:03.068Z] POST /api/workouts
+Error: Please select a valid workout type
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:20:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:52:9)
+-------------------
+[2026-02-17T14:54:10.305Z] POST /api/workouts
+Error: Please select a valid workout type
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:20:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:52:9)
+-------------------
+[2026-02-17T15:08:04.579Z] POST /api/intent
+error: invalid input value for enum split_type: "rest"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:56:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:123:20
+-------------------
+[2026-02-17T15:08:06.082Z] POST /api/intent
+error: invalid input value for enum split_type: "rest"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:56:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:123:20
+-------------------
+[2026-02-17T15:11:51.908Z] POST /api/intent
+error: invalid input value for enum split_type: "rest"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:56:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:130:24
+-------------------
+[2026-02-17T15:12:01.513Z] POST /api/intent
+error: invalid input value for enum split_type: "rest"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:56:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:130:24
+-------------------
+[2026-02-17T15:12:30.094Z] POST /api/intent
+error: invalid input value for enum split_type: "rest"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:56:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:130:24
+-------------------
+[2026-02-17T15:13:07.307Z] POST /api/intent
+error: invalid input value for enum split_type: "rest"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:56:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:130:24
+-------------------
+[2026-02-17T15:15:56.727Z] GET /api/workouts/latest?type=Workout
+error: invalid input value for enum muscle_group: "Workout"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:56:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:137:20
+-------------------
+[2026-02-17T15:16:14.241Z] POST /api/workouts
+Error: Please select a valid workout type
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:20:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:52:9)
+-------------------
+[2026-02-17T15:16:17.834Z] POST /api/workouts
+Error: Please select a valid workout type
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:20:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:52:9)
+-------------------
+[2026-02-17T15:16:32.176Z] POST /api/workouts
+Error: Please select a valid workout type
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\workouts.js:20:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:52:9)
+-------------------
+[2026-02-17T15:21:46.016Z] POST /api/intent
+error: invalid input value for enum split_type: "anterior_posterior"
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async query (C:\Users\PC\Documents\Code\Fitzo\backend\src\config\database.js:56:20)
+    at async C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\intent.js:130:24
+-------------------
+[2026-02-17T19:02:39.454Z] POST /api/auth/google
+Error: Google login failed: null value in column "username" of relation "users" violates not-null constraint
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\auth.js:340:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-------------------
+[2026-02-17T19:26:32.616Z] GET /api/auth/me
+Error: Your session has expired. Please log in again
+    at authenticate (C:\Users\PC\Documents\Code\Fitzo\backend\src\middleware\auth.js:35:23)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:47:12)
+-------------------
+[2026-02-17T19:28:24.605Z] POST /api/auth/google
+Error: Google authentication not configured on server
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\auth.js:251:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+-------------------
+[2026-02-17T19:28:34.959Z] POST /api/auth/google
+Error: Google authentication not configured on server
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\auth.js:251:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+-------------------
+[2026-02-17T19:32:07.343Z] POST /api/auth/google
+Error: Google authentication not configured on server
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\auth.js:251:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+-------------------
+[2026-02-17T19:34:40.208Z] POST /api/auth/google
+Error: Google authentication not configured on server
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\auth.js:251:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+-------------------
+[2026-02-17T19:37:45.603Z] POST /api/auth/google
+Error: Google authentication not configured on server
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\routes\auth.js:251:15
+    at C:\Users\PC\Documents\Code\Fitzo\backend\src\utils\errors.js:140:21
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:280:10)
+    at router.handle (C:\Users\PC\Documents\Code\Fitzo\backend\node_modules\express\lib\router\index.js:175:3)
+-------------------

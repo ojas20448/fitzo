@@ -110,22 +110,37 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
     const expiresAt = new Date();
     expiresAt.setHours(23, 59, 59, 999);
 
+    console.log('💾 Saving intent:', { userId, training_pattern, emphasis, session_label, visibility, expiresAt });
+
     // Delete any existing intent for today first
-    await query(
-        `DELETE FROM workout_intents 
-         WHERE user_id = $1 AND expires_at > NOW()`,
-        [userId]
-    );
+    try {
+        await query(
+            `DELETE FROM workout_intents 
+             WHERE user_id = $1 AND expires_at > NOW()`,
+            [userId]
+        );
+    } catch (deleteError) {
+        console.error('❌ Error deleting old intent:', deleteError);
+        throw deleteError;
+    }
 
     // Create new intent
-    const result = await query(
-        `INSERT INTO workout_intents (user_id, split_type, emphasis, session_label, visibility, expires_at)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING id, split_type, emphasis, session_label, visibility, expires_at`,
-        [userId, training_pattern, emphasis, session_label, visibility, expiresAt]
-    );
+    let intent;
+    try {
+        const result = await query(
+            `INSERT INTO workout_intents (user_id, split_type, emphasis, session_label, visibility, expires_at)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING id, split_type, emphasis, session_label, visibility, expires_at`,
+            [userId, training_pattern, emphasis, session_label, visibility, expiresAt]
+        );
 
-    const intent = result.rows[0];
+        intent = result.rows[0];
+        console.log('✅ Intent saved to DB:', intent);
+    } catch (insertError) {
+        console.error('❌ Error inserting intent:', insertError);
+        console.error('❌ Values:', { userId, training_pattern, emphasis, session_label, visibility, expiresAt });
+        throw insertError;
+    }
 
     res.status(201).json({
         message: "Let's go! 💪",

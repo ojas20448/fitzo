@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { intentAPI, workoutsAPI } from '../../services/api';
+import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 
 // Preset splits
@@ -49,6 +50,14 @@ const PRESET_SPLITS = [
         daysPerWeek: 3,
     },
     {
+        id: 'bro_split',
+        name: 'Bro Split (5 Day)',
+        pattern: 'bro_split',
+        description: 'One body part per day',
+        days: ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs'],
+        daysPerWeek: 5,
+    },
+    {
         id: 'anterior_posterior',
         name: 'Anterior / Posterior',
         pattern: 'anterior_posterior',
@@ -57,11 +66,35 @@ const PRESET_SPLITS = [
         daysPerWeek: 4,
     },
     {
-        id: 'bro_split',
-        name: 'Bro Split (5 Day)',
-        pattern: 'bro_split',
-        description: 'One body part per day',
-        days: ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs'],
+        id: 'push_pull',
+        name: 'Push / Pull',
+        pattern: 'push_pull',
+        description: 'Upper body push/pull',
+        days: ['Push', 'Pull'],
+        daysPerWeek: 2,
+    },
+    {
+        id: 'arnold_split',
+        name: 'Arnold Split (6 Day)',
+        pattern: 'arnold_split',
+        description: 'Chest+Back, Shoulders+Arms, Legs',
+        days: ['Chest & Back', 'Shoulders & Arms', 'Legs', 'Chest & Back', 'Shoulders & Arms', 'Legs'],
+        daysPerWeek: 6,
+    },
+    {
+        id: 'phul',
+        name: 'PHUL (4 Day)',
+        pattern: 'phul',
+        description: 'Power Upper, Power Lower, Hypertrophy Upper, Hypertrophy Lower',
+        days: ['Power Upper', 'Power Lower', 'Hypertrophy Upper', 'Hypertrophy Lower'],
+        daysPerWeek: 4,
+    },
+    {
+        id: 'phat',
+        name: 'PHAT (5 Day)',
+        pattern: 'phat',
+        description: 'Power and Hypertrophy Adaptive Training',
+        days: ['Power Upper', 'Power Lower', 'Rest', 'Hypertrophy Back/Shoulders', 'Hypertrophy Chest/Arms', 'Hypertrophy Legs'],
         daysPerWeek: 5,
     },
 ];
@@ -70,10 +103,12 @@ const PRESET_SPLITS = [
 const BODY_PARTS = [
     'Push', 'Pull', 'Legs', 'Upper', 'Lower', 'Full Body',
     'Chest', 'Back', 'Shoulders', 'Arms', 'Quads', 'Hamstrings',
-    'Anterior', 'Posterior', 'Chest + Back', 'Arms + Shoulders', 'Legs + Core'
+    'Anterior', 'Posterior', 'Chest + Back', 'Arms + Shoulders', 'Legs + Core',
+    'Power Upper', 'Power Lower', 'Hypertrophy Upper', 'Hypertrophy Lower'
 ];
 
 export default function WorkoutIntentScreen() {
+    const toast = useToast();
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState<'split' | 'day' | 'custom'>('split');
 
@@ -111,20 +146,26 @@ export default function WorkoutIntentScreen() {
         setLoading(true);
         try {
             const dayName = selectedSplit.days[selectedDayIndex];
+            console.log('🎯 Setting intent:', { pattern: selectedSplit.pattern, emphasis: [dayName], label: dayName });
 
             // Set the intent
-            await intentAPI.setIntent({
+            const response = await intentAPI.setIntent({
                 training_pattern: selectedSplit.pattern || 'custom',
                 emphasis: [dayName],
                 session_label: dayName,
                 visibility,
             });
 
-            // Navigate back to Home
-            router.replace('/(tabs)');
-        } catch (error) {
-            console.error('Failed to save intent:', error);
-        } finally {
+            console.log('✅ Intent saved:', response);
+            toast.success('Intent Set', `Let's crush ${dayName}! 💪`);
+
+            // Give toast time to show and backend time to commit, then navigate back to Home
+            setTimeout(() => {
+                router.replace('/(tabs)');
+            }, 800);
+        } catch (error: any) {
+            console.error('❌ Failed to save intent:', error);
+            toast.error('Failed to set intent', error?.message || 'Please try again');
             setLoading(false);
         }
     };
@@ -133,27 +174,32 @@ export default function WorkoutIntentScreen() {
         setLoading(true);
         try {
             if (type === 'rest') {
-                // Just go back for rest
+                console.log('🛌 Setting rest day intent...', { visibility });
+                // Send null for training_pattern to avoid enum constraint
                 await intentAPI.setIntent({
-                    training_pattern: 'rest',
+                    training_pattern: null,
                     emphasis: ['rest'],
                     session_label: 'Rest Day',
                     visibility,
                 });
-                router.back();
+                toast.success('Rest Day Set', 'Recovery is key! 💤');
+                setTimeout(() => router.back(), 300);
                 return;
             }
 
-            const res = await workoutsAPI.startSession({
-                split_id: 'custom',
-                day_name: 'Custom',
+            // Cardio
+            console.log('🏃 Setting cardio intent...', { visibility });
+            await intentAPI.setIntent({
+                training_pattern: null,
+                emphasis: ['cardio'],
+                session_label: 'Cardio',
                 visibility,
             });
-
-            // Navigate back to Home
-            router.replace('/(tabs)');
-        } catch (error) {
-            console.error(error);
+            toast.success('Cardio Set', 'Let\'s get that heart rate up! 💪');
+            setTimeout(() => router.back(), 300);
+        } catch (error: any) {
+            console.error('❌ handleQuickOption error:', error);
+            toast.error('Failed to set intent', error?.message || 'Please try again');
         } finally {
             setLoading(false);
         }

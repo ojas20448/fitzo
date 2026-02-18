@@ -33,19 +33,26 @@ export default function LoginScreen() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // Google Auth
-    const redirectUri = makeRedirectUri({
-        scheme: 'fitzo',
-        path: 'auth',
+    // Google Auth - platform-aware redirect URI
+    const redirectUri = Platform.select({
+        web: undefined, // Let Google.useAuthRequest auto-generate for web
+        default: makeRedirectUri({ scheme: 'fitzo', path: 'auth' }),
     });
 
     const [request, response, promptAsync] = Google.useAuthRequest({
         clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
         iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
         androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-        redirectUri,
+        ...(redirectUri ? { redirectUri } : {}),
         scopes: ['openid', 'profile', 'email'],
     });
+
+    // Debug: log the redirect URI being used
+    React.useEffect(() => {
+        if (request) {
+            console.log('🔑 Google OAuth redirect URI:', request.redirectUri);
+        }
+    }, [request]);
 
     React.useEffect(() => {
         if (response?.type === 'success') {

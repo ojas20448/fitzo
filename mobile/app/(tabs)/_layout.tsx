@@ -123,6 +123,23 @@ export default function TabLayout() {
 
                         <TouchableOpacity
                             style={styles.modalOption}
+                            onPress={() => handleLogOption('/member/create-post')}
+                            accessibilityLabel="Add post"
+                            accessibilityHint="Share a post with your gym buddies"
+                            accessibilityRole="menuitem"
+                        >
+                            <View style={styles.optionIcon}>
+                                <MaterialIcons name="post-add" size={28} color={colors.primary} />
+                            </View>
+                            <View style={styles.optionInfo}>
+                                <Text style={styles.optionTitle}>Add Post</Text>
+                                <Text style={styles.optionSubtitle}>Share with your gym buddies</Text>
+                            </View>
+                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.modalOption}
                             onPress={() => handleLogOption('/log/calories')}
                             accessibilityLabel="Log calories"
                             accessibilityHint="Track your nutrition"

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions, Modal } from 'react-native';
+import { View, Text, StyleSheet, Animated, Dimensions, Modal, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
@@ -55,6 +55,8 @@ const Celebration: React.FC<CelebrationProps> = ({
 
     useEffect(() => {
         if (visible) {
+            console.log('🎉 Celebration visible, starting animation');
+            
             // Haptic feedback
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -87,6 +89,7 @@ const Celebration: React.FC<CelebrationProps> = ({
                     }),
                 ]),
             ]).start(() => {
+                console.log('✅ Celebration animation complete, calling onComplete');
                 scaleAnim.setValue(0);
                 opacityAnim.setValue(0);
                 onComplete?.();
@@ -141,7 +144,10 @@ const Celebration: React.FC<CelebrationProps> = ({
 
     return (
         <Modal transparent visible={visible} animationType="none">
-            <View style={styles.overlay}>
+            <Pressable style={styles.overlay} onPress={() => {
+                console.log('🖱️ Overlay tapped, manually dismissing celebration');
+                onComplete?.();
+            }}>
                 {/* Confetti */}
                 {confettiAnims.map((anim, index) => (
                     <Animated.View
@@ -191,7 +197,7 @@ const Celebration: React.FC<CelebrationProps> = ({
                     <Text style={styles.title}>{title}</Text>
                     {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
                 </Animated.View>
-            </View>
+            </Pressable>
         </Modal>
     );
 };

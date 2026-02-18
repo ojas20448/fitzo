@@ -4,6 +4,42 @@ const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, NotFoundError, asyncHandler } = require('../utils/errors');
 
+// Helper functions for intent display formatting
+const formatPattern = (p) => {
+    if (!p) return null;
+    const labels = {
+        push: 'Push', pull: 'Pull', legs: 'Legs',
+        upper: 'Upper', lower: 'Lower',
+        anterior: 'Anterior', posterior: 'Posterior',
+        full_body: 'Full Body', bro_split: 'Bro Split', custom: 'Custom',
+        anterior_posterior: 'Ant/Post', ppl: 'PPL', upper_lower: 'Upper/Lower',
+        push_pull: 'Push/Pull', arnold_split: 'Arnold', phul: 'PHUL', phat: 'PHAT'
+    };
+    return labels[p] || p;
+};
+
+const formatEmphasis = (arr) => {
+    if (!arr || arr.length === 0) return 'Training';
+    const labels = {
+        chest: 'Chest', back: 'Back', shoulders: 'Shoulders', arms: 'Arms',
+        quads: 'Quads', hamstrings: 'Hamstrings', glutes: 'Glutes', calves: 'Calves',
+        cardio: 'Cardio', rest: 'Rest',
+        push: 'Push', pull: 'Pull', legs: 'Legs', upper: 'Upper', lower: 'Lower',
+        full_body: 'Full Body', 'full body': 'Full Body',
+        anterior: 'Anterior', posterior: 'Posterior',
+        'full body a': 'Full Body A', 'full body b': 'Full Body B', 'full body c': 'Full Body C'
+    };
+    return arr.map(e => labels[e] || e.charAt(0).toUpperCase() + e.slice(1)).join(' & ');
+};
+
+const buildDisplay = (pattern, emphasis, label) => {
+    const parts = [];
+    if (pattern) parts.push(formatPattern(pattern));
+    parts.push(formatEmphasis(emphasis));
+    if (label) parts.push(label);
+    return parts.join(' · ');
+};
+
 /**
  * GET /api/member/home
  * Main home screen API - returns all data needed for member dashboard
@@ -47,6 +83,11 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
              LIMIT 1`,
             [userId]
         );
+
+        console.log('🔍 Intent query result:', {
+            rowCount: intentResult.rows.length,
+            rows: intentResult.rows.length > 0 ? intentResult.rows[0] : 'EMPTY'
+        });
 
         if (intentResult.rows.length > 0) {
             const row = intentResult.rows[0];
@@ -139,6 +180,65 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
         console.error('❌ Error fetching user data:', err.message);
     }
 
+    // 8. Get current learning progress
+    let learn = null;
+    try {
+        const learnResult = await query(
+            `SELECT 
+                l.id,
+                l.title,
+                l.unit,
+                l.unit_title,
+                l.order_index,
+                CASE WHEN la.completed THEN true ELSE false END as completed
+             FROM learn_lessons l
+             LEFT JOIN (
+                SELECT DISTINCT ON (lesson_id) lesson_id, completed
+                FROM learn_attempts
+                WHERE user_id = $1
+                ORDER BY lesson_id, attempted_at DESC
+             ) la ON l.id = la.lesson_id
+             WHERE NOT COALESCE(la.completed, false)
+             ORDER BY l.unit, l.order_index
+             LIMIT 1`,
+            [userId]
+        );
+        
+        if (learnResult.rows.length > 0) {
+            const lesson = learnResult.rows[0];
+            
+            // Calculate completion percentage for this unit
+            const unitProgressResult = await query(
+                `SELECT 
+                    COUNT(*) FILTER (WHERE COALESCE(la.completed, false)) as completed_count,
+                    COUNT(*) as total_count
+                 FROM learn_lessons l
+                 LEFT JOIN (
+                    SELECT DISTINCT ON (lesson_id) lesson_id, completed
+                    FROM learn_attempts
+                    WHERE user_id = $1
+                    ORDER BY lesson_id, attempted_at DESC
+                 ) la ON l.id = la.lesson_id
+                 WHERE l.unit = $2`,
+                [userId, lesson.unit]
+            );
+            
+            const progress = unitProgressResult.rows[0];
+            const progressPercent = Math.round((progress.completed_count / progress.total_count) * 100);
+            
+            learn = {
+                title: lesson.unit_title,
+                lesson: `Lesson ${lesson.order_index}`,
+                topic: lesson.title,
+                progress: progressPercent
+            };
+        }
+    } catch (err) {
+        console.error('❌ Error fetching learn progress:', err.message);
+    }
+
+    console.log('🏠 /member/home response - Intent:', intent ? JSON.stringify(intent) : 'NULL');
+    
     res.json({
         user: {
             name: user.name,
@@ -162,6 +262,7 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
             best: streak,
             history: history
         },
+        learn,
         insight: await safeGenerateInsight(userId, streak)
     });
 }));

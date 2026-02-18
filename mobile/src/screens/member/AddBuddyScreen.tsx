@@ -57,24 +57,41 @@ export default function AddBuddyScreen() {
 
     const handleBarCodeScanned = ({ data }: { data: string }) => {
         setScanned(true);
-        // Assuming QR code contains JSON with userId or just userId
-        let userId = data;
+        
+        let userId: string | null = null;
+        let username: string | null = null;
+        
         try {
             const parsed = JSON.parse(data);
-            if (parsed.userId) userId = parsed.userId;
+            if (parsed.type === 'fitzo_profile') {
+                userId = parsed.userId;
+                username = parsed.username;
+            } else if (parsed.userId) {
+                // Old format
+                userId = parsed.userId;
+                username = parsed.username;
+            }
         } catch (e) {
-            // Not JSON, assume string ID
+            // Not JSON, assume it's just a userId string (legacy)
+            userId = data;
+        }
+
+        if (!userId) {
+            Alert.alert('Invalid Code', 'This QR code is not valid.', [
+                { text: 'OK', onPress: () => setScanned(false) }
+            ]);
+            return;
         }
 
         Alert.alert(
             'Buddy Found!',
-            `Add this user?`,
+            username ? `Add @${username} as your gym buddy?` : 'Add this user as your gym buddy?',
             [
                 { text: 'Cancel', onPress: () => setScanned(false), style: 'cancel' },
                 {
                     text: 'Add',
                     onPress: async () => {
-                        await handleAdd(userId);
+                        await handleAdd(userId!);
                         setScanned(false);
                     }
                 }
@@ -84,9 +101,14 @@ export default function AddBuddyScreen() {
 
     const handleShare = async () => {
         try {
-            // Create a deep link or just share username
+            const appUrl = 'https://fitzo.app'; // Your app website/store link
+            const username = user?.username || 'user';
+            const deepLink = `fitzo://profile/${username}`;
+            
             await Share.share({
-                message: `Add me on Fitzo! My username is @${user?.username || 'user'}.`,
+                title: 'Join me on Fitzo!',
+                message: `Hey! Add me as your gym buddy on Fitzo.\n\nUsername: @${username}\n\nDownload the app: ${appUrl}\nOr scan my QR code to connect instantly!`,
+                url: deepLink, // iOS will use this
             });
         } catch (error) {
             console.error(error);
@@ -168,26 +190,35 @@ export default function AddBuddyScreen() {
         );
     };
 
-    const renderCodeTab = () => (
-        <View style={styles.centerContent}>
-            <GlassCard style={styles.qrCard} padding="lg">
-                <QRCode
-                    value={JSON.stringify({ userId: user?.id, username: user?.username })}
-                    size={200}
-                    color="white"
-                    backgroundColor="transparent"
+    const renderCodeTab = () => {
+        const qrData = JSON.stringify({
+            type: 'fitzo_profile',
+            userId: user?.id,
+            username: user?.username,
+            deepLink: `fitzo://profile/${user?.username}`
+        });
+
+        return (
+            <View style={styles.centerContent}>
+                <GlassCard style={styles.qrCard} padding="lg">
+                    <QRCode
+                        value={qrData}
+                        size={200}
+                        color="white"
+                        backgroundColor="transparent"
+                    />
+                    <Text style={styles.myUsername}>@{user?.username || 'user'}</Text>
+                </GlassCard>
+                <Text style={styles.qrHint}>Let your buddy scan this code to add you.</Text>
+                <Button
+                    title="Share Profile"
+                    icon={<MaterialIcons name="share" size={20} color={colors.text.dark} />}
+                    onPress={handleShare}
+                    style={{ marginTop: spacing.xl, width: 200 }}
                 />
-                <Text style={styles.myUsername}>@{user?.username || 'user'}</Text>
-            </GlassCard>
-            <Text style={styles.qrHint}>Let your buddy scan this code to add you.</Text>
-            <Button
-                title="Share Profile"
-                icon={<MaterialIcons name="share" size={20} color={colors.text.dark} />}
-                onPress={handleShare}
-                style={{ marginTop: spacing.xl, width: 200 }}
-            />
-        </View>
-    );
+            </View>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>

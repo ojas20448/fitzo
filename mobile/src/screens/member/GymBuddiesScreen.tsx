@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { friendsAPI, intentAPI, workoutsAPI } from '../../services/api';
+import { router, useFocusEffect } from 'expo-router';
+import { friendsAPI, intentAPI, workoutsAPI, postsAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import Badge from '../../components/Badge';
@@ -38,7 +38,7 @@ interface Friend {
 
 interface FeedItem {
     id: string;
-    type: 'workout' | 'calorie' | 'intent';
+    type: 'workout' | 'calorie' | 'intent' | 'post';
     user_id: string;
     user_name: string;
     avatar_url: string | null;
@@ -63,25 +63,42 @@ const GymBuddiesScreen: React.FC = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
     const [commentModalVisible, setCommentModalVisible] = useState(false);
-    const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null);
+    const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+    const [selectedItemType, setSelectedItemType] = useState<'workout' | 'post'>('workout');
 
-    const handleCommentPress = (workoutId: string) => {
-        // Extract ID from feed item ID (format: "workout-123")
-        const id = workoutId.replace('workout-', '');
-        setSelectedWorkoutId(id);
-        setCommentModalVisible(true);
+    const handleCommentPress = (itemId: string) => {
+        // Extract ID and type from feed item ID (format: "workout-123" or "post-456")
+        if (itemId.startsWith('workout-')) {
+            const id = itemId.replace('workout-', '');
+            setSelectedItemId(id);
+            setSelectedItemType('workout');
+            setCommentModalVisible(true);
+        } else if (itemId.startsWith('post-')) {
+            const id = itemId.replace('post-', '');
+            setSelectedItemId(id);
+            setSelectedItemType('post');
+            setCommentModalVisible(true);
+        }
     };
 
     useEffect(() => {
         loadData();
     }, []);
 
+    // Reload data when screen comes into focus (e.g., after creating a post)
+    useFocusEffect(
+        useCallback(() => {
+            loadData();
+        }, [])
+    );
+
     const loadData = async () => {
         try {
-            const [friendsRes, intentFeedRes, workoutFeedRes, suggestedRes] = await Promise.all([
+            const [friendsRes, intentFeedRes, workoutFeedRes, postsFeedRes, suggestedRes] = await Promise.all([
                 friendsAPI.getFriends(),
                 intentAPI.getFeed().catch(() => ({ intents: [] })),
                 workoutsAPI.getFeed().catch(() => ({ feed: [] })),
+                postsAPI.getFeed(20, 0).catch(() => ({ posts: [] })),
                 friendsAPI.getSuggested(5).catch(() => ({ suggested: [] })),
             ]);
 
@@ -117,6 +134,20 @@ const GymBuddiesScreen: React.FC = () => {
                     data: workout,
                     created_at: workout.created_at,
                     liked: false,
+                });
+            });
+
+            // Add posts to feed
+            (postsFeedRes.posts || []).forEach((post: any) => {
+                combinedFeed.push({
+                    id: `post-${post.id}`,
+                    type: 'post',
+                    user_id: post.user_id,
+                    user_name: post.user_name,
+                    avatar_url: post.user_avatar,
+                    data: post,
+                    created_at: post.created_at,
+                    liked: post.liked_by_me,
                 });
             });
 
@@ -192,12 +223,21 @@ const GymBuddiesScreen: React.FC = () => {
             return newSet;
         });
 
-        const id = itemId.replace('workout-', '');
         try {
-            if (isLiked) {
-                await workoutsAPI.unlike(id);
-            } else {
-                await workoutsAPI.like(id);
+            if (itemId.startsWith('post-')) {
+                const postId = itemId.replace('post-', '');
+                if (isLiked) {
+                    await postsAPI.unlike(postId);
+                } else {
+                    await postsAPI.like(postId);
+                }
+            } else if (itemId.startsWith('workout-')) {
+                const workoutId = itemId.replace('workout-', '');
+                if (isLiked) {
+                    await workoutsAPI.unlike(workoutId);
+                } else {
+                    await workoutsAPI.like(workoutId);
+                }
             }
         } catch (error) {
             console.error('Failed to update like status:', error);
@@ -338,6 +378,9 @@ const GymBuddiesScreen: React.FC = () => {
                                             {item.type === 'intent' && (
                                                 <Badge label="Intent" size="sm" />
                                             )}
+                                            {item.type === 'post' && (
+                                                <Badge label={item.data.visibility === 'public' ? 'Public' : 'Friends'} variant="secondary" size="sm" />
+                                            )}
                                         </View>
 
                                         <View style={styles.feedContent}>
@@ -364,6 +407,11 @@ const GymBuddiesScreen: React.FC = () => {
                                                     )}
                                                 </View>
                                             )}
+                                            {item.type === 'post' && (
+                                                <View style={styles.postContent}>
+                                                    <Text style={styles.postText}>{item.data.content}</Text>
+                                                </View>
+                                            )}
                                         </View>
 
                                         <View style={styles.feedActions}>
@@ -380,18 +428,22 @@ const GymBuddiesScreen: React.FC = () => {
                                                     styles.likeText,
                                                     likedItems.has(item.id) && styles.likeTextActive
                                                 ]}>
-                                                    {likedItems.has(item.id) ? 'Liked' : 'Like'}
+                                                    {item.type === 'post' && item.data.likes_count > 0 
+                                                        ? `${item.data.likes_count}` 
+                                                        : likedItems.has(item.id) ? 'Liked' : 'Like'}
                                                 </Text>
                                             </TouchableOpacity>
 
-                                            {item.type === 'workout' && (
+                                            {(item.type === 'workout' || item.type === 'post') && (
                                                 <TouchableOpacity
                                                     style={styles.likeBtn}
                                                     onPress={() => handleCommentPress(item.id)}
                                                 >
                                                     <MaterialIcons name="chat-bubble-outline" size={20} color={colors.text.muted} />
                                                     <Text style={styles.likeText}>
-                                                        {item.data.comment_count > 0 ? `${item.data.comment_count} Comments` : 'Comment'}
+                                                        {item.type === 'post' 
+                                                            ? (item.data.comments_count > 0 ? `${item.data.comments_count}` : 'Comment')
+                                                            : (item.data.comment_count > 0 ? `${item.data.comment_count} Comments` : 'Comment')}
                                                     </Text>
                                                 </TouchableOpacity>
                                             )}
@@ -606,6 +658,9 @@ const GymBuddiesScreen: React.FC = () => {
                                                 {item.type === 'intent' && (
                                                     <Badge label="Intent" size="sm" />
                                                 )}
+                                                {item.type === 'post' && (
+                                                    <Badge label={item.data.visibility === 'public' ? 'Public' : 'Friends'} variant="secondary" size="sm" />
+                                                )}
                                             </View>
 
                                             <View style={styles.feedContent}>
@@ -632,6 +687,11 @@ const GymBuddiesScreen: React.FC = () => {
                                                         )}
                                                     </View>
                                                 )}
+                                                {item.type === 'post' && (
+                                                    <View style={styles.postContent}>
+                                                        <Text style={styles.postText}>{item.data.content}</Text>
+                                                    </View>
+                                                )}
                                             </View>
 
                                             <View style={styles.feedActions}>
@@ -648,18 +708,22 @@ const GymBuddiesScreen: React.FC = () => {
                                                         styles.likeText,
                                                         likedItems.has(item.id) && styles.likeTextActive
                                                     ]}>
-                                                        {likedItems.has(item.id) ? 'Liked' : 'Like'}
+                                                        {item.type === 'post' && item.data.likes_count > 0 
+                                                            ? `${item.data.likes_count}` 
+                                                            : likedItems.has(item.id) ? 'Liked' : 'Like'}
                                                     </Text>
                                                 </TouchableOpacity>
 
-                                                {item.type === 'workout' && (
+                                                {(item.type === 'workout' || item.type === 'post') && (
                                                     <TouchableOpacity
                                                         style={styles.likeBtn}
                                                         onPress={() => handleCommentPress(item.id)}
                                                     >
                                                         <MaterialIcons name="chat-bubble-outline" size={20} color={colors.text.muted} />
                                                         <Text style={styles.likeText}>
-                                                            {item.data.comment_count > 0 ? `${item.data.comment_count} Comments` : 'Comment'}
+                                                            {item.type === 'post' 
+                                                                ? (item.data.comments_count > 0 ? `${item.data.comments_count}` : 'Comment')
+                                                                : (item.data.comment_count > 0 ? `${item.data.comment_count} Comments` : 'Comment')}
                                                         </Text>
                                                     </TouchableOpacity>
                                                 )}
@@ -721,7 +785,8 @@ const GymBuddiesScreen: React.FC = () => {
             <CommentModal
                 visible={commentModalVisible}
                 onClose={() => setCommentModalVisible(false)}
-                workoutId={selectedWorkoutId || ''}
+                itemId={selectedItemId || ''}
+                type={selectedItemType}
             />
         </SafeAreaView>
     );
@@ -997,6 +1062,19 @@ const styles = StyleSheet.create({
         color: colors.text.secondary,
         marginTop: spacing.xs,
         fontStyle: 'italic',
+    },
+    postContent: {
+        backgroundColor: colors.glass.surfaceLight,
+        borderRadius: borderRadius.xl,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    postText: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.primary,
+        lineHeight: 22,
     },
     feedActions: {
         flexDirection: 'row',

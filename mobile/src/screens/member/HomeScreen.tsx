@@ -85,13 +85,6 @@ const HomeScreen: React.FC = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [activeCount, setActiveCount] = useState(0);
 
-    const DUMMY_FRIENDS: Friend[] = [
-        { id: '1', name: 'Sarah Jones', avatar_url: 'https://i.pravatar.cc/150?u=sarah' },
-        { id: '2', name: 'Mike Chen', avatar_url: 'https://i.pravatar.cc/150?u=mike' },
-        { id: '3', name: 'Jessica Day', avatar_url: 'https://i.pravatar.cc/150?u=jess' },
-        { id: '4', name: 'Tom Hardy', avatar_url: 'https://i.pravatar.cc/150?u=tom' },
-    ];
-
     useEffect(() => {
         loadHomeData();
     }, []);
@@ -118,12 +111,30 @@ const HomeScreen: React.FC = () => {
 
     useFocusEffect(
         React.useCallback(() => {
-            loadHomeData();
-            refreshToday(); // Ensure explicit refresh on focus
+            console.log('🔄 HomeScreen focused, refreshing data...');
+            const refreshData = async () => {
+                try {
+                    const [homeRes, workoutsRes, friendsRes] = await Promise.all([
+                        memberAPI.getHome(),
+                        workoutsAPI.getToday().catch(() => ({ workouts: [], summary: { count: 0, types: [] } })),
+                        friendsAPI.getFriends().catch(() => ({ friends: [] })),
+                    ]);
+                    console.log('📥 Home data received:', { intent: homeRes?.intent });
+                    setData(homeRes);
+                    setTodayWorkouts(workoutsRes.workouts || []);
+                    const fetchedFriends = friendsRes?.friends || [];
+                    setFriends(fetchedFriends);
+                } catch (error) {
+                    console.error('Failed to load home data:', error);
+                }
+            };
+            refreshData();
+            refreshToday();
         }, [refreshToday])
     );
 
-    const loadHomeData = async () => {
+    const loadHomeData = async (showLoader = true) => {
+        if (showLoader) setLoading(true);
         try {
             // Updated Promise.all to exclude caloriesAPI fetch since it's now handled by context
             const [homeRes, workoutsRes, friendsRes] = await Promise.all([
@@ -136,17 +147,17 @@ const HomeScreen: React.FC = () => {
             // todayCalories is now derived from context
 
             const fetchedFriends = friendsRes?.friends || [];
-            setFriends(fetchedFriends.length > 0 ? fetchedFriends : DUMMY_FRIENDS);
+            setFriends(fetchedFriends);
         } catch (error) {
             console.error('Failed to load home data:', error);
         } finally {
-            setLoading(false);
+            if (showLoader) setLoading(false);
         }
     };
 
     const onRefresh = async () => {
         setRefreshing(true);
-        await loadHomeData();
+        await loadHomeData(false); // Don't show skeleton during pull-to-refresh
         setRefreshing(false);
     };
 
@@ -169,6 +180,8 @@ const HomeScreen: React.FC = () => {
     const hasLoggedWorkoutToday = todayWorkouts.length > 0;
     const currentIntent = data?.intent;
     const activeFriendsCount = activeCount;
+    
+    console.log('🎯 Current intent state:', currentIntent ? JSON.stringify(currentIntent) : 'NULL');
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -245,7 +258,7 @@ const HomeScreen: React.FC = () => {
                         </View>
                         <Text style={[styles.todayTitle, !currentIntent && styles.todayTitleMuted]}>
                             {currentIntent ? (
-                                `${currentIntent.emphasis?.[0] || 'Training'} • ${currentIntent.training_pattern || 'Session'}`
+                                `${(currentIntent.emphasis?.[0] || 'Training').toUpperCase()} • ${currentIntent.training_pattern || 'Session'}`
                             ) : (
                                 'Set Your Focus'
                             )}
@@ -259,23 +272,21 @@ const HomeScreen: React.FC = () => {
                     </Pressable>
                 </Animated.View>
 
-                {/* Active Session Card - Glass Effect */}
-                {currentIntent && hasLoggedWorkoutToday && (
+                {/* Completed Workout Card - Show when workout is logged today */}
+                {hasLoggedWorkoutToday && (
                     <View style={styles.activeSessionCard}>
                         <View style={styles.inProgressPill}>
-                            <View style={styles.pulseDot}>
-                                <View style={styles.pulseDotInner} />
-                            </View>
-                            <Text style={styles.inProgressText}>IN PROGRESS</Text>
+                            <MaterialIcons name="check-circle" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                            <Text style={styles.inProgressText}>COMPLETED TODAY</Text>
                         </View>
 
                         <View style={styles.statsGrid}>
                             <View style={styles.statItem}>
-                                <Text style={styles.statLabel}>ACTIVE TIME</Text>
-                                <Text style={styles.statValue}>45<Text style={styles.statUnit}>min</Text></Text>
+                                <Text style={styles.statLabel}>WORKOUTS</Text>
+                                <Text style={styles.statValue}>{todayWorkouts.length}</Text>
                             </View>
                             <View style={styles.statItem}>
-                                <Text style={styles.statLabel}>CALORIES</Text>
+                                <Text style={styles.statLabel}>CALORIES LOGGED</Text>
                                 <Text style={styles.statValue}>{todayMacros.calories}<Text style={styles.statUnit}>kcal</Text></Text>
                             </View>
                         </View>
@@ -396,32 +407,36 @@ const HomeScreen: React.FC = () => {
                 </View>
 
                 {/* Continuing Learning Card */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Continuing Learning</Text>
-                        <TouchableOpacity onPress={() => router.push('/(tabs)/learn' as any)}>
-                            <Text style={styles.viewAllLink}>VIEW ALL</Text>
-                        </TouchableOpacity>
-                    </View>
+                {data?.learn && (
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>Continuing Learning</Text>
+                            <TouchableOpacity onPress={() => router.push('/(tabs)/learn' as any)}>
+                                <Text style={styles.viewAllLink}>VIEW ALL</Text>
+                            </TouchableOpacity>
+                        </View>
 
-                    <Pressable
-                        style={styles.learningCard}
-                        onPress={() => router.push('/(tabs)/learn' as any)}
-                    >
-                        <View style={styles.learningThumbnail}>
-                            <View style={styles.playButton}>
-                                <MaterialIcons name="play-arrow" size={16} color={colors.primary} />
+                        <Pressable
+                            style={styles.learningCard}
+                            onPress={() => router.push('/(tabs)/learn' as any)}
+                        >
+                            <View style={styles.learningThumbnail}>
+                                <View style={styles.playButton}>
+                                    <MaterialIcons name="play-arrow" size={16} color={colors.primary} />
+                                </View>
                             </View>
-                        </View>
-                        <View style={styles.learningContent}>
-                            <Text style={styles.learningTitle}>Nutrition 101</Text>
-                            <Text style={styles.learningMeta}>Lesson 3 • Macros</Text>
-                            <View style={styles.progressBar}>
-                                <View style={[styles.progressFill, { width: '60%' }]} />
+                            <View style={styles.learningContent}>
+                                <Text style={styles.learningTitle}>{data.learn.title}</Text>
+                                <Text style={styles.learningMeta}>
+                                    {data.learn.lesson} • {data.learn.topic}
+                                </Text>
+                                <View style={styles.progressBar}>
+                                    <View style={[styles.progressFill, { width: `${data.learn.progress}%` }]} />
+                                </View>
                             </View>
-                        </View>
-                    </Pressable>
-                </View>
+                        </Pressable>
+                    </View>
+                )}
 
                 <View style={{ height: 120 }} />
             </ScrollView>

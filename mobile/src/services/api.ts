@@ -48,12 +48,19 @@ export const removeAuthToken = async (): Promise<void> => {
     }
 };
 
-// Request interceptor - add auth token
+// Request interceptor - add auth token (except for auth endpoints)
 api.interceptors.request.use(
     async (config) => {
-        const token = await getAuthToken();
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        // Don't add auth token to login/register/google endpoints
+        const isAuthEndpoint = config.url?.includes('/auth/login') ||
+            config.url?.includes('/auth/register') ||
+            config.url?.includes('/auth/google');
+
+        if (!isAuthEndpoint) {
+            const token = await getAuthToken();
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
         }
         return config;
     },
@@ -793,6 +800,57 @@ export const measurementsAPI = {
 
     getHistory: async () => {
         const response = await api.get('/measurements/history');
+        return response.data;
+    },
+};
+
+// ===========================================
+// POSTS ENDPOINTS
+// ===========================================
+
+export const postsAPI = {
+    create: async (data: { content: string; visibility: 'public' | 'friends' }) => {
+        const response = await api.post('/posts', data);
+        return response.data;
+    },
+
+    getFeed: async (limit = 20, offset = 0) => {
+        const response = await api.get(`/posts/feed?limit=${limit}&offset=${offset}`);
+        return response.data;
+    },
+
+    getPost: async (id: string) => {
+        const response = await api.get(`/posts/${id}`);
+        return response.data;
+    },
+
+    like: async (id: string) => {
+        const response = await api.post(`/posts/${id}/like`);
+        return response.data;
+    },
+
+    unlike: async (id: string) => {
+        const response = await api.delete(`/posts/${id}/like`);
+        return response.data;
+    },
+
+    getComments: async (id: string) => {
+        const response = await api.get(`/posts/${id}/comments`);
+        return response.data;
+    },
+
+    addComment: async (id: string, comment: string) => {
+        const response = await api.post(`/posts/${id}/comments`, { comment });
+        return response.data;
+    },
+
+    deletePost: async (id: string) => {
+        const response = await api.delete(`/posts/${id}`);
+        return response.data;
+    },
+
+    updatePost: async (id: string, data: { content: string; visibility?: 'public' | 'friends' }) => {
+        const response = await api.put(`/posts/${id}`, data);
         return response.data;
     },
 };

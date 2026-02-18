@@ -215,10 +215,12 @@ export default function ProfileScreen() {
                             <MaterialIcons name="local-fire-department" size={16} color={colors.primary} />
                             <Text style={styles.statusBadgeText}>{stats.streak} Day Streak</Text>
                         </View>
-                        <View style={styles.statusBadge}>
-                            <MaterialIcons name="business" size={16} color={colors.crowd.medium} />
-                            <Text style={styles.statusBadgeText}>Powerhouse Gym</Text>
-                        </View>
+                        {user?.gym_name && (
+                            <View style={styles.statusBadge}>
+                                <MaterialIcons name="business" size={16} color={colors.crowd.medium} />
+                                <Text style={styles.statusBadgeText}>{user.gym_name}</Text>
+                            </View>
+                        )}
                     </View>
                 </View>
 
