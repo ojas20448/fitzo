@@ -21,7 +21,7 @@ const { authenticate } = require('../middleware/auth');
 router.post('/analyze-text', authenticate, asyncHandler(async (req, res) => {
     const { text } = req.body;
 
-    console.log('🤖 AI Food Text Analysis:', text);
+    if (process.env.NODE_ENV !== 'production') console.log('🤖 AI Food Text Analysis:', text);
 
     if (!text || text.trim().length === 0) {
         return res.status(400).json({
@@ -124,7 +124,7 @@ const withTimeout = (promise, ms = 5000, name = 'API') => {
 router.get('/search', authenticate, asyncHandler(async (req, res) => {
     const { q, page = 1 } = req.query;
 
-    console.log('🔍 Food search (Aggregated):', q);
+    if (process.env.NODE_ENV !== 'production') console.log('🔍 Food search (Aggregated):', q);
 
     if (!q || q.trim().length === 0) {
         return res.json({ foods: [], total: 0, page: 0, source: null });
@@ -179,8 +179,9 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
         ...fatsecretFoods
     ];
 
-    console.log(`📊 Aggregated Search: "${q}" -> ${combinedFoods.length} total.`);
-    console.log(`   Detailed: Ind=${indianFoods.length}, USDA=${usdaFoods.length}, FS=${fatsecretFoods.length}`);
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`📊 Aggregated Search: "${q}" -> ${combinedFoods.length} total. Ind=${indianFoods.length}, USDA=${usdaFoods.length}, FS=${fatsecretFoods.length}`);
+    }
 
     return res.json({
         foods: combinedFoods,
@@ -246,7 +247,7 @@ router.get('/:id', authenticate, asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { source = 'indian' } = req.query;
 
-    console.log('📦 Food details:', id, source);
+    if (process.env.NODE_ENV !== 'production') console.log('📦 Food details:', id, source);
 
     try {
         // Check if it's an Indian food ID
@@ -322,7 +323,7 @@ router.post('/analyze-photo', authenticate, asyncHandler(async (req, res) => {
 
     try {
         const rawResult = await foodAnalyzer.analyzeFoodFromImage(image_url);
-        console.log('🤖 AI detected:', rawResult);
+        if (process.env.NODE_ENV !== 'production') console.log('🤖 AI detected food');
 
         const formattedFood = foodAnalyzer.formatFoodAnalysis(rawResult);
 
@@ -348,7 +349,7 @@ router.post('/analyze-photo', authenticate, asyncHandler(async (req, res) => {
 router.post('/barcode', authenticate, asyncHandler(async (req, res) => {
     const { barcode } = req.body;
 
-    console.log('🔍 Barcode lookup:', barcode);
+    if (process.env.NODE_ENV !== 'production') console.log('🔍 Barcode lookup:', barcode);
 
     if (!barcode || barcode.trim().length === 0) {
         return res.status(400).json({
@@ -359,7 +360,7 @@ router.post('/barcode', authenticate, asyncHandler(async (req, res) => {
 
     try {
         const rawResult = await barcodeService.lookupBarcode(barcode);
-        console.log('📦 Product found:', rawResult);
+        if (process.env.NODE_ENV !== 'production') console.log('📦 Product found');
 
         const formattedFood = barcodeService.formatBarcodeFood(rawResult);
 

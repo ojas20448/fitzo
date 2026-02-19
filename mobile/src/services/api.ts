@@ -4,13 +4,9 @@ import { Platform } from 'react-native';
 import { authEvents } from './authEvents';
 import { useOfflineStore } from '../stores/offlineStore';
 
-// API base URL
-// EAS Build injects EXPO_PUBLIC_API_URL at build time from eas.json env config.
-// In dev, use localhost (web) or LAN IP (native device).
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL
-    || (__DEV__
-        ? (Platform.OS === 'web' ? 'http://localhost:3001/api' : 'http://192.168.1.18:3001/api')
-        : 'https://fitzo.onrender.com/api');
+// API base URL - EAS Build injects EXPO_PUBLIC_API_URL at build time from eas.json.
+// Falls back to production server when not set.
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fitzo.onrender.com/api';
 
 
 // Create axios instance
@@ -93,6 +89,14 @@ api.interceptors.response.use(
             error.response?.data?.error ||
             (error.code === 'ERR_NETWORK' ? 'Cannot connect to server. Please check your internet connection.' : 'Something went wrong. Please try again.');
 
+        console.error('🚨 API Error:', {
+            url: originalRequest?.url,
+            status: error.response?.status,
+            code: error.code,
+            message,
+            data: error.response?.data,
+        });
+
         return Promise.reject({
             message,
             code: error.response?.data?.code || (error.code === 'ERR_NETWORK' ? 'NETWORK_ERROR' : 'UNKNOWN'),
@@ -128,6 +132,11 @@ export const authAPI = {
 
     forgotPassword: async (email: string) => {
         const response = await api.post('/auth/forgot-password', { email });
+        return response.data;
+    },
+
+    resetPassword: async (email: string, code: string, password: string) => {
+        const response = await api.post('/auth/reset-password', { email, code, password });
         return response.data;
     },
 

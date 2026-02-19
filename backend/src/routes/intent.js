@@ -110,7 +110,7 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
     const expiresAt = new Date();
     expiresAt.setHours(23, 59, 59, 999);
 
-    console.log('💾 Saving intent:', { userId, training_pattern, emphasis, session_label, visibility, expiresAt });
+    if (process.env.NODE_ENV !== 'production') console.log('💾 Saving intent for user:', userId);
 
     // Delete any existing intent for today first
     try {
@@ -135,7 +135,7 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
         );
 
         intent = result.rows[0];
-        console.log('✅ Intent saved to DB:', intent);
+
     } catch (insertError) {
         console.error('❌ Error inserting intent:', insertError);
         console.error('❌ Values:', { userId, training_pattern, emphasis, session_label, visibility, expiresAt });

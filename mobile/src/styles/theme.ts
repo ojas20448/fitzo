@@ -144,6 +144,14 @@ export const shadows = {
         shadowRadius: 40,
         elevation: 15,
     },
+    // Tight, contained glow — hugs the card border instead of bleeding outward
+    glowCard: {
+        shadowColor: '#FFFFFF',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.18,
+        shadowRadius: 8,
+        elevation: 8,
+    },
 };
 
 // Common style patterns

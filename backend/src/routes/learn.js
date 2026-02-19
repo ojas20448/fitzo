@@ -11,7 +11,7 @@ const { ValidationError, NotFoundError, asyncHandler } = require('../utils/error
 router.get('/lessons', authenticate, asyncHandler(async (req, res) => {
     try {
         const userId = req.user.id;
-        console.log('GET /lessons request for user:', userId);
+        if (process.env.NODE_ENV !== 'production') console.log('GET /lessons request for user:', userId);
 
         // Get all lessons with completion status
         const lessonsResult = await query(
@@ -36,7 +36,7 @@ router.get('/lessons', authenticate, asyncHandler(async (req, res) => {
             [userId]
         );
 
-        console.log('Lessons query successful, row count:', lessonsResult.rows.length);
+        if (process.env.NODE_ENV !== 'production') console.log('Lessons query successful, row count:', lessonsResult.rows.length);
 
         // Group by unit
         const unitsMap = new Map();
@@ -75,7 +75,7 @@ router.get('/lessons', authenticate, asyncHandler(async (req, res) => {
             [userId]
         );
 
-        console.log('Progress query successful');
+        if (process.env.NODE_ENV !== 'production') console.log('Progress query successful');
 
         const progress = progressResult.rows[0];
 

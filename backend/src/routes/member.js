@@ -84,10 +84,9 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
             [userId]
         );
 
-        console.log('🔍 Intent query result:', {
-            rowCount: intentResult.rows.length,
-            rows: intentResult.rows.length > 0 ? intentResult.rows[0] : 'EMPTY'
-        });
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('🔍 Intent query result:', { rowCount: intentResult.rows.length });
+        }
 
         if (intentResult.rows.length > 0) {
             const row = intentResult.rows[0];
@@ -203,10 +202,10 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
              LIMIT 1`,
             [userId]
         );
-        
+
         if (learnResult.rows.length > 0) {
             const lesson = learnResult.rows[0];
-            
+
             // Calculate completion percentage for this unit
             const unitProgressResult = await query(
                 `SELECT 
@@ -222,10 +221,10 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
                  WHERE l.unit = $2`,
                 [userId, lesson.unit]
             );
-            
+
             const progress = unitProgressResult.rows[0];
             const progressPercent = Math.round((progress.completed_count / progress.total_count) * 100);
-            
+
             learn = {
                 title: lesson.unit_title,
                 lesson: `Lesson ${lesson.order_index}`,
@@ -237,8 +236,8 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
         console.error('❌ Error fetching learn progress:', err.message);
     }
 
-    console.log('🏠 /member/home response - Intent:', intent ? JSON.stringify(intent) : 'NULL');
-    
+    // Verbose response logging removed for production
+
     res.json({
         user: {
             name: user.name,

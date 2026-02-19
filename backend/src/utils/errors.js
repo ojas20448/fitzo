@@ -107,19 +107,11 @@ const getFriendlyMessage = (error) => {
 };
 
 // Error handler middleware
-const fs = require('fs');
-const path = require('path');
-
 const errorHandler = (err, req, res, next) => {
-    console.error('Error:', err);
-
-    // Log to file
-    try {
-        const logPath = path.join(__dirname, '../../error.log');
-        const logEntry = `[${new Date().toISOString()}] ${req.method} ${req.originalUrl}\n${err.stack || err.message}\n-------------------\n`;
-        fs.appendFileSync(logPath, logEntry);
-    } catch (logErr) {
-        console.error('Failed to write to error log:', logErr);
+    // Log to console — captured by Render's log viewer
+    console.error(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`, err.message);
+    if (process.env.NODE_ENV !== 'production') {
+        console.error(err.stack);
     }
 
     const statusCode = err.statusCode || 500;

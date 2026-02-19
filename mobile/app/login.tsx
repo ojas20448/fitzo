@@ -8,6 +8,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -19,13 +20,12 @@ import { useToast } from '../src/components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../src/styles/theme';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri } from 'expo-auth-session';
 
 WebBrowser.maybeCompleteAuthSession();
 
 
 export default function LoginScreen() {
-    const { login, googleSignIn, devLogin } = useAuth();
+    const { login, googleSignIn } = useAuth();
     const toast = useToast();
 
     const [email, setEmail] = useState('');
@@ -33,17 +33,13 @@ export default function LoginScreen() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // Google Auth - platform-aware redirect URI
-    const redirectUri = Platform.select({
-        web: undefined, // Let Google.useAuthRequest auto-generate for web
-        default: makeRedirectUri({ scheme: 'fitzo', path: 'auth' }),
-    });
-
+    // Google Auth
+    // For native Android APK builds, do NOT pass a custom redirectUri —
+    // the Android OAuth client uses the package name + signing certificate (no URL redirect).
+    // For Expo Go / web, we use the expo proxy redirect.
     const [request, response, promptAsync] = Google.useAuthRequest({
         clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
         androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-        ...(redirectUri ? { redirectUri } : {}),
         scopes: ['openid', 'profile', 'email'],
     });
 
@@ -57,9 +53,9 @@ export default function LoginScreen() {
     React.useEffect(() => {
         if (response?.type === 'success') {
             // Try multiple ways to get the id_token
-            const idToken = response.params?.id_token 
+            const idToken = response.params?.id_token
                 || response.authentication?.idToken;
-            
+
             if (idToken) {
                 handleGoogleLogin(idToken);
             } else if (response.params?.access_token || response.authentication?.accessToken) {
@@ -119,7 +115,11 @@ export default function LoginScreen() {
                     {/* Logo/Brand */}
                     <View style={styles.brandSection}>
                         <View style={styles.logoContainer}>
-                            <MaterialIcons name="fitness-center" size={40} color={colors.background} />
+                            <Image
+                                source={require('../assets/icon.png')}
+                                style={styles.logoImage}
+                                resizeMode="contain"
+                            />
                         </View>
                         <Text style={styles.brandName}>FITZO</Text>
                         <Text style={styles.tagline}>Your Gym Companion</Text>
@@ -227,14 +227,16 @@ const styles = StyleSheet.create({
         marginBottom: spacing['3xl'],
     },
     logoContainer: {
-        width: 72,
-        height: 72,
-        borderRadius: 36,
-        backgroundColor: colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
+        width: 80,
+        height: 80,
+        borderRadius: 20,
+        overflow: 'hidden',
         marginBottom: spacing.xl,
         ...shadows.glow,
+    },
+    logoImage: {
+        width: '100%',
+        height: '100%',
     },
     brandName: {
         fontSize: 40,

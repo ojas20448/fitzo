@@ -123,8 +123,8 @@ const LearnScreen: React.FC = () => {
                             </Text>
                         </View>
                         <View style={styles.overallProgressBar}>
-                            <View style={[styles.overallProgressFill, { 
-                                width: `${Math.round((progress.lessons_completed / totalLessons) * 100)}%` 
+                            <View style={[styles.overallProgressFill, {
+                                width: `${Math.round((progress.lessons_completed / totalLessons) * 100)}%`
                             }]} />
                         </View>
                     </View>
@@ -204,7 +204,7 @@ const LearnScreen: React.FC = () => {
                                                         </View>
                                                     )}
                                                 </View>
-                                                
+
                                                 {lesson.description && (
                                                     <Text style={[
                                                         styles.lessonDescription,
@@ -217,10 +217,10 @@ const LearnScreen: React.FC = () => {
                                                 {/* XP indicator + meta */}
                                                 <View style={styles.lessonMeta}>
                                                     <View style={styles.xpIndicator}>
-                                                        <MaterialIcons 
-                                                            name="diamond" 
-                                                            size={12} 
-                                                            color={isLocked ? colors.text.subtle : colors.primary} 
+                                                        <MaterialIcons
+                                                            name="diamond"
+                                                            size={12}
+                                                            color={isLocked ? colors.text.subtle : colors.primary}
                                                         />
                                                         <Text style={[
                                                             styles.xpAmount,
@@ -402,9 +402,10 @@ const styles = StyleSheet.create({
         borderColor: colors.glass.border,
     },
     lessonCardActive: {
-        backgroundColor: colors.glass.surfaceLight,
-        borderColor: colors.glass.borderLight,
-        ...shadows.glowMd,
+        backgroundColor: 'rgba(255, 255, 255, 0.07)',
+        borderColor: 'rgba(255, 255, 255, 0.35)',
+        borderWidth: 1,
+        ...shadows.glowCard,
     },
     lessonCardCompleted: {
         backgroundColor: colors.glass.surface,

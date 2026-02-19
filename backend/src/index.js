@@ -85,7 +85,7 @@ app.get('/api/health', async (req, res) => {
     res.status(health.status === 'ok' ? 200 : 503).json(health);
 });
 
-// API Routes
+// API Routes — auth rate limiter is applied per-route inside auth.js (not here)
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/member', require('./routes/member'));
 app.use('/api/checkin', require('./routes/checkin'));

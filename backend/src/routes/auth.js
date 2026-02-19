@@ -1,19 +1,45 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const { query } = require('../config/database');
 const { generateToken } = require('../middleware/auth');
-const { ValidationError, AuthError, asyncHandler } = require('../utils/errors');
+const { ValidationError, AuthError, NotFoundError, asyncHandler } = require('../utils/errors');
 const { OAuth2Client } = require('google-auth-library');
 const axios = require('axios');
+const { Resend } = require('resend');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID_WEB);
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Rate limiter for password-based endpoints only (not Google OAuth)
+const passwordLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 min
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: true, message: 'Too many attempts. Please try again in 15 minutes.', code: 'RATE_LIMITED' },
+    skip: () => process.env.NODE_ENV === 'development',
+});
+
+// Ensure password reset tokens table exists
+query(`
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id SERIAL PRIMARY KEY,
+        email TEXT NOT NULL,
+        code TEXT NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        used BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+`).catch(err => console.error('Could not create password_reset_tokens table:', err.message));
 
 /**
  * POST /api/auth/register
  * Register a new member with gym code
  */
-router.post('/register', asyncHandler(async (req, res) => {
+router.post('/register', passwordLimiter, asyncHandler(async (req, res) => {
+
     const { email, password, name, gym_code } = req.body;
 
     // Validation
@@ -91,7 +117,7 @@ router.post('/register', asyncHandler(async (req, res) => {
  * POST /api/auth/login
  * Login with email and password
  */
-router.post('/login', asyncHandler(async (req, res) => {
+router.post('/login', passwordLimiter, asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -187,6 +213,11 @@ router.get('/me', require('../middleware/auth').authenticate, asyncHandler(async
 router.post('/dev-login', asyncHandler(async (req, res) => {
     // Dev/demo login - get the demo user for quick access
     // Get any user (preferably demo)
+    // Block dev-login in production
+    if (process.env.NODE_ENV === 'production') {
+        return res.status(404).json({ error: true, message: 'Not found' });
+    }
+
     const result = await query(
         `SELECT u.id, u.email, u.password_hash, u.name, u.username, u.role, u.gym_id, u.xp_points, u.avatar_url, g.name as gym_name
          FROM users u
@@ -202,7 +233,9 @@ router.post('/dev-login', asyncHandler(async (req, res) => {
     const user = result.rows[0];
     const token = generateToken(user.id);
 
-    console.log(`⚠️ Dev Login used for: ${user.email}`);
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`⚠️ Dev Login used for: ${user.email}`);
+    }
 
     res.json({
         message: `Dev Login: Welcome ${user.name}! 🛠️`,
@@ -230,10 +263,6 @@ router.post('/google', asyncHandler(async (req, res) => {
     const { token, idToken } = req.body;
     const finalToken = token || idToken;
 
-    console.log('🔐 Google OAuth request received');
-    console.log('Token type:', idToken ? 'idToken' : 'accessToken');
-    console.log('Token length:', finalToken?.length || 0);
-
     if (!finalToken) {
         throw new ValidationError('Google token is required');
     }
@@ -242,10 +271,10 @@ router.post('/google', asyncHandler(async (req, res) => {
     const configuredAudiences = [
         process.env.GOOGLE_CLIENT_ID_WEB,
         process.env.GOOGLE_CLIENT_ID_IOS,
-        process.env.GOOGLE_CLIENT_ID_ANDROID
+        process.env.GOOGLE_CLIENT_ID_ANDROID,
+        process.env.GOOGLE_CLIENT_ID_ANDROID_DEBUG,
     ].filter(Boolean);
 
-    console.log('📋 Configured audiences count:', configuredAudiences.length);
     if (configuredAudiences.length === 0) {
         console.error('❌ No Google Client IDs configured in environment!');
         throw new AuthError('Google authentication not configured on server');
@@ -255,7 +284,6 @@ router.post('/google', asyncHandler(async (req, res) => {
 
     try {
         // First try: Verify as ID token
-        console.log('🔍 Attempting ID token verification...');
         const ticket = await googleClient.verifyIdToken({
             idToken: finalToken,
             audience: configuredAudiences
@@ -266,34 +294,28 @@ router.post('/google', asyncHandler(async (req, res) => {
         name = payload.name;
         picture = payload.picture;
         googleId = payload.sub;
-        console.log('✅ ID token verified successfully for:', email);
     } catch (idTokenError) {
-        console.log('⚠️  ID token verification failed:', idTokenError.message);
-        console.log('🔄 Trying as access token...');
-        
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('⚠️  ID token verification failed, trying access token...', idTokenError.message);
+        }
+
         try {
             // Fallback: Treat as access_token and fetch user info from Google
             const userInfoResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
                 headers: { Authorization: `Bearer ${finalToken}` }
             });
-            
+
             const userInfo = userInfoResponse.data;
             email = userInfo.email;
             name = userInfo.name;
             picture = userInfo.picture;
             googleId = userInfo.sub;
-            
+
             if (!email) {
                 throw new Error('Could not get email from Google token');
             }
-            console.log('✅ Access token verified successfully for:', email);
         } catch (accessTokenError) {
-            console.error('❌ Both token verification methods failed');
-            console.error('ID Token Error:', idTokenError.message);
-            console.error('Access Token Error:', accessTokenError.message);
-            if (accessTokenError.response) {
-                console.error('Access Token Response:', accessTokenError.response.data);
-            }
+            console.error('❌ Google token verification failed:', idTokenError.message, '|', accessTokenError.message);
             throw new AuthError('Google login failed: Invalid authentication token');
         }
     }
@@ -378,49 +400,86 @@ router.post('/google', asyncHandler(async (req, res) => {
  * POST /api/auth/forgot-password
  * Request password reset
  */
-router.post('/forgot-password', asyncHandler(async (req, res) => {
+router.post('/forgot-password', passwordLimiter, asyncHandler(async (req, res) => {
     const { email } = req.body;
 
     if (!email) throw new ValidationError('Email is required');
 
     const userResult = await query('SELECT id FROM users WHERE email = $1', [email]);
+
+    // Always return success to avoid leaking user existence
     if (userResult.rows.length === 0) {
-        // Don't reveal user existence
-        return res.json({
-            success: true,
-            message: 'If an account exists, a reset code has been sent.'
-        });
+        return res.json({ success: true, message: 'If an account exists, a reset code has been sent.' });
     }
 
-    // In a real app, generate token/code and email it.
-    // For this MVP, we'll just return success and log for debugging
-    console.log(`[DEV] Forgot Password requested for: ${email}`);
+    // Generate a secure 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-    res.json({
-        success: true,
-        message: 'If an account exists, a reset code has been sent.'
+    // Invalidate any existing codes for this email
+    await query('UPDATE password_reset_tokens SET used = TRUE WHERE email = $1', [email]);
+
+    // Store new code
+    await query(
+        'INSERT INTO password_reset_tokens (email, code, expires_at) VALUES ($1, $2, $3)',
+        [email, code, expiresAt]
+    );
+
+    // Send email via Resend
+    await resend.emails.send({
+        from: 'Fitzo <noreply@fitzoapp.in>',
+        to: email,
+        subject: 'Your Fitzo Password Reset Code',
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #0f172a; color: #f1f5f9; border-radius: 16px;">
+                <h1 style="font-size: 24px; margin-bottom: 8px;">🏋️ Reset Your Password</h1>
+                <p style="color: #94a3b8; margin-bottom: 32px;">Use the code below to reset your Fitzo password. It expires in 15 minutes.</p>
+                <div style="background: #1e293b; border-radius: 12px; padding: 24px; text-align: center; letter-spacing: 0.3em; font-size: 40px; font-weight: bold; color: #6366f1;">
+                    ${code}
+                </div>
+                <p style="color: #64748b; font-size: 13px; margin-top: 24px;">If you didn't request this, you can safely ignore this email.</p>
+            </div>
+        `
     });
+
+    res.json({ success: true, message: 'If an account exists, a reset code has been sent.' });
 }));
 
 /**
  * POST /api/auth/reset-password
  * Reset password (Mock implementation for now)
  */
-router.post('/reset-password', asyncHandler(async (req, res) => {
+router.post('/reset-password', passwordLimiter, asyncHandler(async (req, res) => {
     const { email, password, code } = req.body;
 
-    // Validate inputs...
+    if (!email || !password || !code) {
+        throw new ValidationError('Email, code, and new password are required');
+    }
+    if (password.length < 6) {
+        throw new ValidationError('Password must be at least 6 characters');
+    }
 
-    // For MVP, just update password directly if email matches
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    await query(
-        'UPDATE users SET password_hash = $1 WHERE email = $2',
-        [hashedPassword, email]
+    // Validate the OTP code
+    const tokenResult = await query(
+        `SELECT id FROM password_reset_tokens
+         WHERE email = $1 AND code = $2 AND used = FALSE AND expires_at > NOW()
+         ORDER BY created_at DESC LIMIT 1`,
+        [email, code]
     );
 
-    res.json({ success: true, message: 'Password updated successfully' });
+    if (tokenResult.rows.length === 0) {
+        throw new ValidationError('Invalid or expired reset code. Please request a new one.');
+    }
+
+    // Mark code as used
+    await query('UPDATE password_reset_tokens SET used = TRUE WHERE id = $1', [tokenResult.rows[0].id]);
+
+    // Update user password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    await query('UPDATE users SET password_hash = $1 WHERE email = $2', [hashedPassword, email]);
+
+    res.json({ success: true, message: 'Password updated successfully. Please log in.' });
 }));
 
 module.exports = router;

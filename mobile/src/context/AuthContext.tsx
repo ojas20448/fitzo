@@ -34,6 +34,7 @@ interface AuthContextType extends AuthState {
     refreshUser: () => Promise<void>;
     devLogin: () => Promise<void>;
     forgotPassword: (email: string) => Promise<void>;
+    resetPassword: (email: string, code: string, password: string) => Promise<void>;
     googleSignIn: (token: string) => Promise<void>;
     completeOnboarding: () => void;
 }
@@ -203,6 +204,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return authAPI.forgotPassword(email);
     };
 
+    const resetPassword = async (email: string, code: string, password: string) => {
+        return authAPI.resetPassword(email, code, password);
+    };
+
     const refreshUser = async () => {
         try {
             const { user } = await authAPI.getMe();
@@ -223,6 +228,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 refreshUser,
                 googleSignIn,
                 forgotPassword,
+                resetPassword,
                 devLogin,
                 completeOnboarding: () => setState(prev => prev.user ? ({
                     ...prev,
