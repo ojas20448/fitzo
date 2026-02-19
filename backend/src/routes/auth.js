@@ -267,13 +267,15 @@ router.post('/google', asyncHandler(async (req, res) => {
         throw new ValidationError('Google token is required');
     }
 
-    // Check if environment variables are set
+    // Construct audiences list
     const configuredAudiences = [
         process.env.GOOGLE_CLIENT_ID_WEB,
         process.env.GOOGLE_CLIENT_ID_IOS,
         process.env.GOOGLE_CLIENT_ID_ANDROID,
-        process.env.GOOGLE_CLIENT_ID_ANDROID_DEBUG,
+        process.env.GOOGLE_CLIENT_ID_ANDROID_DEBUG
     ].filter(Boolean);
+
+    console.log('🔐 Google Auth: Verifying token with audiences:', configuredAudiences);
 
     if (configuredAudiences.length === 0) {
         console.error('❌ No Google Client IDs configured in environment!');
@@ -290,13 +292,20 @@ router.post('/google', asyncHandler(async (req, res) => {
         });
 
         const payload = ticket.getPayload();
-        email = payload.email;
-        name = payload.name;
-        picture = payload.picture;
-        googleId = payload.sub;
+        ({ email, name, picture, sub: googleId } = payload); // Destructure directly
+
+        console.log('✅ Google Token Verified for:', email);
     } catch (idTokenError) {
         if (process.env.NODE_ENV !== 'production') {
             console.log('⚠️  ID token verification failed, trying access token...', idTokenError.message);
+
+            // Attempt to decode the token to log its audience if verification fails
+            try {
+                const decodedToken = JSON.parse(Buffer.from(finalToken.split('.')[1], 'base64').toString());
+                console.log('⚠️  Decoded token audience (aud):', decodedToken.aud);
+            } catch (decodeError) {
+                console.log('⚠️  Could not decode token for audience check:', decodeError.message);
+            }
         }
 
         try {
