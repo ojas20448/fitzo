@@ -3,6 +3,7 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, NotFoundError, asyncHandler } = require('../utils/errors');
+const cache = require('../services/cache');
 
 // Helper functions for intent display formatting
 const formatPattern = (p) => {
@@ -109,20 +110,30 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
         console.error('❌ Error fetching intent:', err.message);
     }
 
-    // 3. Get crowd level
+    // 3. Get crowd level (cached — changes slowly)
     let crowdCount = 0;
     let crowdLevel = 'low';
     try {
-        const crowdResult = await query(
-            `SELECT COUNT(*) as count 
-             FROM attendances 
-             WHERE gym_id = $1 
-             AND checked_in_at > NOW() - INTERVAL '60 minutes'`,
-            [gymId]
+        const crowdData = await cache.getOrSet(
+            cache.keys.crowdLevel(gymId),
+            async () => {
+                const crowdResult = await query(
+                    `SELECT COUNT(*) as count
+                     FROM attendances
+                     WHERE gym_id = $1
+                     AND checked_in_at > NOW() - INTERVAL '60 minutes'`,
+                    [gymId]
+                );
+                const count = parseInt(crowdResult.rows[0].count) || 0;
+                let level = 'low';
+                if (count >= 40) level = 'high';
+                else if (count >= 20) level = 'medium';
+                return { count, level };
+            },
+            cache.TTL.CROWD_LEVEL
         );
-        crowdCount = parseInt(crowdResult.rows[0].count) || 0;
-        if (crowdCount >= 40) crowdLevel = 'high';
-        else if (crowdCount >= 20) crowdLevel = 'medium';
+        crowdCount = crowdData.count;
+        crowdLevel = crowdData.level;
     } catch (err) {
         console.error('❌ Error fetching crowd level:', err.message);
     }
@@ -139,14 +150,20 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
         console.error('❌ Error fetching gym name:', err.message);
     }
 
-    // 5. Get streak count
+    // 5. Get streak count (cached — changes once per day)
     let streak = 0;
     try {
-        const streakResult = await query(
-            `SELECT get_user_streak($1) as streak`,
-            [userId]
+        streak = await cache.getOrSet(
+            cache.keys.userStreak(userId),
+            async () => {
+                const streakResult = await query(
+                    `SELECT get_user_streak($1) as streak`,
+                    [userId]
+                );
+                return parseInt(streakResult.rows[0].streak) || 0;
+            },
+            cache.TTL.USER_STREAK
         );
-        streak = parseInt(streakResult.rows[0].streak) || 0;
     } catch (err) {
         console.error('❌ Error fetching streak:', err.message);
     }

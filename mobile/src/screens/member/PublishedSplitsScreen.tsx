@@ -47,7 +47,6 @@ export default function PublishedSplitsScreen() {
             });
             setSplits(result.splits);
         } catch (error) {
-            console.error(error);
             toast.error('Error', 'Failed to load splits');
         } finally {
             setLoading(false);
@@ -63,7 +62,6 @@ export default function PublishedSplitsScreen() {
             setSelectedSplit(null);
             router.back(); // Go back to intent/home screen
         } catch (error) {
-            console.error(error);
             toast.error('Error', 'Failed to adopt plan');
         } finally {
             setAdopting(false);

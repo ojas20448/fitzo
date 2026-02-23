@@ -8,6 +8,8 @@ const { ValidationError, AuthError, NotFoundError, asyncHandler } = require('../
 const { OAuth2Client } = require('google-auth-library');
 const axios = require('axios');
 const { Resend } = require('resend');
+const { validate } = require('../middleware/validate');
+const { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } = require('../schemas');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID_WEB);
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -38,18 +40,9 @@ query(`
  * POST /api/auth/register
  * Register a new member with gym code
  */
-router.post('/register', passwordLimiter, asyncHandler(async (req, res) => {
+router.post('/register', passwordLimiter, validate({ body: registerSchema }), asyncHandler(async (req, res) => {
 
     const { email, password, name, gym_code } = req.body;
-
-    // Validation
-    if (!email || !password || !name) {
-        throw new ValidationError('Please fill in all required fields');
-    }
-
-    if (password.length < 6) {
-        throw new ValidationError('Password must be at least 6 characters');
-    }
 
     // Find gym by QR code (optional)
     let gym = null;
@@ -117,12 +110,8 @@ router.post('/register', passwordLimiter, asyncHandler(async (req, res) => {
  * POST /api/auth/login
  * Login with email and password
  */
-router.post('/login', passwordLimiter, asyncHandler(async (req, res) => {
+router.post('/login', passwordLimiter, validate({ body: loginSchema }), asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-
-    if (!email || !password) {
-        throw new ValidationError('Please enter your email and password');
-    }
 
     // Find user
     const result = await query(
@@ -409,10 +398,8 @@ router.post('/google', asyncHandler(async (req, res) => {
  * POST /api/auth/forgot-password
  * Request password reset
  */
-router.post('/forgot-password', passwordLimiter, asyncHandler(async (req, res) => {
+router.post('/forgot-password', passwordLimiter, validate({ body: forgotPasswordSchema }), asyncHandler(async (req, res) => {
     const { email } = req.body;
-
-    if (!email) throw new ValidationError('Email is required');
 
     const userResult = await query('SELECT id FROM users WHERE email = $1', [email]);
 
@@ -458,12 +445,8 @@ router.post('/forgot-password', passwordLimiter, asyncHandler(async (req, res) =
  * POST /api/auth/reset-password
  * Reset password (Mock implementation for now)
  */
-router.post('/reset-password', passwordLimiter, asyncHandler(async (req, res) => {
-    const { email, password, code } = req.body;
-
-    if (!email || !password || !code) {
-        throw new ValidationError('Email, code, and new password are required');
-    }
+router.post('/reset-password', passwordLimiter, validate({ body: resetPasswordSchema }), asyncHandler(async (req, res) => {
+    const { email, newPassword: password, code } = req.body;
     if (password.length < 6) {
         throw new ValidationError('Password must be at least 6 characters');
     }

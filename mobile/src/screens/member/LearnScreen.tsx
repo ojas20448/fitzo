@@ -43,7 +43,6 @@ const LearnScreen: React.FC = () => {
             const total = unitsData.reduce((sum: number, u: any) => sum + (u.lessons?.length || 0), 0);
             setTotalLessons(total);
         } catch (error) {
-            console.error('Failed to load lessons:', error);
         } finally {
             setLoading(false);
         }
@@ -184,12 +183,15 @@ const LearnScreen: React.FC = () => {
                                             disabled={!canAccess}
                                             style={styles.timelineRight}
                                         >
-                                            <View style={[
-                                                styles.lessonCard,
-                                                isActive && styles.lessonCardActive,
-                                                isCompleted && styles.lessonCardCompleted,
-                                                isLocked && styles.lessonCardLocked,
-                                            ]}>
+                                            <GlassCard
+                                                variant={isActive ? 'light' : 'default'}
+                                                padding="lg"
+                                                style={[
+                                                    styles.lessonCard,
+                                                    isActive && styles.lessonCardActive,
+                                                    isCompleted && styles.lessonCardCompleted,
+                                                    isLocked && styles.lessonCardLocked,
+                                                ]}>
                                                 <View style={styles.lessonHeader}>
                                                     <Text style={[
                                                         styles.lessonTitle,
@@ -214,11 +216,10 @@ const LearnScreen: React.FC = () => {
                                                     </Text>
                                                 )}
 
-                                                {/* XP indicator + meta */}
                                                 <View style={styles.lessonMeta}>
                                                     <View style={styles.xpIndicator}>
                                                         <MaterialIcons
-                                                            name="diamond"
+                                                            name="menu-book"
                                                             size={12}
                                                             color={isLocked ? colors.text.subtle : colors.primary}
                                                         />
@@ -226,7 +227,7 @@ const LearnScreen: React.FC = () => {
                                                             styles.xpAmount,
                                                             isLocked && styles.xpAmountLocked,
                                                         ]}>
-                                                            +{lesson.xp_reward || 50} XP
+                                                            {lesson.questions?.length || 5} questions
                                                         </Text>
                                                     </View>
                                                     {isCompleted && lesson.last_score != null && (
@@ -239,7 +240,7 @@ const LearnScreen: React.FC = () => {
                                                         <Text style={styles.completedText}>Completed</Text>
                                                     )}
                                                 </View>
-                                            </View>
+                                            </GlassCard>
                                         </TouchableOpacity>
                                     </View>
                                 );
@@ -395,25 +396,20 @@ const styles = StyleSheet.create({
         paddingBottom: spacing.lg,
     },
     lessonCard: {
-        backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius['2xl'],
-        padding: spacing.lg,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
+        // Background and border handled by GlassCard
     },
     lessonCardActive: {
-        backgroundColor: 'rgba(255, 255, 255, 0.07)',
-        borderColor: 'rgba(255, 255, 255, 0.35)',
-        borderWidth: 1,
+        // Background handled by variant="light"
         ...shadows.glowCard,
     },
     lessonCardCompleted: {
-        backgroundColor: colors.glass.surface,
-        borderColor: colors.glass.border,
+        // Variant handled by logic
     },
     lessonCardLocked: {
         backgroundColor: 'transparent',
         borderStyle: 'dashed',
+        borderWidth: 1, // Need to reinstate border for locked since it overrides glass
+        borderColor: colors.glass.border,
         opacity: 0.6,
     },
     lessonHeader: {

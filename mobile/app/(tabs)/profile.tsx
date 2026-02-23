@@ -7,7 +7,8 @@ import {
     ScrollView,
     RefreshControl,
     Modal,
-    TextInput
+    TextInput,
+    Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -187,27 +188,9 @@ export default function ProfileScreen() {
                 <View style={styles.identityHero}>
                     <View style={styles.avatarContainer}>
                         <Avatar uri={user?.avatar_url} size="xl" />
-                        <View style={styles.levelBadge}>
-                            <Text style={styles.levelText}>{Math.floor((user?.xp_points || 0) / 100) + 1}</Text>
-                        </View>
                     </View>
 
                     <Text style={styles.userName}>{user?.name || 'Member'}</Text>
-
-                    <View style={styles.xpProgressContainer}>
-                        <View style={styles.xpLabels}>
-                            <Text style={styles.xpLabelText}>Level {Math.floor((user?.xp_points || 0) / 100) + 1}</Text>
-                            <Text style={styles.xpProgressText}>{(user?.xp_points || 0) % 100} / 100 XP</Text>
-                        </View>
-                        <View style={styles.progressBarBg}>
-                            <View
-                                style={[
-                                    styles.progressBarFill,
-                                    { width: `${(user?.xp_points || 0) % 100}%` }
-                                ]}
-                            />
-                        </View>
-                    </View>
 
                     {/* Quick Status Badges */}
                     <View style={styles.badgeRow}>
@@ -281,6 +264,15 @@ export default function ProfileScreen() {
                             <Text style={styles.settingLabel}>Body Measurements</Text>
                             <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                         </TouchableOpacity>
+                        <View style={styles.settingDivider} />
+                        <TouchableOpacity
+                            style={styles.settingItem}
+                            onPress={() => router.push('/member/health-report' as any)}
+                        >
+                            <MaterialIcons name="monitoring" size={24} color={colors.text.secondary} />
+                            <Text style={styles.settingLabel}>Health Report</Text>
+                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                        </TouchableOpacity>
                     </GlassCard>
                 </View>
 
@@ -300,20 +292,20 @@ export default function ProfileScreen() {
                         <View style={styles.settingDivider} />
                         <TouchableOpacity
                             style={styles.settingItem}
-                            onPress={() => router.push('/member/settings' as any)}
+                            onPress={() => Linking.openURL('https://fitzoapp.in/privacy')}
                         >
                             <MaterialIcons name="privacy-tip" size={24} color={colors.text.secondary} />
                             <Text style={styles.settingLabel}>Privacy & Security</Text>
-                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                            <MaterialIcons name="open-in-new" size={20} color={colors.text.muted} />
                         </TouchableOpacity>
                         <View style={styles.settingDivider} />
                         <TouchableOpacity
                             style={styles.settingItem}
-                            onPress={() => router.push('/member/settings' as any)}
+                            onPress={() => Linking.openURL('mailto:contact@fitzoapp.in')}
                         >
                             <MaterialIcons name="help" size={24} color={colors.text.secondary} />
                             <Text style={styles.settingLabel}>Help & Support</Text>
-                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                            <MaterialIcons name="open-in-new" size={20} color={colors.text.muted} />
                         </TouchableOpacity>
                     </GlassCard>
                 </View>
@@ -462,59 +454,6 @@ const styles = StyleSheet.create({
     avatarContainer: {
         position: 'relative',
         marginBottom: spacing.md,
-    },
-    levelBadge: {
-        position: 'absolute',
-        bottom: -4,
-        right: -4,
-        backgroundColor: colors.primary,
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 3,
-        borderColor: colors.background,
-        ...shadows.glow,
-    },
-    levelText: {
-        color: colors.text.dark,
-        fontFamily: typography.fontFamily.extraBold,
-        fontSize: 14,
-    },
-    xpProgressContainer: {
-        width: '100%',
-        marginTop: spacing.lg,
-        paddingHorizontal: spacing.xl,
-    },
-    xpLabels: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: spacing.xs,
-    },
-    xpLabelText: {
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.bold,
-        color: colors.text.primary,
-        letterSpacing: 1,
-    },
-    xpProgressText: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
-    },
-    progressBarBg: {
-        height: 8,
-        backgroundColor: colors.glass.surface,
-        borderRadius: 4,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: colors.glass.border,
-    },
-    progressBarFill: {
-        height: '100%',
-        backgroundColor: colors.primary,
-        borderRadius: 4,
     },
     badgeRow: {
         flexDirection: 'row',

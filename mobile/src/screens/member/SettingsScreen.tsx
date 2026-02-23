@@ -7,6 +7,7 @@ import {
     Alert,
     ScrollView,
     Switch,
+    Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -156,21 +157,19 @@ const SettingsScreen = () => {
                     <SettingItem
                         icon="help-outline"
                         label="Help Center"
-                        onPress={() => { }}
+                        onPress={() => Linking.openURL('mailto:support@fitzo.app')}
                     />
                     <View style={styles.divider} />
                     <SettingItem
                         icon="lock-outline"
                         label="Privacy Policy"
-                        onPress={() => {
-                            // Open webview or privacy screen
-                        }}
+                        onPress={() => Linking.openURL('https://www.fitzoapp.in/privacy-policy')}
                     />
                     <View style={styles.divider} />
                     <SettingItem
                         icon="description"
                         label="Terms of Service"
-                        onPress={() => { }}
+                        onPress={() => Linking.openURL('https://www.fitzoapp.in/terms')}
                     />
                 </GlassCard>
 

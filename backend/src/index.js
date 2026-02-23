@@ -4,9 +4,13 @@ require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 const express = require('express');
 const cors = require('cors');
 const { errorHandler } = require('./utils/errors');
+const { initSentry, sentryErrorHandler } = require('./services/sentry');
 
 // Initialize express
 const app = express();
+
+// Sentry must be initialized before any other middleware
+initSentry(app);
 
 // ===========================================
 // MIDDLEWARE
@@ -34,9 +38,9 @@ app.use(cors({
     credentials: true,
 }));
 
-// Body parsing
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body parsing — 10MB limit for base64 food images
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request logging (development only)
 if (process.env.NODE_ENV === 'development') {
@@ -111,6 +115,8 @@ app.use('/api/exercises', require('./routes/exercises'));
 app.use('/api/videos', require('./routes/videos'));
 app.use('/api/measurements', require('./routes/measurements'));
 app.use('/api/workouts', require('./routes/calories-burned'));
+app.use('/api/progress', require('./routes/progress'));
+app.use('/api/health', require('./routes/health'));
 
 // 404 handler
 app.use((req, res) => {
@@ -120,6 +126,9 @@ app.use((req, res) => {
         code: 'NOT_FOUND'
     });
 });
+
+// Sentry error handler must be before the app error handler
+app.use(sentryErrorHandler());
 
 // Global error handler
 app.use(errorHandler);

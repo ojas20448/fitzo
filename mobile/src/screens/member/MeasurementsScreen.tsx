@@ -59,8 +59,7 @@ export default function MeasurementsScreen() {
                 });
             }
         } catch (error) {
-            console.log('Error loading measurements', error);
-            // Optional: fallback to profile weight/height if empty? 
+            // Optional: fallback to profile weight/height if empty?
             // For now, let's keep it clean.
         } finally {
             setLoading(false);
@@ -92,7 +91,6 @@ export default function MeasurementsScreen() {
             toast.success('Measurements Logged', 'Your body stats have been updated.');
             router.back();
         } catch (error) {
-            console.error(error);
             toast.error('Error', 'Failed to save measurements');
         } finally {
             setSaving(false);

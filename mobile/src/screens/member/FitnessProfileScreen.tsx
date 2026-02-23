@@ -65,7 +65,6 @@ export default function FitnessProfileScreen() {
                 setIsVegetarian(profile.is_vegetarian || false);
             }
         } catch (error) {
-            console.log('No existing profile, using defaults');
         } finally {
             setLoading(false);
         }
@@ -90,7 +89,6 @@ export default function FitnessProfileScreen() {
             toast.success('Profile Updated!', `Daily target: ${result.profile.target_calories} kcal`);
             router.back();
         } catch (error) {
-            console.error(error);
             toast.error('Error', 'Failed to save profile');
         } finally {
             setSaving(false);

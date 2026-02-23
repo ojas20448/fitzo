@@ -54,7 +54,7 @@ const CommentModal: React.FC<CommentModalProps> = ({ visible, onClose, itemId, t
             const response = await api.get(endpoint);
             setComments(response.data.comments);
         } catch (error) {
-            console.error('Failed to load comments:', error);
+
         } finally {
             setLoading(false);
         }
@@ -80,7 +80,7 @@ const CommentModal: React.FC<CommentModalProps> = ({ visible, onClose, itemId, t
             setComments(prev => [...prev, newCommentData]);
             setNewComment('');
         } catch (error) {
-            console.error('Failed to post comment:', error);
+
         } finally {
             setSubmitting(false);
         }

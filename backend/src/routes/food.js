@@ -8,27 +8,21 @@ const router = express.Router();
 const indianFood = require('../services/indianFood');
 const usda = require('../services/usda');
 const fatsecret = require('../services/fatsecret');
-const foodAnalyzer = require('../services/food-analyzer');
 const barcodeService = require('../services/barcode');
 const geminiService = require('../services/gemini');
 const { asyncHandler } = require('../utils/errors');
 const { authenticate } = require('../middleware/auth');
+const { validate } = require('../middleware/validate');
+const { analyzeFoodTextSchema, analyzeFoodPhotoSchema } = require('../schemas');
 
 /**
  * POST /api/food/analyze-text
  * Analyze food from text description using Gemini AI
  */
-router.post('/analyze-text', authenticate, asyncHandler(async (req, res) => {
+router.post('/analyze-text', authenticate, validate({ body: analyzeFoodTextSchema }), asyncHandler(async (req, res) => {
     const { text } = req.body;
 
     if (process.env.NODE_ENV !== 'production') console.log('🤖 AI Food Text Analysis:', text);
-
-    if (!text || text.trim().length === 0) {
-        return res.status(400).json({
-            error: 'text is required',
-            message: 'Please provide a food description to analyze'
-        });
-    }
 
     try {
         const food = await geminiService.analyzeFoodFromText(text.trim());
@@ -48,47 +42,22 @@ router.post('/analyze-text', authenticate, asyncHandler(async (req, res) => {
 
 /**
  * POST /api/food/analyze-photo
- * Analyze food image (Mock/Simulation for MVP)
- * To use real AI, integrate OpenAI Vision or Google Cloud Vision here.
+ * Analyze food from photo using Gemini Vision (FREE tier)
+ * Accepts base64 image data
  */
-router.post('/analyze-photo', authenticate, asyncHandler(async (req, res) => {
-    // const { image_url } = req.body;
+router.post('/analyze-photo', authenticate, validate({ body: analyzeFoodPhotoSchema }), asyncHandler(async (req, res) => {
+    const { image, mimeType } = req.body;
 
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Strip data URL prefix if present (e.g., "data:image/jpeg;base64,...")
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
 
-    // Simulated detection result
-    // In future: Call AI service here
-    const mockFoods = [
-        {
-            name: 'Grilled Chicken Salad',
-            calories: 350,
-            protein_g: 45,
-            carbs_g: 12,
-            fat_g: 15
-        },
-        {
-            name: 'Oatmeal with Berries',
-            calories: 280,
-            protein_g: 10,
-            carbs_g: 45,
-            fat_g: 6
-        },
-        {
-            name: 'Avocado Toast',
-            calories: 420,
-            protein_g: 12,
-            carbs_g: 35,
-            fat_g: 22
-        }
-    ];
-
-    // Pick random food for demo variety
-    const detectedFood = mockFoods[Math.floor(Math.random() * mockFoods.length)];
+    const result = await geminiService.analyzeFoodFromPhoto(base64Data, mimeType);
 
     return res.json({
         success: true,
-        food: detectedFood
+        items: result.items,
+        total: result.total,
+        source: 'ai_vision'
     });
 }));
 
@@ -305,42 +274,7 @@ router.get('/gym-foods', authenticate, asyncHandler(async (req, res) => {
     });
 }));
 
-/**
- * POST /api/food/analyze-photo
- * Analyze food from photo using AI vision
- */
-router.post('/analyze-photo', authenticate, asyncHandler(async (req, res) => {
-    const { image_url } = req.body;
-
-    console.log('📸 AI Food Photo Analysis:', image_url);
-
-    if (!image_url || image_url.trim().length === 0) {
-        return res.status(400).json({
-            error: 'image_url is required',
-            message: 'Please provide an image URL to analyze'
-        });
-    }
-
-    try {
-        const rawResult = await foodAnalyzer.analyzeFoodFromImage(image_url);
-        if (process.env.NODE_ENV !== 'production') console.log('🤖 AI detected food');
-
-        const formattedFood = foodAnalyzer.formatFoodAnalysis(rawResult);
-
-        res.json({
-            success: true,
-            food: formattedFood,
-            raw_ai_response: rawResult,
-            source: 'ai_vision'
-        });
-    } catch (error) {
-        console.error('❌ AI Food Analysis failed:', error.message);
-        res.status(500).json({
-            error: 'Failed to analyze food image',
-            message: error.message
-        });
-    }
-}));
+// Legacy analyze-photo endpoint removed — using Gemini Vision above
 
 /**
  * POST /api/food/barcode

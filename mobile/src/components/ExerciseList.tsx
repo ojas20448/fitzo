@@ -76,7 +76,7 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
                 setBodyParts(combined);
             }
         } catch (error) {
-            console.log('Using local body parts only due to error');
+
         }
     };
 
@@ -91,7 +91,7 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
             let baseExercises = [];
 
             if (cachedExercises && cachedExercises.length > 0 && !isStale && !searchQuery) {
-                console.log('Using cached exercises');
+
                 baseExercises = cachedExercises;
             } else {
                 // If no cache or stale, start with default/local
@@ -132,24 +132,27 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
                         results = [...results, ...newFromApi];
                     }
                 } catch (e) {
-                    console.log('API search failed, using local only');
+
                 }
             } else if (!searchQuery && (!cachedExercises || cachedExercises.length === 0 || isStale)) {
-                // Background fetch to update cache if we are just browsing (no search)
-                // and cache is empty or stale
-                exerciseAPI.getAll().then(res => {
-                    if (res.exercises) {
-                        useOfflineStore.getState().cacheExercises(res.exercises);
-                        // Optional: update state immediately if we want live refresh
-                        // setExercises(res.exercises); 
+                // Fetch from API and update list live (includes gifUrl)
+                try {
+                    const apiRes = selectedBodyPart
+                        ? await exerciseAPI.getByBodyPart(selectedBodyPart)
+                        : await exerciseAPI.getAll(50, 0);
+                    if (apiRes.exercises && apiRes.exercises.length > 0) {
+                        useOfflineStore.getState().cacheExercises(apiRes.exercises);
+                        results = apiRes.exercises;
                     }
-                }).catch(err => console.log('Background fetch failed', err));
+                } catch (err) {
+
+                }
             }
 
             setExercises(results);
             setLoading(false);
         } catch (error) {
-            console.error('Error in loadExercises:', error);
+
             setLoading(false);
         }
     };

@@ -3,6 +3,7 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler, ValidationError, NotFoundError } = require('../utils/errors');
+const cache = require('../services/cache');
 
 // All routes require authentication
 router.use(authenticate);
@@ -40,6 +41,9 @@ router.post('/', asyncHandler(async (req, res) => {
         `UPDATE users SET xp_points = xp_points + 2 WHERE id = $1`,
         [userId]
     );
+
+    // Invalidate cached nutrition totals
+    await cache.del(cache.keys.nutritionToday(userId));
 
     res.json({
         success: true,

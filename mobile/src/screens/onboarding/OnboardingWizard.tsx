@@ -11,7 +11,6 @@ import { colors, typography, spacing, borderRadius, shadows } from '../../styles
 import { nutritionAPI, workoutsAPI } from '../../services/api';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../context/AuthContext';
-import { useXP } from '../../context/XPContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -166,7 +165,6 @@ function MacroBar({ label, g, cal, color, pct }: { label: string; g: number; cal
 
 export default function OnboardingWizard() {
     const toast = useToast();
-    const { awardXP } = useXP();
     const { completeOnboarding } = useAuth();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -225,7 +223,6 @@ export default function OnboardingWizard() {
                 try { await workoutsAPI.adoptSplit(form.split_id); } catch { }
             }
 
-            try { awardXP(50, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2); } catch { }
             completeOnboarding();
             toast.success('Welcome to Fitzo! 🎉', 'Your plan is ready.');
             setTimeout(() => router.replace('/(tabs)'), 400);

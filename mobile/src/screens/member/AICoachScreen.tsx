@@ -66,7 +66,6 @@ export default function AICoachScreen() {
             };
             setMessages((prev) => [...prev, aiMessage]);
         } catch (error: any) {
-            console.error('AI Coach error:', error);
             const errorMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',

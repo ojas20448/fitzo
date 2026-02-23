@@ -63,7 +63,6 @@ const ManagePeopleScreen: React.FC = () => {
             setMembers(membersData.members);
             setTrainers(trainersData.trainers);
         } catch (error) {
-            console.error('Failed to load people:', error);
             toast.error('Failed to load data');
         } finally {
             setLoading(false);

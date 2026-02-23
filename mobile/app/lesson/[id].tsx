@@ -35,8 +35,6 @@ import { learnAPI } from '../../src/services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/styles/theme';
 import Button from '../../src/components/Button';
 import Celebration from '../../src/components/Celebration';
-import { useXP } from '../../src/context/XPContext';
-
 import { SkeletonLesson } from '../../src/components/Skeleton';
 
 const { width, height } = Dimensions.get('window');
@@ -52,7 +50,6 @@ interface QuizResult {
 
 const LessonScreen = () => {
     const { id } = useLocalSearchParams();
-    const { awardXP } = useXP();
     const [lesson, setLesson] = useState<Lesson | null>(null);
     const [loading, setLoading] = useState(true);
     const [mode, setMode] = useState<'reading' | 'quiz' | 'result'>('reading');
@@ -139,15 +136,8 @@ const LessonScreen = () => {
 
             if (result.passed) {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-                // Award XP with animation
-                const earnedXP = result.xp_earned || lesson.xp_reward || 50;
-                awardXP(earnedXP, width / 2, height / 2);
-
-                setXpEarned(earnedXP);
                 setQuizCompleted(true);
 
-                // Show celebration, then result screen for review
                 setTimeout(() => {
                     setShowCelebration(true);
                 }, 500);
@@ -175,10 +165,10 @@ const LessonScreen = () => {
         <SafeAreaView style={styles.container} edges={['top']}>
             <Celebration
                 visible={showCelebration}
-                type="xp"
+                type="achievement"
                 title="Lesson Complete!"
                 subtitle="Knowledge is gains."
-                value={`+${xpEarned} XP`}
+                value="Completed"
                 onComplete={() => {
                     setShowCelebration(false);
                     setMode('result');
@@ -305,8 +295,8 @@ const LessonScreen = () => {
                         </Text>
                         {quizResult?.passed ? (
                             <View style={styles.xpEarnedBadge}>
-                                <MaterialIcons name="diamond" size={16} color={colors.primary} />
-                                <Text style={styles.xpEarnedText}>+{quizResult.xp_earned} XP earned!</Text>
+                                <MaterialIcons name="check-circle" size={16} color={colors.success} />
+                                <Text style={styles.xpEarnedText}>Quiz passed!</Text>
                             </View>
                         ) : (
                             <Text style={styles.resultInfo}>

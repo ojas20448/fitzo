@@ -89,14 +89,6 @@ api.interceptors.response.use(
             error.response?.data?.error ||
             (error.code === 'ERR_NETWORK' ? 'Cannot connect to server. Please check your internet connection.' : 'Something went wrong. Please try again.');
 
-        console.error('🚨 API Error:', {
-            url: originalRequest?.url,
-            status: error.response?.status,
-            code: error.code,
-            message,
-            data: error.response?.data,
-        });
-
         return Promise.reject({
             message,
             code: error.response?.data?.code || (error.code === 'ERR_NETWORK' ? 'NETWORK_ERROR' : 'UNKNOWN'),
@@ -745,8 +737,17 @@ export const foodPhotoAPI = {
         const response = await api.post('/food/analyze-text', { text });
         return response.data;
     },
-    analyzePhoto: async (imageUrl: string) => {
-        const response = await api.post('/food/analyze-photo', { image_url: imageUrl });
+
+    /**
+     * Analyze food from photo using Gemini Vision (FREE)
+     * @param base64Image - Base64-encoded image data
+     * @param mimeType - Image MIME type (default: image/jpeg)
+     */
+    analyzePhoto: async (base64Image: string, mimeType: string = 'image/jpeg') => {
+        const response = await api.post('/food/analyze-photo', {
+            image: base64Image,
+            mimeType,
+        });
         return response.data;
     },
 
@@ -860,6 +861,68 @@ export const postsAPI = {
 
     updatePost: async (id: string, data: { content: string; visibility?: 'public' | 'friends' }) => {
         const response = await api.put(`/posts/${id}`, data);
+        return response.data;
+    },
+};
+
+// ===========================================
+// PROGRESS & PR TRACKING ENDPOINTS
+// ===========================================
+
+export const progressAPI = {
+    /** Get all-time PRs for every exercise */
+    getPRs: async () => {
+        const response = await api.get('/progress/prs');
+        return response.data;
+    },
+
+    /** Get PR history for a specific exercise */
+    getExercisePRHistory: async (exerciseId: string) => {
+        const response = await api.get(`/progress/prs/${exerciseId}`);
+        return response.data;
+    },
+
+    /** Get weekly volume trends */
+    getVolumeTrends: async (weeks: number = 8, muscleGroup?: string) => {
+        const params = new URLSearchParams({ weeks: weeks.toString() });
+        if (muscleGroup) params.set('muscle_group', muscleGroup);
+        const response = await api.get(`/progress/volume?${params.toString()}`);
+        return response.data;
+    },
+
+    /** Get estimated 1RM strength curve for an exercise */
+    getStrengthCurve: async (exerciseId: string) => {
+        const response = await api.get(`/progress/strength/${exerciseId}`);
+        return response.data;
+    },
+};
+
+// ===========================================
+// HEALTH / WEARABLE ENDPOINTS
+// ===========================================
+
+export const healthAPI = {
+    /** Sync health data from wearable */
+    sync: async (data: {
+        steps: number;
+        active_calories: number;
+        resting_heart_rate?: number | null;
+        sleep_hours?: number | null;
+        date?: string;
+    }) => {
+        const response = await api.post('/health/sync', data);
+        return response.data;
+    },
+
+    /** Get today's health summary */
+    getToday: async () => {
+        const response = await api.get('/health/today');
+        return response.data;
+    },
+
+    /** Get health data history */
+    getHistory: async (days: number = 30) => {
+        const response = await api.get(`/health/history?days=${days}`);
         return response.data;
     },
 };

@@ -39,7 +39,6 @@ export default function AddBuddyScreen() {
             const res = await friendsAPI.search(searchQuery);
             setSearchResults(res.users);
         } catch (error) {
-            console.error(error);
         } finally {
             setSearching(false);
         }
@@ -101,7 +100,7 @@ export default function AddBuddyScreen() {
 
     const handleShare = async () => {
         try {
-            const appUrl = 'https://fitzo.app'; // Your app website/store link
+            const appUrl = 'https://www.fitzoapp.in';
             const username = user?.username || 'user';
             const deepLink = `fitzo://profile/${username}`;
             
@@ -111,7 +110,6 @@ export default function AddBuddyScreen() {
                 url: deepLink, // iOS will use this
             });
         } catch (error) {
-            console.error(error);
         }
     };
 

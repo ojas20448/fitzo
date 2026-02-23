@@ -90,7 +90,6 @@ export default function ActiveWorkoutScreen() {
         try {
             await workoutsAPI.updateSet(setId, { [field]: numVal });
         } catch (error) {
-            console.error('Failed to update set');
         }
     };
 

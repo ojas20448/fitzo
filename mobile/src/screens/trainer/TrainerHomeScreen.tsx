@@ -47,7 +47,6 @@ const TrainerHomeScreen: React.FC = () => {
             const response = await trainerAPI.getMembers();
             setMembers(response.members || []);
         } catch (error) {
-            console.error('Failed to load members:', error);
         } finally {
             setLoading(false);
         }

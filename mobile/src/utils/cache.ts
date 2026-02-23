@@ -27,7 +27,6 @@ export async function cacheData(key: string, data: any, duration: number = CACHE
         };
         await AsyncStorage.setItem(key, JSON.stringify(cacheItem));
     } catch (error) {
-        console.error('Cache save error:', error);
     }
 }
 
@@ -54,7 +53,6 @@ export async function getCachedData(key: string): Promise<any | null> {
 
         return data;
     } catch (error) {
-        console.error('Cache read error:', error);
         return null;
     }
 }
@@ -66,7 +64,6 @@ export async function clearCache(key: string) {
     try {
         await AsyncStorage.removeItem(key);
     } catch (error) {
-        console.error('Cache clear error:', error);
     }
 }
 
@@ -79,7 +76,6 @@ export async function clearAllCache() {
         const cacheKeys = keys.filter(key => key.startsWith('cache_'));
         await AsyncStorage.multiRemove(cacheKeys);
     } catch (error) {
-        console.error('Clear all cache error:', error);
     }
 }
 

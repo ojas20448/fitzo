@@ -34,7 +34,6 @@ const SquadFeedScreen = () => {
                 setFeed(mappedFeed);
             }
         } catch (error) {
-            console.error('Failed to load feed:', error);
         } finally {
             setLoading(false);
             setRefreshing(false);

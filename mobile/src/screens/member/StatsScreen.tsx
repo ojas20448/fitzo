@@ -27,7 +27,6 @@ const StatsScreen = () => {
             const filled = fillMissingDays(response.data.history || []);
             setHistory(filled);
         } catch (error) {
-            console.error('Failed to load stats:', error);
             toast.error('Error', 'Could not load stats');
         } finally {
             setLoading(false);

@@ -52,7 +52,6 @@ const ClassBookingScreen: React.FC = () => {
             const response = await classesAPI.getClasses();
             setSessions(response.sessions || []);
         } catch (error) {
-            console.error('Failed to load classes:', error);
         } finally {
             setLoading(false);
         }

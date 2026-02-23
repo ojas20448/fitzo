@@ -32,7 +32,7 @@ export default function WorkoutVideosScreen() {
             const response = await videoAPI.getTrending(20);
             setVideos(response.videos || []);
         } catch (error) {
-            console.error('Error loading trending videos:', error);
+
         } finally {
             setLoading(false);
         }
@@ -50,7 +50,7 @@ export default function WorkoutVideosScreen() {
             const response = await videoAPI.search(searchQuery, 20);
             setVideos(response.videos || []);
         } catch (error) {
-            console.error('Error searching videos:', error);
+
         } finally {
             setLoading(false);
         }

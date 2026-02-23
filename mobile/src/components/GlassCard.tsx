@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, StyleSheet, ViewProps, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewProps, ViewStyle, StyleProp } from 'react-native';
 import { colors, borderRadius, commonStyles, spacing } from '../styles/theme';
 
 interface GlassCardProps extends ViewProps {
     variant?: 'default' | 'light' | 'inactive';
-    style?: ViewStyle;
+    style?: StyleProp<ViewStyle>;
     padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | string;
     children: React.ReactNode;
 }

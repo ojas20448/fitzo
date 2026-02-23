@@ -55,8 +55,6 @@ const Celebration: React.FC<CelebrationProps> = ({
 
     useEffect(() => {
         if (visible) {
-            console.log('🎉 Celebration visible, starting animation');
-            
             // Haptic feedback
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -89,7 +87,6 @@ const Celebration: React.FC<CelebrationProps> = ({
                     }),
                 ]),
             ]).start(() => {
-                console.log('✅ Celebration animation complete, calling onComplete');
                 scaleAnim.setValue(0);
                 opacityAnim.setValue(0);
                 onComplete?.();
@@ -145,7 +142,6 @@ const Celebration: React.FC<CelebrationProps> = ({
     return (
         <Modal transparent visible={visible} animationType="none">
             <Pressable style={styles.overlay} onPress={() => {
-                console.log('🖱️ Overlay tapped, manually dismissing celebration');
                 onComplete?.();
             }}>
                 {/* Confetti */}

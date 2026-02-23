@@ -80,7 +80,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // Listen for global logout events (e.g. from 401 interceptor)
         const unsubscribe = authEvents.subscribe(() => {
-            console.log('[AuthContext] Received global logout event');
             logout();
         });
 
@@ -90,12 +89,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const checkAuth = async () => {
         try {
             const token = await getAuthToken();
-            console.log('[AuthContext] checkAuth - Token found:', token ? 'Yes' : 'No');
-
             if (token) {
-                console.log('[AuthContext] Verifying token with getMe()...');
                 const { user } = await authAPI.getMe();
-                console.log('[AuthContext] Token verified. User:', user?.email);
                 setState({
                     user,
                     token,
@@ -163,7 +158,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 isAuthenticated: true,
             });
         } catch (error: any) {
-            console.error('Registration Error:', error);
             throw new Error(error.message || 'Registration failed');
         }
     };

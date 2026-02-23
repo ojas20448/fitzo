@@ -32,7 +32,6 @@ export const FoodCacheService = {
             const newRecents = [food, ...filtered].slice(0, MAX_RECENTS);
             await AsyncStorage.setItem(CACHE_KEY_RECENTS, JSON.stringify(newRecents));
         } catch (error) {
-            console.error('Failed to cache recent food:', error);
         }
     },
 
@@ -42,7 +41,6 @@ export const FoodCacheService = {
             const json = await AsyncStorage.getItem(CACHE_KEY_RECENTS);
             return json ? JSON.parse(json) : [];
         } catch (error) {
-            console.error('Failed to get recent foods:', error);
             return [];
         }
     },

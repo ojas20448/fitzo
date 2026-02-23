@@ -67,11 +67,9 @@ const TrainerMemberDetailScreen: React.FC = () => {
                 const historyRes = await trainerAPI.getMemberNutritionHistory(id as string);
                 setMember({ ...response, nutrition_history: historyRes.history });
             } catch (histErr) {
-                console.warn('Failed to load nutrition history', histErr);
                 setMember(response);
             }
         } catch (error) {
-            console.error('Failed to load member detail:', error);
             toast.error('Error', 'Could not load member details');
         } finally {
             setLoading(false);
@@ -83,7 +81,6 @@ const TrainerMemberDetailScreen: React.FC = () => {
             await trainerAPI.sendNudge(id as string, type, message);
             toast.success('Nudge Sent', `Sent "${message}" to ${member?.name}`);
         } catch (error) {
-            console.error('Failed to send nudge:', error);
             toast.error('Error', 'Failed to send nudge');
         }
     };
@@ -138,8 +135,8 @@ const TrainerMemberDetailScreen: React.FC = () => {
                         </View>
                         <View style={styles.statDivider} />
                         <View style={styles.statItem}>
-                            <Text style={styles.statValue}>{member.xp_points} XP</Text>
-                            <Text style={styles.statLabel}>Total XP</Text>
+                            <Text style={styles.statValue}>{member.total_workouts || 0}</Text>
+                            <Text style={styles.statLabel}>Workouts</Text>
                         </View>
                     </View>
                 </View>

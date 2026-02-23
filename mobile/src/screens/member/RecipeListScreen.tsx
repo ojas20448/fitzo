@@ -25,7 +25,7 @@ const RecipeListScreen = () => {
             const isStale = useOfflineStore.getState().isRecipesStale();
 
             if (cachedRecipes && cachedRecipes.length > 0 && !isStale) {
-                console.log('Using cached recipes');
+
                 setRecipes(cachedRecipes);
                 setLoading(false);
 
@@ -36,7 +36,7 @@ const RecipeListScreen = () => {
                             useOfflineStore.getState().cacheRecipes(data.recipes);
                             setRecipes(data.recipes);
                         }
-                    }).catch(err => console.log('Background recipe update failed', err));
+                    }).catch(() => {});
                 }
             } else {
                 // Fetch fresh
@@ -46,7 +46,7 @@ const RecipeListScreen = () => {
                 useOfflineStore.getState().cacheRecipes(recipesList);
             }
         } catch (error) {
-            console.error('Failed to load recipes:', error);
+
             // Fallback to stale cache if available
             const cachedRecipes = useOfflineStore.getState().getRecipes();
             if (cachedRecipes && cachedRecipes.length > 0) {

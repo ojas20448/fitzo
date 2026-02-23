@@ -40,7 +40,7 @@ const getVariantConfig = (variant: EmptyStateVariant) => {
             return {
                 icon: 'fitness-center' as const,
                 title: 'No workouts logged',
-                message: 'Start tracking your training to build your streak and earn XP!',
+                message: 'Start tracking your training to build your streak!',
                 actionLabel: 'Log Workout',
             };
         case 'no-calories':

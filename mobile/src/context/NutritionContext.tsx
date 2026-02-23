@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { nutritionAPI } from '../services/api';
 import { useAuth } from './AuthContext';
-import { useXP } from './XPContext';
 
 interface Macros {
     calories: number;
@@ -26,7 +25,6 @@ const NutritionContext = createContext<NutritionContextType | undefined>(undefin
 
 export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
-    const { awardXP } = useXP();
     const [todayMacros, setTodayMacros] = useState<Macros>({ calories: 0, protein: 0, carbs: 0, fat: 0 });
     const [calorieGoal, setCalorieGoal] = useState<number>(2000);
     const [lastUpdatedAt, setLastUpdatedAt] = useState<number>(Date.now());
@@ -53,7 +51,6 @@ export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 setCalorieGoal(profile.profile.target_calories);
             }
         } catch (error) {
-            console.error('Failed to refresh nutrition:', error);
         }
     }, [user]);
 
@@ -74,7 +71,6 @@ export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 setWeeklyWorkoutGoal(parseInt(stored));
             }
         } catch (e) {
-            console.warn('Failed to load weekly goal', e);
         }
     };
 
@@ -85,7 +81,6 @@ export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 await AsyncStorage.setItem(`weekly_goal_${user.id}`, String(days));
             }
         } catch (e) {
-            console.error('Failed to save weekly goal', e);
         }
     };
 
@@ -113,15 +108,8 @@ export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setTodayMacros(newMacros);
         setLastUpdatedAt(Date.now());
 
-        // Check for Goal Completion XP (Shadow of Effort)
         const threshold = calorieGoal * 0.9;
         const isGoalHit = previousMacros.calories < threshold && newMacros.calories >= threshold;
-
-        if (isGoalHit) {
-            setTimeout(() => {
-                awardXP(100);
-            }, 500);
-        }
 
         try {
             await nutritionAPI.logFood(food);

@@ -46,7 +46,7 @@ export default function FoodScannerScreen() {
             });
             setCapturedImage(photo.uri);
         } catch (error) {
-            console.error('Error taking picture:', error);
+
             Alert.alert('Error', 'Failed to capture photo');
         }
     };
@@ -68,7 +68,7 @@ export default function FoodScannerScreen() {
                 Alert.alert('Analysis Failed', 'Could not detect food in image');
             }
         } catch (error: any) {
-            console.error('Food analysis error:', error);
+
             Alert.alert('Error', error.message || 'Failed to analyze food');
         } finally {
             setAnalyzing(false);
@@ -92,7 +92,7 @@ export default function FoodScannerScreen() {
                 }
             });
         } catch (error) {
-            console.error('Error logging food:', error);
+
         }
     };
 

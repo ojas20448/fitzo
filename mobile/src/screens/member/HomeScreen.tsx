@@ -111,7 +111,6 @@ const HomeScreen: React.FC = () => {
 
     useFocusEffect(
         React.useCallback(() => {
-            console.log('🔄 HomeScreen focused, refreshing data...');
             const refreshData = async () => {
                 try {
                     const [homeRes, workoutsRes, friendsRes] = await Promise.all([
@@ -119,13 +118,11 @@ const HomeScreen: React.FC = () => {
                         workoutsAPI.getToday().catch(() => ({ workouts: [], summary: { count: 0, types: [] } })),
                         friendsAPI.getFriends().catch(() => ({ friends: [] })),
                     ]);
-                    console.log('📥 Home data received:', { intent: homeRes?.intent });
                     setData(homeRes);
                     setTodayWorkouts(workoutsRes.workouts || []);
                     const fetchedFriends = friendsRes?.friends || [];
                     setFriends(fetchedFriends);
                 } catch (error) {
-                    console.error('Failed to load home data:', error);
                 }
             };
             refreshData();
@@ -149,7 +146,6 @@ const HomeScreen: React.FC = () => {
             const fetchedFriends = friendsRes?.friends || [];
             setFriends(fetchedFriends);
         } catch (error) {
-            console.error('Failed to load home data:', error);
         } finally {
             if (showLoader) setLoading(false);
         }
@@ -181,8 +177,6 @@ const HomeScreen: React.FC = () => {
     const currentIntent = data?.intent;
     const activeFriendsCount = activeCount;
     
-    console.log('🎯 Current intent state:', currentIntent ? JSON.stringify(currentIntent) : 'NULL');
-
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <ScrollView
@@ -258,7 +252,7 @@ const HomeScreen: React.FC = () => {
                         </View>
                         <Text style={[styles.todayTitle, !currentIntent && styles.todayTitleMuted]}>
                             {currentIntent ? (
-                                `${(currentIntent.emphasis?.[0] || 'Training').toUpperCase()} • ${currentIntent.training_pattern || 'Session'}`
+                                (currentIntent.emphasis?.[0] || 'Training').toUpperCase()
                             ) : (
                                 'Set Your Focus'
                             )}
@@ -322,7 +316,7 @@ const HomeScreen: React.FC = () => {
                             <Text style={styles.viewAllLink}>LOG FOOD</Text>
                         </TouchableOpacity>
                     </View>
-                    <TouchableOpacity onPress={() => router.push('/log/calories' as any)} activeOpacity={0.8}>
+                    <TouchableOpacity onPress={() => router.push('/member/nutrition-insights' as any)} activeOpacity={0.8}>
                         <MacroPieChart
                             calories={todayMacros.calories || 0}
                             calorieTarget={2000}

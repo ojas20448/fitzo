@@ -146,7 +146,6 @@ export default function WorkoutIntentScreen() {
         setLoading(true);
         try {
             const dayName = selectedSplit.days[selectedDayIndex];
-            console.log('🎯 Setting intent:', { pattern: selectedSplit.pattern, emphasis: [dayName], label: dayName });
 
             // Set the intent
             const response = await intentAPI.setIntent({
@@ -156,7 +155,6 @@ export default function WorkoutIntentScreen() {
                 visibility,
             });
 
-            console.log('✅ Intent saved:', response);
             toast.success('Intent Set', `Let's crush ${dayName}! 💪`);
 
             // Give toast time to show and backend time to commit, then navigate back to Home
@@ -164,7 +162,6 @@ export default function WorkoutIntentScreen() {
                 router.replace('/(tabs)');
             }, 800);
         } catch (error: any) {
-            console.error('❌ Failed to save intent:', error);
             toast.error('Failed to set intent', error?.message || 'Please try again');
             setLoading(false);
         }
@@ -174,7 +171,6 @@ export default function WorkoutIntentScreen() {
         setLoading(true);
         try {
             if (type === 'rest') {
-                console.log('🛌 Setting rest day intent...', { visibility });
                 // Send null for training_pattern to avoid enum constraint
                 await intentAPI.setIntent({
                     training_pattern: null,
@@ -188,7 +184,6 @@ export default function WorkoutIntentScreen() {
             }
 
             // Cardio
-            console.log('🏃 Setting cardio intent...', { visibility });
             await intentAPI.setIntent({
                 training_pattern: null,
                 emphasis: ['cardio'],
@@ -198,7 +193,6 @@ export default function WorkoutIntentScreen() {
             toast.success('Cardio Set', 'Let\'s get that heart rate up! 💪');
             setTimeout(() => router.back(), 300);
         } catch (error: any) {
-            console.error('❌ handleQuickOption error:', error);
             toast.error('Failed to set intent', error?.message || 'Please try again');
         } finally {
             setLoading(false);

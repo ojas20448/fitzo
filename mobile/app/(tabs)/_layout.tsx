@@ -157,23 +157,6 @@ export default function TabLayout() {
 
                         <TouchableOpacity
                             style={styles.modalOption}
-                            onPress={() => handleLogOption('/food-scanner')}
-                            accessibilityLabel="Scan food"
-                            accessibilityHint="Use AI to detect food from photo"
-                            accessibilityRole="menuitem"
-                        >
-                            <View style={styles.optionIcon}>
-                                <MaterialIcons name="camera-alt" size={28} color={colors.primary} />
-                            </View>
-                            <View style={styles.optionInfo}>
-                                <Text style={styles.optionTitle}>Scan Food</Text>
-                                <Text style={styles.optionSubtitle}>Use AI to detect food from photo</Text>
-                            </View>
-                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.modalOption}
                             onPress={() => handleLogOption('/exercise-library')}
                             accessibilityLabel="Exercise library"
                             accessibilityHint="Browse 1,300+ exercises with GIFs"

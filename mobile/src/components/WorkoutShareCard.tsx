@@ -1,13 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions, Image, PixelRatio } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
-import AnimatedFire from './AnimatedFire';
 
-const { width, height } = Dimensions.get('window');
-const ASPECT_RATIO = 9 / 16;
-const CARD_WIDTH = width;
-const CARD_HEIGHT = width / ASPECT_RATIO; // Ensure 9:16 roughly, or just fill screen
+const { width: SW } = Dimensions.get('window');
+const CARD_W = SW;
+const CARD_H = CARD_W * (16 / 9);
 
 interface WorkoutShareCardProps {
     recap: {
@@ -15,241 +13,248 @@ interface WorkoutShareCardProps {
         volume: number;
         sets: number;
         prs?: any[];
-        achievements?: any[];
     };
-    user?: {
-        name: string;
-        streak?: number;
-    };
-    intent?: {
-        emphasis?: string[];
-        training_pattern?: string;
-    } | null;
+    user?: { name: string; streak?: number };
+    intent?: { emphasis?: string[]; session_label?: string } | null;
+    progressPct?: number | null;
     date: Date;
 }
 
-const WorkoutShareCard = React.forwardRef<View, WorkoutShareCardProps>(({ recap, user, intent, date }, ref) => {
+const WorkoutShareCard = React.forwardRef<View, WorkoutShareCardProps>(
+    ({ recap, user, intent, progressPct, date }, ref) => {
+        const hrs = Math.floor(recap.duration / 60);
+        const mins = recap.duration % 60;
+        const time = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}min`;
 
-    // Format duration
-    const hours = Math.floor(recap.duration / 60);
-    const mins = recap.duration % 60;
-    const durationText = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+        const title = intent?.session_label?.toUpperCase()
+            || intent?.emphasis?.[0]?.toUpperCase()
+            || 'WORKOUT';
 
-    // Workout Title
-    const title = intent?.emphasis?.[0]?.toUpperCase() || 'WORKOUT';
-    const subtitle = intent?.training_pattern?.toUpperCase() || 'SESSION';
+        const vol = recap.volume || 0;
+        const volText = vol >= 10000
+            ? `${(vol / 1000).toFixed(1).replace(/\.0$/, '')}k`
+            : vol > 0 ? vol.toLocaleString() : '—';
 
-    return (
-        <View ref={ref} style={styles.container} collapsable={false}>
-            {/* Background elements (Gradient simulation or subtle patterns could go here) */}
-            <View style={styles.decorativeCircle} />
-            <View style={styles.decorativeLine} />
+        const hasProgress = progressPct != null && progressPct !== 0;
+        const up = (progressPct ?? 0) >= 0;
+        const sign = up ? '+' : '';
+        const streak = user?.streak ?? 0;
 
-            {/* Header / Logo */}
-            <View style={styles.header}>
-                <Text style={styles.logoText}>FITZO</Text>
-                <Text style={styles.dateText}>{date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}</Text>
-            </View>
+        const dateStr = date.toLocaleDateString('en', {
+            day: 'numeric', month: 'short', year: 'numeric',
+        }).toUpperCase();
 
-            {/* Main Content */}
-            <View style={styles.content}>
+        return (
+            <View ref={ref} style={s.card} collapsable={false}>
+                {/* Subtle radial accent */}
+                <View style={s.radial} />
 
-                {/* Badge/Streak */}
-                <View style={styles.streakContainer}>
-                    <MaterialIcons name="local-fire-department" size={24} color={colors.primary} />
-                    <Text style={styles.streakText}>{user?.streak || 0} DAY STREAK</Text>
-                </View>
-
-                {/* Big Title */}
-                <View style={styles.titleContainer}>
-                    <Text style={styles.subtitle}>{subtitle}</Text>
-                    <Text style={styles.title}>{title}</Text>
-                </View>
-
-                {/* Main Stat: Volume */}
-                <View style={styles.mainStat}>
-                    <Text style={styles.mainStatValue}>{(recap.volume / 1000).toFixed(1)}k</Text>
-                    <Text style={styles.mainStatLabel}>KG MOVED</Text>
-                </View>
-
-                {/* Secondary Stats Grid */}
-                <View style={styles.statsGrid}>
-                    <View style={styles.statItem}>
-                        <MaterialIcons name="timer" size={20} color={colors.text.muted} />
-                        <Text style={styles.statValue}>{durationText}</Text>
-                        <Text style={styles.statLabel}>TIME</Text>
+                {/* ── Top ── */}
+                <View style={s.top}>
+                    <View style={s.topRow}>
+                        <Text style={s.brand}>FITZO</Text>
+                        <Text style={s.dateText}>{dateStr}</Text>
                     </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statItem}>
-                        <MaterialIcons name="repeat" size={20} color={colors.text.muted} />
-                        <Text style={styles.statValue}>{recap.sets}</Text>
-                        <Text style={styles.statLabel}>SETS</Text>
+                    <View style={s.accent} />
+                    <Text style={s.label}>WORKOUT COMPLETE</Text>
+                </View>
+
+                {/* ── Hero Title ── */}
+                <View style={s.hero}>
+                    <Text style={s.heroTitle}>{title}</Text>
+                    <Text style={s.heroTitle}>DAY</Text>
+                </View>
+
+                {/* ── Glass Stats ── */}
+                <View style={s.glassRow}>
+                    <View style={s.glassCard}>
+                        <Text style={s.glassValue}>{time}</Text>
+                        <Text style={s.glassLabel}>DURATION</Text>
                     </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statItem}>
-                        <MaterialIcons name="emoji-events" size={20} color={colors.text.muted} />
-                        <Text style={styles.statValue}>{recap.prs?.length || 0}</Text>
-                        <Text style={styles.statLabel}>PRS</Text>
+                    <View style={s.glassCard}>
+                        <Text style={s.glassValue}>{volText}</Text>
+                        <Text style={s.glassLabel}>KG LIFTED</Text>
+                    </View>
+                    <View style={s.glassCard}>
+                        <Text style={s.glassValue}>{recap.sets || '—'}</Text>
+                        <Text style={s.glassLabel}>SETS</Text>
                     </View>
                 </View>
-            </View>
 
-            {/* Footer */}
-            <View style={styles.footer}>
-                <View style={styles.footerLine} />
-                <Text style={styles.footerText}>EVERY DAY COUNTS</Text>
-            </View>
-        </View>
-    );
-});
+                {/* ── Progress + PRs row ── */}
+                <View style={s.infoRow}>
+                    {hasProgress && (
+                        <View style={[s.chip, { backgroundColor: up ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)' }]}>
+                            <MaterialIcons
+                                name={up ? 'trending-up' : 'trending-down'}
+                                size={14}
+                                color={up ? '#22C55E' : '#EF4444'}
+                            />
+                            <Text style={[s.chipText, { color: up ? '#22C55E' : '#EF4444' }]}>
+                                {sign}{Math.abs(progressPct!).toFixed(1)}%
+                            </Text>
+                        </View>
+                    )}
+                    {(recap.prs?.length ?? 0) > 0 && (
+                        <View style={[s.chip, { backgroundColor: 'rgba(251,191,36,0.12)' }]}>
+                            <MaterialIcons name="emoji-events" size={14} color="#FBBF24" />
+                            <Text style={[s.chipText, { color: '#FBBF24' }]}>
+                                {recap.prs!.length} PR{recap.prs!.length > 1 ? 's' : ''}
+                            </Text>
+                        </View>
+                    )}
+                    {streak > 0 && (
+                        <View style={[s.chip, { backgroundColor: 'rgba(249,115,22,0.12)' }]}>
+                            <MaterialIcons name="local-fire-department" size={14} color="#F97316" />
+                            <Text style={[s.chipText, { color: '#F97316' }]}>
+                                {streak} day streak
+                            </Text>
+                        </View>
+                    )}
+                </View>
 
-const styles = StyleSheet.create({
-    container: {
-        width: width,
-        height: height, // Full screen capture
-        backgroundColor: colors.background, // Pure black
-        padding: spacing.xl,
+                {/* ── Footer ── */}
+                <View style={s.footer}>
+                    <View style={s.footerLine} />
+                    <Text style={s.footerBrand}>FITZO</Text>
+                </View>
+            </View>
+        );
+    }
+);
+
+export default WorkoutShareCard;
+
+const GLASS = {
+    bg: 'rgba(255,255,255,0.04)',
+    border: 'rgba(255,255,255,0.08)',
+};
+
+const s = StyleSheet.create({
+    card: {
+        width: CARD_W,
+        height: CARD_H,
+        backgroundColor: '#000',
+        paddingHorizontal: 28,
+        paddingTop: 52,
+        paddingBottom: 36,
+        justifyContent: 'space-between',
+        overflow: 'hidden',
+    },
+    radial: {
+        position: 'absolute',
+        top: '15%',
+        left: '10%',
+        width: SW * 0.8,
+        height: SW * 0.8,
+        borderRadius: SW * 0.4,
+        backgroundColor: 'rgba(255,255,255,0.015)',
+    },
+
+    // Top
+    top: { gap: 12 },
+    topRow: {
+        flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    decorativeCircle: {
-        position: 'absolute',
-        top: -100,
-        right: -100,
-        width: 300,
-        height: 300,
-        borderRadius: 150,
-        backgroundColor: colors.glass.surface,
-        opacity: 0.5,
-    },
-    decorativeLine: {
-        position: 'absolute',
-        bottom: 100,
-        left: 0,
-        width: width,
-        height: 1,
-        backgroundColor: colors.glass.border,
-        opacity: 0.3,
-    },
-    header: {
-        width: '100%',
-        alignItems: 'center',
-        paddingTop: spacing['5xl'], // Safe area ish
-    },
-    logoText: {
-        fontSize: typography.sizes['2xl'],
+    brand: {
+        fontSize: 15,
         fontFamily: typography.fontFamily.extraBold,
-        letterSpacing: 8,
-        color: colors.primary,
+        color: 'rgba(255,255,255,0.3)',
+        letterSpacing: 6,
     },
     dateText: {
-        fontSize: typography.sizes.xs,
+        fontSize: 10,
         fontFamily: typography.fontFamily.medium,
-        letterSpacing: 2,
-        color: colors.text.muted,
-        marginTop: spacing.sm,
-    },
-    content: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '100%',
-        gap: spacing['4xl'],
-    },
-    streakContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.glass.surface,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.full,
-        gap: spacing.sm,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
-    },
-    streakText: {
-        color: colors.text.primary,
-        fontFamily: typography.fontFamily.bold,
-        fontSize: typography.sizes.sm,
+        color: 'rgba(255,255,255,0.25)',
         letterSpacing: 1,
     },
-    titleContainer: {
-        alignItems: 'center',
+    accent: {
+        width: 28,
+        height: 3,
+        backgroundColor: '#fff',
+        borderRadius: 2,
     },
-    subtitle: {
-        color: colors.text.muted,
-        fontFamily: typography.fontFamily.medium,
-        fontSize: typography.sizes.sm,
+    label: {
+        fontSize: 10,
+        fontFamily: typography.fontFamily.bold,
+        color: 'rgba(255,255,255,0.3)',
         letterSpacing: 4,
-        marginBottom: spacing.xs,
     },
-    title: {
-        color: colors.primary,
+
+    // Hero
+    hero: {},
+    heroTitle: {
+        fontSize: 64,
         fontFamily: typography.fontFamily.extraBold,
-        fontSize: 48, // Big
-        textAlign: 'center',
-        textTransform: 'uppercase',
+        color: '#FFFFFF',
+        letterSpacing: -3,
+        lineHeight: 68,
     },
-    mainStat: {
-        alignItems: 'center',
-    },
-    mainStatValue: {
-        color: colors.primary, // Could be gold or accent
-        fontFamily: typography.fontFamily.extraBold,
-        fontSize: 80,
-        lineHeight: 80,
-    },
-    mainStatLabel: {
-        color: colors.text.muted,
-        fontFamily: typography.fontFamily.bold,
-        fontSize: typography.sizes.sm,
-        letterSpacing: 2,
-        marginTop: spacing.sm,
-    },
-    statsGrid: {
+
+    // Glass stats
+    glassRow: {
         flexDirection: 'row',
-        width: '100%',
-        justifyContent: 'space-around',
+        gap: 8,
+    },
+    glassCard: {
+        flex: 1,
+        backgroundColor: GLASS.bg,
+        borderWidth: 1,
+        borderColor: GLASS.border,
+        borderRadius: 16,
+        paddingVertical: 18,
+        paddingHorizontal: 12,
         alignItems: 'center',
-        paddingHorizontal: spacing.lg,
+        gap: 6,
     },
-    statItem: {
-        alignItems: 'center',
-        gap: 4,
-    },
-    statDivider: {
-        width: 1,
-        height: 30,
-        backgroundColor: colors.glass.border,
-    },
-    statValue: {
-        color: colors.text.primary,
+    glassValue: {
+        fontSize: 22,
         fontFamily: typography.fontFamily.bold,
-        fontSize: typography.sizes.xl,
+        color: '#FFFFFF',
     },
-    statLabel: {
-        color: colors.text.muted,
-        fontFamily: typography.fontFamily.medium,
-        fontSize: typography.sizes['2xs'],
-        letterSpacing: 1,
+    glassLabel: {
+        fontSize: 9,
+        fontFamily: typography.fontFamily.bold,
+        color: 'rgba(255,255,255,0.3)',
+        letterSpacing: 2,
     },
-    footer: {
-        width: '100%',
-        paddingBottom: spacing['4xl'],
+
+    // Info chips
+    infoRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    chip: {
+        flexDirection: 'row',
         alignItems: 'center',
+        gap: 5,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        borderRadius: 100,
+    },
+    chipText: {
+        fontSize: 12,
+        fontFamily: typography.fontFamily.semiBold,
+    },
+
+    // Footer
+    footer: {
+        alignItems: 'center',
+        gap: 10,
     },
     footerLine: {
-        width: 40,
+        width: 20,
         height: 2,
-        backgroundColor: colors.primary,
-        marginBottom: spacing.md,
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        borderRadius: 1,
     },
-    footerText: {
-        color: colors.text.muted,
-        fontFamily: typography.fontFamily.regular,
-        fontSize: typography.sizes.xs,
-        letterSpacing: 4,
+    footerBrand: {
+        fontSize: 11,
+        fontFamily: typography.fontFamily.extraBold,
+        color: 'rgba(255,255,255,0.15)',
+        letterSpacing: 8,
     },
 });
-
-export default WorkoutShareCard;

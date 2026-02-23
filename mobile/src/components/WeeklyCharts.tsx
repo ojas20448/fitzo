@@ -51,7 +51,7 @@ export default function WeeklyCharts() {
                 });
             }
         } catch (error) {
-            console.error('Failed to load weekly charts:', error);
+
         } finally {
             setLoading(false);
         }

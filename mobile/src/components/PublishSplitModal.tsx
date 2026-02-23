@@ -39,7 +39,7 @@ export default function PublishSplitModal({ visible, onClose, onSuccess }: Publi
             const res = await workoutsAPI.getMySplits();
             setMySplits(res.splits);
         } catch (error) {
-            console.error('Failed to load my splits', error);
+
         }
     };
 

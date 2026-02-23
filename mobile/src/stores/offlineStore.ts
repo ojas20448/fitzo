@@ -1,8 +1,11 @@
 /**
  * Offline Data Store
- * 
+ *
  * Caches API responses for offline access using zustand with AsyncStorage persistence.
  * Key data like home, lessons, and exercises are cached for offline use.
+ *
+ * WRITE QUEUE: Queues workout logs, calorie logs, and other writes when offline.
+ * Automatically syncs when connectivity is restored.
  */
 
 import { create } from 'zustand';
@@ -27,6 +30,20 @@ interface CachedLesson {
     xp_reward: number;
 }
 
+// ===========================================
+// OFFLINE WRITE QUEUE TYPES
+// ===========================================
+type PendingActionType = 'LOG_WORKOUT' | 'LOG_CALORIES' | 'SET_INTENT' | 'CREATE_POST' | 'ADD_COMMENT';
+
+interface PendingAction {
+    id: string;
+    type: PendingActionType;
+    payload: any;
+    createdAt: number;
+    retryCount: number;
+    lastError?: string;
+}
+
 interface OfflineStore {
     // Cached data
     homeData: CachedHomeData | null;
@@ -44,6 +61,26 @@ interface OfflineStore {
     // Connectivity state
     isOnline: boolean;
     setOnline: (status: boolean) => void;
+
+    // ===== WRITE QUEUE =====
+    pendingActions: PendingAction[];
+    isSyncing: boolean;
+    lastSyncAt: number;
+
+    // Queue a new action for offline sync
+    queueAction: (type: PendingActionType, payload: any) => string;
+    // Remove a successfully synced action
+    dequeueAction: (id: string) => void;
+    // Mark an action as failed (increment retry, store error)
+    markActionFailed: (id: string, error: string) => void;
+    // Get all pending actions
+    getPendingActions: () => PendingAction[];
+    // Get count of pending actions
+    getPendingCount: () => number;
+    // Set syncing state
+    setSyncing: (syncing: boolean) => void;
+    // Clear all failed actions (after max retries)
+    clearFailedActions: () => void;
 
     // Actions
     cacheHomeData: (data: any) => void;
@@ -70,6 +107,12 @@ interface OfflineStore {
 }
 
 const ONE_HOUR = 60 * 60 * 1000;
+const MAX_RETRIES = 5;
+
+// Simple unique ID generator (no external dependency)
+function generateId(): string {
+    return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
+}
 
 export const useOfflineStore = create<OfflineStore>()(
     persist(
@@ -84,12 +127,66 @@ export const useOfflineStore = create<OfflineStore>()(
             lastLessonsUpdate: 0,
             lastExercisesUpdate: 0,
             lastRecipesUpdate: 0,
-            isOnline: true, // Default to true
+            isOnline: true,
+
+            // Write queue state
+            pendingActions: [],
+            isSyncing: false,
+            lastSyncAt: 0,
 
             // Set online status
             setOnline: (status) => set({ isOnline: status }),
 
-            // Cache home screen data
+            // ===== WRITE QUEUE ACTIONS =====
+
+            queueAction: (type, payload) => {
+                const id = generateId();
+                const action: PendingAction = {
+                    id,
+                    type,
+                    payload,
+                    createdAt: Date.now(),
+                    retryCount: 0,
+                };
+                set((state) => ({
+                    pendingActions: [...state.pendingActions, action],
+                }));
+                return id;
+            },
+
+            dequeueAction: (id) => {
+                set((state) => ({
+                    pendingActions: state.pendingActions.filter((a) => a.id !== id),
+                    lastSyncAt: Date.now(),
+                }));
+            },
+
+            markActionFailed: (id, error) => {
+                set((state) => ({
+                    pendingActions: state.pendingActions.map((a) =>
+                        a.id === id
+                            ? { ...a, retryCount: a.retryCount + 1, lastError: error }
+                            : a
+                    ),
+                }));
+            },
+
+            getPendingActions: () => get().pendingActions,
+
+            getPendingCount: () => get().pendingActions.length,
+
+            setSyncing: (syncing) => set({ isSyncing: syncing }),
+
+            clearFailedActions: () => {
+                set((state) => ({
+                    pendingActions: state.pendingActions.filter(
+                        (a) => a.retryCount < MAX_RETRIES
+                    ),
+                }));
+            },
+
+            // ===== READ CACHE ACTIONS =====
+
             cacheHomeData: (data) => set({
                 homeData: {
                     ...data,
@@ -98,7 +195,6 @@ export const useOfflineStore = create<OfflineStore>()(
                 lastHomeUpdate: Date.now(),
             }),
 
-            // Cache a single lesson
             cacheLesson: (lesson) => set((state) => ({
                 lessons: {
                     ...state.lessons,
@@ -106,64 +202,50 @@ export const useOfflineStore = create<OfflineStore>()(
                 },
             })),
 
-            // Cache units list
             cacheUnits: (units) => set({
                 units,
                 lastLessonsUpdate: Date.now(),
             }),
 
-            // Cache exercises list
             cacheExercises: (exercises) => set({
                 exercises,
                 lastExercisesUpdate: Date.now(),
             }),
 
-            // Cache recipes list
             cacheRecipes: (recipes) => set({
                 recipes,
                 lastRecipesUpdate: Date.now(),
             }),
 
-            // Get cached home data
+            // Getters
             getHomeData: () => get().homeData,
-
-            // Get cached lesson by ID
             getLesson: (id) => get().lessons[id],
-
-            // Get cached units
             getUnits: () => get().units,
-
-            // Get cached exercises
             getExercises: () => get().exercises,
-
-            // Get cached recipes
             getRecipes: () => get().recipes,
 
-            // Check if home data is stale (older than 1 hour)
+            // Staleness checks
             isHomeStale: () => {
                 const lastUpdate = get().lastHomeUpdate;
                 return Date.now() - lastUpdate > ONE_HOUR;
             },
 
-            // Check if lessons data is stale
             isLessonsStale: () => {
                 const lastUpdate = get().lastLessonsUpdate;
                 return Date.now() - lastUpdate > ONE_HOUR;
             },
 
-            // Check if exercises data is stale
             isExercisesStale: () => {
                 const lastUpdate = get().lastExercisesUpdate;
-                return Date.now() - lastUpdate > ONE_HOUR * 24; // Keep exercises for 24 hours
+                return Date.now() - lastUpdate > ONE_HOUR * 24;
             },
 
-            // Check if recipes data is stale
             isRecipesStale: () => {
                 const lastUpdate = get().lastRecipesUpdate;
-                return Date.now() - lastUpdate > ONE_HOUR * 24; // Keep recipes for 24 hours
+                return Date.now() - lastUpdate > ONE_HOUR * 24;
             },
 
-            // Clear all cached data
+            // Clear all cached data (preserves pending actions)
             clearCache: () => set({
                 homeData: null,
                 lessons: {},
@@ -179,7 +261,6 @@ export const useOfflineStore = create<OfflineStore>()(
         {
             name: 'fitzo-offline-cache',
             storage: createJSONStorage(() => AsyncStorage),
-            // Only persist essential data, not getters/checkers
             partialize: (state) => ({
                 homeData: state.homeData,
                 lessons: state.lessons,
@@ -190,6 +271,9 @@ export const useOfflineStore = create<OfflineStore>()(
                 lastLessonsUpdate: state.lastLessonsUpdate,
                 lastExercisesUpdate: state.lastExercisesUpdate,
                 lastRecipesUpdate: state.lastRecipesUpdate,
+                // Persist the write queue — critical for offline reliability
+                pendingActions: state.pendingActions,
+                lastSyncAt: state.lastSyncAt,
             }),
         }
     )

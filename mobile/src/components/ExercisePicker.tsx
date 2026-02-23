@@ -27,7 +27,7 @@ export default function ExercisePicker({ visible, onClose, onSelect }: ExerciseP
             const res = await workoutsAPI.searchExercises(query);
             setExercises(res.exercises);
         } catch (error) {
-            console.error('Error searching exercises', error);
+
         } finally {
             setLoading(false);
         }

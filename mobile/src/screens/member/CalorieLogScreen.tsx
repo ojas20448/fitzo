@@ -74,7 +74,6 @@ const CalorieLogScreen: React.FC = () => {
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [logging, setLogging] = useState(false);
     const [showCelebration, setShowCelebration] = useState(false);
-    const [xpEarned, setXpEarned] = useState(0);
     const [searchError, setSearchError] = useState<string | null>(null);
 
     // Frequent foods
@@ -89,7 +88,6 @@ const CalorieLogScreen: React.FC = () => {
             const data = await caloriesAPI.getFrequentFoods();
             setFrequentFoods(data.frequent || []);
         } catch (error) {
-            console.error('Failed to load frequent foods:', error);
         }
     };
 
@@ -289,7 +287,6 @@ const CalorieLogScreen: React.FC = () => {
             }
             setServingCount(1);
         } catch (error) {
-            console.error('Error fetching food details:', error);
             toast.error('Error', 'Could not load food details');
             setShowDetail(false);
         } finally {
@@ -324,11 +321,8 @@ const CalorieLogScreen: React.FC = () => {
 
             // 2. Success Feedback
             if (isGoalHit) {
-                // If we hit the goal, delay the toast and navigation to let XP fly
-                setTimeout(() => {
-                    toast.success('GOAL REACHED!', `You've hit your daily targets. +100 XP`);
-                    router.back();
-                }, 1500);
+                toast.success('GOAL REACHED!', `You've hit your daily targets!`);
+                router.back();
             } else {
                 toast.success('Logged!', `${totalCalories} kcal from ${selectedFood.name}`);
                 router.back();
@@ -393,7 +387,7 @@ const CalorieLogScreen: React.FC = () => {
                 type="calories"
                 title="Meal Logged!"
                 subtitle="Keep tracking your nutrition!"
-                value={`${xpEarned} XP`}
+                value="Logged"
                 onComplete={() => {
                     setShowCelebration(false);
                     router.back();

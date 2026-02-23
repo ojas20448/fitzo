@@ -18,7 +18,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { workoutsAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import Button from '../../components/Button';
-import Celebration from '../../components/Celebration';
 import ExerciseList from '../../components/ExerciseList';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
@@ -44,8 +43,6 @@ const WorkoutLogScreen: React.FC = () => {
     const toast = useToast();
     const params = useLocalSearchParams();
     const [loading, setLoading] = useState(false);
-    const [showCelebration, setShowCelebration] = useState(false);
-    const [xpEarned, setXpEarned] = useState(0);
 
     // Initial Intent Data (if any)
     const initialIntent = params.intent ? JSON.parse(params.intent as string) : null;
@@ -65,11 +62,6 @@ const WorkoutLogScreen: React.FC = () => {
     const [workoutType, setWorkoutType] = useState(
         mapIntentToType(initialIntent?.session_label || '')
     );
-
-    console.log('🏋️ WorkoutLogScreen initialized:', {
-        intentLabel: initialIntent?.session_label,
-        mappedType: workoutType,
-    });
 
     // Main State
     const [userExercises, setUserExercises] = useState<UserExercise[]>([]);
@@ -110,7 +102,6 @@ const WorkoutLogScreen: React.FC = () => {
                 }
             }
         } catch (error) {
-            console.log('No previous workout found or error fetching:', error);
         }
     };
 
@@ -177,12 +168,6 @@ const WorkoutLogScreen: React.FC = () => {
     };
 
     const handleFinish = async () => {
-        console.log('🏋️ Finishing workout...', { 
-            exercises: userExercises.length,
-            workoutType,
-        });
-        
-        // Validate
         if (userExercises.length === 0) {
             toast.error('Empty Workout', 'Add at least one exercise to log.');
             return;
@@ -190,31 +175,49 @@ const WorkoutLogScreen: React.FC = () => {
 
         setLoading(true);
         try {
-            // Calculate duration
             const durationMinutes = Math.round((new Date().getTime() - startTime.getTime()) / 60000);
-            console.log('⏱️ Workout duration:', durationMinutes, 'minutes');
 
             const result = await workoutsAPI.log({
                 workout_type: workoutType,
-                exercises: JSON.stringify(userExercises), // Send as JSON string for DB
+                exercises: JSON.stringify(userExercises),
                 notes: `Logged via Smart Log`,
-                // We could add duration to schema later if needed, mostly handled by timestamps
                 visibility: 'friends',
             });
 
-            console.log('✅ Workout saved:', { xp_earned: result.xp_earned });
-
-            if (result.xp_earned > 0) {
-                setXpEarned(result.xp_earned);
-                setShowCelebration(true);
-                console.log('🎉 Showing celebration with XP:', result.xp_earned);
-            } else {
-                console.log('📝 No XP earned, navigating back');
-                toast.success('Workout Saved!', 'Great session!');
-                router.back();
+            // Calculate volume & sets from local data
+            let totalVolume = 0;
+            let totalSets = 0;
+            for (const ex of userExercises) {
+                for (const s of ex.sets) {
+                    const w = parseFloat(String(s.weight_kg || 0));
+                    const r = parseFloat(String(s.reps || 0));
+                    if (w > 0 && r > 0) {
+                        totalVolume += w * r;
+                        totalSets++;
+                    }
+                }
             }
+
+            // Build recap and navigate to showoff card
+            const recap = {
+                duration: Math.max(durationMinutes, 1),
+                volume: Math.round(totalVolume),
+                sets: totalSets,
+                prs: result.prs || [],
+            };
+
+            router.replace({
+                pathname: '/member/workout-recap',
+                params: {
+                    recap: JSON.stringify(recap),
+                    session: JSON.stringify({
+                        name: workoutType.charAt(0).toUpperCase() + workoutType.slice(1),
+                        day_name: workoutType,
+                        emphasis: [workoutType],
+                    }),
+                },
+            });
         } catch (error: any) {
-            console.error('❌ Failed to save workout:', error);
             toast.error('Error', error.message || 'Failed to save workout');
         } finally {
             setLoading(false);
@@ -223,19 +226,6 @@ const WorkoutLogScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <Celebration
-                visible={showCelebration}
-                type="workout"
-                title="Workout Complete!"
-                subtitle="Another one in the books."
-                value={`${xpEarned} XP`}
-                onComplete={() => {
-                    console.log('🎊 Celebration complete, navigating back');
-                    setShowCelebration(false);
-                    router.back();
-                }}
-            />
-
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>

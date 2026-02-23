@@ -158,7 +158,7 @@ const GymBuddiesScreen: React.FC = () => {
 
             setFeed(combinedFeed.slice(0, 20)); // Limit to 20 items
         } catch (error) {
-            console.error('Failed to load buddies data:', error);
+
         } finally {
             setLoading(false);
         }
@@ -187,7 +187,7 @@ const GymBuddiesScreen: React.FC = () => {
                 const result = await friendsAPI.search(query);
                 setSearchResults(result.users || []);
             } catch (error) {
-                console.error('Search failed:', error);
+
             }
         } else {
             setSearchResults([]);
@@ -205,7 +205,7 @@ const GymBuddiesScreen: React.FC = () => {
             setSuggested(prev => prev.filter(u => u.id !== userId));
             loadData();
         } catch (error: any) {
-            console.error('Failed to send request:', error);
+
             toast.error('Failed', 'Could not send friend request');
         }
     };
@@ -240,7 +240,7 @@ const GymBuddiesScreen: React.FC = () => {
                 }
             }
         } catch (error) {
-            console.error('Failed to update like status:', error);
+
             // Revert state on error
             setLikedItems(prev => {
                 const newSet = new Set(prev);
@@ -529,7 +529,7 @@ const GymBuddiesScreen: React.FC = () => {
                                         <View style={styles.friendInfo}>
                                             <Text style={styles.friendName}>{friend.name}</Text>
                                             <View style={styles.friendMeta}>
-                                                <Text style={styles.friendXP}>{friend.xp_points} XP</Text>
+                                                <Text style={styles.friendXP}>{friend.streak || 0} day streak</Text>
                                                 {friend.today_intent && (
                                                     <Badge
                                                         label={friend.today_intent.display || 'Training'}
@@ -756,7 +756,7 @@ const GymBuddiesScreen: React.FC = () => {
                                             <View style={styles.friendInfo}>
                                                 <Text style={styles.friendName}>{friend.name}</Text>
                                                 <View style={styles.friendMeta}>
-                                                    <Text style={styles.friendXP}>{friend.xp_points} XP</Text>
+                                                    <Text style={styles.friendXP}>{friend.streak || 0} day streak</Text>
                                                     {friend.today_intent && (
                                                         <Badge
                                                             label={friend.today_intent.display || 'Training'}

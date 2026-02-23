@@ -57,7 +57,6 @@ const ManagerDashboardScreen: React.FC = () => {
             const response = await managerAPI.getDashboard();
             setData(response);
         } catch (error) {
-            console.error('Failed to load dashboard:', error);
         } finally {
             setLoading(false);
         }

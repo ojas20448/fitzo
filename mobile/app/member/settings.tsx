@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -108,12 +108,15 @@ export default function SettingsScreen() {
                 {/* System Section */}
                 <Text style={styles.sectionTitle}>System</Text>
                 <GlassCard style={styles.card}>
-                    <TouchableOpacity style={styles.row}>
+                    <TouchableOpacity style={styles.row} onPress={() => Linking.openURL('mailto:contact@fitzoapp.in')}>
                         <View style={styles.rowLeft}>
                             <MaterialIcons name="help-outline" size={24} color={colors.text.secondary} />
-                            <Text style={styles.rowLabel}>Help & Support</Text>
+                            <View>
+                                <Text style={styles.rowLabel}>Help & Support</Text>
+                                <Text style={styles.rowSub}>contact@fitzoapp.in</Text>
+                            </View>
                         </View>
-                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                        <MaterialIcons name="open-in-new" size={20} color={colors.text.muted} />
                     </TouchableOpacity>
                     <View style={styles.divider} />
                     <TouchableOpacity style={styles.rowSignOut} onPress={handleSignOut}>
@@ -188,6 +191,12 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.primary,
+    },
+    rowSub: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        marginTop: 2,
     },
     valueText: {
         fontSize: typography.sizes.sm,
