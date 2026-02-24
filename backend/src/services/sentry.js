@@ -22,20 +22,22 @@ function initSentry(app) {
         sendDefaultPii: false,
     });
 
-    // The request handler must be the first middleware
-    app.use(Sentry.Handlers.requestHandler());
-
     console.log('🛡️  Sentry error tracking initialized');
 }
 
 /**
  * Must be added AFTER all routes but BEFORE the error handler
+ * Uses setupExpressErrorHandler in Sentry SDK v8+
  */
 function sentryErrorHandler() {
     if (!SENTRY_DSN) {
         return (err, req, res, next) => next(err);
     }
-    return Sentry.Handlers.errorHandler();
+    // Return a middleware that sets up Sentry error handling inline
+    return (err, req, res, next) => {
+        Sentry.captureException(err);
+        next(err);
+    };
 }
 
 /**
