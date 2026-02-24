@@ -26,7 +26,7 @@ function validate(schemas) {
             next();
         } catch (error) {
             if (error instanceof ZodError) {
-                const messages = error.errors.map(e => {
+                const messages = (error.issues || error.errors || []).map(e => {
                     const field = e.path.join('.');
                     return field ? `${field}: ${e.message}` : e.message;
                 });
