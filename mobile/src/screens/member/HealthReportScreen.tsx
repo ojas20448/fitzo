@@ -169,7 +169,8 @@ export default function HealthReportScreen() {
             setPrs((prsRes?.prs || []).slice(0, 5));
             setNutrition(nutritionRes?.profile || null);
             setMeasurements(measureRes?.measurement || null);
-        } catch (e) {
+        } catch (e: any) {
+            toast.error('Error', e.message || 'Something went wrong');
         } finally {
             setLoading(false);
         }

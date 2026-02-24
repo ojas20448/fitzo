@@ -2,6 +2,7 @@ import { Tabs, router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { View, StyleSheet, TouchableOpacity, Modal, Text, Pressable } from 'react-native';
 import { useState } from 'react';
+import * as Haptics from 'expo-haptics';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/styles/theme';
 import { AnimatedTabIcon } from '../../src/components/AnimatedTabIcon';
 
@@ -22,6 +23,11 @@ export default function TabLayout() {
                     tabBarActiveTintColor: colors.primary,
                     tabBarInactiveTintColor: colors.text.muted,
                     tabBarLabelStyle: styles.tabLabel,
+                }}
+                screenListeners={{
+                    tabPress: () => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    },
                 }}
             >
                 <Tabs.Screen

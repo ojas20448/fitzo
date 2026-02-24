@@ -8,7 +8,7 @@ const { width, height } = Dimensions.get('window');
 
 interface CelebrationProps {
     visible: boolean;
-    type?: 'streak' | 'xp' | 'workout' | 'calories' | 'achievement';
+    type?: 'streak' | 'workout' | 'calories' | 'achievement';
     title: string;
     subtitle?: string;
     value?: string | number;
@@ -18,7 +18,7 @@ interface CelebrationProps {
 
 const Celebration: React.FC<CelebrationProps> = ({
     visible,
-    type = 'xp',
+    type = 'workout',
     title,
     subtitle,
     value,
@@ -40,8 +40,6 @@ const Celebration: React.FC<CelebrationProps> = ({
         switch (type) {
             case 'streak':
                 return { name: 'local-fire-department' as const, color: '#FF6B35' };
-            case 'xp':
-                return { name: 'diamond' as const, color: colors.crowd.medium };
             case 'workout':
                 return { name: 'fitness-center' as const, color: colors.primary };
             case 'calories':

@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     RefreshControl,
     Pressable,
+    Alert,
 } from 'react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +16,7 @@ import { router, useFocusEffect } from 'expo-router';
 
 import { useAuth } from '../../context/AuthContext';
 import { useNutrition } from '../../context/NutritionContext';
+import { useOfflineStore } from '../../stores/offlineStore';
 import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
@@ -102,8 +104,8 @@ const HomeScreen: React.FC = () => {
                     );
                     setActiveCount(uniqueActive.size);
                 }
-            } catch (e) {
-                // ignore
+            } catch (error: any) {
+                Alert.alert('Error', error.message || 'Something went wrong');
             }
         };
         fetchActive();
@@ -111,21 +113,18 @@ const HomeScreen: React.FC = () => {
 
     useFocusEffect(
         React.useCallback(() => {
-            const refreshData = async () => {
-                try {
-                    const [homeRes, workoutsRes, friendsRes] = await Promise.all([
-                        memberAPI.getHome(),
-                        workoutsAPI.getToday().catch(() => ({ workouts: [], summary: { count: 0, types: [] } })),
-                        friendsAPI.getFriends().catch(() => ({ friends: [] })),
-                    ]);
-                    setData(homeRes);
-                    setTodayWorkouts(workoutsRes.workouts || []);
-                    const fetchedFriends = friendsRes?.friends || [];
-                    setFriends(fetchedFriends);
-                } catch (error) {
+            const store = useOfflineStore.getState();
+            if (store.isHomeStale()) {
+                loadHomeData();
+            } else {
+                const cached = store.getHomeData();
+                if (cached) {
+                    // Use cached data to set state
+                    setData(cached as any);
+                } else {
+                    loadHomeData();
                 }
-            };
-            refreshData();
+            }
             refreshToday();
         }, [refreshToday])
     );
@@ -145,7 +144,11 @@ const HomeScreen: React.FC = () => {
 
             const fetchedFriends = friendsRes?.friends || [];
             setFriends(fetchedFriends);
-        } catch (error) {
+
+            // Cache home data in offline store for staleness checking
+            useOfflineStore.getState().cacheHomeData(homeRes);
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Something went wrong');
         } finally {
             if (showLoader) setLoading(false);
         }

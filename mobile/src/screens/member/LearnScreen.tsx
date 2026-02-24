@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     RefreshControl,
     Dimensions,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -42,7 +43,8 @@ const LearnScreen: React.FC = () => {
             // Count total lessons across all units
             const total = unitsData.reduce((sum: number, u: any) => sum + (u.lessons?.length || 0), 0);
             setTotalLessons(total);
-        } catch (error) {
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Something went wrong');
         } finally {
             setLoading(false);
         }

@@ -44,7 +44,8 @@ let Healthkit: any = null;
 if (Platform.OS === 'ios') {
     try {
         Healthkit = require('@kingstinct/react-native-healthkit');
-    } catch (e) {
+    } catch {
+        // Native module not available - expected in Expo Go or non-iOS builds
     }
 }
 
@@ -77,7 +78,8 @@ async function getHealthKitSummary(): Promise<HealthSummary> {
             { from: startOfDay, to: now }
         );
         steps = stepsData.reduce((sum: number, s: any) => sum + s.quantity, 0);
-    } catch (e) {
+    } catch {
+        // HealthKit metric unavailable - continue with default value
     }
 
     // Active calories
@@ -88,7 +90,8 @@ async function getHealthKitSummary(): Promise<HealthSummary> {
             { from: startOfDay, to: now }
         );
         activeCalories = Math.round(calData.reduce((sum: number, s: any) => sum + s.quantity, 0));
-    } catch (e) {
+    } catch {
+        // HealthKit metric unavailable - continue with default value
     }
 
     // Resting heart rate (latest)
@@ -101,7 +104,8 @@ async function getHealthKitSummary(): Promise<HealthSummary> {
         if (hrData.length > 0) {
             restingHeartRate = Math.round(hrData[hrData.length - 1].quantity);
         }
-    } catch (e) {
+    } catch {
+        // HealthKit metric unavailable - continue with default value
     }
 
     // Sleep (last night)
@@ -120,7 +124,8 @@ async function getHealthKitSummary(): Promise<HealthSummary> {
             }, 0);
             sleepHours = Math.round((totalMs / (1000 * 60 * 60)) * 10) / 10;
         }
-    } catch (e) {
+    } catch {
+        // HealthKit metric unavailable - continue with default value
     }
 
     return { steps, activeCalories, restingHeartRate, sleepHours, lastSynced: Date.now() };
@@ -134,7 +139,8 @@ let HealthConnect: any = null;
 if (Platform.OS === 'android') {
     try {
         HealthConnect = require('react-native-health-connect');
-    } catch (e) {
+    } catch {
+        // Native module not available - expected in Expo Go or non-Android builds
     }
 }
 
@@ -172,7 +178,8 @@ async function getHealthConnectSummary(): Promise<HealthSummary> {
     try {
         const stepsData = await HealthConnect.readRecords('Steps', { timeRangeFilter: { operatorType: 'between', ...timeRange } });
         steps = stepsData.records.reduce((sum: number, r: any) => sum + r.count, 0);
-    } catch (e) {
+    } catch {
+        // Health Connect metric unavailable - continue with default value
     }
 
     // Active calories
@@ -180,7 +187,8 @@ async function getHealthConnectSummary(): Promise<HealthSummary> {
     try {
         const calData = await HealthConnect.readRecords('ActiveCaloriesBurned', { timeRangeFilter: { operatorType: 'between', ...timeRange } });
         activeCalories = Math.round(calData.records.reduce((sum: number, r: any) => sum + r.energy.inKilocalories, 0));
-    } catch (e) {
+    } catch {
+        // Health Connect metric unavailable - continue with default value
     }
 
     // Resting heart rate (latest sample)
@@ -196,7 +204,8 @@ async function getHealthConnectSummary(): Promise<HealthSummary> {
                 restingHeartRate = lastRecord.samples[lastRecord.samples.length - 1].beatsPerMinute;
             }
         }
-    } catch (e) {
+    } catch {
+        // Health Connect metric unavailable - continue with default value
     }
 
     // Sleep
@@ -214,7 +223,8 @@ async function getHealthConnectSummary(): Promise<HealthSummary> {
             }, 0);
             sleepHours = Math.round((totalMs / (1000 * 60 * 60)) * 10) / 10;
         }
-    } catch (e) {
+    } catch {
+        // Health Connect metric unavailable - continue with default value
     }
 
     return { steps, activeCalories, restingHeartRate, sleepHours, lastSynced: Date.now() };

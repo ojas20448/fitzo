@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -8,19 +8,51 @@ import {
     ScrollView,
     Switch,
     Linking,
+    Platform,
+    TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { useAuth } from '../../context/AuthContext';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import GlassCard from '../../components/GlassCard';
 
+const UNITS_STORAGE_KEY = 'fitzo_units';
+const version = Constants.expoConfig?.version || '1.0.0';
+
 const SettingsScreen = () => {
     const { logout, user } = useAuth();
-    const [units, setUnits] = useState({ weight: 'kg', distance: 'km', food: 'g' });
+    const [units, setUnits] = useState<'metric' | 'imperial'>('metric');
     const [notifications, setNotifications] = useState(true);
     const [loading, setLoading] = useState(false);
+
+    // Load persisted unit preference on mount
+    useEffect(() => {
+        const loadUnits = async () => {
+            try {
+                const stored = await AsyncStorage.getItem(UNITS_STORAGE_KEY);
+                if (stored === 'metric' || stored === 'imperial') {
+                    setUnits(stored);
+                }
+            } catch (e) {
+                // ignore
+            }
+        };
+        loadUnits();
+    }, []);
+
+    const toggleUnits = async () => {
+        const next = units === 'metric' ? 'imperial' : 'metric';
+        setUnits(next);
+        try {
+            await AsyncStorage.setItem(UNITS_STORAGE_KEY, next);
+        } catch (e) {
+            // ignore
+        }
+    };
 
     const handleLogout = async () => {
         Alert.alert(
@@ -41,23 +73,62 @@ const SettingsScreen = () => {
     };
 
     const handleDeleteAccount = () => {
-        Alert.alert(
-            'Delete Account',
-            'This action is irreversible. All your data will be permanently deleted.',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        // In a real app, verify password first
-                        // await memberAPI.deleteAccount();
-                        await logout();
-                        router.replace('/login');
+        if (Platform.OS === 'ios') {
+            // iOS supports Alert.prompt natively
+            Alert.prompt(
+                'Delete Account',
+                'This action is irreversible. All your data will be permanently deleted.\n\nType "DELETE" to confirm.',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Delete',
+                        style: 'destructive',
+                        onPress: async (input) => {
+                            if (input?.trim() === 'DELETE') {
+                                await logout();
+                                router.replace('/login');
+                            } else {
+                                Alert.alert('Not deleted', 'You must type "DELETE" to confirm account deletion.');
+                            }
+                        },
                     },
-                },
-            ]
-        );
+                ],
+                'plain-text',
+                '',
+                'default'
+            );
+        } else {
+            // Android: two-step confirmation since Alert.prompt is iOS-only
+            Alert.alert(
+                'Delete Account',
+                'This action is irreversible. All your data will be permanently deleted.\n\nAre you sure you want to proceed?',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Yes, Delete',
+                        style: 'destructive',
+                        onPress: () => {
+                            // Second confirmation
+                            Alert.alert(
+                                'Final Confirmation',
+                                'Type DELETE in your mind and confirm: this cannot be undone.',
+                                [
+                                    { text: 'Cancel', style: 'cancel' },
+                                    {
+                                        text: 'DELETE MY ACCOUNT',
+                                        style: 'destructive',
+                                        onPress: async () => {
+                                            await logout();
+                                            router.replace('/login');
+                                        },
+                                    },
+                                ]
+                            );
+                        },
+                    },
+                ]
+            );
+        }
     };
 
     const SettingItem = ({ icon, label, value, onPress, isDestructive = false }: any) => (
@@ -139,15 +210,8 @@ const SettingsScreen = () => {
                     <SettingItem
                         icon="straighten"
                         label="Units"
-                        value={`${units.weight} / ${units.distance}`}
-                        onPress={() => {
-                            // Toggle logic for demo
-                            setUnits(prev => ({
-                                ...prev,
-                                weight: prev.weight === 'kg' ? 'lbs' : 'kg',
-                                distance: prev.distance === 'km' ? 'mi' : 'km'
-                            }));
-                        }}
+                        value={units === 'metric' ? 'kg / km' : 'lbs / mi'}
+                        onPress={toggleUnits}
                     />
                 </GlassCard>
 
@@ -157,7 +221,7 @@ const SettingsScreen = () => {
                     <SettingItem
                         icon="help-outline"
                         label="Help Center"
-                        onPress={() => Linking.openURL('mailto:support@fitzo.app')}
+                        onPress={() => Linking.openURL('https://www.fitzoapp.in/help')}
                     />
                     <View style={styles.divider} />
                     <SettingItem
@@ -191,7 +255,7 @@ const SettingsScreen = () => {
                 </GlassCard>
 
                 <View style={styles.footer}>
-                    <Text style={styles.versionText}>Fitzo v1.0.0 (Build 12)</Text>
+                    <Text style={styles.versionText}>Fitzo v{version}</Text>
                 </View>
 
                 <View style={{ height: 40 }} />

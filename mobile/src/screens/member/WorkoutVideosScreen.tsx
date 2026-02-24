@@ -9,6 +9,7 @@ import {
     TextInput,
     ActivityIndicator,
     Linking,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -31,8 +32,8 @@ export default function WorkoutVideosScreen() {
         try {
             const response = await videoAPI.getTrending(20);
             setVideos(response.videos || []);
-        } catch (error) {
-
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Something went wrong');
         } finally {
             setLoading(false);
         }
@@ -49,8 +50,8 @@ export default function WorkoutVideosScreen() {
         try {
             const response = await videoAPI.search(searchQuery, 20);
             setVideos(response.videos || []);
-        } catch (error) {
-
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Something went wrong');
         } finally {
             setLoading(false);
         }

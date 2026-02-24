@@ -6,6 +6,21 @@ const { asyncHandler } = require('../utils/errors');
 const pushNotifications = require('../services/pushNotifications');
 
 // ============================================
+// Ensure push_tokens table exists (multi-device support)
+// ============================================
+query(`
+    CREATE TABLE IF NOT EXISTS push_tokens (
+        id SERIAL PRIMARY KEY,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        token TEXT NOT NULL,
+        platform TEXT DEFAULT 'unknown',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(user_id, token)
+    )
+`).catch(() => {});
+
+// ============================================
 // Push Token Management
 // ============================================
 
@@ -23,17 +38,26 @@ router.post('/register', authenticate, asyncHandler(async (req, res) => {
         return res.status(400).json({ message: 'Invalid push token format' });
     }
 
+    // Store on users table (used by pushNotifications service)
     await query(
-        `UPDATE users 
-         SET push_token = $1, 
-             push_platform = $2, 
+        `UPDATE users
+         SET push_token = $1,
+             push_platform = $2,
              push_device_name = $3,
              push_registered_at = NOW()
          WHERE id = $4`,
         [token, platform || 'unknown', deviceName || 'Unknown Device', userId]
     );
 
-    res.json({ message: 'Push token registered successfully' });
+    // Also upsert into push_tokens table for multi-device support
+    await query(`
+        INSERT INTO push_tokens (user_id, token, platform, updated_at)
+        VALUES ($1, $2, $3, NOW())
+        ON CONFLICT (user_id, token)
+        DO UPDATE SET platform = $3, updated_at = NOW()
+    `, [userId, token, platform || 'unknown']);
+
+    res.json({ success: true, message: 'Push token registered successfully' });
 }));
 
 // Unregister push token (logout/disable notifications)

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -33,7 +33,8 @@ const SquadFeedScreen = () => {
                 }));
                 setFeed(mappedFeed);
             }
-        } catch (error) {
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Something went wrong');
         } finally {
             setLoading(false);
             setRefreshing(false);

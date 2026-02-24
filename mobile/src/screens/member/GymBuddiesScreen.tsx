@@ -157,8 +157,8 @@ const GymBuddiesScreen: React.FC = () => {
             );
 
             setFeed(combinedFeed.slice(0, 20)); // Limit to 20 items
-        } catch (error) {
-
+        } catch (error: any) {
+            toast.error('Error', error.message || 'Something went wrong');
         } finally {
             setLoading(false);
         }
@@ -186,8 +186,8 @@ const GymBuddiesScreen: React.FC = () => {
             try {
                 const result = await friendsAPI.search(query);
                 setSearchResults(result.users || []);
-            } catch (error) {
-
+            } catch (error: any) {
+                toast.error('Error', error.message || 'Something went wrong');
             }
         } else {
             setSearchResults([]);
@@ -529,7 +529,7 @@ const GymBuddiesScreen: React.FC = () => {
                                         <View style={styles.friendInfo}>
                                             <Text style={styles.friendName}>{friend.name}</Text>
                                             <View style={styles.friendMeta}>
-                                                <Text style={styles.friendXP}>{friend.streak || 0} day streak</Text>
+                                                <Text style={styles.friendStreak}>{friend.streak || 0} day streak</Text>
                                                 {friend.today_intent && (
                                                     <Badge
                                                         label={friend.today_intent.display || 'Training'}
@@ -756,7 +756,7 @@ const GymBuddiesScreen: React.FC = () => {
                                             <View style={styles.friendInfo}>
                                                 <Text style={styles.friendName}>{friend.name}</Text>
                                                 <View style={styles.friendMeta}>
-                                                    <Text style={styles.friendXP}>{friend.streak || 0} day streak</Text>
+                                                    <Text style={styles.friendStreak}>{friend.streak || 0} day streak</Text>
                                                     {friend.today_intent && (
                                                         <Badge
                                                             label={friend.today_intent.display || 'Training'}
@@ -1128,7 +1128,7 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
         marginTop: spacing.xs,
     },
-    friendXP: {
+    friendStreak: {
         fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,

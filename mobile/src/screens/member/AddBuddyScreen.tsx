@@ -38,7 +38,8 @@ export default function AddBuddyScreen() {
         try {
             const res = await friendsAPI.search(searchQuery);
             setSearchResults(res.users);
-        } catch (error) {
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Something went wrong');
         } finally {
             setSearching(false);
         }
@@ -109,7 +110,8 @@ export default function AddBuddyScreen() {
                 message: `Hey! Add me as your gym buddy on Fitzo.\n\nUsername: @${username}\n\nDownload the app: ${appUrl}\nOr scan my QR code to connect instantly!`,
                 url: deepLink, // iOS will use this
             });
-        } catch (error) {
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Something went wrong');
         }
     };
 

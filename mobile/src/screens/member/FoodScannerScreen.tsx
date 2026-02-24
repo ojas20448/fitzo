@@ -45,8 +45,7 @@ export default function FoodScannerScreen() {
                 base64: false,
             });
             setCapturedImage(photo.uri);
-        } catch (error) {
-
+        } catch (error: any) {
             Alert.alert('Error', 'Failed to capture photo');
         }
     };
@@ -91,8 +90,8 @@ export default function FoodScannerScreen() {
                     source: 'camera_scan'
                 }
             });
-        } catch (error) {
-
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Something went wrong');
         }
     };
 

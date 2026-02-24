@@ -31,7 +31,8 @@ export const FoodCacheService = {
 
             const newRecents = [food, ...filtered].slice(0, MAX_RECENTS);
             await AsyncStorage.setItem(CACHE_KEY_RECENTS, JSON.stringify(newRecents));
-        } catch (error) {
+        } catch {
+            // Cache write failed - non-critical, recents will be rebuilt over time
         }
     },
 
@@ -40,7 +41,8 @@ export const FoodCacheService = {
         try {
             const json = await AsyncStorage.getItem(CACHE_KEY_RECENTS);
             return json ? JSON.parse(json) : [];
-        } catch (error) {
+        } catch {
+            // Cache miss / expired - caller will fetch fresh data
             return [];
         }
     },
@@ -57,7 +59,8 @@ export const FoodCacheService = {
                 item.name.toLowerCase().includes(queryLower) ||
                 (item.brand && item.brand.toLowerCase().includes(queryLower))
             );
-        } catch (error) {
+        } catch {
+            // Cache miss / expired - caller will fetch fresh data
             return [];
         }
     },

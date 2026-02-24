@@ -12,7 +12,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fitzo.onrender.
 // Create axios instance
 const api = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 10000,
+    timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -923,6 +923,42 @@ export const healthAPI = {
     /** Get health data history */
     getHistory: async (days: number = 30) => {
         const response = await api.get(`/health/history?days=${days}`);
+        return response.data;
+    },
+};
+
+// ===========================================
+// NOTIFICATIONS ENDPOINTS
+// ===========================================
+
+export const notificationsAPI = {
+    registerPushToken: async (token: string, platform: string) => {
+        const response = await api.post('/notifications/register', { token, platform });
+        return response.data;
+    },
+
+    unregisterPushToken: async () => {
+        const response = await api.delete('/notifications/unregister');
+        return response.data;
+    },
+
+    getStatus: async () => {
+        const response = await api.get('/notifications/status');
+        return response.data;
+    },
+
+    getPreferences: async () => {
+        const response = await api.get('/notifications/preferences');
+        return response.data;
+    },
+
+    updatePreferences: async (preferences: Record<string, boolean>) => {
+        const response = await api.put('/notifications/preferences', preferences);
+        return response.data;
+    },
+
+    sendTestNotification: async () => {
+        const response = await api.post('/notifications/test');
         return response.data;
     },
 };

@@ -75,8 +75,8 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
                 const combined = Array.from(new Set([...bodyPartsList, ...response.bodyParts]));
                 setBodyParts(combined);
             }
-        } catch (error) {
-
+        } catch (error: any) {
+            // Silently handle - parent screen manages error state
         }
     };
 
@@ -131,8 +131,8 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
                         );
                         results = [...results, ...newFromApi];
                     }
-                } catch (e) {
-
+                } catch (e: any) {
+                    // Silently handle - parent screen manages error state
                 }
             } else if (!searchQuery && (!cachedExercises || cachedExercises.length === 0 || isStale)) {
                 // Fetch from API and update list live (includes gifUrl)
@@ -144,15 +144,15 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
                         useOfflineStore.getState().cacheExercises(apiRes.exercises);
                         results = apiRes.exercises;
                     }
-                } catch (err) {
-
+                } catch (err: any) {
+                    // Silently handle - parent screen manages error state
                 }
             }
 
             setExercises(results);
             setLoading(false);
-        } catch (error) {
-
+        } catch (error: any) {
+            // Silently handle - parent screen manages error state
             setLoading(false);
         }
     };

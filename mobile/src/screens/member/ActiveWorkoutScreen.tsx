@@ -89,7 +89,8 @@ export default function ActiveWorkoutScreen() {
         // Call API (maybe debounce this in real app)
         try {
             await workoutsAPI.updateSet(setId, { [field]: numVal });
-        } catch (error) {
+        } catch (error: any) {
+            toast.error('Error', error.message || 'Something went wrong');
         }
     };
 

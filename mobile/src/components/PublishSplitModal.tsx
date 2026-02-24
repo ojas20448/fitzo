@@ -38,8 +38,8 @@ export default function PublishSplitModal({ visible, onClose, onSuccess }: Publi
         try {
             const res = await workoutsAPI.getMySplits();
             setMySplits(res.splits);
-        } catch (error) {
-
+        } catch (error: any) {
+            toast.error('Error', error.message || 'Something went wrong');
         }
     };
 

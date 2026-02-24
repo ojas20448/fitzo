@@ -53,8 +53,8 @@ const CommentModal: React.FC<CommentModalProps> = ({ visible, onClose, itemId, t
             const endpoint = type === 'post' ? `/posts/${itemId}/comments` : `/comments/${itemId}`;
             const response = await api.get(endpoint);
             setComments(response.data.comments);
-        } catch (error) {
-
+        } catch (error: any) {
+            // Silently handle - parent screen manages error state
         } finally {
             setLoading(false);
         }
@@ -79,8 +79,8 @@ const CommentModal: React.FC<CommentModalProps> = ({ visible, onClose, itemId, t
             const newCommentData = response.data.comment;
             setComments(prev => [...prev, newCommentData]);
             setNewComment('');
-        } catch (error) {
-
+        } catch (error: any) {
+            // Silently handle - parent screen manages error state
         } finally {
             setSubmitting(false);
         }

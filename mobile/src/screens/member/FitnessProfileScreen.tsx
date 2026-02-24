@@ -64,7 +64,8 @@ export default function FitnessProfileScreen() {
                 setActivityLevel(profile.activity_level || 'moderate');
                 setIsVegetarian(profile.is_vegetarian || false);
             }
-        } catch (error) {
+        } catch (error: any) {
+            toast.error('Error', error.message || 'Something went wrong');
         } finally {
             setLoading(false);
         }

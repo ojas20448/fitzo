@@ -9,6 +9,7 @@ import {
     Platform,
     ScrollView,
     Image,
+    Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -19,6 +20,7 @@ import GlassCard from '../src/components/GlassCard';
 import { useToast } from '../src/components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../src/styles/theme';
 import * as Google from 'expo-auth-session/providers/google';
+import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -33,14 +35,13 @@ export default function LoginScreen() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // Google Auth
-    // For native Android APK builds, do NOT pass a custom redirectUri —
-    // the Android OAuth client uses the package name + signing certificate (no URL redirect).
-    // For Expo Go / web, we use the expo proxy redirect.
+    // Google Auth — use Expo proxy so the redirect URI works in all environments
+    // (Expo Go, dev client, standalone APK/AAB)
     const [request, response, promptAsync] = Google.useAuthRequest({
         clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
         androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
         scopes: ['openid', 'profile', 'email'],
+        redirectUri: AuthSession.makeRedirectUri({ scheme: 'fitzo', preferLocalhost: false }),
     });
 
     // Debug: log the redirect URI being used
@@ -94,6 +95,7 @@ export default function LoginScreen() {
         setLoading(true);
         try {
             await login(email, password);
+            Keyboard.dismiss();
             router.replace('/');
         } catch (error: any) {
             toast.error('Login Failed', error.message);
@@ -153,7 +155,10 @@ export default function LoginScreen() {
                                 onChangeText={setPassword}
                                 secureTextEntry={!showPassword}
                             />
-                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                            <TouchableOpacity
+                                onPress={() => setShowPassword(!showPassword)}
+                                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                            >
                                 <MaterialIcons
                                     name={showPassword ? 'visibility' : 'visibility-off'}
                                     size={20}

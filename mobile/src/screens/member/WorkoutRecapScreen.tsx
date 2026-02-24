@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -45,7 +45,8 @@ export default function WorkoutRecapScreen() {
                         setProgressPct(((recap.volume - prev.total_volume) / prev.total_volume) * 100);
                     }
                 }
-            } catch (e) {
+            } catch (error: any) {
+                Alert.alert('Error', error.message || 'Something went wrong');
             }
         };
         init();
@@ -67,7 +68,8 @@ export default function WorkoutRecapScreen() {
                     UTI: 'public.png',
                 });
             }
-        } catch (error) {
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Something went wrong');
         } finally {
             setSharing(false);
         }

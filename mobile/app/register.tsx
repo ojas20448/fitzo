@@ -194,6 +194,7 @@ export default function RegisterScreen() {
                     <TouchableOpacity
                         onPress={() => setShowPassword(!showPassword)}
                         style={styles.eyeButton}
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                         accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
                     >
                         <MaterialIcons

@@ -6,6 +6,7 @@ import {
     ScrollView,
     TouchableOpacity,
     RefreshControl,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -56,7 +57,8 @@ const ManagerDashboardScreen: React.FC = () => {
         try {
             const response = await managerAPI.getDashboard();
             setData(response);
-        } catch (error) {
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Something went wrong');
         } finally {
             setLoading(false);
         }

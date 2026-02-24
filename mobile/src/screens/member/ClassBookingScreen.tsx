@@ -51,7 +51,8 @@ const ClassBookingScreen: React.FC = () => {
         try {
             const response = await classesAPI.getClasses();
             setSessions(response.sessions || []);
-        } catch (error) {
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Something went wrong');
         } finally {
             setLoading(false);
         }
