@@ -573,7 +573,7 @@ export const foodAPI = {
     },
 
     analyzeText: async (text: string) => {
-        const response = await api.post('/food/analyze-text', { text });
+        const response = await api.post('/food/analyze-text', { text }, { timeout: 60000 });
         return response.data;
     },
 };
@@ -662,22 +662,22 @@ export const recipesAPI = {
 
 export const aiAPI = {
     generateWorkoutPlan: async (profile: any) => {
-        const response = await api.post('/ai/workout-plan', profile);
+        const response = await api.post('/ai/workout-plan', profile, { timeout: 60000 });
         return response.data;
     },
 
     getNutritionAdvice: async (profile: any) => {
-        const response = await api.post('/ai/nutrition-advice', profile);
+        const response = await api.post('/ai/nutrition-advice', profile, { timeout: 60000 });
         return response.data;
     },
 
     chat: async (question: string, context?: any) => {
-        const response = await api.post('/ai/chat', { question, context });
+        const response = await api.post('/ai/chat', { question, context }, { timeout: 60000 });
         return response.data;
     },
 
     analyzeForm: async (exerciseName: string, description: string) => {
-        const response = await api.post('/ai/analyze-form', { exerciseName, description });
+        const response = await api.post('/ai/analyze-form', { exerciseName, description }, { timeout: 60000 });
         return response.data;
     },
 };
@@ -734,7 +734,7 @@ export const exerciseAPI = {
 
 export const foodPhotoAPI = {
     analyzeText: async (text: string) => {
-        const response = await api.post('/food/analyze-text', { text });
+        const response = await api.post('/food/analyze-text', { text }, { timeout: 60000 });
         return response.data;
     },
 
@@ -747,7 +747,7 @@ export const foodPhotoAPI = {
         const response = await api.post('/food/analyze-photo', {
             image: base64Image,
             mimeType,
-        });
+        }, { timeout: 60000 });
         return response.data;
     },
 

@@ -99,7 +99,7 @@ Format the response as JSON with this structure:
 }`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
@@ -141,7 +141,7 @@ Format as JSON:
 }`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
@@ -173,7 +173,7 @@ User's question: ${question}${contextStr}
 Provide actionable advice in 2-3 paragraphs. Be practical and relatable to Indian gym culture.`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         return response.text();
@@ -198,7 +198,7 @@ Provide:
 Keep it brief and actionable.`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         return response.text();
@@ -238,7 +238,7 @@ Return ONLY valid JSON (no markdown, no code fences) with this exact structure:
 }`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const responseText = response.text();
@@ -308,7 +308,7 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
 }`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         const imagePart = {
             inlineData: {
