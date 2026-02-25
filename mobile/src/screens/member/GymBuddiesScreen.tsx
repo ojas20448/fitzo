@@ -95,7 +95,7 @@ const GymBuddiesScreen: React.FC = () => {
     const loadData = async () => {
         try {
             const [friendsRes, intentFeedRes, workoutFeedRes, postsFeedRes, suggestedRes] = await Promise.all([
-                friendsAPI.getFriends(),
+                friendsAPI.getFriends().catch(() => ({ friends: [], pending_requests: [], sent_requests: [] })),
                 intentAPI.getFeed().catch(() => ({ intents: [] })),
                 workoutsAPI.getFeed().catch(() => ({ feed: [] })),
                 postsAPI.getFeed(20, 0).catch(() => ({ posts: [] })),

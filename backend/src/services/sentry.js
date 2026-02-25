@@ -35,9 +35,12 @@ function sentryErrorHandler() {
     if (!SENTRY_DSN) {
         return (err, req, res, next) => next(err);
     }
-    // Return a middleware that sets up Sentry error handling inline
+    // Only report unexpected/server errors to Sentry
+    // Skip expected operational errors (auth, validation, 404) — they aren't bugs
     return (err, req, res, next) => {
-        Sentry.captureException(err);
+        if (!err.isOperational || (err.statusCode && err.statusCode >= 500)) {
+            Sentry.captureException(err);
+        }
         next(err);
     };
 }
