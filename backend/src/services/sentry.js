@@ -7,7 +7,7 @@
 
 const Sentry = require('@sentry/node');
 
-const SENTRY_DSN = process.env.SENTRY_DSN || 'https://c6de2076e3087751f3a8d7d282a3fe99@o4510936143953920.ingest.de.sentry.io/4510936149327952';
+const SENTRY_DSN = process.env.SENTRY_DSN || null;
 
 function initSentry(app) {
     if (!SENTRY_DSN) {
@@ -20,6 +20,8 @@ function initSentry(app) {
         environment: process.env.NODE_ENV || 'development',
         tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
         sendDefaultPii: false,
+        // Disable auto-instrumentation of postgres to prevent connection issues
+        autoSessionTracking: false,
     });
 
     console.log('🛡️  Sentry error tracking initialized');
