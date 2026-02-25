@@ -8,7 +8,8 @@ const { ValidationError, asyncHandler } = require('../utils/errors');
 const VALID_PATTERNS = [
     'push', 'pull', 'legs', 'upper', 'lower',
     'anterior', 'posterior', 'full_body', 'bro_split',
-    'ppl', 'upper_lower', 'cardio', 'rest', 'custom', 'anterior_posterior'
+    'ppl', 'upper_lower', 'cardio', 'rest', 'custom', 'anterior_posterior',
+    'push_pull', 'arnold_split', 'phul', 'phat'
 ];
 
 // Valid emphasis options (multi-select)
@@ -93,7 +94,8 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
         throw new ValidationError('Please select at least one focus area');
     }
 
-    if (!emphasis.every(e => VALID_EMPHASIS.includes(e))) {
+    // Validate emphasis entries are non-empty strings (max 50 chars each)
+    if (!emphasis.every(e => typeof e === 'string' && e.length > 0 && e.length <= 50)) {
         throw new ValidationError('Invalid emphasis selection');
     }
 
@@ -124,6 +126,13 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
         throw deleteError;
     }
 
+    // DB enum only has: full_body, upper_lower, ppl, bro_split, custom
+    // Map newer patterns to 'custom' for DB storage, keep original for response
+    const DB_ENUM_VALUES = ['full_body', 'upper_lower', 'ppl', 'bro_split', 'custom'];
+    const dbSplitType = training_pattern && DB_ENUM_VALUES.includes(training_pattern)
+        ? training_pattern
+        : (training_pattern ? 'custom' : null);
+
     // Create new intent
     let intent;
     try {
@@ -131,7 +140,7 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
             `INSERT INTO workout_intents (user_id, split_type, emphasis, session_label, visibility, expires_at)
              VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING id, split_type, emphasis, session_label, visibility, expires_at`,
-            [userId, training_pattern, emphasis, session_label, visibility, expiresAt]
+            [userId, dbSplitType, emphasis, session_label, visibility, expiresAt]
         );
 
         intent = result.rows[0];
