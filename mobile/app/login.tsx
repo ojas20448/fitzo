@@ -35,14 +35,13 @@ export default function LoginScreen() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // Google Auth — use Expo proxy so the redirect URI works in all environments
-    // (Expo Go, dev client, standalone APK/AAB)
+    // Google Auth — use Expo auth proxy for HTTPS redirect URI
+    // Proxy URL: https://auth.expo.io/@fiskerr/fitzo
+    const redirectUri = AuthSession.makeRedirectUri({ preferLocalhost: false });
     const [request, response, promptAsync] = Google.useAuthRequest({
         clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
         scopes: ['openid', 'profile', 'email'],
-        redirectUri: AuthSession.makeRedirectUri({
-            native: 'com.fitzo.app:/oauth2redirect/google',
-        }),
+        redirectUri,
     });
 
     // Debug: log the redirect URI being used
