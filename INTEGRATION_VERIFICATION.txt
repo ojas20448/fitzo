@@ -1,0 +1,55 @@
+Buddy Activity Feed - Integration Verification Checklist
+=====================================================
+
+BACKEND ROUTES REGISTERED:
+✓ app.use('/api/settings', require('./routes/settings'))
+✓ app.use('/api/buddy-activity', require('./routes/buddy-activity'))
+
+DATABASE MIGRATION:
+✓ File: backend/src/db/migrations/add_buddy_sharing_preferences.sql
+✓ Adds: share_logs_default BOOLEAN DEFAULT true to users
+✓ Adds: share_logs_updated_at TIMESTAMP for audit trail
+✓ Adds: Index on share_logs_default for performance
+
+BACKEND ENDPOINTS:
+✓ GET /api/settings/sharing - Returns user's sharing preference
+✓ PATCH /api/settings/sharing - Updates sharing preference
+✓ GET /api/buddy-activity/:id - Returns friend's today activity with privacy
+✓ Updated GET /api/friends - Now includes shares_logs field
+
+MOBILE SCREENS UPDATED:
+✓ SettingsScreen - Global sharing toggle with API integration
+✓ CalorieLogScreen - Visibility picker before logging
+✓ WorkoutLogScreen - Visibility picker before finishing
+✓ GymBuddiesScreen - Friends now tappable with navigation
+✓ BuddyActivityScreen - NEW screen showing friend's activity
+✓ Expo Router - NEW route file at /app/member/buddy-activity.tsx
+
+PRIVACY ENFORCEMENT:
+✓ Server-side SQL filtering by visibility column
+✓ Server-side checking of share_logs_default
+✓ Private logs never shown in queries
+✓ Friendship validation required
+✓ Authentication required on all endpoints
+
+DATA FLOW:
+✓ User toggles setting → API call → Database update
+✓ User logs food/workout → Visibility parameter passed → Stored in DB
+✓ User views friend → Privacy checks → Filtered data returned
+✓ Frontend handles errors → Shows appropriate messages
+
+SYNTAX VERIFICATION:
+✓ settings.js - Valid Node.js
+✓ buddy-activity.js - Valid Node.js
+✓ index.js (routes) - Valid Node.js
+✓ BuddyActivityScreen.tsx - Valid TypeScript
+✓ SettingsScreen.tsx - Valid TypeScript
+✓ CalorieLogScreen.tsx - Valid TypeScript
+✓ WorkoutLogScreen.tsx - Valid TypeScript
+
+COMMIT:
+✓ a8da604 - "Implement buddy activity feed with hybrid privacy model"
+✓ 12 files changed, 1715 insertions
+✓ All code committed and ready for deployment
+
+STATUS: ✅ ALL INTEGRATION POINTS VERIFIED
