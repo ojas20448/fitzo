@@ -39,9 +39,10 @@ export default function LoginScreen() {
     // (Expo Go, dev client, standalone APK/AAB)
     const [request, response, promptAsync] = Google.useAuthRequest({
         clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
         scopes: ['openid', 'profile', 'email'],
-        redirectUri: AuthSession.makeRedirectUri({ scheme: 'fitzo', preferLocalhost: false }),
+        redirectUri: AuthSession.makeRedirectUri({
+            native: 'com.fitzo.app:/oauth2redirect/google',
+        }),
     });
 
     // Debug: log the redirect URI being used
