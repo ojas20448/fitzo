@@ -1,5 +1,8 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+if (!process.env.GEMINI_API_KEY) {
+    console.error('⚠️  GEMINI_API_KEY not set — AI features will fail');
+}
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // ===========================================
@@ -257,16 +260,7 @@ Return ONLY valid JSON (no markdown, no code fences) with this exact structure:
         };
     } catch (error) {
         console.error('Gemini analyzeFoodFromText error:', error.message);
-        return {
-            name: text,
-            calories: 250,
-            protein_g: 10,
-            carbs_g: 30,
-            fat_g: 10,
-            fiber_g: 3,
-            sugar_g: 5,
-            serving_size: '1 serving (estimated)'
-        };
+        throw new Error(`AI food analysis failed: ${error.message}`);
     }
 }
 
