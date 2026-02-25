@@ -35,9 +35,8 @@ export default function LoginScreen() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // Google Auth — use Expo auth proxy for HTTPS redirect URI
-    // Proxy URL: https://auth.expo.io/@fiskerr/fitzo
-    const redirectUri = AuthSession.makeRedirectUri({ preferLocalhost: false });
+    // Google Auth — hardcode Expo auth proxy URL (Google blocks custom schemes)
+    const redirectUri = 'https://auth.expo.io/@fiskerr/fitzo';
     const [request, response, promptAsync] = Google.useAuthRequest({
         clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
         scopes: ['openid', 'profile', 'email'],
