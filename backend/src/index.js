@@ -117,6 +117,8 @@ app.use('/api/measurements', require('./routes/measurements'));
 app.use('/api/workouts', require('./routes/calories-burned'));
 app.use('/api/progress', require('./routes/progress'));
 app.use('/api/health', require('./routes/health'));
+app.use('/api/settings', require('./routes/settings'));
+app.use('/api/buddy-activity', require('./routes/buddy-activity'));
 
 // 404 handler
 app.use((req, res) => {

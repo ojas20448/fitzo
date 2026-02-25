@@ -27,21 +27,42 @@ const SettingsScreen = () => {
     const { logout, user } = useAuth();
     const [units, setUnits] = useState<'metric' | 'imperial'>('metric');
     const [notifications, setNotifications] = useState(true);
+    const [shareLogs, setShareLogs] = useState(true);
     const [loading, setLoading] = useState(false);
 
-    // Load persisted unit preference on mount
+    // Load persisted settings on mount
     useEffect(() => {
-        const loadUnits = async () => {
+        const loadSettings = async () => {
             try {
                 const stored = await AsyncStorage.getItem(UNITS_STORAGE_KEY);
                 if (stored === 'metric' || stored === 'imperial') {
                     setUnits(stored);
                 }
+                // Load sharing preference from API
+                const token = await AsyncStorage.getItem('authToken');
+                if (token) {
+                    try {
+                        const response = await fetch('http://localhost:3000/api/settings/sharing', {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json',
+                            },
+                        });
+                        if (response.ok) {
+                            const data = await response.json();
+                            setShareLogs(data.share_logs_default);
+                        }
+                    } catch (e) {
+                        // Fallback to default if API call fails
+                        setShareLogs(true);
+                    }
+                }
             } catch (e) {
                 // ignore
             }
         };
-        loadUnits();
+        loadSettings();
     }, []);
 
     const toggleUnits = async () => {
@@ -70,6 +91,32 @@ const SettingsScreen = () => {
                 },
             ]
         );
+    };
+
+    const handleShareLogsToggle = async (newValue: boolean) => {
+        setShareLogs(newValue);
+        try {
+            const token = await AsyncStorage.getItem('authToken');
+            if (token) {
+                const response = await fetch('http://localhost:3000/api/settings/sharing', {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ share_logs_default: newValue }),
+                });
+                if (!response.ok) {
+                    // Revert on failure
+                    setShareLogs(!newValue);
+                    Alert.alert('Error', 'Failed to update sharing preferences');
+                }
+            }
+        } catch (e) {
+            // Revert on failure
+            setShareLogs(!newValue);
+            Alert.alert('Error', 'Failed to update sharing preferences');
+        }
     };
 
     const handleDeleteAccount = () => {
@@ -199,6 +246,35 @@ const SettingsScreen = () => {
                             <Text style={styles.userName}>{user?.name}</Text>
                             <Text style={styles.userEmail}>{user?.email}</Text>
                         </View>
+                    </View>
+                </GlassCard>
+
+                {/* Privacy & Sharing */}
+                <Text style={styles.sectionHeader}>PRIVACY & SHARING</Text>
+                <GlassCard style={StyleSheet.flatten([styles.card, { padding: 0 }])}>
+                    <View style={styles.settingItem}>
+                        <View style={styles.settingLeftCol}>
+                            <MaterialIcons
+                                name="people"
+                                size={20}
+                                color={colors.primary}
+                                style={styles.toggleIcon}
+                            />
+                            <View>
+                                <Text style={styles.settingLabel}>Share with Gym Buddies</Text>
+                                <Text style={styles.settingDescription}>
+                                    {shareLogs
+                                        ? 'Buddies can see your workouts & meals'
+                                        : 'Your logs are private to buddies'}
+                                </Text>
+                            </View>
+                        </View>
+                        <Switch
+                            value={shareLogs}
+                            onValueChange={handleShareLogsToggle}
+                            trackColor={{ false: colors.glass.border, true: colors.primary }}
+                            thumbColor={colors.text.primary}
+                        />
                     </View>
                 </GlassCard>
 
@@ -374,6 +450,20 @@ const styles = StyleSheet.create({
     versionText: {
         fontSize: typography.sizes.xs,
         color: colors.text.subtle,
+    },
+    settingLeftCol: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        flex: 1,
+    },
+    toggleIcon: {
+        marginRight: spacing.sm,
+    },
+    settingDescription: {
+        fontSize: typography.sizes.xs,
+        color: colors.text.muted,
+        marginTop: spacing.xs,
     },
 });
 

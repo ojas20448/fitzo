@@ -520,31 +520,40 @@ const GymBuddiesScreen: React.FC = () => {
                                 />
                             ) : (
                                 friends.map((friend) => (
-                                    <GlassCard key={friend.id} style={styles.friendCard}>
-                                        <Avatar
-                                            uri={friend.avatar_url}
-                                            size="lg"
-                                            showOnline={friend.checked_in_today}
-                                        />
-                                        <View style={styles.friendInfo}>
-                                            <Text style={styles.friendName}>{friend.name}</Text>
-                                            <View style={styles.friendMeta}>
-                                                <Text style={styles.friendStreak}>{friend.streak || 0} day streak</Text>
-                                                {friend.today_intent && (
-                                                    <Badge
-                                                        label={friend.today_intent.display || 'Training'}
-                                                        size="sm"
-                                                        variant="primary"
-                                                    />
-                                                )}
+                                    <TouchableOpacity
+                                        key={friend.id}
+                                        onPress={() => router.push({
+                                            pathname: '/member/buddy-activity',
+                                            params: { friendId: friend.id }
+                                        })}
+                                        activeOpacity={0.7}
+                                    >
+                                        <GlassCard style={styles.friendCard}>
+                                            <Avatar
+                                                uri={friend.avatar_url}
+                                                size="lg"
+                                                showOnline={friend.checked_in_today}
+                                            />
+                                            <View style={styles.friendInfo}>
+                                                <Text style={styles.friendName}>{friend.name}</Text>
+                                                <View style={styles.friendMeta}>
+                                                    <Text style={styles.friendStreak}>{friend.streak || 0} day streak</Text>
+                                                    {friend.today_intent && (
+                                                        <Badge
+                                                            label={friend.today_intent.display || 'Training'}
+                                                            size="sm"
+                                                            variant="primary"
+                                                        />
+                                                    )}
+                                                </View>
                                             </View>
-                                        </View>
-                                        {friend.checked_in_today && (
-                                            <View style={styles.atGymBadge}>
-                                                <Text style={styles.atGymText}>At Gym</Text>
-                                            </View>
-                                        )}
-                                    </GlassCard>
+                                            {friend.checked_in_today && (
+                                                <View style={styles.atGymBadge}>
+                                                    <Text style={styles.atGymText}>At Gym</Text>
+                                                </View>
+                                            )}
+                                        </GlassCard>
+                                    </TouchableOpacity>
                                 ))
                             )}
                             <View style={{ height: 100 }} />

@@ -485,6 +485,30 @@ const WorkoutLogScreen: React.FC = () => {
     // Rest duration selector modal
     const [showRestConfig, setShowRestConfig] = useState(false);
 
+    // Visibility/Privacy
+    const [visibility, setVisibility] = useState<'friends' | 'private'>('friends');
+    const [shareLogs, setShareLogs] = useState(true);
+
+    useEffect(() => {
+        loadSharingPreference();
+    }, []);
+
+    const loadSharingPreference = async () => {
+        try {
+            const data = await fetch('http://localhost:3000/api/settings/sharing', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }).then(r => r.json());
+            setShareLogs(data.share_logs_default);
+            setVisibility(data.share_logs_default ? 'friends' : 'private');
+        } catch (error) {
+            setShareLogs(true);
+            setVisibility('friends');
+        }
+    };
+
     // -----------------------------------------------------------------------
     // Rest Timer Logic
     // -----------------------------------------------------------------------
@@ -766,7 +790,7 @@ const WorkoutLogScreen: React.FC = () => {
                 workout_type: workoutType,
                 exercises: JSON.stringify(userExercises),
                 notes: 'Logged via Smart Log',
-                visibility: 'friends',
+                visibility: visibility,
             });
 
             let totalVolume = 0;
@@ -966,6 +990,50 @@ const WorkoutLogScreen: React.FC = () => {
                     onDismiss={dismissRestTimer}
                     onChangeDuration={() => setShowRestConfig(true)}
                 />
+            )}
+
+            {/* Visibility Picker */}
+            {shareLogs && (
+                <View style={styles.visibilityBar}>
+                    <Text style={styles.visibilityLabel}>Who sees this workout?</Text>
+                    <View style={styles.visibilityOptions}>
+                        <TouchableOpacity
+                            style={[
+                                styles.visibilityOption,
+                                visibility === 'friends' && styles.visibilityOptionActive
+                            ]}
+                            onPress={() => setVisibility('friends')}
+                        >
+                            <MaterialIcons
+                                name="people"
+                                size={16}
+                                color={visibility === 'friends' ? colors.primary : colors.text.muted}
+                            />
+                            <Text style={[
+                                styles.visibilityOptionText,
+                                visibility === 'friends' && { color: colors.primary }
+                            ]}>Friends</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[
+                                styles.visibilityOption,
+                                visibility === 'private' && styles.visibilityOptionActive
+                            ]}
+                            onPress={() => setVisibility('private')}
+                        >
+                            <MaterialIcons
+                                name="lock"
+                                size={16}
+                                color={visibility === 'private' ? colors.primary : colors.text.muted}
+                            />
+                            <Text style={[
+                                styles.visibilityOptionText,
+                                visibility === 'private' && { color: colors.primary }
+                            ]}>Only Me</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
             )}
 
             {/* Fixed Bottom: Finish Workout */}
@@ -1700,6 +1768,49 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.md,
         fontFamily: typography.fontFamily.bold,
         color: colors.primary,
+    },
+    visibilityBar: {
+        position: 'absolute',
+        bottom: 72,
+        left: 0,
+        right: 0,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        gap: spacing.md,
+        borderTopWidth: 1,
+        borderTopColor: colors.glass.border,
+        backgroundColor: colors.background,
+    },
+    visibilityLabel: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+    },
+    visibilityOptions: {
+        flexDirection: 'row',
+        gap: spacing.md,
+    },
+    visibilityOption: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.xs,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    visibilityOptionActive: {
+        backgroundColor: colors.primary + '20',
+        borderColor: colors.primary,
+    },
+    visibilityOptionText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
     },
 });
 

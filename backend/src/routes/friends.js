@@ -12,13 +12,13 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
     // Get accepted friends with their today's intent
-    // Get accepted friends with their today's intent
     const friendsResult = await query(
-        `SELECT 
+        `SELECT
        u.id,
        u.name,
        u.avatar_url,
        u.xp_points,
+       u.share_logs_default,
        wi.split_type,
        wi.emphasis,
        wi.session_label,
@@ -27,12 +27,12 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
      FROM friendships f
      JOIN users u ON f.friend_id = u.id
      LEFT JOIN workout_intents wi ON (
-       u.id = wi.user_id 
+       u.id = wi.user_id
        AND wi.expires_at > NOW()
        AND wi.visibility IN ('public', 'friends')
      )
      LEFT JOIN attendances a ON (
-       u.id = a.user_id 
+       u.id = a.user_id
        AND DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
      )
      WHERE f.user_id = $1 AND f.status = 'accepted'
@@ -118,7 +118,8 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
                 avatar_url: f.avatar_url,
                 xp_points: f.xp_points || 0,
                 today_intent,
-                checked_in_today: !!f.last_checkin
+                checked_in_today: !!f.last_checkin,
+                shares_logs: f.share_logs_default
             };
         }),
         pending_requests: pendingResult.rows,

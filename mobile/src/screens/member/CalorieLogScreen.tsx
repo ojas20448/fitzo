@@ -87,8 +87,13 @@ const CalorieLogScreen: React.FC = () => {
     // Frequent foods
     const [frequentFoods, setFrequentFoods] = useState<any[]>([]);
 
+    // Visibility/Privacy
+    const [visibility, setVisibility] = useState<'friends' | 'private'>('friends');
+    const [shareLogs, setShareLogs] = useState(true);
+
     useEffect(() => {
         loadFrequentFoods();
+        loadSharingPreference();
     }, []);
 
     const loadFrequentFoods = async () => {
@@ -97,6 +102,23 @@ const CalorieLogScreen: React.FC = () => {
             setFrequentFoods(data.frequent || []);
         } catch (error: any) {
             toast.error('Error', error.message || 'Something went wrong');
+        }
+    };
+
+    const loadSharingPreference = async () => {
+        try {
+            const data = await fetch('http://localhost:3000/api/settings/sharing', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }).then(r => r.json());
+            setShareLogs(data.share_logs_default);
+            setVisibility(data.share_logs_default ? 'friends' : 'private');
+        } catch (error) {
+            // Default to friends if API fails
+            setShareLogs(true);
+            setVisibility('friends');
         }
     };
 
@@ -367,7 +389,7 @@ const CalorieLogScreen: React.FC = () => {
             // Actually, for true instant feel, we should close modal immediately or show celebration immediately depending on UX
             // User requested: "Home ring animates within <300ms"
 
-            // 1. Kick off optimistic update
+            // 1. Kick off optimistic update with visibility
             const { isGoalHit } = await logFoodOptimistic({
                 calories: totalCalories,
                 protein: totalProtein,
@@ -375,7 +397,8 @@ const CalorieLogScreen: React.FC = () => {
                 fat: totalFat,
                 food_name: selectedFood.name,
                 serving_size: `${servingCount} ${selectedServing.measurementDescription}`,
-                meal_type: 'snack'
+                meal_type: 'snack',
+                visibility: visibility
             });
 
             // 2. Success Feedback
@@ -906,6 +929,50 @@ const CalorieLogScreen: React.FC = () => {
                                     </View>
                                 )}
                             </ScrollView>
+
+                            {/* Visibility Picker */}
+                            {shareLogs && (
+                                <View style={styles.visibilitySection}>
+                                    <Text style={styles.visibilityLabel}>Who sees this meal?</Text>
+                                    <View style={styles.visibilityOptions}>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.visibilityOption,
+                                                visibility === 'friends' && styles.visibilityOptionActive
+                                            ]}
+                                            onPress={() => setVisibility('friends')}
+                                        >
+                                            <MaterialIcons
+                                                name="people"
+                                                size={18}
+                                                color={visibility === 'friends' ? colors.primary : colors.text.muted}
+                                            />
+                                            <Text style={[
+                                                styles.visibilityOptionText,
+                                                visibility === 'friends' && { color: colors.primary }
+                                            ]}>Friends</Text>
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.visibilityOption,
+                                                visibility === 'private' && styles.visibilityOptionActive
+                                            ]}
+                                            onPress={() => setVisibility('private')}
+                                        >
+                                            <MaterialIcons
+                                                name="lock"
+                                                size={18}
+                                                color={visibility === 'private' ? colors.primary : colors.text.muted}
+                                            />
+                                            <Text style={[
+                                                styles.visibilityOptionText,
+                                                visibility === 'private' && { color: colors.primary }
+                                            ]}>Only Me</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            )}
 
                             {/* Add Button */}
                             <View style={styles.modalFooter}>
@@ -1564,6 +1631,44 @@ const styles = StyleSheet.create({
     },
     frequentCals: {
         fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+    },
+    visibilitySection: {
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.lg,
+        borderTopWidth: 1,
+        borderTopColor: colors.glass.border,
+        gap: spacing.md,
+    },
+    visibilityLabel: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+    },
+    visibilityOptions: {
+        flexDirection: 'row',
+        gap: spacing.md,
+    },
+    visibilityOption: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.sm,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    visibilityOptionActive: {
+        backgroundColor: colors.primary + '20',
+        borderColor: colors.primary,
+    },
+    visibilityOptionText: {
+        fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
     },
