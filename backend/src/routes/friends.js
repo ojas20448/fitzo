@@ -300,6 +300,75 @@ router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
 }));
 
 /**
+ * GET /api/friends/:id/status
+ * Get friendship status with a specific user
+ */
+router.get('/:id/status', authenticate, asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const targetId = req.params.id;
+
+    // Check friendship in both directions
+    const result = await query(
+        `SELECT status, user_id, friend_id FROM friendships
+         WHERE (user_id = $1 AND friend_id = $2)
+            OR (user_id = $2 AND friend_id = $1)
+         LIMIT 1`,
+        [userId, targetId]
+    );
+
+    if (result.rows.length === 0) {
+        return res.json({ status: 'none' });
+    }
+
+    const row = result.rows[0];
+    if (row.status === 'accepted') {
+        return res.json({ status: 'friend' });
+    }
+    if (row.status === 'blocked') {
+        return res.json({ status: 'blocked' });
+    }
+    if (row.status === 'pending') {
+        if (row.user_id === userId) {
+            return res.json({ status: 'pending_sent' });
+        }
+        return res.json({ status: 'pending_received' });
+    }
+
+    res.json({ status: 'none' });
+}));
+
+/**
+ * POST /api/friends/:id/block
+ * Block a user (removes friendship if exists)
+ */
+router.post('/:id/block', authenticate, asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const targetId = req.params.id;
+
+    if (targetId === userId) {
+        throw new ValidationError("You can't block yourself");
+    }
+
+    // Remove any existing friendship records
+    await query(
+        `DELETE FROM friendships
+         WHERE (user_id = $1 AND friend_id = $2)
+            OR (user_id = $2 AND friend_id = $1)`,
+        [userId, targetId]
+    );
+
+    // Create a blocked record
+    await query(
+        `INSERT INTO friendships (user_id, friend_id, status)
+         VALUES ($1, $2, 'blocked')
+         ON CONFLICT (user_id, friend_id) DO UPDATE SET status = 'blocked', updated_at = NOW()`,
+        [userId, targetId]
+    );
+
+    res.json({ message: 'User blocked' });
+}));
+
+/**
  * GET /api/friends/search
  * Search for users to add as friends
  */

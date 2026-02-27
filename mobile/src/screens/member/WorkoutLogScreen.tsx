@@ -19,7 +19,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { workoutsAPI } from '../../services/api';
+import { workoutsAPI, settingsAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import ExerciseList from '../../components/ExerciseList';
 import { useToast } from '../../components/Toast';
@@ -495,12 +495,7 @@ const WorkoutLogScreen: React.FC = () => {
 
     const loadSharingPreference = async () => {
         try {
-            const data = await fetch('http://localhost:3000/api/settings/sharing', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            }).then(r => r.json());
+            const data = await settingsAPI.getSharingPreference();
             setShareLogs(data.share_logs_default);
             setVisibility(data.share_logs_default ? 'friends' : 'private');
         } catch (error) {

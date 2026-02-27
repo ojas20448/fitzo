@@ -10,6 +10,8 @@ const usda = require('../services/usda');
 const fatsecret = require('../services/fatsecret');
 const barcodeService = require('../services/barcode');
 const geminiService = require('../services/gemini');
+const openFoodFacts = require('../services/openFoodFacts');
+const apiNinjas = require('../services/apiNinjas');
 const { asyncHandler } = require('../utils/errors');
 const { authenticate } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
@@ -101,9 +103,9 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
 
     const query = q.trim();
 
-    // Run all searches in parallel
-    const [indianRes, usdaRes, fatsecretRes] = await Promise.allSettled([
-        // 1. Indian Food (Local/Ref) - No timeout needed as it's local
+    // Run all searches in parallel with new APIs
+    const [indianRes, usdaRes, fatsecretRes, ninJasRes, offRes] = await Promise.allSettled([
+        // 1. Indian Food (Local) - No timeout needed
         new Promise(resolve => resolve(indianFood.searchFoods(query, 10))),
 
         // 2. USDA API
@@ -119,37 +121,57 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
                 console.error('FatSecret search failed:', err.message);
                 return { foods: [] };
             }),
+
+        // 4. API Ninjas (Natural language nutrition)
+        withTimeout(apiNinjas.searchFoods(query), 3000, 'API Ninjas')
+            .then(results => ({ foods: results }))
+            .catch(err => {
+                console.error('API Ninjas search failed:', err.message);
+                return { foods: [] };
+            }),
+
+        // 5. Open Food Facts (Packaged products & Indian brands)
+        withTimeout(openFoodFacts.searchFoods(query, 5), 3000, 'Open Food Facts')
+            .then(results => ({ foods: results }))
+            .catch(err => {
+                console.error('Open Food Facts search failed:', err.message);
+                return { foods: [] };
+            }),
     ]);
 
 
-
-    // --- Process Indian Results ---
+    // --- Process all results ---
     const indianFoods = (indianRes.status === 'fulfilled' && indianRes.value?.foods)
         ? indianRes.value.foods.map(f => ({ ...f, source: 'indian' }))
         : [];
 
-    // --- Process USDA Results ---
     const usdaFoods = (usdaRes.status === 'fulfilled' && usdaRes.value?.foods)
         ? usdaRes.value.foods.map(f => ({ ...f, source: 'usda' }))
         : [];
 
-    // --- Process FatSecret Results ---
     const fatsecretFoods = (fatsecretRes.status === 'fulfilled' && fatsecretRes.value?.foods)
         ? fatsecretRes.value.foods.map(f => ({ ...f, source: 'fatsecret' }))
         : [];
 
+    const ninjasFoods = (ninJasRes.status === 'fulfilled' && ninJasRes.value?.foods)
+        ? ninJasRes.value.foods.map(f => ({ ...f, source: 'api_ninjas' }))
+        : [];
 
+    const offFoods = (offRes.status === 'fulfilled' && offRes.value?.foods)
+        ? offRes.value.foods.map(f => ({ ...f, source: 'open_food_facts' }))
+        : [];
 
-    // Combine all results
+    // Combine all results - prioritize by source
     const combinedFoods = [
         ...indianFoods,
-
+        ...offFoods,      // Packaged products/brands
+        ...ninjasFoods,   // Natural language nutrition
         ...usdaFoods,
         ...fatsecretFoods
     ];
 
     if (process.env.NODE_ENV !== 'production') {
-        console.log(`📊 Aggregated Search: "${q}" -> ${combinedFoods.length} total. Ind=${indianFoods.length}, USDA=${usdaFoods.length}, FS=${fatsecretFoods.length}`);
+        console.log(`📊 Aggregated Search: "${q}" -> ${combinedFoods.length} total. Indian=${indianFoods.length}, OFF=${offFoods.length}, Ninjas=${ninjasFoods.length}, USDA=${usdaFoods.length}, FS=${fatsecretFoods.length}`);
     }
 
     return res.json({
@@ -158,7 +180,8 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
         page: page,
         sources: {
             indian: indianFoods.length,
-
+            open_food_facts: offFoods.length,
+            api_ninjas: ninjasFoods.length,
             usda: usdaFoods.length,
             fatsecret: fatsecretFoods.length
         }

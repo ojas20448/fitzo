@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { settingsAPI } from '../../services/api';
 import Constants from 'expo-constants';
 import { useAuth } from '../../context/AuthContext';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
@@ -39,24 +40,12 @@ const SettingsScreen = () => {
                     setUnits(stored);
                 }
                 // Load sharing preference from API
-                const token = await AsyncStorage.getItem('authToken');
-                if (token) {
-                    try {
-                        const response = await fetch('http://localhost:3000/api/settings/sharing', {
-                            method: 'GET',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json',
-                            },
-                        });
-                        if (response.ok) {
-                            const data = await response.json();
-                            setShareLogs(data.share_logs_default);
-                        }
-                    } catch (e) {
-                        // Fallback to default if API call fails
-                        setShareLogs(true);
-                    }
+                try {
+                    const data = await settingsAPI.getSharingPreference();
+                    setShareLogs(data.share_logs_default);
+                } catch (e) {
+                    // Fallback to default if API call fails
+                    setShareLogs(true);
                 }
             } catch (e) {
                 // ignore
@@ -96,25 +85,11 @@ const SettingsScreen = () => {
     const handleShareLogsToggle = async (newValue: boolean) => {
         setShareLogs(newValue);
         try {
-            const token = await AsyncStorage.getItem('authToken');
-            if (token) {
-                const response = await fetch('http://localhost:3000/api/settings/sharing', {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ share_logs_default: newValue }),
-                });
-                if (!response.ok) {
-                    // Revert on failure
-                    setShareLogs(!newValue);
-                    Alert.alert('Error', 'Failed to update sharing preferences');
-                }
-            }
+            await settingsAPI.updateSharingPreference(newValue);
         } catch (e) {
             // Revert on failure
             setShareLogs(!newValue);
+            Alert.alert('Error', 'Failed to update sharing preferences');
             Alert.alert('Error', 'Failed to update sharing preferences');
         }
     };

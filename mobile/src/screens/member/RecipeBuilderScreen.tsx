@@ -234,8 +234,8 @@ const RecipeBuilderScreen = () => {
             });
             toast.success('Saved', 'Recipe created successfully');
             router.back();
-        } catch (error) {
-            toast.error('Error', 'Failed to save recipe');
+        } catch (error: any) {
+            Alert.alert('Save Failed', error.message || 'Failed to save recipe');
         } finally {
             setSaving(false);
         }
@@ -248,9 +248,9 @@ const RecipeBuilderScreen = () => {
                     <MaterialIcons name="close" size={24} color={colors.text.primary} />
                 </Pressable>
                 <Text style={styles.headerTitle}>{recipeId ? 'Edit Recipe' : 'New Recipe'}</Text>
-                <Pressable onPress={handleSave} disabled={saving}>
+                <Pressable onPress={handleSave} disabled={saving} style={styles.saveBtn} hitSlop={12}>
                     {saving ? (
-                        <ActivityIndicator color={colors.primary} />
+                        <ActivityIndicator color={colors.text.dark} />
                     ) : (
                         <Text style={styles.saveText}>Save</Text>
                     )}
@@ -450,10 +450,16 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
     },
+    saveBtn: {
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.full,
+    },
     saveText: {
-        fontSize: typography.sizes.base,
-        fontFamily: typography.fontFamily.semiBold,
-        color: colors.primary,
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.dark,
     },
     content: {
         flex: 1,

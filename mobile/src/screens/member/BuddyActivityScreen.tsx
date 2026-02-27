@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buddyActivityAPI } from '../../services/api';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import GlassCard from '../../components/GlassCard';
 
@@ -74,31 +74,10 @@ const BuddyActivityScreen = () => {
             setLoading(true);
             setError(null);
 
-            const token = await AsyncStorage.getItem('authToken');
-            if (!token) {
-                setError('Authentication required');
-                return;
-            }
-
-            const response = await fetch(
-                `http://localhost:3000/api/buddy-activity/${friendId}`,
-                {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error('Failed to load buddy activity');
-            }
-
-            const data = await response.json();
+            const data = await buddyActivityAPI.getActivity(friendId);
             setActivity(data);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unknown error occurred');
+        } catch (err: any) {
+            setError(err.message || 'Failed to load buddy activity');
         } finally {
             setLoading(false);
         }

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -command \"Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::PrimaryScreen.Bounds | ForEach-Object { $bitmap = New-Object System.Drawing.Bitmap\\($_.Width, $_.Height\\); $graphics = [System.Drawing.Graphics]::FromImage\\($bitmap\\); $graphics.CopyFromScreen\\($_.Location, [System.Drawing.Point]::Empty, $_.Size\\); $bitmap.Save\\(''C:/Users/PC/Downloads/screenshot.png''\\); $graphics.Dispose\\(\\); $bitmap.Dispose\\(\\) }\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:/Users/PC/Downloads/screenshot.ps1\")"
+    ]
+  }
+}

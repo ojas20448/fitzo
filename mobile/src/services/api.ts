@@ -262,6 +262,41 @@ export const friendsAPI = {
         const response = await api.get(`/friends/suggested?limit=${limit}`);
         return response.data;
     },
+
+    blockUser: async (userId: string) => {
+        const response = await api.post(`/friends/${userId}/block`);
+        return response.data;
+    },
+
+    getFriendshipStatus: async (userId: string) => {
+        const response = await api.get(`/friends/${userId}/status`);
+        return response.data;
+    },
+};
+
+// ===========================================
+// BUDDY ACTIVITY ENDPOINTS
+// ===========================================
+
+export const buddyActivityAPI = {
+    getActivity: async (userId: string) => {
+        const response = await api.get(`/buddy-activity/${userId}`);
+        return response.data;
+    },
+};
+
+// ===========================================
+// SETTINGS ENDPOINTS
+// ===========================================
+export const settingsAPI = {
+    getSharingPreference: async () => {
+        const response = await api.get('/settings/sharing');
+        return response.data;
+    },
+    updateSharingPreference: async (shareLogsDefault: boolean) => {
+        const response = await api.patch('/settings/sharing', { share_logs_default: shareLogsDefault });
+        return response.data;
+    },
 };
 
 // ===========================================

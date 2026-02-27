@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { foodAPI, caloriesAPI, nutritionAPI } from '../../services/api';
+import { foodAPI, caloriesAPI, nutritionAPI, settingsAPI } from '../../services/api';
 import Celebration from '../../components/Celebration';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
@@ -100,12 +100,7 @@ const CalorieLogScreen: React.FC = () => {
 
     const loadSharingPreference = async () => {
         try {
-            const data = await fetch('http://localhost:3000/api/settings/sharing', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            }).then(r => r.json());
+            const data = await settingsAPI.getSharingPreference();
             setShareLogs(data.share_logs_default);
             setVisibility(data.share_logs_default ? 'friends' : 'private');
         } catch (error) {

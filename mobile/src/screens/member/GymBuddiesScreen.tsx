@@ -523,8 +523,8 @@ const GymBuddiesScreen: React.FC = () => {
                                     <TouchableOpacity
                                         key={friend.id}
                                         onPress={() => router.push({
-                                            pathname: '/member/buddy-activity',
-                                            params: { friendId: friend.id }
+                                            pathname: '/member/user-profile',
+                                            params: { userId: friend.id, userName: friend.name, userAvatar: friend.avatar_url || '' }
                                         })}
                                         activeOpacity={0.7}
                                     >
@@ -656,11 +656,20 @@ const GymBuddiesScreen: React.FC = () => {
                                     feed.map((item) => (
                                         <GlassCard key={item.id} style={styles.feedCard}>
                                             <View style={styles.feedHeader}>
-                                                <Avatar uri={item.avatar_url} size="md" />
-                                                <View style={styles.feedInfo}>
-                                                    <Text style={styles.feedName}>{item.user_name}</Text>
-                                                    <Text style={styles.feedTime}>{getTimeAgo(item.created_at)}</Text>
-                                                </View>
+                                                <TouchableOpacity
+                                                    style={styles.feedUserTap}
+                                                    onPress={() => router.push({
+                                                        pathname: '/member/user-profile',
+                                                        params: { userId: item.user_id, userName: item.user_name, userAvatar: item.avatar_url || '' }
+                                                    })}
+                                                    activeOpacity={0.7}
+                                                >
+                                                    <Avatar uri={item.avatar_url} size="md" />
+                                                    <View style={styles.feedInfo}>
+                                                        <Text style={styles.feedName}>{item.user_name}</Text>
+                                                        <Text style={styles.feedTime}>{getTimeAgo(item.created_at)}</Text>
+                                                    </View>
+                                                </TouchableOpacity>
                                                 {item.type === 'workout' && (
                                                     <Badge label="Workout" variant="primary" size="sm" />
                                                 )}
@@ -1009,6 +1018,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: spacing.md,
         marginBottom: spacing.md,
+    },
+    feedUserTap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        flex: 1,
     },
     feedInfo: {
         flex: 1,
