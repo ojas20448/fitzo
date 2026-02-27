@@ -9,6 +9,11 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 
 const BASE_URL = 'https://world.openfoodfacts.org/api/v2';
 
+// Simple in-memory cache (10 min TTL for barcode, 5 min for search)
+const cache = new Map();
+const BARCODE_CACHE_TTL = 10 * 60 * 1000;
+const SEARCH_CACHE_TTL = 5 * 60 * 1000;
+
 class OpenFoodFactsService {
   /**
    * Search for foods by barcode
@@ -16,6 +21,16 @@ class OpenFoodFactsService {
    * @returns {Promise<Object>} Food data with nutrition
    */
   async searchByBarcode(barcode) {
+    // Check cache
+    const cacheKey = `barcode_${barcode}`;
+    if (cache.has(cacheKey)) {
+      const cached = cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < BARCODE_CACHE_TTL) {
+        return cached.data;
+      }
+      cache.delete(cacheKey);
+    }
+
     try {
       const url = `${BASE_URL}/product/${barcode}.json`;
       const response = await fetch(url, {
@@ -27,7 +42,13 @@ class OpenFoodFactsService {
       }
 
       const data = await response.json();
-      return this.parseProduct(data.product);
+      const result = this.parseProduct(data.product);
+
+      // Cache result
+      if (result) {
+        cache.set(cacheKey, { data: result, timestamp: Date.now() });
+      }
+      return result;
     } catch (error) {
       console.error('Open Food Facts barcode error:', error.message);
       return null;
@@ -41,6 +62,16 @@ class OpenFoodFactsService {
    * @returns {Promise<Array>} Array of foods
    */
   async searchFoods(query, pageSize = 20) {
+    // Check cache
+    const cacheKey = `search_${query.toLowerCase()}_${pageSize}`;
+    if (cache.has(cacheKey)) {
+      const cached = cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < SEARCH_CACHE_TTL) {
+        return cached.data;
+      }
+      cache.delete(cacheKey);
+    }
+
     try {
       const params = new URLSearchParams({
         q: query,
@@ -59,9 +90,13 @@ class OpenFoodFactsService {
       }
 
       const data = await response.json();
-      return (data.products || [])
+      const results = (data.products || [])
         .map(p => this.parseProduct(p))
         .filter(p => p !== null);
+
+      // Cache results
+      cache.set(cacheKey, { data: results, timestamp: Date.now() });
+      return results;
     } catch (error) {
       console.error('Open Food Facts search error:', error.message);
       return [];
@@ -106,8 +141,8 @@ class OpenFoodFactsService {
   async getIndianProducts(query, limit = 20) {
     const indianBrands = [
       'Amul', 'Haldiram', 'Parle', 'Britannia', 'MTR', 'Patanjali',
-      'Maggi', 'Nestlé India', 'ITC', 'Mahindra', 'Godrej', 'Marico',
-      'Monsanto', 'Horlicks', 'Cadbury', 'Bournvita', 'Google Play'
+      'Maggi', 'Nestlé', 'ITC', 'Godrej', 'Marico',
+      'Horlicks', 'Cadbury', 'Bournvita', 'Aashirvaad', 'Saffola'
     ];
 
     const results = await this.searchFoods(query, limit * 2);

@@ -10,6 +10,10 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 const API_KEY = process.env.API_NINJAS_KEY;
 const BASE_URL = 'https://api.api-ninjas.com/v1/nutrition';
 
+// Simple in-memory cache (5 min TTL)
+const cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000;
+
 class APINinjasService {
   /**
    * Get nutrition data by natural language query
@@ -21,6 +25,16 @@ class APINinjasService {
     if (!API_KEY) {
       console.warn('API_NINJAS_KEY not configured');
       return [];
+    }
+
+    // Check cache
+    const cacheKey = `ninjas_${query.toLowerCase()}`;
+    if (cache.has(cacheKey)) {
+      const cached = cache.get(cacheKey);
+      if (Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.data;
+      }
+      cache.delete(cacheKey);
     }
 
     try {
@@ -39,7 +53,11 @@ class APINinjasService {
       }
 
       const data = await response.json();
-      return (data.items || []).map(item => this.parseNutrition(item, query));
+      const results = (data.items || []).map(item => this.parseNutrition(item, query));
+
+      // Cache results
+      cache.set(cacheKey, { data: results, timestamp: Date.now() });
+      return results;
     } catch (error) {
       console.error('API Ninjas error:', error.message);
       return [];
