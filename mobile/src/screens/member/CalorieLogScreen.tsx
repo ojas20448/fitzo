@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -11,10 +11,7 @@ import {
     ScrollView,
     ActivityIndicator,
     Dimensions,
-    KeyboardAvoidingView,
-    Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -78,11 +75,7 @@ const CalorieLogScreen: React.FC = () => {
     const [showCelebration, setShowCelebration] = useState(false);
     const [searchError, setSearchError] = useState<string | null>(null);
 
-    // AI Meal Describer Modal
-    const [showAiModal, setShowAiModal] = useState(false);
-    const [aiMealText, setAiMealText] = useState('');
     const [aiAnalyzing, setAiAnalyzing] = useState(false);
-    const aiInputRef = useRef<TextInput>(null);
 
     // Frequent foods
     const [frequentFoods, setFrequentFoods] = useState<any[]>([]);
@@ -122,55 +115,6 @@ const CalorieLogScreen: React.FC = () => {
         }
     };
 
-    const handleAiAnalyze = async () => {
-        const text = aiMealText.trim();
-        if (!text) return;
-
-        setAiAnalyzing(true);
-        try {
-            const res = await foodAPI.analyzeText(text);
-            if (res.food) {
-                const aiFood = res.food;
-                setSelectedFood({
-                    id: 'ai-' + Date.now(),
-                    name: aiFood.name,
-                    brand: 'AI Analysis',
-                    servings: [{
-                        id: 'default',
-                        description: aiFood.serving_size || '1 meal',
-                        measurementDescription: 'serving',
-                        calories: aiFood.calories,
-                        protein: aiFood.protein_g,
-                        carbs: aiFood.carbs_g,
-                        fat: aiFood.fat_g,
-                        fiber: aiFood.fiber_g,
-                        sugar: aiFood.sugar_g
-                    }]
-                });
-                setSelectedServing({
-                    id: 'default',
-                    description: aiFood.serving_size || '1 meal',
-                    measurementDescription: 'serving',
-                    calories: aiFood.calories,
-                    protein: aiFood.protein_g,
-                    carbs: aiFood.carbs_g,
-                    fat: aiFood.fat_g,
-                    fiber: aiFood.fiber_g,
-                    sugar: aiFood.sugar_g
-                });
-                setServingCount(1);
-                setShowAiModal(false);
-                setAiMealText('');
-                setShowDetail(true);
-            } else {
-                toast.error('AI Error', 'Could not analyze meal');
-            }
-        } catch (err: any) {
-            toast.error('AI Error', 'Analysis failed. Try again.');
-        } finally {
-            setAiAnalyzing(false);
-        }
-    };
 
     const handleQuickAdd = async (food: any) => {
         // Prepare for quick logging or detailing
@@ -523,135 +467,8 @@ const CalorieLogScreen: React.FC = () => {
                 </View>
             </View>
 
-            {/* AI Meal Describer - Prominent Button */}
-            <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.aiContainer}>
-                <Pressable
-                    onPress={() => {
-                        setShowAiModal(true);
-                        setTimeout(() => aiInputRef.current?.focus(), 300);
-                    }}
-                    style={({ pressed }) => [
-                        styles.aiButtonOuter,
-                        pressed && styles.aiButtonPressed,
-                    ]}
-                >
-                    <LinearGradient
-                        colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.02)']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.aiButtonGradient}
-                    >
-                        <View style={styles.aiButtonIconWrap}>
-                            <MaterialIcons name="auto-awesome" size={20} color={colors.background} />
-                        </View>
-                        <View style={styles.aiButtonTextWrap}>
-                            <Text style={styles.aiButtonTitle}>Describe your meal with AI</Text>
-                            <Text style={styles.aiButtonSubtitle}>e.g. "2 rotis with dal and rice"</Text>
-                        </View>
-                        <MaterialIcons name="chevron-right" size={20} color={colors.text.muted} />
-                    </LinearGradient>
-                </Pressable>
-            </Animated.View>
+            {/* AI search results will show Smart Analysis option inline */}
 
-            {/* AI Meal Description Modal */}
-            <Modal
-                visible={showAiModal}
-                animationType="slide"
-                presentationStyle="pageSheet"
-                onRequestClose={() => {
-                    if (!aiAnalyzing) {
-                        setShowAiModal(false);
-                        setAiMealText('');
-                    }
-                }}
-            >
-                <SafeAreaView style={styles.aiModalContainer} edges={['top', 'bottom']}>
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        style={{ flex: 1 }}
-                    >
-                        {/* Modal Header */}
-                        <View style={styles.aiModalHeader}>
-                            <Pressable
-                                onPress={() => {
-                                    if (!aiAnalyzing) {
-                                        setShowAiModal(false);
-                                        setAiMealText('');
-                                    }
-                                }}
-                                style={styles.modalClose}
-                            >
-                                <MaterialIcons name="close" size={24} color={colors.text.primary} />
-                            </Pressable>
-                            <View style={styles.aiModalTitleRow}>
-                                <MaterialIcons name="auto-awesome" size={24} color={colors.primary} />
-                                <Text style={styles.aiModalTitle}>Describe Your Meal</Text>
-                            </View>
-                            <Text style={styles.aiModalSubtitle}>
-                                Tell us what you ate in plain language and AI will estimate the nutrition.
-                            </Text>
-                        </View>
-
-                        {/* Input Area */}
-                        <View style={styles.aiModalBody}>
-                            <View style={styles.aiModalInputContainer}>
-                                <TextInput
-                                    ref={aiInputRef}
-                                    style={styles.aiModalInput}
-                                    placeholder="e.g. 2 rotis with dal, a bowl of rice, and a glass of buttermilk"
-                                    placeholderTextColor={colors.text.subtle}
-                                    value={aiMealText}
-                                    onChangeText={setAiMealText}
-                                    multiline
-                                    numberOfLines={4}
-                                    textAlignVertical="top"
-                                    editable={!aiAnalyzing}
-                                    returnKeyType="default"
-                                    keyboardType="default"
-                                />
-                            </View>
-
-                            {/* Quick suggestion chips */}
-                            <View style={styles.aiSuggestionRow}>
-                                {['Chicken biryani', 'Roti + sabzi', 'Dosa with chutney', 'Protein shake'].map((suggestion) => (
-                                    <Pressable
-                                        key={suggestion}
-                                        style={styles.aiSuggestionChip}
-                                        onPress={() => setAiMealText(suggestion)}
-                                        disabled={aiAnalyzing}
-                                    >
-                                        <Text style={styles.aiSuggestionText}>{suggestion}</Text>
-                                    </Pressable>
-                                ))}
-                            </View>
-                        </View>
-
-                        {/* Analyze Button */}
-                        <View style={styles.aiModalFooter}>
-                            <TouchableOpacity
-                                style={[
-                                    styles.aiAnalyzeButton,
-                                    (!aiMealText.trim() || aiAnalyzing) && styles.aiAnalyzeButtonDisabled,
-                                ]}
-                                onPress={handleAiAnalyze}
-                                disabled={!aiMealText.trim() || aiAnalyzing}
-                            >
-                                {aiAnalyzing ? (
-                                    <View style={styles.aiAnalyzingRow}>
-                                        <ActivityIndicator color={colors.text.dark} size="small" />
-                                        <Text style={styles.aiAnalyzeButtonText}>Analyzing...</Text>
-                                    </View>
-                                ) : (
-                                    <View style={styles.aiAnalyzingRow}>
-                                        <MaterialIcons name="auto-awesome" size={20} color={colors.text.dark} />
-                                        <Text style={styles.aiAnalyzeButtonText}>Analyze Meal</Text>
-                                    </View>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    </KeyboardAvoidingView>
-                </SafeAreaView>
-            </Modal>
 
             {/* Frequent Foods */}
             {
@@ -1049,144 +866,6 @@ const styles = StyleSheet.create({
     },
     barcodeScanBtn: {
         padding: spacing.xs,
-    },
-    aiContainer: {
-        paddingHorizontal: spacing.xl,
-        paddingBottom: spacing.lg,
-    },
-    aiButtonOuter: {
-        borderRadius: borderRadius.xl,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.15)',
-        ...shadows.glowCard,
-    },
-    aiButtonPressed: {
-        opacity: 0.8,
-    },
-    aiButtonGradient: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.lg,
-        gap: spacing.md,
-    },
-    aiButtonIconWrap: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    aiButtonTextWrap: {
-        flex: 1,
-    },
-    aiButtonTitle: {
-        fontSize: typography.sizes.base,
-        fontFamily: typography.fontFamily.semiBold,
-        color: colors.text.primary,
-    },
-    aiButtonSubtitle: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.regular,
-        color: colors.text.muted,
-        marginTop: 2,
-    },
-    // AI Modal Styles
-    aiModalContainer: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    aiModalHeader: {
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.xl,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.glass.border,
-    },
-    aiModalTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-        marginBottom: spacing.sm,
-    },
-    aiModalTitle: {
-        fontSize: typography.sizes['2xl'],
-        fontFamily: typography.fontFamily.bold,
-        color: colors.text.primary,
-    },
-    aiModalSubtitle: {
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.regular,
-        color: colors.text.muted,
-        lineHeight: typography.sizes.sm * 1.5,
-    },
-    aiModalBody: {
-        flex: 1,
-        paddingHorizontal: spacing.xl,
-        paddingTop: spacing.xl,
-    },
-    aiModalInputContainer: {
-        backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius.xl,
-        borderWidth: 1,
-        borderColor: colors.glass.borderLight,
-        padding: spacing.lg,
-        minHeight: 120,
-    },
-    aiModalInput: {
-        fontSize: typography.sizes.lg,
-        fontFamily: typography.fontFamily.regular,
-        color: colors.text.primary,
-        lineHeight: typography.sizes.lg * 1.6,
-        minHeight: 96,
-    },
-    aiSuggestionRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.sm,
-        marginTop: spacing.xl,
-    },
-    aiSuggestionChip: {
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius.full,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
-    },
-    aiSuggestionText: {
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.secondary,
-    },
-    aiModalFooter: {
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.xl,
-        borderTopWidth: 1,
-        borderTopColor: colors.glass.border,
-    },
-    aiAnalyzeButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.primary,
-        height: 56,
-        borderRadius: borderRadius.full,
-        ...shadows.glow,
-    },
-    aiAnalyzeButtonDisabled: {
-        opacity: 0.4,
-    },
-    aiAnalyzeButtonText: {
-        fontSize: typography.sizes.lg,
-        fontFamily: typography.fontFamily.bold,
-        color: colors.text.dark,
-    },
-    aiAnalyzingRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
     },
     searchInput: {
         flex: 1,

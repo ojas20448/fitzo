@@ -211,6 +211,45 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
     if (hour > 20) achievements.push({ icon: 'nights-stay', title: 'Night Owl', desc: 'Late night pump' });
     if (prs.length > 0) achievements.push({ icon: 'emoji-events', title: 'PR Breaker', desc: `${prs.length} new records!` });
 
+    // 4. Shareable flex stats
+    const [workoutCountRes, lifetimeVolRes, percentileRes] = await Promise.all([
+        query(
+            `SELECT COUNT(*) as count FROM workout_sessions WHERE user_id = $1 AND completed_at IS NOT NULL`,
+            [userId]
+        ),
+        query(
+            `SELECT COALESCE(SUM(sl.reps * sl.weight_kg), 0) as total
+             FROM workout_sessions ws
+             JOIN exercise_logs el ON ws.id = el.session_id
+             JOIN set_logs sl ON el.id = sl.exercise_log_id
+             WHERE ws.user_id = $1 AND ws.completed_at IS NOT NULL`,
+            [userId]
+        ),
+        session.gym_id ? query(
+            `WITH user_volumes AS (
+                SELECT ws.user_id, COALESCE(SUM(sl.reps * sl.weight_kg), 0) as vol
+                FROM workout_sessions ws
+                JOIN exercise_logs el ON ws.id = el.session_id
+                JOIN set_logs sl ON el.id = sl.exercise_log_id
+                JOIN users u ON ws.user_id = u.id
+                WHERE u.gym_id = $1 AND ws.completed_at IS NOT NULL
+                  AND ws.completed_at > NOW() - INTERVAL '30 days'
+                GROUP BY ws.user_id
+            )
+            SELECT
+                ROUND(100.0 * (1 - (PERCENT_RANK() OVER (ORDER BY vol))::numeric), 0) as percentile
+            FROM user_volumes
+            WHERE user_id = $2`,
+            [session.gym_id, userId]
+        ) : Promise.resolve({ rows: [] }),
+    ]);
+
+    const totalWorkouts = parseInt(workoutCountRes.rows[0]?.count || '0');
+    const totalLifetimeVolume = parseFloat(lifetimeVolRes.rows[0]?.total || '0');
+    const gymPercentile = percentileRes.rows[0]?.percentile != null
+        ? parseInt(percentileRes.rows[0].percentile)
+        : null;
+
     res.json({
         message: 'Workout completed! 💪',
         session,
@@ -219,7 +258,10 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
             volume: session.volume || 0,
             sets: session.sets || 0,
             prs,
-            achievements
+            achievements,
+            totalWorkouts,
+            totalLifetimeVolume,
+            gymPercentile
         }
     });
 }));

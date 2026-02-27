@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../styles/theme';
+import { typography } from '../styles/theme';
 
 const { width: SW } = Dimensions.get('window');
 const CARD_W = SW;
@@ -13,12 +13,45 @@ interface WorkoutShareCardProps {
         volume: number;
         sets: number;
         prs?: any[];
+        totalWorkouts?: number;
+        totalLifetimeVolume?: number;
+        gymPercentile?: number | null;
     };
     user?: { name: string; streak?: number };
     intent?: { emphasis?: string[]; session_label?: string } | null;
     progressPct?: number | null;
     date: Date;
 }
+
+// Detect milestones for workout count
+const getWorkoutMilestone = (count: number): string | null => {
+    const milestones = [500, 365, 200, 100, 50, 25, 10];
+    for (const m of milestones) {
+        if (count === m) return `${m}TH WORKOUT`;
+    }
+    return null;
+};
+
+// Detect milestones for lifetime volume
+const getVolumeMilestone = (vol: number): string | null => {
+    const milestones = [
+        { threshold: 1000000, label: '1M KG LIFETIME' },
+        { threshold: 500000, label: '500K KG LIFETIME' },
+        { threshold: 250000, label: '250K KG LIFETIME' },
+        { threshold: 100000, label: '100K KG LIFETIME' },
+    ];
+    for (const m of milestones) {
+        // Within 2% of crossing the milestone this session
+        if (vol >= m.threshold && vol < m.threshold * 1.02) return m.label;
+    }
+    return null;
+};
+
+const formatLifetimeVol = (vol: number): string => {
+    if (vol >= 1000000) return `${(vol / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+    if (vol >= 1000) return `${(vol / 1000).toFixed(0)}k`;
+    return vol.toLocaleString();
+};
 
 const WorkoutShareCard = React.forwardRef<View, WorkoutShareCardProps>(
     ({ recap, user, intent, progressPct, date }, ref) => {
@@ -43,6 +76,14 @@ const WorkoutShareCard = React.forwardRef<View, WorkoutShareCardProps>(
         const dateStr = date.toLocaleDateString('en', {
             day: 'numeric', month: 'short', year: 'numeric',
         }).toUpperCase();
+
+        // Flex stats
+        const totalWorkouts = recap.totalWorkouts ?? 0;
+        const totalLifetimeVol = recap.totalLifetimeVolume ?? 0;
+        const gymPercentile = recap.gymPercentile;
+        const workoutMilestone = getWorkoutMilestone(totalWorkouts);
+        const volumeMilestone = getVolumeMilestone(totalLifetimeVol);
+        const showPercentile = gymPercentile != null && gymPercentile <= 25;
 
         return (
             <View ref={ref} style={s.card} collapsable={false}>
@@ -80,6 +121,41 @@ const WorkoutShareCard = React.forwardRef<View, WorkoutShareCardProps>(
                         <Text style={s.glassLabel}>SETS</Text>
                     </View>
                 </View>
+
+                {/* ── Flex Stats ── */}
+                {(showPercentile || workoutMilestone || volumeMilestone || totalLifetimeVol > 0) && (
+                    <View style={s.flexRow}>
+                        {showPercentile && (
+                            <View style={[s.flexCard, { backgroundColor: 'rgba(139,92,246,0.10)', borderColor: 'rgba(139,92,246,0.25)' }]}>
+                                <Text style={[s.flexValue, { color: '#A78BFA' }]}>TOP {gymPercentile}%</Text>
+                                <Text style={s.flexLabel}>IN YOUR GYM</Text>
+                            </View>
+                        )}
+                        {(workoutMilestone || volumeMilestone) ? (
+                            <View style={[s.flexCard, { backgroundColor: 'rgba(251,191,36,0.10)', borderColor: 'rgba(251,191,36,0.25)' }]}>
+                                <MaterialIcons name="star" size={14} color="#FBBF24" />
+                                <Text style={[s.flexValue, { color: '#FBBF24' }]}>
+                                    {workoutMilestone || volumeMilestone}
+                                </Text>
+                            </View>
+                        ) : totalLifetimeVol > 0 ? (
+                            <View style={[s.flexCard, { backgroundColor: GLASS.bg, borderColor: GLASS.border }]}>
+                                <Text style={[s.flexValue, { color: 'rgba(255,255,255,0.7)' }]}>
+                                    {formatLifetimeVol(totalLifetimeVol)} kg
+                                </Text>
+                                <Text style={s.flexLabel}>LIFETIME</Text>
+                            </View>
+                        ) : null}
+                        {totalWorkouts > 0 && !workoutMilestone && (
+                            <View style={[s.flexCard, { backgroundColor: GLASS.bg, borderColor: GLASS.border }]}>
+                                <Text style={[s.flexValue, { color: 'rgba(255,255,255,0.7)' }]}>
+                                    #{totalWorkouts}
+                                </Text>
+                                <Text style={s.flexLabel}>WORKOUT</Text>
+                            </View>
+                        )}
+                    </View>
+                )}
 
                 {/* ── Progress + PRs row ── */}
                 <View style={s.infoRow}>
@@ -219,6 +295,32 @@ const s = StyleSheet.create({
         fontFamily: typography.fontFamily.bold,
         color: 'rgba(255,255,255,0.3)',
         letterSpacing: 2,
+    },
+
+    // Flex stats row
+    flexRow: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    flexCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 12,
+        borderWidth: 1,
+    },
+    flexValue: {
+        fontSize: 14,
+        fontFamily: typography.fontFamily.extraBold,
+        letterSpacing: 1,
+    },
+    flexLabel: {
+        fontSize: 8,
+        fontFamily: typography.fontFamily.bold,
+        color: 'rgba(255,255,255,0.25)',
+        letterSpacing: 1.5,
     },
 
     // Info chips

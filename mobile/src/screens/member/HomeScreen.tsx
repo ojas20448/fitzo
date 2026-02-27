@@ -26,8 +26,6 @@ import WeeklyProgress from '../../components/WeeklyProgress';
 import NutritionAnalytics from '../../components/NutritionAnalytics';
 import { SkeletonHomeScreen } from '../../components/Skeleton';
 import EmptyState, { EmptyStateInline } from '../../components/EmptyState';
-import MacroPieChart from '../../components/MacroPieChart';
-import WeeklyCharts from '../../components/WeeklyCharts';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 
 interface HomeData {
@@ -311,40 +309,25 @@ const HomeScreen: React.FC = () => {
                     </TouchableOpacity>
                 </Animated.View>
 
-                {/* Nutrition Summary with Macros */}
-                <Animated.View entering={FadeInDown.delay(300).duration(600).springify()} style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Today's Nutrition</Text>
-                        <TouchableOpacity onPress={() => router.push('/log/calories' as any)}>
-                            <Text style={styles.viewAllLink}>LOG FOOD</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <TouchableOpacity onPress={() => router.push('/member/nutrition-insights' as any)} activeOpacity={0.8}>
-                        <MacroPieChart
-                            calories={todayMacros.calories || 0}
-                            calorieTarget={2000}
-                            protein={todayMacros.protein || 0}
-                            proteinTarget={150}
-                            carbs={todayMacros.carbs || 0}
-                            carbsTarget={200}
-                            fat={todayMacros.fat || 0}
-                            fatTarget={65}
-                        />
-                    </TouchableOpacity>
-                </Animated.View>
-
                 {/* Weekly Workout Progress */}
                 <View style={styles.section}>
                     <WeeklyProgress history={data?.streak.history || []} />
                 </View>
 
-                {/* Weekly Nutrition Analytics - Lose It Style */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Nutrition History</Text>
-                    </View>
-                    <WeeklyCharts />
-                </View>
+                {/* Nutrition Insights Link */}
+                <Animated.View entering={FadeInDown.delay(300).duration(600).springify()} style={styles.section}>
+                    <TouchableOpacity
+                        style={styles.insightsLink}
+                        onPress={() => router.push('/member/nutrition-insights' as any)}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.insightsLinkLeft}>
+                            <MaterialIcons name="restaurant" size={18} color={colors.text.muted} />
+                            <Text style={styles.insightsLinkText}>Nutrition Insights</Text>
+                        </View>
+                        <MaterialIcons name="chevron-right" size={20} color={colors.text.muted} />
+                    </TouchableOpacity>
+                </Animated.View>
 
                 {/* Gym Buddies - Friend Avatars */}
                 <View style={styles.section}>
@@ -731,6 +714,27 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.bold,
         color: colors.text.muted,
         letterSpacing: 1.5,
+    },
+    insightsLink: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.lg,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+    },
+    insightsLinkLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+    },
+    insightsLinkText: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.secondary,
     },
 
     // Learning Card

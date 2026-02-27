@@ -96,6 +96,9 @@ export default function WorkoutRecapScreen() {
                         volume: recap.volume || 0,
                         sets: recap.sets || 0,
                         prs: recap.prs,
+                        totalWorkouts: recap.totalWorkouts,
+                        totalLifetimeVolume: recap.totalLifetimeVolume,
+                        gymPercentile: recap.gymPercentile,
                     }}
                     user={{ name: user?.name || 'Athlete', streak }}
                     intent={session ? {
