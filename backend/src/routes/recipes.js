@@ -80,6 +80,58 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // ============================================
+// UPDATE RECIPE
+// ============================================
+router.put('/:id', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const recipeId = req.params.id;
+    const {
+        name,
+        description,
+        instructions,
+        ingredients,
+        total_calories,
+        total_protein,
+        total_carbs,
+        total_fat
+    } = req.body;
+
+    // Check recipe exists and belongs to user
+    const checkResult = await query(
+        `SELECT id FROM recipes WHERE id = $1 AND user_id = $2`,
+        [recipeId, userId]
+    );
+
+    if (checkResult.rows.length === 0) {
+        throw new NotFoundError('Recipe not found');
+    }
+
+    // Update recipe
+    const result = await query(
+        `UPDATE recipes
+         SET name = $1, description = $2, instructions = $3, ingredients = $4,
+             total_calories = $5, total_protein = $6, total_carbs = $7, total_fat = $8,
+             updated_at = NOW()
+         WHERE id = $9 AND user_id = $10
+         RETURNING *`,
+        [
+            name || '',
+            description || '',
+            instructions || '',
+            JSON.stringify(ingredients || []),
+            total_calories || 0,
+            total_protein || 0,
+            total_carbs || 0,
+            total_fat || 0,
+            recipeId,
+            userId
+        ]
+    );
+
+    res.json({ success: true, recipe: result.rows[0] });
+}));
+
+// ============================================
 // DELETE RECIPE
 // ============================================
 router.delete('/:id', asyncHandler(async (req, res) => {

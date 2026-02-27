@@ -222,7 +222,7 @@ const RecipeBuilderScreen = () => {
 
         setSaving(true);
         try {
-            await recipesAPI.create({
+            const recipeData = {
                 name,
                 description,
                 instructions,
@@ -231,8 +231,17 @@ const RecipeBuilderScreen = () => {
                 total_protein: totals.protein,
                 total_carbs: totals.carbs,
                 total_fat: totals.fat
-            });
-            toast.success('Saved', 'Recipe created successfully');
+            };
+
+            if (recipeId) {
+                // Update existing recipe
+                await recipesAPI.update(recipeId, recipeData);
+                toast.success('Updated', 'Recipe updated successfully');
+            } else {
+                // Create new recipe
+                await recipesAPI.create(recipeData);
+                toast.success('Saved', 'Recipe created successfully');
+            }
             router.back();
         } catch (error: any) {
             Alert.alert('Save Failed', error.message || 'Failed to save recipe');

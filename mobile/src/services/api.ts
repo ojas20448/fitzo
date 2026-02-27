@@ -685,6 +685,20 @@ export const recipesAPI = {
         return response.data;
     },
 
+    update: async (id: string, data: {
+        name?: string;
+        description?: string;
+        instructions?: string;
+        ingredients?: any[];
+        total_calories?: number;
+        total_protein?: number;
+        total_carbs?: number;
+        total_fat?: number;
+    }) => {
+        const response = await api.put(`/recipes/${id}`, data);
+        return response.data;
+    },
+
     delete: async (id: string) => {
         const response = await api.delete(`/recipes/${id}`);
         return response.data;
