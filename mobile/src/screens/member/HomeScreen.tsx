@@ -26,6 +26,7 @@ import WeeklyProgress from '../../components/WeeklyProgress';
 import NutritionAnalytics from '../../components/NutritionAnalytics';
 import { SkeletonHomeScreen } from '../../components/Skeleton';
 import EmptyState, { EmptyStateInline } from '../../components/EmptyState';
+import MacroPieChart from '../../components/MacroPieChart';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 
 interface HomeData {
@@ -314,18 +315,25 @@ const HomeScreen: React.FC = () => {
                     <WeeklyProgress history={data?.streak.history || []} />
                 </View>
 
-                {/* Nutrition Insights Link */}
+                {/* Today's Nutrition */}
                 <Animated.View entering={FadeInDown.delay(300).duration(600).springify()} style={styles.section}>
-                    <TouchableOpacity
-                        style={styles.insightsLink}
-                        onPress={() => router.push('/member/nutrition-insights' as any)}
-                        activeOpacity={0.7}
-                    >
-                        <View style={styles.insightsLinkLeft}>
-                            <MaterialIcons name="restaurant" size={18} color={colors.text.muted} />
-                            <Text style={styles.insightsLinkText}>Nutrition Insights</Text>
-                        </View>
-                        <MaterialIcons name="chevron-right" size={20} color={colors.text.muted} />
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Today's Nutrition</Text>
+                        <TouchableOpacity onPress={() => router.push('/log/calories' as any)}>
+                            <Text style={styles.viewAllLink}>LOG FOOD</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <TouchableOpacity onPress={() => router.push('/member/nutrition-insights' as any)} activeOpacity={0.8}>
+                        <MacroPieChart
+                            calories={todayMacros.calories || 0}
+                            calorieTarget={2000}
+                            protein={todayMacros.protein || 0}
+                            proteinTarget={150}
+                            carbs={todayMacros.carbs || 0}
+                            carbsTarget={200}
+                            fat={todayMacros.fat || 0}
+                            fatTarget={65}
+                        />
                     </TouchableOpacity>
                 </Animated.View>
 
