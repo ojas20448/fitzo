@@ -310,11 +310,6 @@ const HomeScreen: React.FC = () => {
                     </TouchableOpacity>
                 </Animated.View>
 
-                {/* Weekly Workout Progress */}
-                <View style={styles.section}>
-                    <WeeklyProgress history={data?.streak.history || []} />
-                </View>
-
                 {/* Today's Nutrition */}
                 <Animated.View entering={FadeInDown.delay(300).duration(600).springify()} style={styles.section}>
                     <View style={styles.sectionHeader}>
@@ -336,6 +331,11 @@ const HomeScreen: React.FC = () => {
                         />
                     </TouchableOpacity>
                 </Animated.View>
+
+                {/* Weekly Workout Progress */}
+                <View style={styles.section}>
+                    <WeeklyProgress history={data?.streak.history || []} />
+                </View>
 
                 {/* Gym Buddies - Friend Avatars */}
                 <View style={styles.section}>
