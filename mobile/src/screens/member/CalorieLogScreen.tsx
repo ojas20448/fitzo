@@ -27,6 +27,14 @@ import { FoodCacheService } from '../../services/FoodCacheService';
 
 const { width } = Dimensions.get('window');
 
+const goBack = () => {
+    if (router.canGoBack()) {
+        goBack();
+    } else {
+        router.replace('/(tabs)');
+    }
+};
+
 interface FoodItem {
     id: string;
     name: string;
@@ -344,10 +352,10 @@ const CalorieLogScreen: React.FC = () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             if (isGoalHit) {
                 toast.success('GOAL REACHED!', `You've hit your daily targets!`);
-                router.back();
+                goBack();
             } else {
                 toast.success('Logged!', `${totalCalories} kcal from ${selectedFood.name}`);
-                router.back();
+                goBack();
             }
 
         } catch (error: any) {
@@ -412,14 +420,14 @@ const CalorieLogScreen: React.FC = () => {
                 value="Logged"
                 onComplete={() => {
                     setShowCelebration(false);
-                    router.back();
+                    goBack();
                 }}
             />
 
             {/* Header */}
             <View style={styles.header}>
                 <Pressable
-                    onPress={() => router.back()}
+                    onPress={() => goBack()}
                     style={styles.backBtn}
                     accessibilityLabel="Close"
                 >

@@ -1,11 +1,12 @@
 /**
  * Food API Routes
- * Priority: Indian Foods > USDA > FatSecret
+ * Priority: Indian Foods (local + IFCT2017) > Open Food Facts > API Ninjas > USDA > FatSecret
  */
 
 const express = require('express');
 const router = express.Router();
 const indianFood = require('../services/indianFood');
+const ifct2017 = require('../services/ifct2017');
 const usda = require('../services/usda');
 const fatsecret = require('../services/fatsecret');
 const barcodeService = require('../services/barcode');
@@ -104,25 +105,28 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
     const query = q.trim();
 
     // Run all searches in parallel with new APIs
-    const [indianRes, usdaRes, fatsecretRes, ninJasRes, offRes] = await Promise.allSettled([
+    const [indianRes, ifctRes, usdaRes, fatsecretRes, ninJasRes, offRes] = await Promise.allSettled([
         // 1. Indian Food (Local) - No timeout needed
         new Promise(resolve => resolve(indianFood.searchFoods(query, 10))),
 
-        // 2. USDA API
+        // 2. IFCT2017 (Official Indian govt nutrition data) - No timeout needed
+        new Promise(resolve => resolve(ifct2017.searchFoods(query, 8))),
+
+        // 3. USDA API
         withTimeout(usda.searchFoods(query, 5, 1), 5000, 'USDA')
             .catch(err => {
                 console.error('USDA search failed:', err.message);
                 return { foods: [] };
             }),
 
-        // 3. FatSecret API
+        // 4. FatSecret API
         withTimeout(fatsecret.searchFoods(query, 0, 5), 5000, 'FatSecret')
             .catch(err => {
                 console.error('FatSecret search failed:', err.message);
                 return { foods: [] };
             }),
 
-        // 4. API Ninjas (Natural language nutrition)
+        // 5. API Ninjas (Natural language nutrition)
         withTimeout(apiNinjas.searchFoods(query), 3000, 'API Ninjas')
             .then(results => ({ foods: results }))
             .catch(err => {
@@ -130,8 +134,8 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
                 return { foods: [] };
             }),
 
-        // 5. Open Food Facts (Packaged products & Indian brands)
-        withTimeout(openFoodFacts.searchFoods(query, 5), 3000, 'Open Food Facts')
+        // 6. Open Food Facts (Packaged products & Indian brands)
+        withTimeout(openFoodFacts.searchFoods(query, 5), 5000, 'Open Food Facts')
             .then(results => ({ foods: results }))
             .catch(err => {
                 console.error('Open Food Facts search failed:', err.message);
@@ -143,6 +147,10 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
     // --- Process all results ---
     const indianFoods = (indianRes.status === 'fulfilled' && indianRes.value?.foods)
         ? indianRes.value.foods.map(f => ({ ...f, source: 'indian' }))
+        : [];
+
+    const ifctFoods = (ifctRes.status === 'fulfilled' && ifctRes.value?.foods)
+        ? ifctRes.value.foods.map(f => ({ ...f, source: 'ifct2017' }))
         : [];
 
     const usdaFoods = (usdaRes.status === 'fulfilled' && usdaRes.value?.foods)
@@ -161,17 +169,18 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
         ? offRes.value.foods.map(f => ({ ...f, source: 'open_food_facts' }))
         : [];
 
-    // Combine all results - prioritize by source
+    // Combine all results - prioritize Indian sources
     const combinedFoods = [
-        ...indianFoods,
-        ...offFoods,      // Packaged products/brands
-        ...ninjasFoods,   // Natural language nutrition
+        ...indianFoods,     // Local Indian foods DB (packaged + home-cooked)
+        ...ifctFoods,       // IFCT2017 govt nutrition data (raw ingredients)
+        ...offFoods,        // Packaged products/brands
+        ...ninjasFoods,     // Natural language nutrition
         ...usdaFoods,
         ...fatsecretFoods
     ];
 
     if (process.env.NODE_ENV !== 'production') {
-        console.log(`📊 Aggregated Search: "${q}" -> ${combinedFoods.length} total. Indian=${indianFoods.length}, OFF=${offFoods.length}, Ninjas=${ninjasFoods.length}, USDA=${usdaFoods.length}, FS=${fatsecretFoods.length}`);
+        console.log(`📊 Aggregated Search: "${q}" -> ${combinedFoods.length} total. Indian=${indianFoods.length}, IFCT=${ifctFoods.length}, OFF=${offFoods.length}, Ninjas=${ninjasFoods.length}, USDA=${usdaFoods.length}, FS=${fatsecretFoods.length}`);
     }
 
     return res.json({
@@ -180,6 +189,7 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
         page: page,
         sources: {
             indian: indianFoods.length,
+            ifct2017: ifctFoods.length,
             open_food_facts: offFoods.length,
             api_ninjas: ninjasFoods.length,
             usda: usdaFoods.length,

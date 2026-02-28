@@ -422,8 +422,8 @@ router.post('/forgot-password', passwordLimiter, validate({ body: forgotPassword
     );
 
     // Send email via Resend
-    await resend.emails.send({
-        from: 'Fitzo <noreply@fitzoapp.in>',
+    const { data, error: sendError } = await resend.emails.send({
+        from: 'Fitzo <onboarding@resend.dev>',
         to: email,
         subject: 'Your Fitzo Password Reset Code',
         html: `
@@ -438,6 +438,12 @@ router.post('/forgot-password', passwordLimiter, validate({ body: forgotPassword
         `
     });
 
+    if (sendError) {
+        console.error('Resend email error:', sendError);
+        throw new ValidationError('Failed to send reset email. Please try again.');
+    }
+
+    console.log('Reset email sent successfully:', data?.id);
     res.json({ success: true, message: 'If an account exists, a reset code has been sent.' });
 }));
 

@@ -12,19 +12,35 @@ const indianFoods = require('../data/indian-foods.json');
  */
 function searchFoods(query, limit = 20) {
     const searchTerm = query.toLowerCase();
+    const words = searchTerm.split(/\s+/).filter(w => w.length > 0);
 
-    const results = indianFoods.filter(food => {
+    // Score each food for relevance
+    const scored = indianFoods.map(food => {
         const name = food.name.toLowerCase();
         const category = food.category.toLowerCase();
         const region = food.region.toLowerCase();
+        const searchable = `${name} ${category} ${region}`;
+        let score = 0;
 
-        return name.includes(searchTerm) ||
-            category.includes(searchTerm) ||
-            region.includes(searchTerm);
-    }).slice(0, limit);
+        // Exact substring match on name (highest priority)
+        if (name.includes(searchTerm)) score += 10;
+        // Category or region match
+        if (category.includes(searchTerm) || region.includes(searchTerm)) score += 5;
+        // All individual words match (multi-word search like "maggi noodles")
+        const allWordsMatch = words.every(w => searchable.includes(w));
+        if (allWordsMatch) score += 8;
+        // Partial word matches
+        const matchingWords = words.filter(w => searchable.includes(w)).length;
+        if (matchingWords > 0) score += matchingWords * 2;
+
+        return { food, score };
+    })
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
 
     return {
-        foods: results.map(food => ({
+        foods: scored.map(({ food }) => ({
             id: food.id,
             name: food.name,
             brand: food.category,
@@ -35,7 +51,7 @@ function searchFoods(query, limit = 20) {
             carbs: food.carbs,
             fat: food.fat,
         })),
-        total: results.length,
+        total: scored.length,
         page: 1,
     };
 }
