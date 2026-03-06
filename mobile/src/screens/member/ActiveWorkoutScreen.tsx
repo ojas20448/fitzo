@@ -5,7 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import { workoutsAPI } from '../../services/api';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../components/Toast';
 import { LinearGradient } from 'expo-linear-gradient';
 import GlassCard from '../../components/GlassCard';
 import ExercisePicker from '../../components/ExercisePicker';
@@ -117,7 +117,7 @@ export default function ActiveWorkoutScreen() {
                     style: 'default',
                     onPress: async () => {
                         try {
-                            const res = await workoutsAPI.completeSession(sessionId as string, { notes: 'Great workout!' });
+                            const res = await workoutsAPI.completeSession(sessionId as string, { notes: '' });
 
                             // Navigate to Recap with data
                             router.replace({

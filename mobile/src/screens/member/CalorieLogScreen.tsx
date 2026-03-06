@@ -29,7 +29,7 @@ const { width } = Dimensions.get('window');
 
 const goBack = () => {
     if (router.canGoBack()) {
-        goBack();
+        router.back();
     } else {
         router.replace('/(tabs)');
     }

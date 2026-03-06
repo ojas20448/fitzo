@@ -12,7 +12,7 @@ const { validate } = require('../middleware/validate');
 const { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } = require('../schemas');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID_WEB);
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // Rate limiter for password-based endpoints only (not Google OAuth)
 const passwordLimiter = rateLimit({
@@ -422,6 +422,7 @@ router.post('/forgot-password', passwordLimiter, validate({ body: forgotPassword
     );
 
     // Send email via Resend
+    if (!resend) throw new Error('Email service is not configured');
     const { data, error: sendError } = await resend.emails.send({
         from: 'Fitzo <onboarding@resend.dev>',
         to: email,

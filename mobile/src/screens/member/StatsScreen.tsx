@@ -69,7 +69,7 @@ const StatsScreen = () => {
 
     const renderWeeklyChart = () => {
         const barWidth = 32;
-        const spacing = 16;
+        const barSpacing = 16;
         const chartHeight = 200;
         const maxCals = Math.max(TARGET_CALS, ...history.map(d => d.calories)) * 1.1;
 
@@ -85,7 +85,7 @@ const StatsScreen = () => {
 
                     {history.map((day, index) => {
                         const height = (day.calories / maxCals) * chartHeight;
-                        const x = index * (barWidth + spacing) + 10;
+                        const x = index * (barWidth + barSpacing) + 10;
                         const y = chartHeight - height;
 
                         return (

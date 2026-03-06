@@ -82,7 +82,6 @@
         }
       ],
       "expo-asset",
-      "expo-dev-client",
       "@kingstinct/react-native-healthkit",
       "react-native-health-connect"
     ],

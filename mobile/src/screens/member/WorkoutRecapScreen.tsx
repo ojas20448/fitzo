@@ -46,7 +46,7 @@ export default function WorkoutRecapScreen() {
                     }
                 }
             } catch (error: any) {
-                Alert.alert('Error', error.message || 'Something went wrong');
+                // silently handled
             }
         };
         init();

@@ -13,7 +13,7 @@ const authenticate = async (req, res, next) => {
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             // BYPASS AUTH FOR TESTING (Dev only)
-            if (process.env.NODE_ENV !== 'production' && req.headers['x-bypass-auth']) {
+            if (process.env.NODE_ENV === 'development' && req.headers['x-bypass-auth']) {
                 console.log('⚠️ Using Auth Bypass');
                 const demoUser = await query('SELECT * FROM users LIMIT 1');
                 if (demoUser.rows.length > 0) {

@@ -119,6 +119,7 @@ app.use('/api/progress', require('./routes/progress'));
 app.use('/api/health', require('./routes/health'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/buddy-activity', require('./routes/buddy-activity'));
+app.use('/api/readiness', require('./routes/readiness'));
 
 // 404 handler
 app.use((req, res) => {

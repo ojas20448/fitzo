@@ -33,7 +33,7 @@ export default function WorkoutVideosScreen() {
             const response = await videoAPI.getTrending(20);
             setVideos(response.videos || []);
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Something went wrong');
+            // silently handled
         } finally {
             setLoading(false);
         }

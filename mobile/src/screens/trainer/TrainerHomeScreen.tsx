@@ -6,7 +6,6 @@ import {
     ScrollView,
     TouchableOpacity,
     RefreshControl,
-    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -48,7 +47,7 @@ const TrainerHomeScreen: React.FC = () => {
             const response = await trainerAPI.getMembers();
             setMembers(response.members || []);
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Something went wrong');
+            // silently handled
         } finally {
             setLoading(false);
         }

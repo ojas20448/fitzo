@@ -7,16 +7,28 @@ import { useOfflineStore } from '../stores/offlineStore';
 // API base URL - EAS Build injects EXPO_PUBLIC_API_URL at build time from eas.json.
 // Falls back to production server when not set.
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fitzo.onrender.com/api';
-
+const API_ROOT = API_BASE_URL.replace(/\/api$/, '');
 
 // Create axios instance
 const api = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 30000,
+    timeout: 15000,
     headers: {
         'Content-Type': 'application/json',
     },
 });
+
+// Wake up the Render backend on app start (free tier cold starts can take 30-50s)
+let backendAwake = false;
+export const wakeBackend = async (): Promise<void> => {
+    if (backendAwake) return;
+    try {
+        await axios.get(`${API_ROOT}/health`, { timeout: 60000 });
+        backendAwake = true;
+    } catch {
+        // Backend might still be waking up - individual requests will retry
+    }
+};
 
 // Token management - platform aware (web uses localStorage, native uses SecureStore)
 const TOKEN_KEY = 'fitzo_auth_token';
@@ -67,18 +79,30 @@ api.interceptors.request.use(
 
 
 
-// Response interceptor - handle errors
+// Response interceptor - handle errors with automatic retry for cold starts
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        backendAwake = true;
+        return response;
+    },
     async (error) => {
         const originalRequest = error.config;
+
+        // Auto-retry once on timeout/network error (handles Render cold starts)
+        const isRetryable = (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK') && !originalRequest._retried;
+        if (isRetryable) {
+            originalRequest._retried = true;
+            originalRequest.timeout = 45000; // Give more time on retry
+            return api(originalRequest);
+        }
 
         // Handle token expiry - but NOT on auth endpoints (login/register)
         const isAuthEndpoint = originalRequest?.url?.includes('/auth/login') ||
             originalRequest?.url?.includes('/auth/register') ||
             originalRequest?.url?.includes('/auth/google');
 
-        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+        if (error.response?.status === 401 && !originalRequest._retried && !isAuthEndpoint) {
+            originalRequest._retried = true;
             // Token expired or invalid - clear it
             await removeAuthToken();
             authEvents.emitLogout();
@@ -87,11 +111,13 @@ api.interceptors.response.use(
         // Transform error to user-friendly message
         const message = error.response?.data?.message ||
             error.response?.data?.error ||
-            (error.code === 'ERR_NETWORK' ? 'Cannot connect to server. Please check your internet connection.' : 'Something went wrong. Please try again.');
+            (error.code === 'ERR_NETWORK' ? 'Cannot connect to server. Please check your internet connection.' :
+             error.code === 'ECONNABORTED' ? 'Server is taking too long. Please try again.' :
+             'Something went wrong. Please try again.');
 
         return Promise.reject({
             message,
-            code: error.response?.data?.code || (error.code === 'ERR_NETWORK' ? 'NETWORK_ERROR' : 'UNKNOWN'),
+            code: error.response?.data?.code || (error.code === 'ERR_NETWORK' ? 'NETWORK_ERROR' : error.code === 'ECONNABORTED' ? 'TIMEOUT' : 'UNKNOWN'),
             status: error.response?.status || 0,
         });
     }
@@ -802,6 +828,33 @@ export const foodPhotoAPI = {
 
     lookupBarcode: async (barcode: string) => {
         const response = await api.post('/food/barcode', { barcode });
+        return response.data;
+    },
+};
+
+// ===========================================
+// READINESS CHECK-IN ENDPOINTS
+// ===========================================
+
+export const readinessAPI = {
+    checkin: async (data: {
+        energy_level: number;
+        sleep_quality: number;
+        soreness: number;
+        sleep_hours?: number;
+        notes?: string;
+    }) => {
+        const response = await api.post('/readiness/checkin', data);
+        return response.data;
+    },
+
+    getToday: async () => {
+        const response = await api.get('/readiness/today');
+        return response.data;
+    },
+
+    getHistory: async (days = 7) => {
+        const response = await api.get(`/readiness/history?days=${days}`);
         return response.data;
     },
 };

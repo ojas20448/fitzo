@@ -21,6 +21,7 @@ import {
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { ToastProvider } from '../src/components/Toast';
 import { NutritionProvider } from '../src/context/NutritionContext';
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { notificationsAPI } from '../src/services/api';
 import { colors } from '../src/styles/theme';
 
@@ -156,6 +157,7 @@ export default function RootLayout() {
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <SafeAreaProvider>
+                <ErrorBoundary>
                 <AuthProvider>
                     <NutritionProvider>
                         <ToastProvider>
@@ -197,6 +199,12 @@ export default function RootLayout() {
                                 <Stack.Screen name="member/recipes" />
                                 <Stack.Screen name="member/settings" />
                                 <Stack.Screen name="member/workout-recap" />
+                                <Stack.Screen name="member/readiness-checkin" />
+                                <Stack.Screen name="member/nutrition-insights" />
+                                <Stack.Screen name="member/health-report" />
+                                <Stack.Screen name="member/create-post" />
+                                <Stack.Screen name="member/user-profile" />
+                                <Stack.Screen name="member/buddy-activity" />
                                 <Stack.Screen name="member-detail/[id]" />
                                 <Stack.Screen name="lesson/[id]" />
                                 <Stack.Screen name="log/calories" />
@@ -205,6 +213,7 @@ export default function RootLayout() {
                         </ToastProvider>
                     </NutritionProvider>
                 </AuthProvider>
+                </ErrorBoundary>
             </SafeAreaProvider>
         </GestureHandlerRootView>
     );

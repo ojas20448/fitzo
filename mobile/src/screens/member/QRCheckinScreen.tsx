@@ -22,6 +22,9 @@ import { checkinAPI } from '../../services/api';
 import Button from '../../components/Button';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 
+const FRAME_SIZE = 280;
+const CORNER_SIZE = 40;
+
 const QRCheckinScreen: React.FC = () => {
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
@@ -226,9 +229,6 @@ const QRCheckinScreen: React.FC = () => {
         </SafeAreaView>
     );
 };
-
-const FRAME_SIZE = 280;
-const CORNER_SIZE = 40;
 
 const styles = StyleSheet.create({
     // ... (keep existing styles)

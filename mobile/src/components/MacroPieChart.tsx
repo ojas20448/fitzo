@@ -1,7 +1,16 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Circle, G } from 'react-native-svg';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
+import Animated, {
+    useSharedValue,
+    useAnimatedProps,
+    withTiming,
+    Easing,
+    withDelay,
+} from 'react-native-reanimated';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface MacroPieChartProps {
     calories: number;
@@ -30,26 +39,71 @@ const MacroPieChart: React.FC<MacroPieChartProps> = ({
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
 
+    // Animated progress value
+    const animatedProgress = useSharedValue(0);
+    const [showDetail, setShowDetail] = useState<'calories' | 'protein' | 'carbs' | 'fat'>('calories');
+
     // Calculate calorie progress
     const calorieProgress = Math.min(calories / calorieTarget, 1);
-    const calorieOffset = circumference * (1 - calorieProgress);
     const remaining = Math.max(0, calorieTarget - calories);
 
-    // Calculate macro percentages
-    const totalMacroGrams = protein + carbs + fat;
-    const proteinPct = totalMacroGrams > 0 ? (protein / totalMacroGrams) * 100 : 33;
-    const carbsPct = totalMacroGrams > 0 ? (carbs / totalMacroGrams) * 100 : 33;
-    const fatPct = totalMacroGrams > 0 ? (fat / totalMacroGrams) * 100 : 33;
+    // Animate on mount and when calories change
+    useEffect(() => {
+        animatedProgress.value = 0;
+        animatedProgress.value = withDelay(
+            200,
+            withTiming(calorieProgress, {
+                duration: 1000,
+                easing: Easing.out(Easing.cubic),
+            })
+        );
+    }, [calories, calorieTarget]);
+
+    const animatedProps = useAnimatedProps(() => {
+        return {
+            strokeDashoffset: circumference * (1 - animatedProgress.value),
+        };
+    });
 
     // Colors for macros
     const proteinColor = '#4ECDC4'; // Teal
     const carbsColor = '#FFE66D';   // Yellow
     const fatColor = '#FF6B6B';     // Coral
 
+    // Detail view data
+    const detailData = {
+        calories: { value: calories, target: calorieTarget, unit: 'kcal', color: colors.primary, label: 'Calories' },
+        protein: { value: protein, target: proteinTarget, unit: 'g', color: proteinColor, label: 'Protein' },
+        carbs: { value: carbs, target: carbsTarget, unit: 'g', color: carbsColor, label: 'Carbs' },
+        fat: { value: fat, target: fatTarget, unit: 'g', color: fatColor, label: 'Fat' },
+    };
+
+    const currentDetail = detailData[showDetail];
+
+    const cycleMacro = () => {
+        const order: Array<'calories' | 'protein' | 'carbs' | 'fat'> = ['calories', 'protein', 'carbs', 'fat'];
+        const idx = order.indexOf(showDetail);
+        const next = order[(idx + 1) % order.length];
+        setShowDetail(next);
+
+        // Animate to new value
+        const progress = Math.min(detailData[next].value / detailData[next].target, 1);
+        animatedProgress.value = 0;
+        animatedProgress.value = withTiming(progress, {
+            duration: 600,
+            easing: Easing.out(Easing.cubic),
+        });
+    };
+
     return (
         <View style={styles.container}>
-            {/* Main Calorie Ring */}
-            <View style={styles.chartContainer}>
+            {/* Main Ring - Tappable to cycle macros */}
+            <TouchableOpacity
+                style={styles.chartContainer}
+                onPress={cycleMacro}
+                activeOpacity={0.8}
+                accessibilityLabel={`${currentDetail.label}: ${currentDetail.value} of ${currentDetail.target}${currentDetail.unit}. Tap to cycle.`}
+            >
                 <Svg width={size} height={size}>
                     {/* Background circle */}
                     <Circle
@@ -60,16 +114,16 @@ const MacroPieChart: React.FC<MacroPieChartProps> = ({
                         strokeWidth={strokeWidth}
                         fill="transparent"
                     />
-                    {/* Progress circle */}
-                    <Circle
+                    {/* Animated progress circle */}
+                    <AnimatedCircle
                         cx={center}
                         cy={center}
                         r={radius}
-                        stroke={colors.primary}
+                        stroke={currentDetail.color}
                         strokeWidth={strokeWidth}
                         fill="transparent"
                         strokeDasharray={circumference}
-                        strokeDashoffset={calorieOffset}
+                        animatedProps={animatedProps}
                         strokeLinecap="round"
                         transform={`rotate(-90 ${center} ${center})`}
                     />
@@ -77,15 +131,36 @@ const MacroPieChart: React.FC<MacroPieChartProps> = ({
 
                 {/* Center Content */}
                 <View style={styles.centerContent}>
-                    <Text style={styles.remainingValue}>{remaining}</Text>
-                    <Text style={styles.remainingLabel}>remaining</Text>
+                    {showDetail === 'calories' ? (
+                        <>
+                            <Text style={styles.remainingValue}>{remaining}</Text>
+                            <Text style={styles.remainingLabel}>remaining</Text>
+                        </>
+                    ) : (
+                        <>
+                            <Text style={[styles.remainingValue, { color: currentDetail.color }]}>
+                                {currentDetail.value}
+                                <Text style={styles.unitText}>{currentDetail.unit}</Text>
+                            </Text>
+                            <Text style={styles.remainingLabel}>{currentDetail.label}</Text>
+                        </>
+                    )}
                 </View>
-            </View>
+            </TouchableOpacity>
 
-            {/* Macro Bars */}
+            {/* Macro Bars - Tappable */}
             <View style={styles.macrosContainer}>
                 {/* Protein */}
-                <View style={styles.macroRow}>
+                <TouchableOpacity
+                    style={[styles.macroRow, showDetail === 'protein' && styles.macroRowActive]}
+                    onPress={() => {
+                        setShowDetail('protein');
+                        const progress = Math.min(protein / proteinTarget, 1);
+                        animatedProgress.value = 0;
+                        animatedProgress.value = withTiming(progress, { duration: 600, easing: Easing.out(Easing.cubic) });
+                    }}
+                    activeOpacity={0.7}
+                >
                     <View style={styles.macroInfo}>
                         <View style={[styles.macroIndicator, { backgroundColor: proteinColor }]} />
                         <Text style={styles.macroLabel}>Protein</Text>
@@ -104,10 +179,19 @@ const MacroPieChart: React.FC<MacroPieChartProps> = ({
                         </View>
                         <Text style={styles.macroValue}>{protein}g / {proteinTarget}g</Text>
                     </View>
-                </View>
+                </TouchableOpacity>
 
                 {/* Carbs */}
-                <View style={styles.macroRow}>
+                <TouchableOpacity
+                    style={[styles.macroRow, showDetail === 'carbs' && styles.macroRowActive]}
+                    onPress={() => {
+                        setShowDetail('carbs');
+                        const progress = Math.min(carbs / carbsTarget, 1);
+                        animatedProgress.value = 0;
+                        animatedProgress.value = withTiming(progress, { duration: 600, easing: Easing.out(Easing.cubic) });
+                    }}
+                    activeOpacity={0.7}
+                >
                     <View style={styles.macroInfo}>
                         <View style={[styles.macroIndicator, { backgroundColor: carbsColor }]} />
                         <Text style={styles.macroLabel}>Carbs</Text>
@@ -126,10 +210,19 @@ const MacroPieChart: React.FC<MacroPieChartProps> = ({
                         </View>
                         <Text style={styles.macroValue}>{carbs}g / {carbsTarget}g</Text>
                     </View>
-                </View>
+                </TouchableOpacity>
 
                 {/* Fat */}
-                <View style={styles.macroRow}>
+                <TouchableOpacity
+                    style={[styles.macroRow, showDetail === 'fat' && styles.macroRowActive]}
+                    onPress={() => {
+                        setShowDetail('fat');
+                        const progress = Math.min(fat / fatTarget, 1);
+                        animatedProgress.value = 0;
+                        animatedProgress.value = withTiming(progress, { duration: 600, easing: Easing.out(Easing.cubic) });
+                    }}
+                    activeOpacity={0.7}
+                >
                     <View style={styles.macroInfo}>
                         <View style={[styles.macroIndicator, { backgroundColor: fatColor }]} />
                         <Text style={styles.macroLabel}>Fat</Text>
@@ -148,7 +241,7 @@ const MacroPieChart: React.FC<MacroPieChartProps> = ({
                         </View>
                         <Text style={styles.macroValue}>{fat}g / {fatTarget}g</Text>
                     </View>
-                </View>
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -178,6 +271,11 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
     },
+    unitText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+    },
     remainingLabel: {
         fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.medium,
@@ -188,10 +286,16 @@ const styles = StyleSheet.create({
     macrosContainer: {
         flex: 1,
         justifyContent: 'center',
-        gap: spacing.md,
+        gap: spacing.sm,
     },
     macroRow: {
         gap: 4,
+        paddingVertical: 4,
+        paddingHorizontal: 6,
+        borderRadius: borderRadius.sm,
+    },
+    macroRowActive: {
+        backgroundColor: colors.glass.surfaceLight,
     },
     macroInfo: {
         flexDirection: 'row',

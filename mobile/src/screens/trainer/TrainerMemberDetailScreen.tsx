@@ -25,6 +25,7 @@ interface MemberDetail {
     joined_at: string;
     streak: number;
     xp_points: number;
+    total_workouts?: number;
     today_intent: {
         muscle_group: string;
         note: string | null;

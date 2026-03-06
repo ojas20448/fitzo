@@ -7,7 +7,6 @@ import {
     TouchableOpacity,
     RefreshControl,
     Pressable,
-    Alert,
 } from 'react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -61,6 +60,12 @@ interface HomeData {
         type: 'warning' | 'success';
         message: string;
     };
+    learn?: {
+        title: string;
+        lesson: string;
+        topic: string;
+        progress: number;
+    };
 }
 
 interface Friend {
@@ -85,9 +90,18 @@ const HomeScreen: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [activeCount, setActiveCount] = useState(0);
+    const [loadingMessage, setLoadingMessage] = useState('');
 
     useEffect(() => {
+        // Show "waking up server" message if load takes > 4s
+        const timer = setTimeout(() => {
+            if (loading) setLoadingMessage('Waking up server...');
+        }, 4000);
+        const timer2 = setTimeout(() => {
+            if (loading) setLoadingMessage('Almost there, hang tight...');
+        }, 12000);
         loadHomeData();
+        return () => { clearTimeout(timer); clearTimeout(timer2); };
     }, []);
 
     useEffect(() => {
@@ -103,8 +117,8 @@ const HomeScreen: React.FC = () => {
                     );
                     setActiveCount(uniqueActive.size);
                 }
-            } catch (error: any) {
-                Alert.alert('Error', error.message || 'Something went wrong');
+            } catch {
+                // Non-critical - silently fail
             }
         };
         fetchActive();
@@ -146,8 +160,10 @@ const HomeScreen: React.FC = () => {
 
             // Cache home data in offline store for staleness checking
             useOfflineStore.getState().cacheHomeData(homeRes);
-        } catch (error: any) {
-            Alert.alert('Error', error.message || 'Something went wrong');
+        } catch {
+            // Use cached data on failure - don't block UI with Alert
+            const cached = useOfflineStore.getState().getHomeData();
+            if (cached) setData(cached as any);
         } finally {
             if (showLoader) setLoading(false);
         }
@@ -170,6 +186,11 @@ const HomeScreen: React.FC = () => {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
                 <SkeletonHomeScreen />
+                {loadingMessage ? (
+                    <View style={styles.loadingBanner}>
+                        <Text style={styles.loadingBannerText}>{loadingMessage}</Text>
+                    </View>
+                ) : null}
             </SafeAreaView>
         );
     }
@@ -915,6 +936,27 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.bold,
         color: colors.text.dark,
         letterSpacing: 1,
+    },
+
+    // Loading banner
+    loadingBanner: {
+        position: 'absolute',
+        bottom: 100,
+        left: spacing.xl,
+        right: spacing.xl,
+        backgroundColor: colors.glass.surfaceHover,
+        borderRadius: borderRadius.lg,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        borderWidth: 1,
+        borderColor: colors.glass.borderLight,
+        alignItems: 'center',
+    },
+    loadingBannerText: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.secondary,
+        letterSpacing: 0.5,
     },
 });
 

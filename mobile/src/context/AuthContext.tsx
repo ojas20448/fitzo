@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { router } from 'expo-router';
-import { authAPI, setAuthToken, getAuthToken, removeAuthToken } from '../services/api';
+import { authAPI, setAuthToken, getAuthToken, removeAuthToken, wakeBackend } from '../services/api';
 import { authEvents } from '../services/authEvents';
 import { useOfflineStore } from '../stores/offlineStore';
 
@@ -90,6 +90,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const token = await getAuthToken();
             if (token) {
+                // Wake the backend while checking auth (Render free tier cold start)
+                wakeBackend();
                 const { user } = await authAPI.getMe();
                 setState({
                     user,

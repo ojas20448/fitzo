@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Modal, ScrollView, TouchableOpacity, TextInput,
 import { MaterialIcons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
 import { workoutsAPI } from '../services/api';
-import { useToast } from '../context/ToastContext';
+import { useToast } from '../components/Toast';
 
 interface PublishSplitModalProps {
     visible: boolean;
