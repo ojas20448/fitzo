@@ -612,6 +612,7 @@ const styles = StyleSheet.create({
     biometricsHeader: {
         flexDirection: 'row',
         paddingVertical: spacing.xl,
+        paddingHorizontal: spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: colors.glass.border,
     },
@@ -633,15 +634,15 @@ const styles = StyleSheet.create({
         marginLeft: 2,
     },
     biometricLabel: {
-        fontSize: 8,
+        fontSize: 10,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.muted,
-        letterSpacing: 0.5,
+        letterSpacing: 1,
     },
     biometricDivider: {
         width: 1,
-        height: '60%',
-        backgroundColor: colors.glass.border,
+        height: 36,
+        backgroundColor: colors.glass.borderLight,
         alignSelf: 'center',
     },
 

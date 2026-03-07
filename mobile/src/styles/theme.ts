@@ -29,10 +29,10 @@ export const colors = {
 
     // Glass effects
     glass: {
-        surface: 'rgba(255, 255, 255, 0.03)',
-        surfaceLight: 'rgba(255, 255, 255, 0.05)',
-        surfaceHover: 'rgba(255, 255, 255, 0.08)',
-        border: 'rgba(255, 255, 255, 0.08)',
+        surface: 'rgba(255, 255, 255, 0.06)',
+        surfaceLight: 'rgba(255, 255, 255, 0.08)',
+        surfaceHover: 'rgba(255, 255, 255, 0.11)',
+        border: 'rgba(255, 255, 255, 0.10)',
         borderLight: 'rgba(255, 255, 255, 0.15)',
         borderHover: 'rgba(255, 255, 255, 0.20)',
     },

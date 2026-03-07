@@ -303,6 +303,12 @@ const GymBuddiesScreen: React.FC = () => {
                 <View style={styles.headerActions}>
                     <TouchableOpacity
                         style={styles.filterBtn}
+                        onPress={() => router.push('/member/create-post' as any)}
+                    >
+                        <MaterialIcons name="post-add" size={22} color={colors.text.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.filterBtn}
                         onPress={() => router.push('/member/add-buddy?tab=scan' as any)}
                     >
                         <MaterialIcons name="qr-code-scanner" size={22} color={colors.text.primary} />
