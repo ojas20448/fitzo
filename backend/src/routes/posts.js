@@ -3,6 +3,7 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler, ValidationError } = require('../utils/errors');
+const { checkContent } = require('../utils/contentFilter');
 
 /**
  * POST /api/posts
@@ -23,6 +24,11 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
 
     if (!['public', 'friends'].includes(visibility)) {
         throw new ValidationError('Visibility must be either "public" or "friends"');
+    }
+
+    const filter = checkContent(content);
+    if (filter.blocked) {
+        throw new ValidationError(filter.reason);
     }
 
     // Create post
@@ -256,6 +262,11 @@ router.post('/:id/comments', authenticate, asyncHandler(async (req, res) => {
 
     if (comment.length > 1000) {
         throw new ValidationError('Comment must be less than 1000 characters');
+    }
+
+    const filter = checkContent(comment);
+    if (filter.blocked) {
+        throw new ValidationError(filter.reason);
     }
 
     // Check if post exists

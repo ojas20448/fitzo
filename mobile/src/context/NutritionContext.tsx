@@ -10,9 +10,16 @@ interface Macros {
     fat: number;
 }
 
+interface MacroTargets {
+    protein: number;
+    carbs: number;
+    fat: number;
+}
+
 interface NutritionContextType {
     todayMacros: Macros;
     calorieGoal: number;
+    macroTargets: MacroTargets;
     weeklyWorkoutGoal: number;
     updateWeeklyGoal: (days: number) => Promise<void>;
     lastUpdatedAt: number;
@@ -27,6 +34,7 @@ export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const { user } = useAuth();
     const [todayMacros, setTodayMacros] = useState<Macros>({ calories: 0, protein: 0, carbs: 0, fat: 0 });
     const [calorieGoal, setCalorieGoal] = useState<number>(2000);
+    const [macroTargets, setMacroTargets] = useState<MacroTargets>({ protein: 150, carbs: 200, fat: 65 });
     const [lastUpdatedAt, setLastUpdatedAt] = useState<number>(Date.now());
     const [isLoading, setIsLoading] = useState(false);
 
@@ -49,6 +57,11 @@ export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             const profile = await nutritionAPI.getProfile();
             if (profile?.profile?.target_calories) {
                 setCalorieGoal(profile.profile.target_calories);
+                setMacroTargets({
+                    protein: profile.profile.target_protein || 150,
+                    carbs: profile.profile.target_carbs || 200,
+                    fat: profile.profile.target_fat || 65,
+                });
             }
         } catch (error) {
         }
@@ -126,6 +139,7 @@ export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         <NutritionContext.Provider value={{
             todayMacros,
             calorieGoal,
+            macroTargets,
             weeklyWorkoutGoal,
             updateWeeklyGoal,
             lastUpdatedAt,

@@ -83,7 +83,7 @@ interface TodayWorkout {
 
 const HomeScreen: React.FC = () => {
     const { user } = useAuth();
-    const { todayMacros, refreshToday } = useNutrition(); // Use global nutrition state
+    const { todayMacros, calorieGoal, macroTargets, refreshToday } = useNutrition();
     const [data, setData] = useState<HomeData | null>(null);
     const [todayWorkouts, setTodayWorkouts] = useState<TodayWorkout[]>([]);
     const [friends, setFriends] = useState<Friend[]>([]);
@@ -342,13 +342,13 @@ const HomeScreen: React.FC = () => {
                     <TouchableOpacity onPress={() => router.push('/member/nutrition-insights' as any)} activeOpacity={0.8}>
                         <MacroPieChart
                             calories={todayMacros.calories || 0}
-                            calorieTarget={2000}
+                            calorieTarget={calorieGoal}
                             protein={todayMacros.protein || 0}
-                            proteinTarget={150}
+                            proteinTarget={macroTargets.protein}
                             carbs={todayMacros.carbs || 0}
-                            carbsTarget={200}
+                            carbsTarget={macroTargets.carbs}
                             fat={todayMacros.fat || 0}
-                            fatTarget={65}
+                            fatTarget={macroTargets.fat}
                         />
                     </TouchableOpacity>
                 </Animated.View>
