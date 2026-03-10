@@ -240,7 +240,7 @@ export default function SettingsScreen() {
                     </TouchableOpacity>
                 </GlassCard>
 
-                <Text style={styles.versionText}>Fitzo v1.0.0 (Build 124)</Text>
+                <Text style={styles.versionText}>Fitzo v1.2.0</Text>
                 <View style={{ height: 40 }} />
             </ScrollView>
         </SafeAreaView>
