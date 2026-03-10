@@ -43,9 +43,11 @@ function searchFoods(query, limit = 20) {
         foods: scored.map(({ food }) => ({
             id: food.id,
             name: food.name,
-            brand: food.category,
+            brand: food.category === 'Restaurant' || food.category === 'Beverages' || food.category === 'Desserts'
+                ? food.region
+                : food.category,
             type: 'Indian',
-            description: `${food.servingSize} - ${food.calories}kcal | P: ${food.protein}g | C: ${food.carbs}g | F: ${food.fat}g`,
+            description: `Per ${food.servingSize} - Calories: ${food.calories}kcal | Fat: ${food.fat}g | Carbs: ${food.carbs}g | Protein: ${food.protein}g`,
             calories: food.calories,
             protein: food.protein,
             carbs: food.carbs,

@@ -171,7 +171,7 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
 
     // Combine all results - prioritize Indian sources
     const combinedFoods = [
-        ...indianFoods,     // Local Indian foods DB (packaged + home-cooked)
+        ...indianFoods,     // Local Indian foods DB (home-cooked + restaurant chains)
         ...ifctFoods,       // IFCT2017 govt nutrition data (raw ingredients)
         ...offFoods,        // Packaged products/brands
         ...ninjasFoods,     // Natural language nutrition

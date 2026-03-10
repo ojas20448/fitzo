@@ -410,6 +410,119 @@
 
     {"id": "ind_389", "name": "Maggi Pazzta (70g)", "category": "Packaged", "servingSize": "1 pack (70g)", "calories": 280, "protein": 7, "carbs": 40, "fat": 10, "fiber": 1, "region": "All India"},
     {"id": "ind_390", "name": "Knorr Tomato Soup (1 pack)", "category": "Packaged", "servingSize": "1 serving (200ml)", "calories": 65, "protein": 1, "carbs": 12, "fat": 1.5, "fiber": 0.5, "region": "All India"},
-    {"id": "ind_391", "name": "Maggi Masala-ae-Magic (1 sachet)", "category": "Packaged", "servingSize": "1 sachet (6g)", "calories": 15, "protein": 0.5, "carbs": 2, "fat": 0.5, "fiber": 0, "region": "All India"}
+    {"id": "ind_391", "name": "Maggi Masala-ae-Magic (1 sachet)", "category": "Packaged", "servingSize": "1 sachet (6g)", "calories": 15, "protein": 0.5, "carbs": 2, "fat": 0.5, "fiber": 0, "region": "All India"},
+
+    {"id": "ind_400", "name": "Dominos Farmhouse Pizza (Medium)", "category": "Restaurant", "servingSize": "1 slice (110g)", "calories": 245, "protein": 10, "carbs": 30, "fat": 10, "fiber": 2, "region": "Dominos"},
+    {"id": "ind_401", "name": "Dominos Margherita Pizza (Medium)", "category": "Restaurant", "servingSize": "1 slice (95g)", "calories": 195, "protein": 8, "carbs": 26, "fat": 7, "fiber": 1, "region": "Dominos"},
+    {"id": "ind_402", "name": "Dominos Peppy Paneer Pizza (Medium)", "category": "Restaurant", "servingSize": "1 slice (115g)", "calories": 260, "protein": 11, "carbs": 29, "fat": 12, "fiber": 2, "region": "Dominos"},
+    {"id": "ind_403", "name": "Dominos Chicken Dominator Pizza (Medium)", "category": "Restaurant", "servingSize": "1 slice (130g)", "calories": 290, "protein": 14, "carbs": 28, "fat": 14, "fiber": 1, "region": "Dominos"},
+    {"id": "ind_404", "name": "Dominos Garlic Bread (4 pcs)", "category": "Restaurant", "servingSize": "4 pieces (120g)", "calories": 370, "protein": 9, "carbs": 42, "fat": 18, "fiber": 2, "region": "Dominos"},
+    {"id": "ind_405", "name": "Dominos Stuffed Garlic Bread (4 pcs)", "category": "Restaurant", "servingSize": "4 pieces (150g)", "calories": 460, "protein": 13, "carbs": 48, "fat": 24, "fiber": 2, "region": "Dominos"},
+    {"id": "ind_406", "name": "Dominos Pasta Italiano White (Regular)", "category": "Restaurant", "servingSize": "1 serving (280g)", "calories": 420, "protein": 12, "carbs": 52, "fat": 18, "fiber": 3, "region": "Dominos"},
+    {"id": "ind_407", "name": "Dominos Chicken Wings (8 pcs)", "category": "Restaurant", "servingSize": "8 pieces (240g)", "calories": 480, "protein": 32, "carbs": 18, "fat": 30, "fiber": 0, "region": "Dominos"},
+
+    {"id": "ind_410", "name": "KFC Zinger Burger", "category": "Restaurant", "servingSize": "1 burger (200g)", "calories": 480, "protein": 22, "carbs": 42, "fat": 24, "fiber": 2, "region": "KFC"},
+    {"id": "ind_411", "name": "KFC Chicken Bucket (4 pcs Hot & Crispy)", "category": "Restaurant", "servingSize": "4 pieces (380g)", "calories": 940, "protein": 64, "carbs": 36, "fat": 56, "fiber": 0, "region": "KFC"},
+    {"id": "ind_412", "name": "KFC Hot & Crispy Chicken (1 pc)", "category": "Restaurant", "servingSize": "1 piece (95g)", "calories": 235, "protein": 16, "carbs": 9, "fat": 14, "fiber": 0, "region": "KFC"},
+    {"id": "ind_413", "name": "KFC Chicken Popcorn (Regular)", "category": "Restaurant", "servingSize": "1 serving (100g)", "calories": 280, "protein": 18, "carbs": 16, "fat": 16, "fiber": 1, "region": "KFC"},
+    {"id": "ind_414", "name": "KFC Veg Zinger Burger", "category": "Restaurant", "servingSize": "1 burger (185g)", "calories": 440, "protein": 12, "carbs": 48, "fat": 22, "fiber": 3, "region": "KFC"},
+    {"id": "ind_415", "name": "KFC Tandoori Zinger", "category": "Restaurant", "servingSize": "1 burger (210g)", "calories": 460, "protein": 24, "carbs": 40, "fat": 22, "fiber": 2, "region": "KFC"},
+    {"id": "ind_416", "name": "KFC Fries (Regular)", "category": "Restaurant", "servingSize": "1 serving (90g)", "calories": 240, "protein": 3, "carbs": 30, "fat": 12, "fiber": 2, "region": "KFC"},
+    {"id": "ind_417", "name": "KFC Krushers Chocolate (Regular)", "category": "Restaurant", "servingSize": "1 glass (300ml)", "calories": 340, "protein": 6, "carbs": 52, "fat": 12, "fiber": 1, "region": "KFC"},
+
+    {"id": "ind_420", "name": "McDonald's McAloo Tikki Burger", "category": "Restaurant", "servingSize": "1 burger (146g)", "calories": 339, "protein": 8, "carbs": 44, "fat": 14, "fiber": 3, "region": "McDonalds"},
+    {"id": "ind_421", "name": "McDonald's McChicken Burger", "category": "Restaurant", "servingSize": "1 burger (173g)", "calories": 400, "protein": 17, "carbs": 40, "fat": 18, "fiber": 2, "region": "McDonalds"},
+    {"id": "ind_422", "name": "McDonald's McSpicy Chicken Burger", "category": "Restaurant", "servingSize": "1 burger (190g)", "calories": 450, "protein": 20, "carbs": 42, "fat": 22, "fiber": 2, "region": "McDonalds"},
+    {"id": "ind_423", "name": "McDonald's Maharaja Mac (Chicken)", "category": "Restaurant", "servingSize": "1 burger (260g)", "calories": 560, "protein": 28, "carbs": 46, "fat": 28, "fiber": 3, "region": "McDonalds"},
+    {"id": "ind_424", "name": "McDonald's Fries (Medium)", "category": "Restaurant", "servingSize": "1 serving (117g)", "calories": 320, "protein": 4, "carbs": 40, "fat": 16, "fiber": 3, "region": "McDonalds"},
+    {"id": "ind_425", "name": "McDonald's McFlurry Oreo", "category": "Restaurant", "servingSize": "1 cup (180g)", "calories": 340, "protein": 8, "carbs": 50, "fat": 12, "fiber": 1, "region": "McDonalds"},
+    {"id": "ind_426", "name": "McDonald's Piri Piri Fries", "category": "Restaurant", "servingSize": "1 serving (120g)", "calories": 340, "protein": 4, "carbs": 42, "fat": 17, "fiber": 3, "region": "McDonalds"},
+    {"id": "ind_427", "name": "McDonald's Chicken McNuggets (6 pcs)", "category": "Restaurant", "servingSize": "6 pieces (96g)", "calories": 265, "protein": 15, "carbs": 16, "fat": 16, "fiber": 1, "region": "McDonalds"},
+
+    {"id": "ind_430", "name": "Burger King Whopper (Chicken)", "category": "Restaurant", "servingSize": "1 burger (280g)", "calories": 590, "protein": 28, "carbs": 48, "fat": 32, "fiber": 2, "region": "Burger King"},
+    {"id": "ind_431", "name": "Burger King Crispy Veg Burger", "category": "Restaurant", "servingSize": "1 burger (160g)", "calories": 380, "protein": 10, "carbs": 44, "fat": 18, "fiber": 3, "region": "Burger King"},
+    {"id": "ind_432", "name": "Burger King BK Chicken Fries", "category": "Restaurant", "servingSize": "1 serving (100g)", "calories": 290, "protein": 16, "carbs": 20, "fat": 16, "fiber": 1, "region": "Burger King"},
+
+    {"id": "ind_435", "name": "Subway Chicken Teriyaki (6 inch)", "category": "Restaurant", "servingSize": "1 sub (240g)", "calories": 370, "protein": 26, "carbs": 46, "fat": 8, "fiber": 4, "region": "Subway"},
+    {"id": "ind_436", "name": "Subway Veggie Delight (6 inch)", "category": "Restaurant", "servingSize": "1 sub (170g)", "calories": 230, "protein": 8, "carbs": 40, "fat": 3, "fiber": 5, "region": "Subway"},
+    {"id": "ind_437", "name": "Subway Paneer Tikka (6 inch)", "category": "Restaurant", "servingSize": "1 sub (230g)", "calories": 390, "protein": 18, "carbs": 44, "fat": 14, "fiber": 4, "region": "Subway"},
+    {"id": "ind_438", "name": "Subway Chicken Tikka (6 inch)", "category": "Restaurant", "servingSize": "1 sub (240g)", "calories": 350, "protein": 24, "carbs": 44, "fat": 7, "fiber": 4, "region": "Subway"},
+    {"id": "ind_439", "name": "Subway Cookie (Chocolate Chip)", "category": "Restaurant", "servingSize": "1 cookie (45g)", "calories": 210, "protein": 2, "carbs": 30, "fat": 10, "fiber": 1, "region": "Subway"},
+
+    {"id": "ind_440", "name": "Pizza Hut Margherita (Medium)", "category": "Restaurant", "servingSize": "1 slice (100g)", "calories": 210, "protein": 9, "carbs": 27, "fat": 8, "fiber": 1, "region": "Pizza Hut"},
+    {"id": "ind_441", "name": "Pizza Hut Chicken Supreme (Medium)", "category": "Restaurant", "servingSize": "1 slice (125g)", "calories": 280, "protein": 13, "carbs": 30, "fat": 12, "fiber": 2, "region": "Pizza Hut"},
+    {"id": "ind_442", "name": "Pizza Hut Paneer Makhani (Medium)", "category": "Restaurant", "servingSize": "1 slice (120g)", "calories": 270, "protein": 12, "carbs": 28, "fat": 13, "fiber": 2, "region": "Pizza Hut"},
+    {"id": "ind_443", "name": "Pizza Hut Garlic Breadsticks (4 pcs)", "category": "Restaurant", "servingSize": "4 pieces (100g)", "calories": 340, "protein": 8, "carbs": 40, "fat": 16, "fiber": 2, "region": "Pizza Hut"},
+
+    {"id": "ind_445", "name": "Starbucks Caffe Latte (Tall)", "category": "Beverages", "servingSize": "1 tall (354ml)", "calories": 150, "protein": 8, "carbs": 14, "fat": 7, "fiber": 0, "region": "Starbucks"},
+    {"id": "ind_446", "name": "Starbucks Java Chip Frappuccino (Tall)", "category": "Beverages", "servingSize": "1 tall (354ml)", "calories": 300, "protein": 5, "carbs": 46, "fat": 11, "fiber": 1, "region": "Starbucks"},
+    {"id": "ind_447", "name": "Starbucks Cappuccino (Tall)", "category": "Beverages", "servingSize": "1 tall (354ml)", "calories": 100, "protein": 6, "carbs": 10, "fat": 4, "fiber": 0, "region": "Starbucks"},
+    {"id": "ind_448", "name": "Starbucks Cold Coffee (Tall)", "category": "Beverages", "servingSize": "1 tall (354ml)", "calories": 210, "protein": 5, "carbs": 34, "fat": 6, "fiber": 0, "region": "Starbucks"},
+
+    {"id": "ind_450", "name": "Haldiram's Aloo Bhujia (50g)", "category": "Packaged", "servingSize": "50g", "calories": 270, "protein": 5, "carbs": 28, "fat": 16, "fiber": 2, "region": "All India"},
+    {"id": "ind_451", "name": "Haldiram's Moong Dal (50g)", "category": "Packaged", "servingSize": "50g", "calories": 255, "protein": 10, "carbs": 24, "fat": 14, "fiber": 3, "region": "All India"},
+    {"id": "ind_452", "name": "Haldiram's Gulab Jamun (2 pcs)", "category": "Sweets", "servingSize": "2 pieces (80g)", "calories": 310, "protein": 4, "carbs": 46, "fat": 12, "fiber": 0, "region": "All India"},
+    {"id": "ind_453", "name": "Haldiram's Samosa (1 pc)", "category": "Snacks", "servingSize": "1 samosa (90g)", "calories": 275, "protein": 5, "carbs": 30, "fat": 15, "fiber": 2, "region": "All India"},
+
+    {"id": "ind_455", "name": "Zomato Bowl - Chicken Biryani (Regular)", "category": "Restaurant", "servingSize": "1 bowl (350g)", "calories": 520, "protein": 24, "carbs": 60, "fat": 18, "fiber": 2, "region": "Delivery"},
+    {"id": "ind_456", "name": "Zomato Bowl - Paneer Butter Masala + Naan", "category": "Restaurant", "servingSize": "1 combo (400g)", "calories": 680, "protein": 22, "carbs": 58, "fat": 38, "fiber": 3, "region": "Delivery"},
+
+    {"id": "ind_460", "name": "Behrouz Biryani - Dum Gosht (Regular)", "category": "Restaurant", "servingSize": "1 serving (350g)", "calories": 550, "protein": 26, "carbs": 58, "fat": 22, "fiber": 2, "region": "Delivery"},
+    {"id": "ind_461", "name": "Behrouz Biryani - Paneer (Regular)", "category": "Restaurant", "servingSize": "1 serving (350g)", "calories": 510, "protein": 18, "carbs": 60, "fat": 20, "fiber": 2, "region": "Delivery"},
+
+    {"id": "ind_465", "name": "Faasos Chicken Tikka Wrap", "category": "Restaurant", "servingSize": "1 wrap (250g)", "calories": 420, "protein": 24, "carbs": 38, "fat": 18, "fiber": 3, "region": "Delivery"},
+    {"id": "ind_466", "name": "Faasos Paneer Tikka Wrap", "category": "Restaurant", "servingSize": "1 wrap (230g)", "calories": 400, "protein": 16, "carbs": 40, "fat": 18, "fiber": 3, "region": "Delivery"},
+
+    {"id": "ind_470", "name": "Chaayos Masala Chai (Regular)", "category": "Beverages", "servingSize": "1 cup (200ml)", "calories": 95, "protein": 3, "carbs": 14, "fat": 3, "fiber": 0, "region": "Chaayos"},
+    {"id": "ind_471", "name": "Chaayos Cheese Maggi", "category": "Restaurant", "servingSize": "1 serving (200g)", "calories": 380, "protein": 12, "carbs": 42, "fat": 18, "fiber": 1, "region": "Chaayos"},
+
+    {"id": "ind_475", "name": "Baskin Robbins Chocolate Scoop (Regular)", "category": "Desserts", "servingSize": "1 scoop (80g)", "calories": 200, "protein": 3, "carbs": 24, "fat": 10, "fiber": 1, "region": "Baskin Robbins"},
+    {"id": "ind_476", "name": "Keventers Chocolate Milkshake (Regular)", "category": "Beverages", "servingSize": "1 bottle (250ml)", "calories": 380, "protein": 8, "carbs": 52, "fat": 16, "fiber": 1, "region": "Keventers"},
+
+    {"id": "ind_480", "name": "Momos (Chicken, Steamed, 6 pcs)", "category": "Street Food", "servingSize": "6 pieces (180g)", "calories": 270, "protein": 18, "carbs": 30, "fat": 8, "fiber": 1, "region": "All India"},
+    {"id": "ind_481", "name": "Momos (Veg, Steamed, 6 pcs)", "category": "Street Food", "servingSize": "6 pieces (160g)", "calories": 210, "protein": 6, "carbs": 32, "fat": 6, "fiber": 2, "region": "All India"},
+    {"id": "ind_482", "name": "Momos (Fried, Chicken, 6 pcs)", "category": "Street Food", "servingSize": "6 pieces (200g)", "calories": 380, "protein": 18, "carbs": 32, "fat": 20, "fiber": 1, "region": "All India"},
+    {"id": "ind_483", "name": "Tandoori Momos (6 pcs)", "category": "Street Food", "servingSize": "6 pieces (190g)", "calories": 320, "protein": 16, "carbs": 30, "fat": 14, "fiber": 1, "region": "All India"},
+
+    {"id": "ind_485", "name": "Shawarma (Chicken)", "category": "Street Food", "servingSize": "1 roll (250g)", "calories": 450, "protein": 28, "carbs": 40, "fat": 18, "fiber": 2, "region": "All India"},
+    {"id": "ind_486", "name": "Frankie / Kathi Roll (Chicken)", "category": "Street Food", "servingSize": "1 roll (200g)", "calories": 380, "protein": 22, "carbs": 36, "fat": 16, "fiber": 2, "region": "All India"},
+    {"id": "ind_487", "name": "Frankie / Kathi Roll (Paneer)", "category": "Street Food", "servingSize": "1 roll (180g)", "calories": 360, "protein": 14, "carbs": 38, "fat": 16, "fiber": 2, "region": "All India"},
+
+    {"id": "ind_490", "name": "Cafe Coffee Day Cappuccino (Regular)", "category": "Beverages", "servingSize": "1 cup (250ml)", "calories": 120, "protein": 5, "carbs": 14, "fat": 5, "fiber": 0, "region": "CCD"},
+    {"id": "ind_491", "name": "Cafe Coffee Day Cold Coffee (Regular)", "category": "Beverages", "servingSize": "1 glass (300ml)", "calories": 240, "protein": 6, "carbs": 36, "fat": 8, "fiber": 0, "region": "CCD"},
+
+    {"id": "ind_493", "name": "Blinkit/Swiggy Instamart Protein Bar (Generic)", "category": "Packaged", "servingSize": "1 bar (60g)", "calories": 220, "protein": 20, "carbs": 22, "fat": 8, "fiber": 3, "region": "All India"},
+    {"id": "ind_494", "name": "RiteBite Max Protein Bar (Choco Fudge)", "category": "Packaged", "servingSize": "1 bar (70g)", "calories": 260, "protein": 20, "carbs": 24, "fat": 10, "fiber": 4, "region": "All India"},
+    {"id": "ind_495", "name": "Yoga Bar Protein Bar (10g)", "category": "Packaged", "servingSize": "1 bar (38g)", "calories": 150, "protein": 10, "carbs": 16, "fat": 5, "fiber": 3, "region": "All India"},
+
+    {"id": "ind_497", "name": "Wow! Momo Chicken Momo (8 pcs)", "category": "Restaurant", "servingSize": "8 pieces (240g)", "calories": 360, "protein": 24, "carbs": 40, "fat": 10, "fiber": 1, "region": "Wow Momo"},
+    {"id": "ind_498", "name": "Wow! Momo Darjeeling Chicken Momo (8 pcs)", "category": "Restaurant", "servingSize": "8 pieces (250g)", "calories": 380, "protein": 26, "carbs": 38, "fat": 12, "fiber": 1, "region": "Wow Momo"},
+
+    {"id": "ind_500", "name": "Amul Kool Kesar Milkshake (200ml)", "category": "Beverages", "servingSize": "1 pack (200ml)", "calories": 180, "protein": 5, "carbs": 28, "fat": 5, "fiber": 0, "region": "All India"},
+    {"id": "ind_501", "name": "Paper Boat Aam Panna (250ml)", "category": "Beverages", "servingSize": "1 bottle (250ml)", "calories": 100, "protein": 0, "carbs": 24, "fat": 0, "fiber": 0, "region": "All India"},
+    {"id": "ind_502", "name": "Tropicana Orange Juice (200ml)", "category": "Beverages", "servingSize": "1 pack (200ml)", "calories": 90, "protein": 1, "carbs": 22, "fat": 0, "fiber": 0, "region": "All India"},
+    {"id": "ind_503", "name": "Real Fruit Mango Juice (200ml)", "category": "Beverages", "servingSize": "1 pack (200ml)", "calories": 115, "protein": 0.5, "carbs": 28, "fat": 0, "fiber": 0, "region": "All India"},
+
+    {"id": "ind_505", "name": "Thums Up (250ml)", "category": "Beverages", "servingSize": "1 can (250ml)", "calories": 110, "protein": 0, "carbs": 28, "fat": 0, "fiber": 0, "region": "All India"},
+    {"id": "ind_506", "name": "Coca Cola (250ml)", "category": "Beverages", "servingSize": "1 can (250ml)", "calories": 105, "protein": 0, "carbs": 26, "fat": 0, "fiber": 0, "region": "All India"},
+    {"id": "ind_507", "name": "Sprite (250ml)", "category": "Beverages", "servingSize": "1 can (250ml)", "calories": 100, "protein": 0, "carbs": 25, "fat": 0, "fiber": 0, "region": "All India"},
+    {"id": "ind_508", "name": "Limca (250ml)", "category": "Beverages", "servingSize": "1 can (250ml)", "calories": 100, "protein": 0, "carbs": 25, "fat": 0, "fiber": 0, "region": "All India"},
+    {"id": "ind_509", "name": "Red Bull (250ml)", "category": "Beverages", "servingSize": "1 can (250ml)", "calories": 110, "protein": 0, "carbs": 27, "fat": 0, "fiber": 0, "region": "All India"},
+
+    {"id": "ind_510", "name": "Lay's Classic Salted (50g)", "category": "Packaged", "servingSize": "1 pack (50g)", "calories": 270, "protein": 3, "carbs": 26, "fat": 17, "fiber": 2, "region": "All India"},
+    {"id": "ind_511", "name": "Lay's Magic Masala (50g)", "category": "Packaged", "servingSize": "1 pack (50g)", "calories": 268, "protein": 3, "carbs": 26, "fat": 17, "fiber": 2, "region": "All India"},
+    {"id": "ind_512", "name": "Kurkure Masala Munch (75g)", "category": "Packaged", "servingSize": "1 pack (75g)", "calories": 395, "protein": 5, "carbs": 42, "fat": 23, "fiber": 2, "region": "All India"},
+    {"id": "ind_513", "name": "Bingo Mad Angles (60g)", "category": "Packaged", "servingSize": "1 pack (60g)", "calories": 310, "protein": 4, "carbs": 34, "fat": 18, "fiber": 1, "region": "All India"},
+
+    {"id": "ind_515", "name": "Cafe Momos (6 pcs)", "category": "Street Food", "servingSize": "6 pieces (180g)", "calories": 250, "protein": 8, "carbs": 34, "fat": 8, "fiber": 2, "region": "All India"},
+    {"id": "ind_516", "name": "Chole Bhature (1 plate)", "category": "Street Food", "servingSize": "1 plate (300g)", "calories": 580, "protein": 15, "carbs": 62, "fat": 28, "fiber": 8, "region": "North India"},
+    {"id": "ind_517", "name": "Butter Naan (Restaurant)", "category": "Restaurant", "servingSize": "1 naan (110g)", "calories": 310, "protein": 8, "carbs": 42, "fat": 12, "fiber": 2, "region": "All India"},
+    {"id": "ind_518", "name": "Dal Makhani (Restaurant)", "category": "Restaurant", "servingSize": "1 bowl (250g)", "calories": 340, "protein": 12, "carbs": 32, "fat": 18, "fiber": 6, "region": "North India"},
+    {"id": "ind_519", "name": "Paneer Tikka (6 pcs)", "category": "Restaurant", "servingSize": "6 pieces (180g)", "calories": 350, "protein": 20, "carbs": 8, "fat": 26, "fiber": 1, "region": "North India"},
+    {"id": "ind_520", "name": "Tandoori Roti (Restaurant)", "category": "Restaurant", "servingSize": "1 roti (50g)", "calories": 130, "protein": 4, "carbs": 24, "fat": 2, "fiber": 2, "region": "All India"},
+
+    {"id": "ind_522", "name": "Swiggy Daily - Chicken Rice Bowl", "category": "Restaurant", "servingSize": "1 bowl (300g)", "calories": 450, "protein": 22, "carbs": 52, "fat": 16, "fiber": 2, "region": "Delivery"},
+    {"id": "ind_523", "name": "Swiggy Daily - Rajma Chawal", "category": "Restaurant", "servingSize": "1 bowl (350g)", "calories": 420, "protein": 14, "carbs": 64, "fat": 10, "fiber": 8, "region": "Delivery"},
+    {"id": "ind_524", "name": "Swiggy Daily - Dal Rice", "category": "Restaurant", "servingSize": "1 bowl (350g)", "calories": 380, "protein": 12, "carbs": 60, "fat": 8, "fiber": 6, "region": "Delivery"}
 ]
 

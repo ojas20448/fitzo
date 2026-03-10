@@ -79,11 +79,10 @@ const CalorieLogScreen: React.FC = () => {
     const [gramAmount, setGramAmount] = useState('100');
     const [showDetail, setShowDetail] = useState(false);
     const [loadingDetail, setLoadingDetail] = useState(false);
+    const [aiAnalyzing, setAiAnalyzing] = useState(false);
     const [logging, setLogging] = useState(false);
     const [showCelebration, setShowCelebration] = useState(false);
     const [searchError, setSearchError] = useState<string | null>(null);
-
-    const [aiAnalyzing, setAiAnalyzing] = useState(false);
 
     // Frequent foods
     const [frequentFoods, setFrequentFoods] = useState<any[]>([]);
@@ -248,7 +247,9 @@ const CalorieLogScreen: React.FC = () => {
     const handleFoodSelect = async (food: any) => {
         // Handle AI Trigger
         if (food.isAiTrigger) {
+            setAiAnalyzing(true);
             setLoadingDetail(true);
+            setShowDetail(true);
             try {
                 const res = await foodAPI.analyzeText(searchQuery);
                 if (res.food) {
@@ -287,8 +288,10 @@ const CalorieLogScreen: React.FC = () => {
                 }
             } catch (err) {
                 toast.error('AI Error', 'Analysis failed');
+                setShowDetail(false);
             } finally {
                 setLoadingDetail(false);
+                setAiAnalyzing(false);
             }
             return;
         }
@@ -552,7 +555,26 @@ const CalorieLogScreen: React.FC = () => {
                 <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
                     {loadingDetail ? (
                         <View style={styles.modalLoading}>
-                            <ActivityIndicator size="large" color={colors.primary} />
+                            {aiAnalyzing ? (
+                                <>
+                                    <Animated.View entering={ZoomIn.springify()}>
+                                        <View style={styles.aiLoadingIcon}>
+                                            <MaterialIcons name="auto-awesome" size={36} color={colors.background} />
+                                        </View>
+                                    </Animated.View>
+                                    <Animated.Text entering={FadeIn.delay(200)} style={styles.aiLoadingTitle}>
+                                        Analyzing with AI
+                                    </Animated.Text>
+                                    <Animated.Text entering={FadeIn.delay(400)} style={styles.aiLoadingSubtitle}>
+                                        Getting nutrition data for "{searchQuery}"
+                                    </Animated.Text>
+                                    <View style={{ marginTop: 24 }}>
+                                        <ActivityIndicator size="small" color={colors.text.muted} />
+                                    </View>
+                                </>
+                            ) : (
+                                <ActivityIndicator size="large" color={colors.primary} />
+                            )}
                         </View>
                     ) : selectedFood ? (
                         <>
@@ -1003,6 +1025,27 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    aiLoadingIcon: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    aiLoadingTitle: {
+        fontSize: 22,
+        fontWeight: '700' as const,
+        color: colors.text.primary,
+        marginBottom: 8,
+    },
+    aiLoadingSubtitle: {
+        fontSize: 15,
+        color: colors.text.muted,
+        textAlign: 'center' as const,
+        paddingHorizontal: 40,
     },
     modalHeader: {
         paddingHorizontal: spacing.xl,
