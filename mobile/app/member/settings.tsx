@@ -1,19 +1,63 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, Linking } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, Linking, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { colors, typography, spacing, borderRadius } from '../../src/styles/theme';
 import GlassCard from '../../src/components/GlassCard';
+import { useToast } from '../../src/components/Toast';
+import { isHealthAvailable, requestPermissions, getTodaysSummary } from '../../src/services/healthService';
+import { healthAPI } from '../../src/services/api';
 
 export default function SettingsScreen() {
     const { logout, user } = useAuth();
+    const toast = useToast();
 
     // Mock State for Settings
     const [notifications, setNotifications] = useState(true);
     const [darkMode, setDarkMode] = useState(true);
     const [units, setUnits] = useState('metric'); // metric | imperial
+
+    // Health Connect
+    const [healthAvailable, setHealthAvailable] = useState(false);
+    const [healthConnected, setHealthConnected] = useState(false);
+    const [healthSyncing, setHealthSyncing] = useState(false);
+
+    useEffect(() => {
+        setHealthAvailable(isHealthAvailable());
+        // Check if already connected by trying to get today's data
+        if (isHealthAvailable()) {
+            healthAPI.getToday().then(res => {
+                if (res?.health?.steps > 0) setHealthConnected(true);
+            }).catch(() => {});
+        }
+    }, []);
+
+    const handleConnectHealth = async () => {
+        setHealthSyncing(true);
+        try {
+            const granted = await requestPermissions();
+            if (granted) {
+                setHealthConnected(true);
+                const summary = await getTodaysSummary();
+                await healthAPI.sync({
+                    steps: summary.steps,
+                    active_calories: summary.activeCalories,
+                    resting_heart_rate: summary.restingHeartRate,
+                    sleep_hours: summary.sleepHours,
+                    source: 'wearable',
+                });
+                toast.success('Connected!', 'Health data synced successfully');
+            } else {
+                toast.error('Permission Denied', 'Please allow health access in your device settings');
+            }
+        } catch {
+            toast.error('Error', 'Could not connect to health services');
+        } finally {
+            setHealthSyncing(false);
+        }
+    };
 
     const handleSignOut = () => {
         Alert.alert(
@@ -104,6 +148,77 @@ export default function SettingsScreen() {
                         <Text style={styles.valueText}>{units === 'metric' ? 'Metric (kg/cm)' : 'Imperial (lbs/ft)'}</Text>
                     </TouchableOpacity>
                 </GlassCard>
+
+                {/* Health Section */}
+                {healthAvailable && (
+                    <>
+                        <Text style={styles.sectionTitle}>Health</Text>
+                        <GlassCard style={styles.card}>
+                            <TouchableOpacity
+                                style={styles.row}
+                                onPress={healthConnected ? undefined : handleConnectHealth}
+                                disabled={healthSyncing}
+                                activeOpacity={healthConnected ? 1 : 0.7}
+                            >
+                                <View style={styles.rowLeft}>
+                                    <MaterialIcons
+                                        name="watch"
+                                        size={24}
+                                        color={healthConnected ? colors.crowd.low : colors.text.secondary}
+                                    />
+                                    <View>
+                                        <Text style={styles.rowLabel}>
+                                            {Platform.OS === 'ios' ? 'Apple Health' : 'Health Connect'}
+                                        </Text>
+                                        <Text style={styles.rowSub}>
+                                            {healthConnected ? 'Connected' : 'Tap to connect'}
+                                        </Text>
+                                    </View>
+                                </View>
+                                {healthSyncing ? (
+                                    <ActivityIndicator size="small" color={colors.text.primary} />
+                                ) : healthConnected ? (
+                                    <MaterialIcons name="check-circle" size={22} color={colors.crowd.low} />
+                                ) : (
+                                    <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                                )}
+                            </TouchableOpacity>
+                            {healthConnected && (
+                                <>
+                                    <View style={styles.divider} />
+                                    <TouchableOpacity
+                                        style={styles.row}
+                                        onPress={async () => {
+                                            setHealthSyncing(true);
+                                            try {
+                                                const summary = await getTodaysSummary();
+                                                await healthAPI.sync({
+                                                    steps: summary.steps,
+                                                    active_calories: summary.activeCalories,
+                                                    resting_heart_rate: summary.restingHeartRate,
+                                                    sleep_hours: summary.sleepHours,
+                                                    source: 'wearable',
+                                                });
+                                                toast.success('Synced!', 'Health data updated');
+                                            } catch {
+                                                toast.error('Sync Failed', 'Could not sync health data');
+                                            } finally {
+                                                setHealthSyncing(false);
+                                            }
+                                        }}
+                                        disabled={healthSyncing}
+                                    >
+                                        <View style={styles.rowLeft}>
+                                            <MaterialIcons name="sync" size={24} color={colors.text.secondary} />
+                                            <Text style={styles.rowLabel}>Sync Now</Text>
+                                        </View>
+                                        {healthSyncing && <ActivityIndicator size="small" color={colors.text.primary} />}
+                                    </TouchableOpacity>
+                                </>
+                            )}
+                        </GlassCard>
+                    </>
+                )}
 
                 {/* System Section */}
                 <Text style={styles.sectionTitle}>System</Text>

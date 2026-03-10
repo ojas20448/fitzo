@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity,
+    View, Text, StyleSheet, TouchableOpacity, Platform,
     ScrollView, TextInput, Dimensions, ActivityIndicator, Pressable
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,9 +13,10 @@ import Animated, {
     withTiming, withSequence, Easing,
 } from 'react-native-reanimated';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
-import { nutritionAPI, workoutsAPI } from '../../services/api';
+import { nutritionAPI, workoutsAPI, healthAPI } from '../../services/api';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../context/AuthContext';
+import { isHealthAvailable, requestPermissions, getTodaysSummary } from '../../services/healthService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -71,7 +72,7 @@ function bmiCategory(bmi: number) {
     return { label: 'Obese', color: '#EF4444' };
 }
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 // ─── Step metadata ───────────────────────────────────────────────────────────
 const STEP_META: Record<number, { icon: keyof typeof MaterialIcons.glyphMap; purpose: string }> = {
@@ -80,6 +81,7 @@ const STEP_META: Record<number, { icon: keyof typeof MaterialIcons.glyphMap; pur
     3: { icon: 'directions-run', purpose: "Let's calculate your daily needs" },
     4: { icon: 'auto-graph', purpose: 'Your personalised nutrition blueprint' },
     5: { icon: 'calendar-today', purpose: 'Choose how you want to train' },
+    6: { icon: 'watch', purpose: 'Sync your health data automatically' },
 };
 
 // ─── Animated Chip Selector ──────────────────────────────────────────────────
@@ -331,6 +333,15 @@ export default function OnboardingWizard() {
     });
 
     const set = useCallback((k: string, v: any) => setForm(p => ({ ...p, [k]: v })), []);
+
+    // ── Health Connect state ─────────────────────────────────────
+    const [healthAvailable, setHealthAvailable] = useState(false);
+    const [healthConnected, setHealthConnected] = useState(false);
+    const [healthSyncing, setHealthSyncing] = useState(false);
+
+    useEffect(() => {
+        setHealthAvailable(isHealthAvailable());
+    }, []);
 
     // ── Memoized derived values ──────────────────────────────────
     const w = parseFloat(form.weight_kg);
@@ -898,6 +909,121 @@ export default function OnboardingWizard() {
     );
 
     // ─────────────────────────────────────────────────────────────
+    // STEP 6: Health Connect
+    // ─────────────────────────────────────────────────────────────
+    const handleConnectHealth = async () => {
+        setHealthSyncing(true);
+        try {
+            const granted = await requestPermissions();
+            if (granted) {
+                setHealthConnected(true);
+                // Sync initial data
+                const summary = await getTodaysSummary();
+                await healthAPI.sync({
+                    steps: summary.steps,
+                    active_calories: summary.activeCalories,
+                    resting_heart_rate: summary.restingHeartRate,
+                    sleep_hours: summary.sleepHours,
+                    source: 'wearable',
+                });
+                toast.success('Connected!', 'Health data synced successfully');
+            } else {
+                toast.error('Permission Denied', 'Please allow health access in your device settings');
+            }
+        } catch {
+            toast.error('Error', 'Could not connect to health services');
+        } finally {
+            setHealthSyncing(false);
+        }
+    };
+
+    const renderStep6 = () => (
+        <View style={s.stepWrap}>
+            <Animated.View entering={FadeInDown.delay(100).duration(600).springify()} style={s.stepHeader}>
+                <View style={s.stepIconWrap}>
+                    <MaterialIcons name="watch" size={28} color={colors.text.primary} />
+                </View>
+                <Text style={s.title}>Connect Health Data</Text>
+                <Text style={s.purpose}>{STEP_META[6].purpose}</Text>
+                <Text style={s.subtitle}>
+                    Connect your smartwatch or phone's health data to track steps, calories burned, heart rate, and sleep automatically.
+                </Text>
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(200).duration(600).springify()}>
+                {healthAvailable ? (
+                    <View style={{ gap: spacing.lg }}>
+                        {/* Connect Button */}
+                        <TouchableOpacity
+                            style={[
+                                s.splitCard,
+                                healthConnected && s.splitCardActive,
+                            ]}
+                            onPress={healthConnected ? undefined : handleConnectHealth}
+                            activeOpacity={healthConnected ? 1 : 0.85}
+                            disabled={healthSyncing}
+                        >
+                            <View style={[s.splitIconWrap, healthConnected && s.splitIconWrapActive]}>
+                                <MaterialIcons
+                                    name={healthConnected ? 'check-circle' : 'favorite'}
+                                    size={20}
+                                    color={healthConnected ? colors.crowd.low : colors.text.muted}
+                                />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[s.splitName, healthConnected && { color: colors.text.primary }]}>
+                                    {Platform.OS === 'ios' ? 'Apple Health' : 'Health Connect'}
+                                </Text>
+                                <Text style={s.splitDesc}>
+                                    {healthConnected
+                                        ? 'Connected! Your health data will sync automatically.'
+                                        : 'Tap to connect and grant permission to read your health data.'}
+                                </Text>
+                            </View>
+                            {healthSyncing && <ActivityIndicator size="small" color={colors.text.primary} />}
+                            {healthConnected && <MaterialIcons name="check-circle" size={20} color={colors.crowd.low} />}
+                        </TouchableOpacity>
+
+                        {/* What we track */}
+                        <View style={{ gap: spacing.sm }}>
+                            <Text style={s.sectionLabel}>What we'll track</Text>
+                            {[
+                                { icon: 'directions-walk' as const, label: 'Daily Steps' },
+                                { icon: 'local-fire-department' as const, label: 'Active Calories' },
+                                { icon: 'favorite' as const, label: 'Resting Heart Rate' },
+                                { icon: 'bedtime' as const, label: 'Sleep Duration' },
+                            ].map((item, idx) => (
+                                <Animated.View
+                                    key={item.label}
+                                    entering={FadeInDown.delay(300 + idx * 80).duration(400).springify()}
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        gap: spacing.md,
+                                        paddingVertical: spacing.sm,
+                                    }}
+                                >
+                                    <MaterialIcons name={item.icon} size={20} color={colors.text.muted} />
+                                    <Text style={{ color: colors.text.secondary, fontFamily: typography.fontFamily.medium, fontSize: typography.sizes.base }}>
+                                        {item.label}
+                                    </Text>
+                                </Animated.View>
+                            ))}
+                        </View>
+                    </View>
+                ) : (
+                    <View style={{ alignItems: 'center', paddingVertical: spacing['2xl'] }}>
+                        <MaterialIcons name="watch-off" size={48} color={colors.text.muted} />
+                        <Text style={{ color: colors.text.secondary, fontFamily: typography.fontFamily.medium, fontSize: typography.sizes.base, textAlign: 'center', marginTop: spacing.lg }}>
+                            Health services are not available on this device.{'\n'}You can skip this step.
+                        </Text>
+                    </View>
+                )}
+            </Animated.View>
+        </View>
+    );
+
+    // ─────────────────────────────────────────────────────────────
     // RENDER
     // ─────────────────────────────────────────────────────────────
     const progressPct = (step / TOTAL_STEPS) * 100;
@@ -937,6 +1063,7 @@ export default function OnboardingWizard() {
                 {step === 3 && renderStep3()}
                 {step === 4 && renderStep4()}
                 {step === 5 && renderStep5()}
+                {step === 6 && renderStep6()}
             </ScrollView>
 
             {/* Sticky bottom button with glow */}
@@ -978,6 +1105,13 @@ export default function OnboardingWizard() {
                             )
                         }
                     </TouchableOpacity>
+                    {step === TOTAL_STEPS && !healthConnected && (
+                        <TouchableOpacity onPress={handleComplete} style={{ paddingVertical: spacing.md }} activeOpacity={0.7}>
+                            <Text style={{ color: colors.text.muted, fontFamily: typography.fontFamily.medium, fontSize: typography.sizes.sm, textAlign: 'center' }}>
+                                Skip for now
+                            </Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             </Animated.View>
         </SafeAreaView>

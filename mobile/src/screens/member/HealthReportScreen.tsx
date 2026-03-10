@@ -18,6 +18,7 @@ import { healthAPI, progressAPI, nutritionAPI, measurementsAPI } from '../../ser
 import GlassCard from '../../components/GlassCard';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
+import { isHealthAvailable, getTodaysSummary } from '../../services/healthService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_GAP = 10;
@@ -156,6 +157,24 @@ export default function HealthReportScreen() {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
+            // Auto-sync from device health services if available
+            if (isHealthAvailable()) {
+                try {
+                    const summary = await getTodaysSummary();
+                    if (summary.steps > 0 || summary.activeCalories > 0) {
+                        await healthAPI.sync({
+                            steps: summary.steps,
+                            active_calories: summary.activeCalories,
+                            resting_heart_rate: summary.restingHeartRate,
+                            sleep_hours: summary.sleepHours,
+                            source: 'wearable',
+                        });
+                    }
+                } catch {
+                    // Sync failed silently — still load from backend
+                }
+            }
+
             const [healthRes, historyRes, prsRes, nutritionRes, measureRes] = await Promise.all([
                 healthAPI.getToday().catch(() => ({ data: null })),
                 healthAPI.getHistory(7).catch(() => ({ data: null })),
