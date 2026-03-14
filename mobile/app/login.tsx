@@ -20,7 +20,6 @@ import GlassCard from '../src/components/GlassCard';
 import { useToast } from '../src/components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../src/styles/theme';
 import * as Google from 'expo-auth-session/providers/google';
-import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -35,33 +34,17 @@ export default function LoginScreen() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // Google Auth — hardcode Expo auth proxy URL (Google blocks custom schemes)
-    const redirectUri = 'https://auth.expo.io/@fiskerr/fitzo';
-    const [request, response, promptAsync] = Google.useAuthRequest({
+    // Google Auth — use native sign-in (no auth proxy needed)
+    const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
         clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-        scopes: ['openid', 'profile', 'email'],
-        redirectUri,
     });
-
-    // Debug: log the redirect URI being used
-    React.useEffect(() => {
-        if (request) {
-            console.log('🔑 Google OAuth redirect URI:', request.redirectUri);
-        }
-    }, [request]);
 
     React.useEffect(() => {
         if (response?.type === 'success') {
-            // Try multiple ways to get the id_token
-            const idToken = response.params?.id_token
-                || response.authentication?.idToken;
-
+            const idToken = response.params?.id_token;
             if (idToken) {
                 handleGoogleLogin(idToken);
-            } else if (response.params?.access_token || response.authentication?.accessToken) {
-                // Fallback: use access_token if id_token not available
-                const accessToken = response.params?.access_token || response.authentication?.accessToken;
-                handleGoogleLogin(accessToken!);
             } else {
                 toast.error('Google Login Failed', 'Could not get authentication token');
             }
