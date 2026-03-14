@@ -21,15 +21,12 @@ import { isHealthAvailable, requestPermissions, getTodaysSummary } from '../../s
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-// ─── Science: Mifflin-St Jeor + Harris-Benedict averaged ─────────────────────
+// ─── Science: Mifflin-St Jeor equation ──────────────────────────────────────
 function computeTDEE(weight: number, height: number, age: number, gender: string, activity: string) {
-    const mifflin = gender === 'male'
+    // Mifflin-St Jeor — most accurate modern BMR formula
+    const bmr = gender === 'male'
         ? 10 * weight + 6.25 * height - 5 * age + 5
         : 10 * weight + 6.25 * height - 5 * age - 161;
-    const harris = gender === 'male'
-        ? 13.397 * weight + 4.799 * height - 5.677 * age + 88.362
-        : 9.247 * weight + 3.098 * height - 4.330 * age + 447.593;
-    const bmr = (mifflin + harris) / 2;
     const multipliers: Record<string, number> = {
         sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very_active: 1.9,
     };
@@ -700,7 +697,7 @@ export default function OnboardingWizard() {
                 </View>
                 <Text style={s.title}>Your Blueprint</Text>
                 <Text style={s.purpose}>{STEP_META[4].purpose}</Text>
-                <Text style={s.subtitle}>Calculated using Mifflin-St Jeor + Harris-Benedict, adjusted for your goal.</Text>
+                <Text style={s.subtitle}>Calculated using the Mifflin-St Jeor equation, adjusted for your goal.</Text>
             </Animated.View>
 
             {/* Editable calorie target */}
