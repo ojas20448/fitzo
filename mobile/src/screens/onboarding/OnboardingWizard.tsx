@@ -672,11 +672,24 @@ export default function OnboardingWizard() {
     }, [baseTargetCal]);
 
     const handleMacroAdjust = useCallback((macro: 'protein' | 'carbs' | 'fat', delta: number) => {
-        const current = macroOverride || baseMacros;
-        setMacroOverride({
-            ...current,
-            [macro]: Math.max(0, current[macro] + delta),
-        });
+        const current = { ...(macroOverride || baseMacros) };
+        const newVal = Math.max(0, current[macro] + delta);
+        const actualDelta = newVal - current[macro];
+        current[macro] = newVal;
+
+        // Redistribute calorie difference to the other two macros
+        const calPerG: Record<string, number> = { protein: 4, carbs: 4, fat: 9 };
+        const calDiff = actualDelta * calPerG[macro]; // calories added/removed
+        const others = (['protein', 'carbs', 'fat'] as const).filter(m => m !== macro);
+
+        // Split the calorie difference equally between the other two
+        const halfCal = calDiff / 2;
+        for (const other of others) {
+            const gDelta = Math.round(halfCal / calPerG[other]);
+            current[other] = Math.max(0, current[other] - gDelta);
+        }
+
+        setMacroOverride(current);
     }, [macroOverride, baseMacros]);
 
     const renderStep4 = () => (
@@ -783,6 +796,9 @@ export default function OnboardingWizard() {
                         onIncrease={() => handleMacroAdjust('fat', 5)}
                         onDecrease={() => handleMacroAdjust('fat', -5)}
                     />
+                    <Text style={s.macroCalTotal}>
+                        Total: {macros.protein * 4 + macros.carbs * 4 + macros.fat * 9} kcal
+                    </Text>
                     {macroOverride && (
                         <TouchableOpacity
                             onPress={() => setMacroOverride(null)}
@@ -1313,6 +1329,7 @@ const s = StyleSheet.create({
         fontSize: 13, color: colors.text.secondary,
         fontFamily: typography.fontFamily.medium,
     },
+    macroCalTotal: { fontSize: 12, color: colors.text.muted, textAlign: 'center' as const, marginTop: 8, fontFamily: typography.fontFamily.medium },
     resetLink: { alignSelf: 'center', paddingTop: 10 },
     resetLinkText: {
         fontSize: 12, color: colors.text.muted,
