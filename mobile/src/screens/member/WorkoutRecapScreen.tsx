@@ -7,6 +7,7 @@ import ViewShot, { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import WorkoutShareCard from '../../components/WorkoutShareCard';
 import { memberAPI, workoutsAPI } from '../../services/api';
@@ -24,6 +25,11 @@ export default function WorkoutRecapScreen() {
     const [streak, setStreak] = useState(0);
     const [progressPct, setProgressPct] = useState<number | null>(null);
     const [sharing, setSharing] = useState(false);
+    const [photoUri, setPhotoUri] = useState<string | null>(null);
+    const [showCamera, setShowCamera] = useState(false);
+    const [cameraFacing, setCameraFacing] = useState<'front' | 'back'>('front');
+    const [permission, requestPermission] = useCameraPermissions();
+    const cameraRef = useRef<any>(null);
 
     const viewShotRef = useRef<View>(null);
 
@@ -75,6 +81,55 @@ export default function WorkoutRecapScreen() {
         }
     };
 
+    const handleOpenCamera = async () => {
+        if (!permission?.granted) {
+            const result = await requestPermission();
+            if (!result.granted) {
+                Alert.alert('Camera Permission', 'Camera access is needed to take a photo for your story card.');
+                return;
+            }
+        }
+        setShowCamera(true);
+    };
+
+    const handleCapture = async () => {
+        if (!cameraRef.current) return;
+        try {
+            const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
+            setPhotoUri(photo.uri);
+            setShowCamera(false);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        } catch {
+            Alert.alert('Error', 'Failed to capture photo');
+        }
+    };
+
+    if (showCamera) {
+        return (
+            <View style={styles.container}>
+                <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={cameraFacing} />
+                <SafeAreaView style={styles.cameraOverlay} edges={['top', 'bottom']}>
+                    <View style={styles.cameraTopRow}>
+                        <TouchableOpacity onPress={() => setShowCamera(false)} style={styles.cameraBtn}>
+                            <MaterialIcons name="close" size={28} color="#fff" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => setCameraFacing(f => f === 'front' ? 'back' : 'front')}
+                            style={styles.cameraBtn}
+                        >
+                            <MaterialIcons name="flip-camera-android" size={28} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.cameraBottom}>
+                        <TouchableOpacity onPress={handleCapture} style={styles.captureBtn}>
+                            <View style={styles.captureBtnInner} />
+                        </TouchableOpacity>
+                    </View>
+                </SafeAreaView>
+            </View>
+        );
+    }
+
     if (!recap) {
         return (
             <View style={styles.emptyContainer}>
@@ -107,6 +162,7 @@ export default function WorkoutRecapScreen() {
                     } : null}
                     progressPct={progressPct}
                     date={new Date()}
+                    backgroundImage={photoUri}
                 />
             </ViewShot>
 
@@ -117,6 +173,14 @@ export default function WorkoutRecapScreen() {
                 pointerEvents="box-none"
             >
                 <SafeAreaView edges={['bottom']} style={styles.controls}>
+                    {/* Add / Remove Photo */}
+                    <View style={styles.photoRow}>
+                        <TouchableOpacity style={styles.photoBtn} onPress={photoUri ? () => setPhotoUri(null) : handleOpenCamera}>
+                            <MaterialIcons name={photoUri ? 'close' : 'camera-alt'} size={20} color="#fff" />
+                            <Text style={styles.photoBtnText}>{photoUri ? 'REMOVE PHOTO' : 'ADD PHOTO'}</Text>
+                        </TouchableOpacity>
+                    </View>
+
                     <TouchableOpacity style={styles.shareBtn} onPress={handleShare} disabled={sharing}>
                         {sharing ? (
                             <ActivityIndicator color="#fff" size="small" />
@@ -208,5 +272,67 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.bold,
         letterSpacing: 1,
+    },
+
+    // Photo button
+    photoRow: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+    },
+    photoBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: borderRadius.full,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.15)',
+    },
+    photoBtnText: {
+        color: '#FFFFFF',
+        fontSize: 11,
+        fontFamily: typography.fontFamily.bold,
+        letterSpacing: 1,
+    },
+
+    // Camera
+    cameraOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'space-between',
+    },
+    cameraTopRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingTop: 8,
+    },
+    cameraBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cameraBottom: {
+        alignItems: 'center',
+        paddingBottom: 32,
+    },
+    captureBtn: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        borderWidth: 4,
+        borderColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    captureBtnInner: {
+        width: 58,
+        height: 58,
+        borderRadius: 29,
+        backgroundColor: '#FFFFFF',
     },
 });

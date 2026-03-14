@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { typography } from '../styles/theme';
 
@@ -21,6 +21,7 @@ interface WorkoutShareCardProps {
     intent?: { emphasis?: string[]; session_label?: string } | null;
     progressPct?: number | null;
     date: Date;
+    backgroundImage?: string | null;
 }
 
 // Detect milestones for workout count
@@ -54,7 +55,7 @@ const formatLifetimeVol = (vol: number): string => {
 };
 
 const WorkoutShareCard = React.forwardRef<View, WorkoutShareCardProps>(
-    ({ recap, user, intent, progressPct, date }, ref) => {
+    ({ recap, user, intent, progressPct, date, backgroundImage }, ref) => {
         const hrs = Math.floor(recap.duration / 60);
         const mins = recap.duration % 60;
         const time = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}min`;
@@ -87,8 +88,15 @@ const WorkoutShareCard = React.forwardRef<View, WorkoutShareCardProps>(
 
         return (
             <View ref={ref} style={s.card} collapsable={false}>
+                {/* Background photo with dark overlay */}
+                {backgroundImage && (
+                    <>
+                        <Image source={{ uri: backgroundImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)' }]} />
+                    </>
+                )}
                 {/* Subtle radial accent */}
-                <View style={s.radial} />
+                {!backgroundImage && <View style={s.radial} />}
 
                 {/* ── Top ── */}
                 <View style={s.top}>
