@@ -9,13 +9,13 @@ import {
     Switch,
     Linking,
     Platform,
-    TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { settingsAPI } from '../../services/api';
+import { settingsAPI, notificationsAPI } from '../../services/api';
+import { useToast } from '../../components/Toast';
 import Constants from 'expo-constants';
 import { useAuth } from '../../context/AuthContext';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
@@ -26,10 +26,11 @@ const version = Constants.expoConfig?.version || '1.0.0';
 
 const SettingsScreen = () => {
     const { logout, user } = useAuth();
+    const toast = useToast();
     const [units, setUnits] = useState<'metric' | 'imperial'>('metric');
     const [notifications, setNotifications] = useState(true);
     const [shareLogs, setShareLogs] = useState(true);
-    const [loading, setLoading] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     // Load persisted settings on mount
     useEffect(() => {
@@ -39,16 +40,24 @@ const SettingsScreen = () => {
                 if (stored === 'metric' || stored === 'imperial') {
                     setUnits(stored);
                 }
-                // Load sharing preference from API
-                try {
-                    const data = await settingsAPI.getSharingPreference();
-                    setShareLogs(data.share_logs_default);
-                } catch (e) {
-                    // Fallback to default if API call fails
-                    setShareLogs(true);
-                }
             } catch (e) {
                 // ignore
+            }
+
+            // Load sharing preference
+            try {
+                const data = await settingsAPI.getSharingPreference();
+                setShareLogs(data.share_logs_default);
+            } catch (e) {
+                setShareLogs(true);
+            }
+
+            // Load notification preference
+            try {
+                const status = await notificationsAPI.getStatus();
+                setNotifications(status.enabled);
+            } catch (e) {
+                // default to true
             }
         };
         loadSettings();
@@ -87,16 +96,51 @@ const SettingsScreen = () => {
         try {
             await settingsAPI.updateSharingPreference(newValue);
         } catch (e) {
-            // Revert on failure
             setShareLogs(!newValue);
-            Alert.alert('Error', 'Failed to update sharing preferences');
-            Alert.alert('Error', 'Failed to update sharing preferences');
+            toast.error('Error', 'Failed to update sharing preferences');
+        }
+    };
+
+    const handleNotificationsToggle = async (newValue: boolean) => {
+        setNotifications(newValue);
+        try {
+            if (newValue) {
+                // Re-register for push notifications
+                const { status } = await import('expo-notifications').then(m => m.getPermissionsAsync());
+                if (status !== 'granted') {
+                    const { status: newStatus } = await import('expo-notifications').then(m => m.requestPermissionsAsync());
+                    if (newStatus !== 'granted') {
+                        setNotifications(false);
+                        toast.warning('Permissions Required', 'Enable notifications in your device settings');
+                        return;
+                    }
+                }
+                const token = await import('expo-notifications').then(m => m.getExpoPushTokenAsync());
+                await notificationsAPI.registerPushToken(token.data, Platform.OS);
+            } else {
+                // Unregister push token
+                await notificationsAPI.unregisterPushToken();
+            }
+        } catch (e) {
+            setNotifications(!newValue);
+            toast.error('Error', 'Failed to update notification preferences');
+        }
+    };
+
+    const performDeleteAccount = async () => {
+        setDeleting(true);
+        try {
+            await settingsAPI.deleteAccount();
+            await logout();
+            router.replace('/login');
+        } catch (e: any) {
+            setDeleting(false);
+            toast.error('Error', e.message || 'Failed to delete account');
         }
     };
 
     const handleDeleteAccount = () => {
         if (Platform.OS === 'ios') {
-            // iOS supports Alert.prompt natively
             Alert.prompt(
                 'Delete Account',
                 'This action is irreversible. All your data will be permanently deleted.\n\nType "DELETE" to confirm.',
@@ -107,10 +151,9 @@ const SettingsScreen = () => {
                         style: 'destructive',
                         onPress: async (input) => {
                             if (input?.trim() === 'DELETE') {
-                                await logout();
-                                router.replace('/login');
+                                performDeleteAccount();
                             } else {
-                                Alert.alert('Not deleted', 'You must type "DELETE" to confirm account deletion.');
+                                toast.warning('Not deleted', 'You must type "DELETE" to confirm.');
                             }
                         },
                     },
@@ -120,7 +163,6 @@ const SettingsScreen = () => {
                 'default'
             );
         } else {
-            // Android: two-step confirmation since Alert.prompt is iOS-only
             Alert.alert(
                 'Delete Account',
                 'This action is irreversible. All your data will be permanently deleted.\n\nAre you sure you want to proceed?',
@@ -130,19 +172,15 @@ const SettingsScreen = () => {
                         text: 'Yes, Delete',
                         style: 'destructive',
                         onPress: () => {
-                            // Second confirmation
                             Alert.alert(
                                 'Final Confirmation',
-                                'Type DELETE in your mind and confirm: this cannot be undone.',
+                                'This cannot be undone. All your data will be permanently deleted.',
                                 [
                                     { text: 'Cancel', style: 'cancel' },
                                     {
                                         text: 'DELETE MY ACCOUNT',
                                         style: 'destructive',
-                                        onPress: async () => {
-                                            await logout();
-                                            router.replace('/login');
-                                        },
+                                        onPress: performDeleteAccount,
                                     },
                                 ]
                             );
@@ -256,7 +294,7 @@ const SettingsScreen = () => {
                 {/* Preferences */}
                 <Text style={styles.sectionHeader}>PREFERENCES</Text>
                 <GlassCard style={StyleSheet.flatten([styles.card, { padding: 0 }])}>
-                    {renderToggle('Push Notifications', notifications, setNotifications)}
+                    {renderToggle('Push Notifications', notifications, handleNotificationsToggle)}
                     <View style={styles.divider} />
                     <SettingItem
                         icon="straighten"

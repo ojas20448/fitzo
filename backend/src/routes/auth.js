@@ -481,4 +481,14 @@ router.post('/reset-password', passwordLimiter, validate({ body: resetPasswordSc
     res.json({ success: true, message: 'Password updated successfully. Please log in.' });
 }));
 
+// Delete account
+router.delete('/account', require('../middleware/auth').authenticate, asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    // All related tables use ON DELETE CASCADE, so deleting the user cascades
+    await query('DELETE FROM users WHERE id = $1', [userId]);
+
+    res.json({ success: true, message: 'Account deleted successfully' });
+}));
+
 module.exports = router;

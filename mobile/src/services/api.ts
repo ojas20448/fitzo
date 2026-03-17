@@ -323,6 +323,10 @@ export const settingsAPI = {
         const response = await api.patch('/settings/sharing', { share_logs_default: shareLogsDefault });
         return response.data;
     },
+    deleteAccount: async () => {
+        const response = await api.delete('/auth/account');
+        return response.data;
+    },
 };
 
 // ===========================================
