@@ -42,43 +42,21 @@ function calculateMacros(calories, goal) {
 
 /**
  * Calculate BMR using three scientific equations and average the results.
- * - Mifflin-St Jeor (most accurate for general population)
- * - Revised Harris-Benedict (widely validated)
- * - Katch-McArdle (most accurate when body fat % is known)
- *
- * W = weight in kg, H = height in cm, A = age in years, F = body fat %
+ * Mifflin-St Jeor — most accurate modern BMR formula.
+ * W = weight in kg, H = height in cm, A = age in years
  */
-function calculateBMR(weight, height, age, gender, bodyFatPct) {
-    // 1. Mifflin-St Jeor Equation
-    const mifflinBMR = gender === 'male'
+function calculateBMR(weight, height, age, gender) {
+    return gender === 'male'
         ? 10 * weight + 6.25 * height - 5 * age + 5
         : 10 * weight + 6.25 * height - 5 * age - 161;
-
-    // 2. Revised Harris-Benedict Equation
-    const harrisBMR = gender === 'male'
-        ? 13.397 * weight + 4.799 * height - 5.677 * age + 88.362
-        : 9.247 * weight + 3.098 * height - 4.330 * age + 447.593;
-
-    // 3. Katch-McArdle Formula (requires body fat %)
-    let katchBMR = null;
-    if (bodyFatPct && bodyFatPct > 0 && bodyFatPct < 100) {
-        const leanMass = weight * (1 - bodyFatPct / 100);
-        katchBMR = 370 + 21.6 * leanMass;
-    }
-
-    // Average the applicable equations
-    if (katchBMR !== null) {
-        return (mifflinBMR + harrisBMR + katchBMR) / 3;
-    }
-    return (mifflinBMR + harrisBMR) / 2;
 }
 
 /**
  * Calculate daily calories (TDEE) using averaged BMR × activity multiplier.
  * Optionally accepts bodyFatPct to enable the Katch-McArdle formula.
  */
-function calculateTDEE(weight, height, age, gender, activityLevel, goal, bodyFatPct) {
-    const bmr = calculateBMR(weight, height, age, gender, bodyFatPct);
+function calculateTDEE(weight, height, age, gender, activityLevel, goal) {
+    const bmr = calculateBMR(weight, height, age, gender);
 
     // Activity multiplier
     const multipliers = {
@@ -173,7 +151,7 @@ router.post('/profile', authenticate, asyncHandler(async (req, res) => {
     let fat = target_fat;
 
     if (!calories) {
-        calories = calculateTDEE(weight_kg, height_cm, age, gender, activity_level, goal_type, body_fat_pct || null);
+        calories = calculateTDEE(weight_kg, height_cm, age, gender, activity_level, goal_type);
         const macros = calculateMacros(calories, goal_type);
         protein = protein || macros.protein;
         carbs = carbs || macros.carbs;

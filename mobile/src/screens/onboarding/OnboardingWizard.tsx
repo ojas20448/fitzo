@@ -431,6 +431,10 @@ export default function OnboardingWizard() {
                 activity_level: form.activity_level,
                 body_fat_pct: form.body_fat_pct ? parseFloat(form.body_fat_pct) : undefined,
                 is_vegetarian: form.dietary !== 'everything',
+                target_calories: targetCal,
+                target_protein: macros.protein,
+                target_carbs: macros.carbs,
+                target_fat: macros.fat,
             } as any);
 
             if (form.split_id && form.split_id !== 'custom') {
