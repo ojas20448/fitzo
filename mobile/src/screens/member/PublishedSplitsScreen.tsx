@@ -57,10 +57,25 @@ export default function PublishedSplitsScreen() {
         if (!selectedSplit) return;
         setAdopting(true);
         try {
-            await workoutsAPI.adoptSplit(selectedSplit.id);
+            const result = await workoutsAPI.adoptSplit(selectedSplit.id);
             toast.success('Workout Plan Adopted!', `You are now following ${selectedSplit.name}`);
             setSelectedSplit(null);
-            router.back(); // Go back to intent/home screen
+
+            // Navigate back to intent screen with adopted split data so it jumps to day selection
+            const adoptedDays = result.user_split?.days || Object.values(selectedSplit.program_structure);
+            router.replace({
+                pathname: '/member/workout-intent',
+                params: {
+                    adoptedSplit: JSON.stringify({
+                        id: result.user_split?.split_id || selectedSplit.id,
+                        name: selectedSplit.name,
+                        days: adoptedDays,
+                        daysPerWeek: selectedSplit.days_per_week,
+                        pattern: 'custom',
+                        description: selectedSplit.description,
+                    }),
+                },
+            } as any);
         } catch (error) {
             toast.error('Error', 'Failed to adopt plan');
         } finally {

@@ -378,7 +378,7 @@ const HomeScreen: React.FC = () => {
                                         <Avatar size="lg" uri={friend.avatar_url} name={friend.name} />
                                     </View>
                                     <Text style={styles.squadName} numberOfLines={1}>
-                                        {friend.name.split(' ')[0]}
+                                        {(friend.name || 'Friend').split(' ')[0]}
                                     </Text>
                                 </View>
                             ))

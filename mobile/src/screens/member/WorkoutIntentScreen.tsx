@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { intentAPI, workoutsAPI } from '../../services/api';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
@@ -109,6 +109,7 @@ const BODY_PARTS = [
 
 export default function WorkoutIntentScreen() {
     const toast = useToast();
+    const params = useLocalSearchParams();
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState<'split' | 'day' | 'custom'>('split');
 
@@ -124,10 +125,50 @@ export default function WorkoutIntentScreen() {
     const [isAddingCustomDay, setIsAddingCustomDay] = useState(false);
     const [customDayInput, setCustomDayInput] = useState('');
 
-    // Load user's saved split on mount
+    // Load user's saved/adopted split on mount
     useEffect(() => {
-        // TODO: Load from API/storage
-        // For now, skip straight to split selection
+        // If we arrived from adopting a published split, jump straight to day selection
+        if (params.adoptedSplit) {
+            try {
+                const adopted = JSON.parse(params.adoptedSplit as string);
+                const days = adopted.days || [];
+                if (days.length > 0) {
+                    const split = {
+                        id: adopted.id || 'adopted',
+                        name: adopted.name || 'Adopted Plan',
+                        pattern: adopted.pattern || 'custom',
+                        description: adopted.description || `${days.length} days/week`,
+                        days,
+                        daysPerWeek: adopted.daysPerWeek || days.length,
+                    };
+                    setSelectedSplit(split);
+                    setStep('day');
+                    return;
+                }
+            } catch {}
+        }
+
+        // Try loading user's active split from API
+        const loadActiveSplit = async () => {
+            try {
+                const result = await workoutsAPI.getMySplits();
+                const active = result?.splits?.find((s: any) => s.is_active);
+                if (active?.days?.length > 0) {
+                    const split = {
+                        id: active.split_id || active.id,
+                        name: active.name || 'My Plan',
+                        pattern: active.split_id?.startsWith('adopted_') ? 'custom' : (active.split_id || 'custom'),
+                        description: `${active.days_per_week || active.days.length} days/week`,
+                        days: active.days,
+                        daysPerWeek: active.days_per_week || active.days.length,
+                    };
+                    setSavedSplit(split);
+                    setSelectedSplit(split);
+                    setStep('day');
+                }
+            } catch {}
+        };
+        loadActiveSplit();
     }, []);
 
     const handleSplitSelect = (split: typeof PRESET_SPLITS[0]) => {

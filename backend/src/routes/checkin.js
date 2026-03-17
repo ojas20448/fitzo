@@ -3,6 +3,7 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, ConflictError, NotFoundError, asyncHandler } = require('../utils/errors');
+const pushNotifications = require('../services/pushNotifications');
 
 /**
  * POST /api/checkin
@@ -57,6 +58,16 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
     );
 
     const streak = parseInt(streakResult.rows[0].streak) || 1;
+
+    // Send streak milestone notification (fire-and-forget)
+    if ([3, 7, 14, 30, 50, 100].includes(streak)) {
+        pushNotifications.sendToUser(userId, {
+            type: pushNotifications.NotificationType.STREAK_ALERT,
+            title: `🔥 ${streak}-Day Streak!`,
+            body: `You've checked in ${streak} days in a row. Keep it up!`,
+            data: { streak, screen: 'home' },
+        }).catch(() => {});
+    }
 
     res.status(201).json({
         success: true,

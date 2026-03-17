@@ -3,6 +3,7 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, ConflictError, NotFoundError, asyncHandler } = require('../utils/errors');
+const pushNotifications = require('../services/pushNotifications');
 
 /**
  * GET /api/friends
@@ -205,6 +206,15 @@ router.post('/request', authenticate, asyncHandler(async (req, res) => {
         [userId, friend_id]
     );
 
+    // Notify recipient of friend request (fire-and-forget)
+    const senderName = (await query(`SELECT name FROM users WHERE id = $1`, [userId])).rows[0]?.name || 'Someone';
+    pushNotifications.sendToUser(friend_id, {
+        type: pushNotifications.NotificationType.FRIEND_ACTIVITY,
+        title: 'New Friend Request',
+        body: `${senderName} wants to be your gym buddy!`,
+        data: { screen: 'friends', fromUserId: userId },
+    }).catch(() => {});
+
     res.status(201).json({
         message: 'Friend request sent!',
         status: 'pending'
@@ -243,11 +253,20 @@ router.post('/accept', authenticate, asyncHandler(async (req, res) => {
 
     // Create reverse friendship
     await query(
-        `INSERT INTO friendships (user_id, friend_id, status) 
+        `INSERT INTO friendships (user_id, friend_id, status)
      VALUES ($1, $2, 'accepted')
      ON CONFLICT (user_id, friend_id) DO UPDATE SET status = 'accepted', updated_at = NOW()`,
         [userId, friend_id]
     );
+
+    // Notify the original requester that their request was accepted
+    const acceptorName = (await query(`SELECT name FROM users WHERE id = $1`, [userId])).rows[0]?.name || 'Someone';
+    pushNotifications.sendToUser(friend_id, {
+        type: pushNotifications.NotificationType.FRIEND_ACTIVITY,
+        title: 'Friend Request Accepted!',
+        body: `${acceptorName} is now your gym buddy!`,
+        data: { screen: 'friends', fromUserId: userId },
+    }).catch(() => {});
 
     res.json({
         message: "You're now gym buddies! 🎉",

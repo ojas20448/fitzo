@@ -369,4 +369,42 @@ router.post('/log', authenticate, asyncHandler(async (req, res) => {
     });
 }));
 
+/**
+ * POST /api/nutrition/recalculate-all
+ * Admin: Force recalculate TDEE & macros for all users using Mifflin-St Jeor
+ */
+router.post('/recalculate-all', authenticate, asyncHandler(async (req, res) => {
+    // Only allow managers (admin) to trigger this
+    if (req.user.role !== 'manager') {
+        return res.status(403).json({ error: 'Admin only' });
+    }
+
+    const profiles = await query(`SELECT * FROM nutrition_profiles`);
+    let updated = 0;
+    let skipped = 0;
+
+    for (const p of profiles.rows) {
+        if (!p.weight_kg || !p.height_cm || !p.age || !p.gender) {
+            skipped++;
+            continue;
+        }
+
+        const calories = calculateTDEE(
+            parseFloat(p.weight_kg), parseFloat(p.height_cm),
+            p.age, p.gender, p.activity_level || 'moderate', p.goal_type || 'maintenance'
+        );
+        const macros = calculateMacros(calories, p.goal_type || 'maintenance');
+
+        await query(
+            `UPDATE nutrition_profiles
+             SET target_calories = $1, target_protein = $2, target_carbs = $3, target_fat = $4, updated_at = NOW()
+             WHERE id = $5`,
+            [calories, macros.protein, macros.carbs, macros.fat, p.id]
+        );
+        updated++;
+    }
+
+    res.json({ message: `Recalculated ${updated} profiles, skipped ${skipped}` });
+}));
+
 module.exports = router;

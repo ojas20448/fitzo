@@ -8,6 +8,7 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, asyncHandler } = require('../utils/errors');
+const pushNotifications = require('../services/pushNotifications');
 
 /**
  * GET /api/workouts/exercises
@@ -249,6 +250,32 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
     const gymPercentile = percentileRes.rows[0]?.percentile != null
         ? parseInt(percentileRes.rows[0].percentile)
         : null;
+
+    // Notify friends about workout completion (fire-and-forget)
+    (async () => {
+        try {
+            const userName = (await query(`SELECT name FROM users WHERE id = $1`, [userId])).rows[0]?.name || 'Someone';
+            const friendsRes = await query(
+                `SELECT CASE WHEN user_id = $1 THEN friend_id ELSE user_id END as fid
+                 FROM friendships WHERE (user_id = $1 OR friend_id = $1) AND status = 'accepted'`,
+                [userId]
+            );
+            const friendIds = friendsRes.rows.map(r => r.fid);
+            if (friendIds.length > 0) {
+                const vol = Math.round(session.volume || 0);
+                const dur = Math.round(session.duration_minutes || 0);
+                const body = prs.length > 0
+                    ? `${dur}min | ${vol}kg volume | ${prs.length} new PR${prs.length > 1 ? 's' : ''}!`
+                    : `${dur}min | ${vol}kg volume`;
+                await pushNotifications.sendToUsers(friendIds, {
+                    type: pushNotifications.NotificationType.FRIEND_ACTIVITY,
+                    title: `${userName} just crushed a workout!`,
+                    body,
+                    data: { userId, screen: 'friend-activity' },
+                });
+            }
+        } catch (e) { /* silent */ }
+    })();
 
     res.json({
         message: 'Workout completed! 💪',
