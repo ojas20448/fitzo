@@ -19,14 +19,14 @@ function calculateMacros(calories, goal) {
     // Macro splits tuned for Indian diets (carb-heavy: rice, roti, dal)
     switch (goal) {
         case 'fat_loss':
-            proteinPct = 0.25;
+            proteinPct = 0.30;
             fatPct = 0.25;
-            carbsPct = 0.50;
+            carbsPct = 0.45;
             break;
         case 'muscle_gain':
-            proteinPct = 0.25;
+            proteinPct = 0.30;
             fatPct = 0.25;
-            carbsPct = 0.50;
+            carbsPct = 0.45;
             break;
         default: // maintenance
             proteinPct = 0.20;

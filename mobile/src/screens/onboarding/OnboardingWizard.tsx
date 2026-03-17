@@ -42,8 +42,8 @@ function computeTargetCalories(tdee: number, goal: string) {
 function computeMacros(calories: number, goal: string, dietary: string) {
     let proteinPct: number, carbsPct: number, fatPct: number;
     // Macro splits tuned for Indian diets (carb-heavy: rice, roti, dal)
-    if (goal === 'fat_loss') { proteinPct = 0.25; fatPct = 0.25; carbsPct = 0.50; }
-    else if (goal === 'muscle_gain') { proteinPct = 0.25; carbsPct = 0.50; fatPct = 0.25; }
+    if (goal === 'fat_loss') { proteinPct = 0.30; fatPct = 0.25; carbsPct = 0.45; }
+    else if (goal === 'muscle_gain') { proteinPct = 0.30; carbsPct = 0.45; fatPct = 0.25; }
     else { proteinPct = 0.20; carbsPct = 0.50; fatPct = 0.30; }
 
     if (dietary === 'vegetarian' || dietary === 'vegan') {
