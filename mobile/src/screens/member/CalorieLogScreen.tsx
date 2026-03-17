@@ -328,10 +328,11 @@ const CalorieLogScreen: React.FC = () => {
     const handleLog = async () => {
         if (!selectedFood || !selectedServing) return;
 
-        const totalCalories = Math.round(selectedServing.calories * servingCount);
-        const totalProtein = Math.round(selectedServing.protein * servingCount);
-        const totalCarbs = Math.round(selectedServing.carbs * servingCount);
-        const totalFat = Math.round(selectedServing.fat * servingCount);
+        const mult = getMultiplier();
+        const totalCalories = Math.round(selectedServing.calories * mult);
+        const totalProtein = Math.round(selectedServing.protein * mult);
+        const totalCarbs = Math.round(selectedServing.carbs * mult);
+        const totalFat = Math.round(selectedServing.fat * mult);
 
         try {
             // Optimistic Log - Instant UI Update
@@ -346,7 +347,9 @@ const CalorieLogScreen: React.FC = () => {
                 carbs: totalCarbs,
                 fat: totalFat,
                 food_name: selectedFood.name,
-                serving_size: `${servingCount} ${selectedServing.measurementDescription}`,
+                serving_size: portionMode === 'grams'
+                    ? `${gramAmount}g`
+                    : `${servingCount} ${selectedServing.measurementDescription}`,
                 meal_type: 'snack',
                 visibility: visibility
             });
@@ -366,7 +369,20 @@ const CalorieLogScreen: React.FC = () => {
         }
     };
 
-    const totalCalories = selectedServing ? Math.round(selectedServing.calories * servingCount) : 0;
+    // Calculate the effective multiplier based on portion mode
+    const getMultiplier = () => {
+        if (portionMode === 'grams' && selectedServing) {
+            // Extract base gram amount from serving description (e.g. "1 cup (150g)" -> 150, "100g" -> 100)
+            const match = selectedServing.description?.match(/(\d+)\s*g/i);
+            const baseGrams = match ? parseFloat(match[1]) : 100;
+            const grams = parseFloat(gramAmount) || 0;
+            return grams / baseGrams;
+        }
+        return servingCount;
+    };
+
+    const effectiveMultiplier = getMultiplier();
+    const totalCalories = selectedServing ? Math.round(selectedServing.calories * effectiveMultiplier) : 0;
 
     const parseDescription = (desc: string) => {
         // Parse "Per 100g - Calories: 250kcal | Fat: 12g | Carbs: 20g | Protein: 15g"
@@ -609,21 +625,21 @@ const CalorieLogScreen: React.FC = () => {
                                     <View style={styles.macrosRow}>
                                         <View style={styles.macroItem}>
                                             <Text style={styles.macroValue}>
-                                                {Math.round(selectedServing.protein * servingCount)}g
+                                                {Math.round(selectedServing.protein * effectiveMultiplier)}g
                                             </Text>
                                             <Text style={styles.macroLabel}>Protein</Text>
                                         </View>
                                         <View style={styles.macroDivider} />
                                         <View style={styles.macroItem}>
                                             <Text style={styles.macroValue}>
-                                                {Math.round(selectedServing.carbs * servingCount)}g
+                                                {Math.round(selectedServing.carbs * effectiveMultiplier)}g
                                             </Text>
                                             <Text style={styles.macroLabel}>Carbs</Text>
                                         </View>
                                         <View style={styles.macroDivider} />
                                         <View style={styles.macroItem}>
                                             <Text style={styles.macroValue}>
-                                                {Math.round(selectedServing.fat * servingCount)}g
+                                                {Math.round(selectedServing.fat * effectiveMultiplier)}g
                                             </Text>
                                             <Text style={styles.macroLabel}>Fat</Text>
                                         </View>
@@ -758,13 +774,13 @@ const CalorieLogScreen: React.FC = () => {
                                             <View style={styles.nutritionRow}>
                                                 <Text style={styles.nutritionLabel}>Fiber</Text>
                                                 <Text style={styles.nutritionValue}>
-                                                    {Math.round(selectedServing.fiber * servingCount)}g
+                                                    {Math.round(selectedServing.fiber * effectiveMultiplier)}g
                                                 </Text>
                                             </View>
                                             <View style={styles.nutritionRow}>
                                                 <Text style={styles.nutritionLabel}>Sugar</Text>
                                                 <Text style={styles.nutritionValue}>
-                                                    {Math.round(selectedServing.sugar * servingCount)}g
+                                                    {Math.round(selectedServing.sugar * effectiveMultiplier)}g
                                                 </Text>
                                             </View>
                                         </View>

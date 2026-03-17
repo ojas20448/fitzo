@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import Animated, {
     useSharedValue,
@@ -10,7 +10,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+let AnimatedCircle: any;
+try {
+    AnimatedCircle = Animated.createAnimatedComponent(Circle);
+} catch {
+    AnimatedCircle = Circle; // Fallback to static circle
+}
 
 interface MacroPieChartProps {
     calories: number;
@@ -43,8 +48,8 @@ const MacroPieChart: React.FC<MacroPieChartProps> = ({
     const animatedProgress = useSharedValue(0);
     const [showDetail, setShowDetail] = useState<'calories' | 'protein' | 'carbs' | 'fat'>('calories');
 
-    // Calculate calorie progress
-    const calorieProgress = Math.min(calories / calorieTarget, 1);
+    // Calculate calorie progress (guard against division by zero)
+    const calorieProgress = calorieTarget > 0 ? Math.min(calories / calorieTarget, 1) : 0;
     const remaining = Math.max(0, calorieTarget - calories);
 
     // Animate on mount and when calories change

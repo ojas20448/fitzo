@@ -220,6 +220,7 @@ export default function UserProfileScreen() {
 
             <ScrollView
                 style={styles.scroll}
+                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
             >
@@ -436,8 +437,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.lg,
     },
     backBtn: {
         padding: spacing.xs,
@@ -451,7 +452,10 @@ const styles = StyleSheet.create({
     },
     scroll: {
         flex: 1,
-        paddingHorizontal: spacing.lg,
+        paddingHorizontal: spacing.xl,
+    },
+    scrollContent: {
+        paddingBottom: spacing['3xl'],
     },
     center: {
         flex: 1,
@@ -581,7 +585,7 @@ const styles = StyleSheet.create({
         marginBottom: spacing.sm,
     },
     card: {
-        padding: spacing.md,
+        padding: spacing.lg,
         marginBottom: spacing.sm,
     },
     intentRow: {

@@ -770,7 +770,7 @@ const styles = StyleSheet.create({
     learningCard: {
         backgroundColor: colors.glass.surface,
         borderRadius: borderRadius.xl,
-        padding: 4,
+        padding: spacing.sm,
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,

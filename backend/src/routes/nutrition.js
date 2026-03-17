@@ -16,21 +16,22 @@ function calculateMacros(calories, goal) {
     // Protein-first approach for gym members
     let proteinPct, carbsPct, fatPct;
 
+    // Macro splits tuned for Indian diets (carb-heavy: rice, roti, dal)
     switch (goal) {
         case 'fat_loss':
-            proteinPct = 0.35; // Higher protein for muscle preservation
-            fatPct = 0.30;
-            carbsPct = 0.35;
+            proteinPct = 0.25;
+            fatPct = 0.25;
+            carbsPct = 0.50;
             break;
         case 'muscle_gain':
-            proteinPct = 0.30;
+            proteinPct = 0.25;
             fatPct = 0.25;
-            carbsPct = 0.45; // Higher carbs for energy
+            carbsPct = 0.50;
             break;
         default: // maintenance
-            proteinPct = 0.30;
+            proteinPct = 0.20;
             fatPct = 0.30;
-            carbsPct = 0.40;
+            carbsPct = 0.50;
     }
 
     return {

@@ -64,18 +64,19 @@ export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 });
             }
         } catch (error) {
+            // Silently fail - non-critical
         }
-    }, [user]);
+    }, [user?.id]);
 
     const [weeklyWorkoutGoal, setWeeklyWorkoutGoal] = useState<number>(4);
 
-    // Initial load
+    // Initial load - only depend on user.id to prevent infinite re-renders
     useEffect(() => {
         if (user) {
             refreshToday();
             loadWeeklyGoal();
         }
-    }, [user, refreshToday]);
+    }, [user?.id]);
 
     const loadWeeklyGoal = async () => {
         try {

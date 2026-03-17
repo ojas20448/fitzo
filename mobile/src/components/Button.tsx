@@ -1,6 +1,5 @@
 import React, { useRef } from 'react';
 import {
-    TouchableOpacity,
     Pressable,
     Text,
     StyleSheet,
@@ -177,32 +176,29 @@ const Button: React.FC<ButtonProps> = ({
         }
     };
 
-    // Use Pressable for Android ripple, TouchableOpacity for iOS
-    const ButtonComponent = Platform.OS === 'android' ? Pressable : TouchableOpacity;
-
-    const androidRipple = Platform.OS === 'android' ? {
-        color: variant === 'primary' || variant === 'danger' 
-            ? 'rgba(0,0,0,0.2)' 
+    const rippleConfig = Platform.OS === 'android' ? {
+        color: variant === 'primary' || variant === 'danger'
+            ? 'rgba(0,0,0,0.2)'
             : 'rgba(255,255,255,0.2)',
         borderless: false,
     } : undefined;
 
     return (
         <Animated.View style={{ transform: [{ scale: scaleAnim }], width: fullWidth ? '100%' : undefined }}>
-            <ButtonComponent
-                style={({ pressed }: { pressed?: boolean }) => [
+            <Pressable
+                style={({ pressed }) => [
                     getButtonStyles(),
                     fullWidth && styles.fullWidth,
                     variant === 'primary' && !disabled && styles.primaryShadow,
                     variant === 'danger' && !disabled && styles.dangerShadow,
-                    Platform.OS === 'ios' && pressed && styles.pressed,
+                    pressed && styles.pressed,
                     style,
                 ]}
                 onPress={handlePress}
                 onPressIn={handlePressIn}
                 onPressOut={handlePressOut}
                 disabled={disabled || loading}
-                android_ripple={androidRipple}
+                android_ripple={rippleConfig}
                 accessibilityLabel={accessibilityLabel || title}
                 accessibilityHint={accessibilityHint}
                 accessibilityRole="button"
@@ -222,7 +218,7 @@ const Button: React.FC<ButtonProps> = ({
                         {iconRight && <View style={styles.iconRight}>{iconRight}</View>}
                     </View>
                 )}
-            </ButtonComponent>
+            </Pressable>
         </Animated.View>
     );
 };

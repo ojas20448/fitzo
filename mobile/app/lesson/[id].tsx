@@ -162,7 +162,7 @@ const LessonScreen = () => {
     }
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             <Celebration
                 visible={showCelebration}
                 type="achievement"

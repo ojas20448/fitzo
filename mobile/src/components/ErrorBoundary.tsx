@@ -28,9 +28,16 @@ export class ErrorBoundary extends React.Component<Props, State> {
         console.error('ErrorBoundary caught error:', error, errorInfo);
     }
 
+    private retryCount = 0;
+
     handleRetry = () => {
+        this.retryCount++;
+        if (this.retryCount > 3) {
+            // Prevent infinite crash loop - just clear the error without navigating
+            this.setState({ hasError: false, error: null });
+            return;
+        }
         this.setState({ hasError: false, error: null });
-        router.replace('/');
     };
 
     render() {
@@ -45,7 +52,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
                         </Text>
 
                         <TouchableOpacity style={styles.button} onPress={this.handleRetry}>
-                            <Text style={styles.buttonText}>Return Home</Text>
+                            <Text style={styles.buttonText}>Try Again</Text>
                         </TouchableOpacity>
                     </View>
                 </SafeAreaView>

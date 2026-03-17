@@ -41,9 +41,10 @@ function computeTargetCalories(tdee: number, goal: string) {
 
 function computeMacros(calories: number, goal: string, dietary: string) {
     let proteinPct: number, carbsPct: number, fatPct: number;
-    if (goal === 'fat_loss') { proteinPct = 0.35; fatPct = 0.30; carbsPct = 0.35; }
-    else if (goal === 'muscle_gain') { proteinPct = 0.30; carbsPct = 0.45; fatPct = 0.25; }
-    else { proteinPct = 0.30; carbsPct = 0.40; fatPct = 0.30; }
+    // Macro splits tuned for Indian diets (carb-heavy: rice, roti, dal)
+    if (goal === 'fat_loss') { proteinPct = 0.25; fatPct = 0.25; carbsPct = 0.50; }
+    else if (goal === 'muscle_gain') { proteinPct = 0.25; carbsPct = 0.50; fatPct = 0.25; }
+    else { proteinPct = 0.20; carbsPct = 0.50; fatPct = 0.30; }
 
     if (dietary === 'vegetarian' || dietary === 'vegan') {
         proteinPct -= 0.03;
@@ -1145,7 +1146,7 @@ const s = StyleSheet.create({
     // ── Progress area ────────────────────────────────────────────
     progressArea: {
         paddingHorizontal: spacing['2xl'],
-        paddingTop: spacing.sm,
+        paddingTop: spacing.lg,
     },
     progressHeader: {
         flexDirection: 'row',
@@ -1153,7 +1154,7 @@ const s = StyleSheet.create({
         marginBottom: spacing.sm,
     },
     progressBackBtn: {
-        padding: 4,
+        padding: spacing.xs,
     },
     stepCount: {
         fontSize: typography.sizes.xs,
@@ -1179,16 +1180,16 @@ const s = StyleSheet.create({
 
     // ── Scroll / layout ──────────────────────────────────────────
     scroll: { padding: spacing['2xl'], paddingBottom: 140 },
-    stepWrap: { gap: 16 },
+    stepWrap: { gap: spacing.lg },
 
     // ── Step header ──────────────────────────────────────────────
-    stepHeader: { gap: 6, marginBottom: 8 },
+    stepHeader: { gap: spacing.sm, marginBottom: spacing.sm },
     stepIconWrap: {
         width: 48, height: 48, borderRadius: 24,
         backgroundColor: colors.glass.surfaceLight,
         borderWidth: 1, borderColor: colors.glass.border,
         alignItems: 'center', justifyContent: 'center',
-        marginBottom: 4,
+        marginBottom: spacing.xs,
     },
     title: {
         fontSize: 30,
@@ -1215,13 +1216,13 @@ const s = StyleSheet.create({
         color: colors.text.muted,
         textTransform: 'uppercase',
         letterSpacing: 1.5,
-        marginTop: 8,
+        marginTop: spacing.sm,
     },
 
     // ── Gender ───────────────────────────────────────────────────
     genderBtn: {
-        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-        padding: 14, borderRadius: borderRadius.md, borderWidth: 1,
+        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+        padding: spacing.lg, borderRadius: borderRadius.md, borderWidth: 1,
         borderColor: colors.glass.border, backgroundColor: colors.glass.surface,
     },
     genderBtnActive: {
@@ -1238,7 +1239,7 @@ const s = StyleSheet.create({
         backgroundColor: colors.glass.surfaceLight,
         borderRadius: borderRadius.md,
         borderWidth: 1, borderColor: colors.glass.borderLight,
-        padding: 14, gap: 8, marginTop: 4,
+        padding: spacing.lg, gap: spacing.sm, marginTop: spacing.xs,
     },
     previewRow: { flexDirection: 'row', justifyContent: 'space-between' },
     previewLabel: { fontSize: 13, color: colors.text.muted },
@@ -1250,7 +1251,7 @@ const s = StyleSheet.create({
         backgroundColor: colors.glass.surfaceLight,
         borderRadius: borderRadius.md, borderWidth: 1,
         borderColor: colors.glass.borderLight,
-        padding: 12, marginTop: 4,
+        padding: spacing.md, marginTop: spacing.xs,
     },
     miniPreviewText: {
         fontSize: 13, color: colors.text.muted, flex: 1,
@@ -1258,7 +1259,7 @@ const s = StyleSheet.create({
 
     // ── Activity ─────────────────────────────────────────────────
     activityCard: {
-        flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14,
+        flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg,
         borderRadius: borderRadius.md, borderWidth: 1,
         borderColor: colors.glass.border,
         backgroundColor: colors.glass.surface,
@@ -1288,7 +1289,7 @@ const s = StyleSheet.create({
     calCard: {
         borderRadius: borderRadius.xl,
         borderWidth: 1, borderColor: colors.glass.borderLight,
-        padding: 20, gap: 12, overflow: 'hidden',
+        padding: spacing.xl, gap: spacing.md, overflow: 'hidden',
         alignItems: 'center',
     },
     calLabel: {
@@ -1315,12 +1316,12 @@ const s = StyleSheet.create({
     macroCard: {
         backgroundColor: colors.glass.surface,
         borderRadius: borderRadius.lg, borderWidth: 1,
-        borderColor: colors.glass.border, padding: 16,
+        borderColor: colors.glass.border, padding: spacing.lg,
     },
     macroCustomCard: {
         backgroundColor: colors.glass.surface,
         borderRadius: borderRadius.lg, borderWidth: 1,
-        borderColor: colors.glass.border, padding: 16,
+        borderColor: colors.glass.border, padding: spacing.lg,
     },
     customizeLink: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -1340,14 +1341,14 @@ const s = StyleSheet.create({
     infoBox: {
         flexDirection: 'row', gap: 10,
         backgroundColor: colors.glass.surfaceLight,
-        borderRadius: borderRadius.md, padding: 12,
+        borderRadius: borderRadius.md, padding: spacing.md,
         borderWidth: 1, borderColor: colors.glass.border,
     },
     infoText: { flex: 1, fontSize: 13, color: colors.text.muted, lineHeight: 19 },
 
     // ── Split ────────────────────────────────────────────────────
     splitCard: {
-        flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 14,
+        flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, padding: spacing.lg,
         borderRadius: borderRadius.lg, borderWidth: 1,
         borderColor: colors.glass.border,
         backgroundColor: colors.glass.surface,
