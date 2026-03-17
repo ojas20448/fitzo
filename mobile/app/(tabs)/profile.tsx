@@ -292,7 +292,7 @@ export default function ProfileScreen() {
                         <View style={styles.settingDivider} />
                         <TouchableOpacity
                             style={styles.settingItem}
-                            onPress={() => Linking.openURL('https://fitzoapp.in/privacy')}
+                            onPress={() => Linking.openURL('https://www.fitzoapp.in/privacy-policy')}
                         >
                             <MaterialIcons name="privacy-tip" size={24} color={colors.text.secondary} />
                             <Text style={styles.settingLabel}>Privacy & Security</Text>
