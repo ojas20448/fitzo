@@ -1,16 +1,28 @@
 /**
  * Indian Food Database Service
- * Local database of common Indian foods with accurate nutritional data
+ * Local database of 3000+ Indian foods with accurate nutritional data
+ * Covers home-cooked, street food, fast food chains, and packaged products
  */
 
 const indianFoods = require('../data/indian-foods.json');
+
+// Build lookup map for fast ID-based access
+const foodById = new Map();
+indianFoods.forEach(f => foodById.set(f.id, f));
+
+// Brand categories that should show region as brand name
+const BRAND_CATEGORIES = new Set([
+    'fast food', 'restaurant', 'beverages', 'desserts',
+    'packaged snacks', 'packaged dairy', 'dairy', 'protein',
+    'health foods', 'ice cream', 'bakery', 'confectionery',
+]);
 
 /**
  * Search Indian foods by name
  * @param {string} query - Search query
  * @param {number} limit - Max results
  */
-function searchFoods(query, limit = 20) {
+function searchFoods(query, limit = 25) {
     const searchTerm = query.toLowerCase();
     const words = searchTerm.split(/\s+/).filter(w => w.length > 0);
 
@@ -22,10 +34,20 @@ function searchFoods(query, limit = 20) {
         const searchable = `${name} ${category} ${region}`;
         let score = 0;
 
-        // Exact substring match on name (highest priority)
-        if (name.includes(searchTerm)) score += 10;
-        // Category or region match
-        if (category.includes(searchTerm) || region.includes(searchTerm)) score += 5;
+        // Exact name match (highest priority)
+        if (name === searchTerm) score += 20;
+        // Exact substring match on name
+        else if (name.includes(searchTerm)) score += 10;
+        // Name starts with search term
+        if (name.startsWith(searchTerm)) score += 5;
+        // Brand/region match (e.g. searching "amul" or "mcdonalds")
+        // Use word-boundary-aware matching to avoid "roti" matching "protinex"
+        const cleanRegion = region.replace(/['\s-]/g, '');
+        const cleanSearch = searchTerm.replace(/['\s-]/g, '');
+        if (region === searchTerm) score += 7;
+        else if (cleanSearch.length >= 4 && cleanRegion.startsWith(cleanSearch)) score += 7;
+        // Category match
+        if (category.includes(searchTerm)) score += 4;
         // All individual words match (multi-word search like "maggi noodles")
         const allWordsMatch = words.every(w => searchable.includes(w));
         if (allWordsMatch) score += 8;
@@ -43,7 +65,7 @@ function searchFoods(query, limit = 20) {
         foods: scored.map(({ food }) => ({
             id: food.id,
             name: food.name,
-            brand: food.category === 'Restaurant' || food.category === 'Beverages' || food.category === 'Desserts'
+            brand: BRAND_CATEGORIES.has(food.category.toLowerCase())
                 ? food.region
                 : food.category,
             type: 'Indian',
@@ -63,7 +85,7 @@ function searchFoods(query, limit = 20) {
  * @param {string} foodId - Indian food ID
  */
 function getFoodDetails(foodId) {
-    const food = indianFoods.find(f => f.id === foodId);
+    const food = foodById.get(foodId);
 
     if (!food) {
         throw new Error('Food not found');
