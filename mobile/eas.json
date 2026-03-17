@@ -34,7 +34,8 @@
             "env": {
                 "EXPO_PUBLIC_API_URL": "https://fitzo.onrender.com/api",
                 "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1030039443378-ek0r7ar68qfjga2dmj5inr7e715g5c1f.apps.googleusercontent.com",
-                "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "1030039443378-u3vdk2fq3ebu90sv2okvimbta1rs2d7v.apps.googleusercontent.com"
+                "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "1030039443378-u3vdk2fq3ebu90sv2okvimbta1rs2d7v.apps.googleusercontent.com",
+                "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "1030039443378-k15ujl968cs24u1t6ln06oaapudt03e2.apps.googleusercontent.com"
             }
         }
     },

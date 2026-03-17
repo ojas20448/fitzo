@@ -37,6 +37,7 @@ export default function LoginScreen() {
     // Google Auth — use native sign-in (no auth proxy needed)
     const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
         androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
         clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     });
 
