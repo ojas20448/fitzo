@@ -43,8 +43,8 @@ export default function TabLayout() {
                 <Tabs.Screen
                     name="buddies"
                     options={{
-                        title: 'Buddies',
-                        tabBarAccessibilityLabel: 'Gym buddies tab',
+                        title: 'Friends',
+                        tabBarAccessibilityLabel: 'Friends tab',
                         tabBarIcon: ({ color, focused }) => (
                             <AnimatedTabIcon name="people" color={color} focused={focused} />
                         ),
@@ -123,23 +123,6 @@ export default function TabLayout() {
                             <View style={styles.optionInfo}>
                                 <Text style={styles.optionTitle}>Log Workout</Text>
                                 <Text style={styles.optionSubtitle}>Track what you trained today</Text>
-                            </View>
-                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.modalOption}
-                            onPress={() => handleLogOption('/member/create-post')}
-                            accessibilityLabel="Add post"
-                            accessibilityHint="Share a post with your gym buddies"
-                            accessibilityRole="menuitem"
-                        >
-                            <View style={styles.optionIcon}>
-                                <MaterialIcons name="post-add" size={28} color={colors.primary} />
-                            </View>
-                            <View style={styles.optionInfo}>
-                                <Text style={styles.optionTitle}>Add Post</Text>
-                                <Text style={styles.optionSubtitle}>Share with your gym buddies</Text>
                             </View>
                             <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                         </TouchableOpacity>

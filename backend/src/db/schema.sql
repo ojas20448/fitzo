@@ -66,7 +66,7 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE TABLE attendances (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  gym_id UUID NOT NULL REFERENCES gyms(id) ON DELETE CASCADE,
+  gym_id UUID REFERENCES gyms(id) ON DELETE CASCADE,
   check_date DATE NOT NULL DEFAULT CURRENT_DATE,
   checked_in_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   -- One check-in per day per user

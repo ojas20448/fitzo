@@ -12,7 +12,7 @@ const pushNotifications = require('../services/pushNotifications');
 router.get('/', authenticate, asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
-    // Get accepted friends with their today's intent
+    // Get accepted friends with streak, last workout, and today's activity
     const friendsResult = await query(
         `SELECT
        u.id,
@@ -24,7 +24,22 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
        wi.emphasis,
        wi.session_label,
        wi.muscle_group,
-       a.checked_in_at as last_checkin
+       a.checked_in_at as last_checkin,
+       get_user_streak(u.id) as streak,
+       lw.last_workout_date,
+       lw.last_workout_type,
+       (EXISTS(
+         SELECT 1 FROM workout_logs wl
+         WHERE wl.user_id = u.id AND wl.logged_date = CURRENT_DATE
+       ) OR EXISTS(
+         SELECT 1 FROM workout_sessions ws
+         WHERE ws.user_id = u.id AND ws.completed_at IS NOT NULL
+         AND DATE(ws.completed_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+       )) as worked_out_today,
+       EXISTS(
+         SELECT 1 FROM calorie_logs cl
+         WHERE cl.user_id = u.id AND cl.logged_date = CURRENT_DATE
+       ) as logged_food_today
      FROM friendships f
      JOIN users u ON f.friend_id = u.id
      LEFT JOIN workout_intents wi ON (
@@ -36,6 +51,11 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
        u.id = a.user_id
        AND DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
      )
+     LEFT JOIN LATERAL (
+       SELECT logged_date as last_workout_date, workout_type as last_workout_type
+       FROM workout_logs WHERE user_id = u.id
+       ORDER BY logged_date DESC LIMIT 1
+     ) lw ON true
      WHERE f.user_id = $1 AND f.status = 'accepted'
      ORDER BY a.checked_in_at DESC NULLS LAST, u.name`,
         [userId]
@@ -120,7 +140,12 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
                 xp_points: f.xp_points || 0,
                 today_intent,
                 checked_in_today: !!f.last_checkin,
-                shares_logs: f.share_logs_default
+                shares_logs: f.share_logs_default,
+                streak: parseInt(f.streak) || 0,
+                last_workout_date: f.last_workout_date || null,
+                last_workout_type: f.last_workout_type || null,
+                worked_out_today: f.worked_out_today || false,
+                logged_food_today: f.logged_food_today || false,
             };
         }),
         pending_requests: pendingResult.rows,
@@ -488,6 +513,53 @@ router.get('/suggested', authenticate, asyncHandler(async (req, res) => {
     res.json({
         suggested: result.rows
     });
+}));
+
+// In-memory nudge rate limiter (resets on server restart, which is fine)
+const nudgeCooldowns = new Map();
+
+/**
+ * POST /api/friends/:id/nudge
+ * Send a motivational push notification to a friend
+ * Rate-limited: one nudge per friend per 24 hours
+ */
+router.post('/:id/nudge', authenticate, asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const friendId = req.params.id;
+
+    // Verify friendship exists
+    const friendshipResult = await query(
+        `SELECT 1 FROM friendships
+         WHERE user_id = $1 AND friend_id = $2 AND status = 'accepted'`,
+        [userId, friendId]
+    );
+
+    if (friendshipResult.rows.length === 0) {
+        throw new NotFoundError('Friend not found');
+    }
+
+    // Rate limit check
+    const cooldownKey = `${userId}:${friendId}`;
+    const lastNudge = nudgeCooldowns.get(cooldownKey);
+    if (lastNudge && Date.now() - lastNudge < 24 * 60 * 60 * 1000) {
+        throw new ConflictError("You've already nudged this friend today");
+    }
+
+    // Get sender name
+    const senderName = (await query(`SELECT name FROM users WHERE id = $1`, [userId])).rows[0]?.name || 'Someone';
+
+    // Send push notification
+    await pushNotifications.sendToUser(friendId, {
+        type: pushNotifications.NotificationType.FRIEND_ACTIVITY,
+        title: 'Buddy Nudge!',
+        body: `${senderName} is wondering where you are! 💪`,
+        data: { screen: 'home', fromUserId: userId },
+    });
+
+    // Record cooldown
+    nudgeCooldowns.set(cooldownKey, Date.now());
+
+    res.json({ message: 'Nudge sent!' });
 }));
 
 module.exports = router;

@@ -298,6 +298,11 @@ export const friendsAPI = {
         const response = await api.get(`/friends/${userId}/status`);
         return response.data;
     },
+
+    sendNudge: async (friendId: string) => {
+        const response = await api.post(`/friends/${friendId}/nudge`);
+        return response.data;
+    },
 };
 
 // ===========================================

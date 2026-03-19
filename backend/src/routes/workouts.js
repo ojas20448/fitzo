@@ -58,6 +58,14 @@ router.post('/', asyncHandler(async (req, res) => {
         );
     }
 
+    // Auto-mark attendance for streak tracking
+    await query(
+        `INSERT INTO attendances (user_id, gym_id, check_date)
+         VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), CURRENT_DATE)
+         ON CONFLICT (user_id, check_date) DO NOTHING`,
+        [userId]
+    );
+
     res.json({
         success: true,
         workout: result.rows[0],

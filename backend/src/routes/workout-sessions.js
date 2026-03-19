@@ -251,6 +251,14 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
         ? parseInt(percentileRes.rows[0].percentile)
         : null;
 
+    // Auto-mark attendance for streak tracking
+    await query(
+        `INSERT INTO attendances (user_id, gym_id, check_date)
+         VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), CURRENT_DATE)
+         ON CONFLICT (user_id, check_date) DO NOTHING`,
+        [userId]
+    );
+
     // Notify friends about workout completion (fire-and-forget)
     (async () => {
         try {
