@@ -198,10 +198,19 @@ export default function WorkoutIntentScreen() {
 
             toast.success('Intent Set', `Let's crush ${dayName}! 💪`);
 
-            // Give toast time to show and backend time to commit, then navigate back to Home
+            // Navigate directly to workout log with intent data
             setTimeout(() => {
-                router.replace('/(tabs)');
-            }, 800);
+                router.replace({
+                    pathname: '/log/workout',
+                    params: {
+                        intent: JSON.stringify({
+                            session_label: dayName,
+                            emphasis: [dayName],
+                            training_pattern: selectedSplit.pattern || 'custom',
+                        }),
+                    },
+                });
+            }, 400);
         } catch (error: any) {
             toast.error('Failed to set intent', error?.message || 'Please try again');
             setLoading(false);

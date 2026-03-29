@@ -284,9 +284,19 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
 
             {/* List */}
             {loading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={styles.loadingText}>Loading...</Text>
+                <View style={{ padding: spacing.xl, gap: spacing.md }}>
+                    {[0, 1, 2, 3].map(i => (
+                        <GlassCard key={i} style={[styles.exerciseCard, { opacity: 0.4 }]}>
+                            <View style={[styles.exerciseIconContainer, { backgroundColor: colors.glass.border }]} />
+                            <View style={styles.exerciseInfo}>
+                                <View style={{ width: 120 + (i * 20), height: 14, borderRadius: 4, backgroundColor: colors.glass.border }} />
+                                <View style={{ flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm }}>
+                                    <View style={{ width: 50, height: 16, borderRadius: 4, backgroundColor: colors.glass.border }} />
+                                    <View style={{ width: 60, height: 16, borderRadius: 4, backgroundColor: colors.glass.border }} />
+                                </View>
+                            </View>
+                        </GlassCard>
+                    ))}
                 </View>
             ) : (
                 <TypedFlashList

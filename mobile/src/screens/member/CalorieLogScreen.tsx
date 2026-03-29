@@ -83,6 +83,9 @@ const CalorieLogScreen: React.FC = () => {
     const [logging, setLogging] = useState(false);
     const [showCelebration, setShowCelebration] = useState(false);
     const [searchError, setSearchError] = useState<string | null>(null);
+    const [pendingFoodName, setPendingFoodName] = useState('');
+    const [aiProgressText, setAiProgressText] = useState('Reading your description...');
+    const [frequentLoading, setFrequentLoading] = useState(true);
 
     // Frequent foods
     const [frequentFoods, setFrequentFoods] = useState<any[]>([]);
@@ -96,12 +99,24 @@ const CalorieLogScreen: React.FC = () => {
         loadSharingPreference();
     }, []);
 
+    // Cycle AI progress messages
+    useEffect(() => {
+        if (!aiAnalyzing) { setAiProgressText('Reading your description...'); return; }
+        const messages = ['Reading your description...', 'Looking up nutrition data...', 'Calculating macros...', 'Almost done...'];
+        let i = 0;
+        const interval = setInterval(() => { i = Math.min(i + 1, messages.length - 1); setAiProgressText(messages[i]); }, 4000);
+        return () => clearInterval(interval);
+    }, [aiAnalyzing]);
+
     const loadFrequentFoods = async () => {
+        setFrequentLoading(true);
         try {
             const data = await caloriesAPI.getFrequentFoods();
             setFrequentFoods(data.frequent || []);
         } catch (error: any) {
-            toast.error('Error', error.message || 'Something went wrong');
+            // Non-critical - just won't show frequent foods
+        } finally {
+            setFrequentLoading(false);
         }
     };
 
@@ -234,7 +249,9 @@ const CalorieLogScreen: React.FC = () => {
                     });
                 }
             } catch (err) {
-                // ignore
+                if (allLocal.length === 0) {
+                    setSearchError('Could not search. Check your connection.');
+                }
             } finally {
                 setSearching(false);
             }
@@ -247,11 +264,19 @@ const CalorieLogScreen: React.FC = () => {
     const handleFoodSelect = async (food: any) => {
         // Handle AI Trigger
         if (food.isAiTrigger) {
+            setPendingFoodName(searchQuery);
             setAiAnalyzing(true);
             setLoadingDetail(true);
             setShowDetail(true);
+            const aiTimeout = setTimeout(() => {
+                setLoadingDetail(false);
+                setAiAnalyzing(false);
+                setShowDetail(false);
+                toast.error('Timeout', 'AI analysis took too long. Please try again.');
+            }, 45000);
             try {
                 const res = await foodAPI.analyzeText(searchQuery);
+                clearTimeout(aiTimeout);
                 if (res.food) {
                     const aiFood = res.food;
                     setSelectedFood({
@@ -287,6 +312,7 @@ const CalorieLogScreen: React.FC = () => {
                     toast.error('AI Error', 'Could not analyze meal');
                 }
             } catch (err) {
+                clearTimeout(aiTimeout);
                 toast.error('AI Error', 'Analysis failed');
                 setShowDetail(false);
             } finally {
@@ -308,6 +334,7 @@ const CalorieLogScreen: React.FC = () => {
         }
 
         // Handle API Food Selection
+        setPendingFoodName(food.name || food.food_name || 'Loading...');
         setLoadingDetail(true);
         setShowDetail(true);
         try {
@@ -373,7 +400,7 @@ const CalorieLogScreen: React.FC = () => {
     const getMultiplier = () => {
         if (portionMode === 'grams' && selectedServing) {
             // Extract base gram amount from serving description (e.g. "1 cup (150g)" -> 150, "100g" -> 100)
-            const match = selectedServing.description?.match(/(\d+)\s*g/i);
+            const match = selectedServing.description?.match(/(\d+(?:\.\d+)?)\s*g/i);
             const baseGrams = match ? parseFloat(match[1]) : 100;
             const grams = parseFloat(gramAmount) || 0;
             return grams / baseGrams;
@@ -395,7 +422,7 @@ const CalorieLogScreen: React.FC = () => {
         const isAi = item.isAiTrigger;
 
         return (
-            <Animated.View entering={FadeInDown.delay(index * 50).duration(400).springify()}>
+            <Animated.View entering={FadeInDown.delay(Math.min(index, 5) * 30).duration(300)}>
                 <Pressable
                     style={({ pressed }) => [
                         styles.foodItem,
@@ -492,9 +519,25 @@ const CalorieLogScreen: React.FC = () => {
             {/* AI search results will show Smart Analysis option inline */}
 
 
+            {/* Frequent Foods Skeleton */}
+            {!searching && searchQuery === '' && frequentLoading && (
+                <View style={styles.frequentContainer}>
+                    <Text style={styles.sectionTitle}>QUICK ADD</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.frequentScroll}>
+                        {[0, 1, 2, 3].map(i => (
+                            <View key={i} style={[styles.frequentCard, { opacity: 0.4 }]}>
+                                <View style={[styles.frequentIcon, { backgroundColor: colors.glass.border }]} />
+                                <View style={{ width: 50, height: 12, borderRadius: 4, backgroundColor: colors.glass.border, marginTop: 4 }} />
+                                <View style={{ width: 30, height: 10, borderRadius: 4, backgroundColor: colors.glass.border, marginTop: 4 }} />
+                            </View>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
+
             {/* Frequent Foods */}
             {
-                !searching && searchQuery === '' && frequentFoods.length > 0 && (
+                !searching && searchQuery === '' && !frequentLoading && frequentFoods.length > 0 && (
                     <Animated.View entering={FadeIn.duration(500)} style={styles.frequentContainer}>
                         <Text style={styles.sectionTitle}>QUICK ADD</Text>
                         <ScrollView
@@ -582,14 +625,18 @@ const CalorieLogScreen: React.FC = () => {
                                         Analyzing with AI
                                     </Animated.Text>
                                     <Animated.Text entering={FadeIn.delay(400)} style={styles.aiLoadingSubtitle}>
-                                        Getting nutrition data for "{searchQuery}"
+                                        {aiProgressText}
                                     </Animated.Text>
                                     <View style={{ marginTop: 24 }}>
                                         <ActivityIndicator size="small" color={colors.text.muted} />
                                     </View>
                                 </>
                             ) : (
-                                <ActivityIndicator size="large" color={colors.primary} />
+                                <>
+                                    <Text style={styles.aiLoadingTitle}>{pendingFoodName}</Text>
+                                    <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 16 }} />
+                                    <Text style={[styles.aiLoadingSubtitle, { marginTop: 12 }]}>Loading nutrition info...</Text>
+                                </>
                             )}
                         </View>
                     ) : selectedFood ? (

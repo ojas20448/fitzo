@@ -465,6 +465,7 @@ const WorkoutLogScreen: React.FC = () => {
     // Repeat-last preview state
     const [lastWorkoutPreview, setLastWorkoutPreview] = useState<UserExercise[] | null>(null);
     const [showRepeatPreview, setShowRepeatPreview] = useState(false);
+    const [fetchingLastWorkout, setFetchingLastWorkout] = useState(false);
 
     // Rest timer state
     const [restSeconds, setRestSeconds] = useState(0);
@@ -554,6 +555,7 @@ const WorkoutLogScreen: React.FC = () => {
     }, [workoutType]);
 
     const fetchLatestWorkout = async () => {
+        setFetchingLastWorkout(true);
         try {
             const res = await workoutsAPI.getLatest(workoutType);
             if (res.found && res.workout) {
@@ -575,6 +577,8 @@ const WorkoutLogScreen: React.FC = () => {
             }
         } catch {
             setLastWorkoutPreview(null);
+        } finally {
+            setFetchingLastWorkout(false);
         }
     };
 
@@ -880,6 +884,18 @@ const WorkoutLogScreen: React.FC = () => {
                         ))}
                     </ScrollView>
                 </View>
+
+                {/* Repeat Last Banner - Loading */}
+                {fetchingLastWorkout && !lastWorkoutPreview && userExercises.length === 0 && (
+                    <View style={[styles.repeatBanner, { opacity: 0.5 }]}>
+                        <View style={styles.repeatBannerLeft}>
+                            <ActivityIndicator size="small" color={colors.text.muted} />
+                            <View>
+                                <Text style={styles.repeatSubtitle}>Loading previous workout...</Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
 
                 {/* Repeat Last Banner */}
                 {lastWorkoutPreview && lastWorkoutPreview.length > 0 && userExercises.length === 0 && (
