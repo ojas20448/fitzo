@@ -56,7 +56,20 @@ export default function WorkoutRecapScreen() {
             }
         };
         init();
+
+        // Auto-open camera for a post-workout selfie
+        autoOpenCamera();
     }, []);
+
+    const autoOpenCamera = async () => {
+        // Small delay so the screen renders first
+        await new Promise(r => setTimeout(r, 600));
+        if (!permission?.granted) {
+            const result = await requestPermission();
+            if (!result.granted) return; // User declined — just show card without photo
+        }
+        setShowCamera(true);
+    };
 
     const handleShare = async () => {
         if (sharing || !viewShotRef.current) return;
@@ -121,8 +134,12 @@ export default function WorkoutRecapScreen() {
                         </TouchableOpacity>
                     </View>
                     <View style={styles.cameraBottom}>
+                        <Text style={styles.cameraHint}>Take a post-workout selfie</Text>
                         <TouchableOpacity onPress={handleCapture} style={styles.captureBtn}>
                             <View style={styles.captureBtnInner} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setShowCamera(false)} style={styles.skipBtn}>
+                            <Text style={styles.skipBtnText}>Skip</Text>
                         </TouchableOpacity>
                     </View>
                 </SafeAreaView>
@@ -319,6 +336,25 @@ const styles = StyleSheet.create({
     cameraBottom: {
         alignItems: 'center',
         paddingBottom: 32,
+        gap: 16,
+    },
+    cameraHint: {
+        color: '#FFFFFF',
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.semiBold,
+        textShadowColor: 'rgba(0,0,0,0.6)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4,
+    },
+    skipBtn: {
+        paddingHorizontal: 24,
+        paddingVertical: 8,
+    },
+    skipBtnText: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        letterSpacing: 0.5,
     },
     captureBtn: {
         width: 72,

@@ -261,6 +261,102 @@ router.get('/feed', authenticate, asyncHandler(async (req, res) => {
 }));
 
 /**
+ * GET /api/intent/suggest
+ * Smart auto-suggest next workout day based on active split + last completed session
+ */
+router.get('/suggest', authenticate, asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    // 1. Get user's active split
+    const splitResult = await query(
+        `SELECT * FROM user_splits WHERE user_id = $1 AND is_active = true LIMIT 1`,
+        [userId]
+    );
+
+    if (splitResult.rows.length === 0) {
+        return res.json({ suggestion: null, reason: 'no_split' });
+    }
+
+    const activeSplit = splitResult.rows[0];
+    const splitDays = activeSplit.days; // e.g. ['Push', 'Pull', 'Legs']
+
+    if (!splitDays || splitDays.length === 0) {
+        return res.json({ suggestion: null, reason: 'empty_split' });
+    }
+
+    // 2. Check if user already has an intent set for today
+    const existingIntent = await query(
+        `SELECT id, split_type, emphasis, session_label, visibility
+         FROM workout_intents
+         WHERE user_id = $1 AND expires_at > NOW()
+         ORDER BY created_at DESC LIMIT 1`,
+        [userId]
+    );
+
+    // 3. Get the last completed workout session to determine cycle position
+    const lastSession = await query(
+        `SELECT day_name, split_id, completed_at
+         FROM workout_sessions
+         WHERE user_id = $1 AND completed_at IS NOT NULL
+         ORDER BY completed_at DESC
+         LIMIT 1`,
+        [userId]
+    );
+
+    let suggestedIndex = 0;
+    let reason = 'first_day';
+
+    if (lastSession.rows.length > 0) {
+        const lastDayName = lastSession.rows[0].day_name;
+        const lastCompletedAt = new Date(lastSession.rows[0].completed_at);
+        const daysSinceLastWorkout = Math.floor(
+            (Date.now() - lastCompletedAt.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        // Find last day's position in the split
+        const lastIndex = splitDays.findIndex(
+            d => d.toLowerCase() === lastDayName?.toLowerCase()
+        );
+
+        if (lastIndex !== -1) {
+            // Next day in the cycle (wraps around)
+            suggestedIndex = (lastIndex + 1) % splitDays.length;
+            reason = 'next_in_cycle';
+        } else {
+            // Last workout doesn't match current split — suggest Day 1
+            suggestedIndex = 0;
+            reason = 'split_changed';
+        }
+
+        // If it's been > 7 days, restart the cycle
+        if (daysSinceLastWorkout > 7) {
+            suggestedIndex = 0;
+            reason = 'long_break';
+        }
+    }
+
+    const suggestedDay = splitDays[suggestedIndex];
+
+    res.json({
+        suggestion: {
+            day_index: suggestedIndex,
+            day_name: suggestedDay,
+            split_name: activeSplit.name,
+            split_id: activeSplit.split_id,
+            split_days: splitDays,
+            days_per_week: activeSplit.days_per_week,
+        },
+        has_intent_today: existingIntent.rows.length > 0,
+        existing_intent: existingIntent.rows.length > 0 ? {
+            id: existingIntent.rows[0].id,
+            emphasis: existingIntent.rows[0].emphasis,
+            session_label: existingIntent.rows[0].session_label,
+        } : null,
+        reason,
+    });
+}));
+
+/**
  * DELETE /api/intent
  * Clear today's intent
  */

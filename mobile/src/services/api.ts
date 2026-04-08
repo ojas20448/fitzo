@@ -238,6 +238,11 @@ export const intentAPI = {
         return response.data;
     },
 
+    getSuggestion: async () => {
+        const response = await api.get('/intent/suggest');
+        return response.data;
+    },
+
     getSessions: async (splitType: string) => {
         const response = await api.get(`/intent/sessions/${splitType}`);
         return response.data;
@@ -524,7 +529,7 @@ export const workoutsAPI = {
     },
 
     saveSplit: async (data: any) => {
-        const response = await api.post('/workouts/splits', data);
+        const response = await api.post('/workout-sessions/splits', data);
         return response.data;
     },
 

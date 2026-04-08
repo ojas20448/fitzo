@@ -16,7 +16,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useNutrition } from '../../context/NutritionContext';
 import { useOfflineStore } from '../../stores/offlineStore';
-import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI } from '../../services/api';
+import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI, intentAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import Badge from '../../components/Badge';
@@ -91,6 +91,16 @@ const HomeScreen: React.FC = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [activeCount, setActiveCount] = useState(0);
     const [loadingMessage, setLoadingMessage] = useState('');
+    const [suggestion, setSuggestion] = useState<{
+        day_name: string;
+        day_index: number;
+        split_name: string;
+        split_id: string;
+        split_days: string[];
+        days_per_week: number;
+    } | null>(null);
+    const [suggestionReason, setSuggestionReason] = useState<string | null>(null);
+    const [settingIntent, setSettingIntent] = useState(false);
 
     useEffect(() => {
         // Show "waking up server" message if load takes > 4s
@@ -146,14 +156,19 @@ const HomeScreen: React.FC = () => {
         if (showLoader) setLoading(true);
         try {
             // Updated Promise.all to exclude caloriesAPI fetch since it's now handled by context
-            const [homeRes, workoutsRes, friendsRes] = await Promise.all([
+            const [homeRes, workoutsRes, friendsRes, suggestRes] = await Promise.all([
                 memberAPI.getHome(),
                 workoutsAPI.getToday().catch(() => ({ workouts: [], summary: { count: 0, types: [] } })),
                 friendsAPI.getFriends().catch(() => ({ friends: [] })),
+                intentAPI.getSuggestion().catch(() => ({ suggestion: null, reason: null })),
             ]);
             setData(homeRes);
             setTodayWorkouts(workoutsRes.workouts || []);
             // todayCalories is now derived from context
+
+            // Set smart suggestion
+            setSuggestion(suggestRes?.suggestion || null);
+            setSuggestionReason(suggestRes?.reason || null);
 
             const fetchedFriends = friendsRes?.friends || [];
             setFriends(fetchedFriends);
@@ -176,7 +191,35 @@ const HomeScreen: React.FC = () => {
     };
 
     const handleIntentPress = () => {
-        router.push('/workout-intent' as any);
+        if (suggestion && !currentIntent) {
+            // Has a suggestion but no intent set — go to intent screen with suggestion pre-loaded
+            router.push({
+                pathname: '/workout-intent' as any,
+                params: { suggestedIndex: suggestion.day_index.toString() },
+            });
+        } else {
+            router.push('/workout-intent' as any);
+        }
+    };
+
+    const handleQuickConfirm = async () => {
+        if (!suggestion || settingIntent) return;
+        setSettingIntent(true);
+        try {
+            await intentAPI.setIntent({
+                training_pattern: suggestion.split_id || 'custom',
+                emphasis: [suggestion.day_name],
+                session_label: suggestion.day_name,
+                visibility: 'friends',
+            });
+            // Refresh home data to show the confirmed intent
+            await loadHomeData(false);
+        } catch {
+            // Fall back to full intent screen
+            router.push('/workout-intent' as any);
+        } finally {
+            setSettingIntent(false);
+        }
     };
 
     // Time-based greeting
@@ -256,37 +299,86 @@ const HomeScreen: React.FC = () => {
                     </View>
                 </Animated.View>
 
-                {/* Today's Training - Large Typography */}
-                {/* Today's Training - Large Typography */}
+                {/* Today's Training - Smart Suggestion */}
                 <Animated.View entering={FadeInDown.delay(100).duration(600).springify()}>
-                    <Pressable
-                        style={styles.todaySection}
-                        onPress={handleIntentPress}
-                        accessibilityLabel={currentIntent ? "View or change workout intent" : "Set today's workout focus"}
-                        accessibilityRole="button"
-                    >
-                        <View style={styles.todayLabelRow}>
-                            <Text style={styles.todayLabel}>Today's Training</Text>
-                            {!currentIntent && (
-                                <View style={styles.tapHintPill}>
-                                    <Text style={styles.tapHintText}>TAP TO SET</Text>
+                    {currentIntent ? (
+                        /* Intent already set — compact confirmed card */
+                        <Pressable
+                            style={styles.intentCard}
+                            onPress={handleIntentPress}
+                            accessibilityLabel="View or change workout intent"
+                            accessibilityRole="button"
+                        >
+                            <View style={styles.intentCardLeft}>
+                                <View style={styles.intentDayBadge}>
+                                    <Text style={styles.intentDayText}>
+                                        {(currentIntent.emphasis?.[0] || 'Training').toUpperCase()}
+                                    </Text>
                                 </View>
-                            )}
-                        </View>
-                        <Text style={[styles.todayTitle, !currentIntent && styles.todayTitleMuted]}>
-                            {currentIntent ? (
-                                (currentIntent.emphasis?.[0] || 'Training').toUpperCase()
-                            ) : (
-                                'Set Your Focus'
-                            )}
-                        </Text>
-                        {currentIntent && (
-                            <View style={styles.editIntentRow}>
-                                <MaterialIcons name="edit" size={12} color={colors.text.muted} />
-                                <Text style={styles.editIntentText}>Tap to change</Text>
+                                <View>
+                                    <Text style={styles.intentCardLabel}>Today's Training</Text>
+                                    {suggestion && (
+                                        <Text style={styles.intentCardSplit}>{suggestion.split_name}</Text>
+                                    )}
+                                </View>
                             </View>
-                        )}
-                    </Pressable>
+                            <MaterialIcons name="edit" size={16} color={colors.text.muted} />
+                        </Pressable>
+                    ) : suggestion ? (
+                        /* No intent yet, but we have a smart suggestion — compact card */
+                        <View style={styles.intentCard}>
+                            <View style={styles.intentCardLeft}>
+                                <View style={styles.intentDayBadge}>
+                                    <Text style={styles.intentDayText}>
+                                        {suggestion.day_name.toUpperCase()}
+                                    </Text>
+                                </View>
+                                <View>
+                                    <Text style={styles.intentCardLabel}>
+                                        {suggestionReason === 'next_in_cycle' ? 'Next up' :
+                                         suggestionReason === 'long_break' ? 'Welcome back' :
+                                         'Today\'s Training'}
+                                    </Text>
+                                    <Text style={styles.intentCardSplit}>{suggestion.split_name}</Text>
+                                </View>
+                            </View>
+                            <View style={styles.intentCardActions}>
+                                <TouchableOpacity
+                                    style={styles.intentConfirmBtn}
+                                    onPress={handleQuickConfirm}
+                                    disabled={settingIntent}
+                                >
+                                    <Text style={styles.intentConfirmText}>
+                                        {settingIntent ? '...' : "Let's Go"}
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={handleIntentPress} style={styles.intentChangeBtn}>
+                                    <MaterialIcons name="swap-horiz" size={18} color={colors.text.muted} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    ) : (
+                        /* No split set up at all — compact prompt */
+                        <Pressable
+                            style={styles.intentCard}
+                            onPress={handleIntentPress}
+                            accessibilityLabel="Set up your workout split"
+                            accessibilityRole="button"
+                        >
+                            <View style={styles.intentCardLeft}>
+                                <View style={[styles.intentDayBadge, styles.intentDayBadgeMuted]}>
+                                    <MaterialIcons name="fitness-center" size={18} color={colors.text.muted} />
+                                </View>
+                                <View>
+                                    <Text style={styles.intentCardLabel}>Today's Training</Text>
+                                    <Text style={styles.intentCardSplit}>Set up your split</Text>
+                                </View>
+                            </View>
+                            <View style={styles.tapHintPill}>
+                                <Text style={styles.tapHintText}>SET UP</Text>
+                            </View>
+                        </Pressable>
+                    )}
                 </Animated.View>
 
                 {/* Completed Workout Card - Show when workout is logged today */}
@@ -339,17 +431,23 @@ const HomeScreen: React.FC = () => {
                             <Text style={styles.viewAllLink}>LOG FOOD</Text>
                         </TouchableOpacity>
                     </View>
-                    <TouchableOpacity onPress={() => router.push('/member/nutrition-insights' as any)} activeOpacity={0.8}>
-                        <MacroPieChart
-                            calories={todayMacros.calories || 0}
-                            calorieTarget={calorieGoal}
-                            protein={todayMacros.protein || 0}
-                            proteinTarget={macroTargets.protein}
-                            carbs={todayMacros.carbs || 0}
-                            carbsTarget={macroTargets.carbs}
-                            fat={todayMacros.fat || 0}
-                            fatTarget={macroTargets.fat}
-                        />
+                    <MacroPieChart
+                        calories={todayMacros.calories || 0}
+                        calorieTarget={calorieGoal}
+                        protein={todayMacros.protein || 0}
+                        proteinTarget={macroTargets.protein}
+                        carbs={todayMacros.carbs || 0}
+                        carbsTarget={macroTargets.carbs}
+                        fat={todayMacros.fat || 0}
+                        fatTarget={macroTargets.fat}
+                    />
+                    <TouchableOpacity
+                        style={styles.insightsButton}
+                        onPress={() => router.push('/member/nutrition-insights' as any)}
+                    >
+                        <MaterialIcons name="insights" size={16} color={colors.primary} />
+                        <Text style={styles.insightsButtonText}>View Detailed Insights</Text>
+                        <MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
                     </TouchableOpacity>
                 </Animated.View>
 
@@ -558,20 +656,71 @@ const styles = StyleSheet.create({
         color: colors.text.primary,
     },
 
-    // Today's Training
-    todaySection: {
-        marginBottom: spacing['2xl'],
-    },
-    todayLabelRow: {
+    // Today's Training — compact card
+    intentCard: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: spacing.xs,
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.xl,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        padding: spacing.lg,
+        marginBottom: spacing['2xl'],
     },
-    todayLabel: {
-        fontSize: typography.sizes.lg,
+    intentCardLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        flex: 1,
+    },
+    intentDayBadge: {
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.lg,
+        minWidth: 56,
+        alignItems: 'center',
+    },
+    intentDayBadgeMuted: {
+        backgroundColor: colors.glass.surfaceLight,
+    },
+    intentDayText: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.dark,
+        letterSpacing: 0.5,
+    },
+    intentCardLabel: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.text.primary,
+    },
+    intentCardSplit: {
+        fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.medium,
-        color: colors.text.secondary,
+        color: colors.text.muted,
+        marginTop: 2,
+    },
+    intentCardActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+    },
+    intentConfirmBtn: {
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.full,
+    },
+    intentConfirmText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.dark,
+        letterSpacing: 0.5,
+    },
+    intentChangeBtn: {
+        padding: spacing.xs,
     },
     tapHintPill: {
         backgroundColor: colors.primary,
@@ -585,26 +734,25 @@ const styles = StyleSheet.create({
         color: colors.text.dark,
         letterSpacing: 1,
     },
-    todayTitle: {
-        fontSize: typography.sizes['4xl'],
-        fontFamily: typography.fontFamily.semiBold,
-        color: colors.text.primary,
-        letterSpacing: -1,
-        lineHeight: typography.sizes['4xl'] * 1.1,
-    },
-    todayTitleMuted: {
-        color: colors.text.muted,
-    },
-    editIntentRow: {
+    // Nutrition insights button
+    insightsButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
-        marginTop: spacing.sm,
+        justifyContent: 'center',
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        marginTop: spacing.md,
+        gap: spacing.sm,
     },
-    editIntentText: {
-        fontSize: typography.sizes.xs,
+    insightsButtonText: {
+        flex: 1,
+        fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
+        color: colors.primary,
     },
 
     // Active Session Card

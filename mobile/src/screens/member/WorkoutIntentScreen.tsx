@@ -118,6 +118,7 @@ export default function WorkoutIntentScreen() {
     const [selectedSplit, setSelectedSplit] = useState<typeof PRESET_SPLITS[0] | null>(null);
     const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
     const [visibility, setVisibility] = useState<'public' | 'friends' | 'private'>('friends');
+    const [suggestedDayIndex, setSuggestedDayIndex] = useState<number | null>(null);
 
     // Custom split builder
     const [customDays, setCustomDays] = useState<string[]>([]);
@@ -148,32 +149,67 @@ export default function WorkoutIntentScreen() {
             } catch {}
         }
 
-        // Try loading user's active split from API
-        const loadActiveSplit = async () => {
-            try {
-                const result = await workoutsAPI.getMySplits();
-                const active = result?.splits?.find((s: any) => s.is_active);
-                if (active?.days?.length > 0) {
-                    const split = {
-                        id: active.split_id || active.id,
-                        name: active.name || 'My Plan',
-                        pattern: active.split_id?.startsWith('adopted_') ? 'custom' : (active.split_id || 'custom'),
-                        description: `${active.days_per_week || active.days.length} days/week`,
-                        days: active.days,
-                        daysPerWeek: active.days_per_week || active.days.length,
-                    };
-                    setSavedSplit(split);
-                    setSelectedSplit(split);
-                    setStep('day');
-                }
-            } catch {}
-        };
-        loadActiveSplit();
+        loadSplitAndSuggestion();
     }, []);
 
-    const handleSplitSelect = (split: typeof PRESET_SPLITS[0]) => {
+    const loadSplitAndSuggestion = async () => {
+        try {
+            // Fetch both active split and suggestion in parallel
+            const [splitResult, suggestResult] = await Promise.all([
+                workoutsAPI.getMySplits().catch(() => null),
+                intentAPI.getSuggestion().catch(() => null),
+            ]);
+
+            const active = splitResult?.splits?.find((s: any) => s.is_active);
+
+            if (active?.days?.length > 0) {
+                const split = {
+                    id: active.split_id || active.id,
+                    name: active.name || 'My Plan',
+                    pattern: active.split_id?.startsWith('adopted_') ? 'custom' : (active.split_id || 'custom'),
+                    description: `${active.days_per_week || active.days.length} days/week`,
+                    days: active.days,
+                    daysPerWeek: active.days_per_week || active.days.length,
+                };
+                setSavedSplit(split);
+                setSelectedSplit(split);
+                setStep('day');
+
+                // Pre-select suggested day
+                if (suggestResult?.suggestion) {
+                    const idx = suggestResult.suggestion.day_index;
+                    setSuggestedDayIndex(idx);
+                    setSelectedDayIndex(idx);
+                }
+
+                // If a suggested index was passed from HomeScreen, use that
+                if (params.suggestedIndex !== undefined) {
+                    const idx = parseInt(params.suggestedIndex as string, 10);
+                    if (!isNaN(idx)) {
+                        setSuggestedDayIndex(idx);
+                        setSelectedDayIndex(idx);
+                    }
+                }
+            }
+        } catch {}
+    };
+
+    const handleSplitSelect = async (split: typeof PRESET_SPLITS[0]) => {
         setSelectedSplit(split);
         setStep('day');
+
+        // Save the split to DB so it persists and enables auto-suggestions
+        try {
+            await workoutsAPI.saveSplit({
+                split_id: split.id,
+                name: split.name,
+                days: split.days,
+                days_per_week: split.daysPerWeek,
+            });
+            setSavedSplit(split);
+        } catch {
+            // Non-critical — split still works for this session
+        }
     };
 
     const handleDaySelect = (dayIndex: number) => {
@@ -189,7 +225,7 @@ export default function WorkoutIntentScreen() {
             const dayName = selectedSplit.days[selectedDayIndex];
 
             // Set the intent
-            const response = await intentAPI.setIntent({
+            await intentAPI.setIntent({
                 training_pattern: selectedSplit.pattern || 'custom',
                 emphasis: [dayName],
                 session_label: dayName,
@@ -217,11 +253,16 @@ export default function WorkoutIntentScreen() {
         }
     };
 
-    const handleQuickOption = async (type: 'cardio' | 'rest') => {
+    const handleQuickOption = async (type: 'cardio' | 'rest' | 'skip') => {
         setLoading(true);
         try {
+            if (type === 'skip') {
+                // Just go back — don't set any intent
+                router.back();
+                return;
+            }
+
             if (type === 'rest') {
-                // Send null for training_pattern to avoid enum constraint
                 await intentAPI.setIntent({
                     training_pattern: null,
                     emphasis: ['rest'],
@@ -249,6 +290,14 @@ export default function WorkoutIntentScreen() {
         }
     };
 
+    const handleChangeSplit = () => {
+        // Reset to split selection
+        setStep('split');
+        setSelectedSplit(null);
+        setSelectedDayIndex(null);
+        setSuggestedDayIndex(null);
+    };
+
     const addCustomDay = (part: string) => {
         if (customDays.length < 7) {
             setCustomDays([...customDays, part]);
@@ -267,7 +316,7 @@ export default function WorkoutIntentScreen() {
         setCustomDays(customDays.filter((_, i) => i !== index));
     };
 
-    const saveCustomSplit = () => {
+    const saveCustomSplit = async () => {
         const custom: typeof PRESET_SPLITS[0] = {
             id: 'custom',
             name: customName,
@@ -278,12 +327,27 @@ export default function WorkoutIntentScreen() {
         };
         setSelectedSplit(custom);
         setStep('day');
+
+        // Save to DB
+        try {
+            await workoutsAPI.saveSplit({
+                split_id: 'custom',
+                name: customName,
+                days: customDays,
+                days_per_week: customDays.length,
+            });
+            setSavedSplit(custom);
+        } catch {}
     };
 
     const handleBack = () => {
-        if (step === 'day') {
+        if (step === 'day' && !savedSplit) {
+            // Only go back to split selection if user hasn't saved a split yet
             setStep('split');
             setSelectedDayIndex(null);
+        } else if (step === 'day' && savedSplit) {
+            // Has a saved split — just go back to home
+            router.back();
         } else if (step === 'custom') {
             setStep('split');
             setCustomDays([]);
@@ -298,7 +362,7 @@ export default function WorkoutIntentScreen() {
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.closeButton}>
                     <MaterialIcons
-                        name={step !== 'split' ? 'arrow-back' : 'close'}
+                        name={step === 'split' || (step === 'day' && savedSplit) ? 'close' : 'arrow-back'}
                         size={28}
                         color={colors.text.primary}
                     />
@@ -495,8 +559,16 @@ export default function WorkoutIntentScreen() {
                         {/* Selected Split Info */}
                         <View style={styles.section}>
                             <View style={styles.selectedSplitCard}>
-                                <Text style={styles.selectedSplitName}>{selectedSplit.name}</Text>
-                                <Text style={styles.selectedSplitDesc}>{selectedSplit.daysPerWeek} days/week</Text>
+                                <View style={styles.selectedSplitHeader}>
+                                    <View>
+                                        <Text style={styles.selectedSplitName}>{selectedSplit.name}</Text>
+                                        <Text style={styles.selectedSplitDesc}>{selectedSplit.daysPerWeek} days/week</Text>
+                                    </View>
+                                    <TouchableOpacity onPress={handleChangeSplit} style={styles.changeSplitBtn}>
+                                        <MaterialIcons name="swap-horiz" size={16} color={colors.text.dark} />
+                                        <Text style={styles.changeSplitText}>Change</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         </View>
 
@@ -509,7 +581,8 @@ export default function WorkoutIntentScreen() {
                                         key={index}
                                         style={[
                                             styles.dayCard,
-                                            selectedDayIndex === index && styles.dayCardActive
+                                            selectedDayIndex === index && styles.dayCardActive,
+                                            suggestedDayIndex === index && selectedDayIndex !== index && styles.dayCardSuggested,
                                         ]}
                                         onPress={() => handleDaySelect(index)}
                                         disabled={loading}
@@ -526,8 +599,31 @@ export default function WorkoutIntentScreen() {
                                         ]}>
                                             {day}
                                         </Text>
+                                        {suggestedDayIndex === index && (
+                                            <View style={styles.suggestedPill}>
+                                                <Text style={[
+                                                    styles.suggestedPillText,
+                                                    selectedDayIndex === index && { color: colors.text.dark }
+                                                ]}>NEXT</Text>
+                                            </View>
+                                        )}
                                     </Pressable>
                                 ))}
+                            </View>
+                        </View>
+
+                        {/* Quick options when user has a split */}
+                        <View style={styles.section}>
+                            <Text style={styles.sectionLabel}>NOT TRAINING TODAY?</Text>
+                            <View style={styles.quickGrid}>
+                                <Pressable style={styles.quickCard} onPress={() => handleQuickOption('cardio')}>
+                                    <MaterialIcons name="directions-run" size={24} color={colors.text.muted} />
+                                    <Text style={styles.quickLabel}>Cardio</Text>
+                                </Pressable>
+                                <Pressable style={styles.quickCard} onPress={() => handleQuickOption('rest')}>
+                                    <MaterialIcons name="self-improvement" size={24} color={colors.text.muted} />
+                                    <Text style={styles.quickLabel}>Rest Day</Text>
+                                </Pressable>
                             </View>
                         </View>
                     </>
@@ -577,7 +673,7 @@ export default function WorkoutIntentScreen() {
                         disabled={loading}
                     >
                         <Text style={styles.confirmButtonText}>
-                            {loading ? 'Saving...' : 'Save Session'}
+                            {loading ? 'Saving...' : `Start ${selectedSplit?.days[selectedDayIndex]} Session`}
                         </Text>
                     </TouchableOpacity>
                 )}
@@ -802,6 +898,11 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.lg,
         padding: spacing.lg,
     },
+    selectedSplitHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
     selectedSplitName: {
         fontSize: typography.sizes.lg,
         fontFamily: typography.fontFamily.bold,
@@ -812,6 +913,20 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.medium,
         color: colors.text.dark,
         opacity: 0.8,
+    },
+    changeSplitBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.15)',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.full,
+        gap: 4,
+    },
+    changeSplitText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.dark,
     },
 
     // Days Grid
@@ -831,6 +946,10 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary,
         borderColor: colors.primary,
     },
+    dayCardSuggested: {
+        borderColor: colors.primary + '60',
+        borderWidth: 2,
+    },
     dayCardNum: {
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.bold,
@@ -845,6 +964,18 @@ const styles = StyleSheet.create({
     },
     dayCardTextActive: {
         color: colors.text.dark,
+    },
+    suggestedPill: {
+        backgroundColor: colors.primary + '20',
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        borderRadius: borderRadius.full,
+    },
+    suggestedPillText: {
+        fontSize: 9,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.primary,
+        letterSpacing: 1,
     },
 
     // Discover Styles
