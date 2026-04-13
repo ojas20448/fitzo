@@ -145,13 +145,23 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`
   🏋️ ═══════════════════════════════════════
-  
+
      FITZO API SERVER
      Running on port ${PORT}
      Environment: ${process.env.NODE_ENV || 'development'}
-     
+
   ═══════════════════════════════════════ 🏋️
   `);
+
+    // Keep-alive self-ping: prevent Render free tier from sleeping (pings every 14 min)
+    if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
+        const KEEP_ALIVE_MS = 14 * 60 * 1000; // 14 minutes
+        setInterval(() => {
+            const https = require('https');
+            https.get(`${process.env.RENDER_EXTERNAL_URL}/health`, () => {}).on('error', () => {});
+        }, KEEP_ALIVE_MS);
+        console.log('🔄 Keep-alive ping enabled (every 14 min)');
+    }
 });
 
 module.exports = app;

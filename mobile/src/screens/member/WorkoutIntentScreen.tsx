@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -120,6 +120,9 @@ export default function WorkoutIntentScreen() {
     const [visibility, setVisibility] = useState<'public' | 'friends' | 'private'>('friends');
     const [suggestedDayIndex, setSuggestedDayIndex] = useState<number | null>(null);
 
+    // Loading state for initial split fetch
+    const [initialLoading, setInitialLoading] = useState(true);
+
     // Custom split builder
     const [customDays, setCustomDays] = useState<string[]>([]);
     const [customName, setCustomName] = useState('My Split');
@@ -144,6 +147,7 @@ export default function WorkoutIntentScreen() {
                     };
                     setSelectedSplit(split);
                     setStep('day');
+                    setInitialLoading(false);
                     return;
                 }
             } catch {}
@@ -191,7 +195,9 @@ export default function WorkoutIntentScreen() {
                     }
                 }
             }
-        } catch {}
+        } catch {} finally {
+            setInitialLoading(false);
+        }
     };
 
     const handleSplitSelect = async (split: typeof PRESET_SPLITS[0]) => {
@@ -355,6 +361,16 @@ export default function WorkoutIntentScreen() {
             router.back();
         }
     };
+
+    if (initialLoading) {
+        return (
+            <SafeAreaView style={styles.container} edges={['top']}>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>

@@ -103,15 +103,18 @@ const HomeScreen: React.FC = () => {
     const [settingIntent, setSettingIntent] = useState(false);
 
     useEffect(() => {
-        // Show "waking up server" message if load takes > 4s
-        const timer = setTimeout(() => {
-            if (loading) setLoadingMessage('Waking up server...');
-        }, 4000);
+        // Show progressive loading messages for cold start
+        const timer1 = setTimeout(() => {
+            if (loading) setLoadingMessage('Connecting to server...');
+        }, 2000);
         const timer2 = setTimeout(() => {
-            if (loading) setLoadingMessage('Almost there, hang tight...');
-        }, 12000);
+            if (loading) setLoadingMessage('Server is waking up, hang tight...');
+        }, 6000);
+        const timer3 = setTimeout(() => {
+            if (loading) setLoadingMessage('Almost there...');
+        }, 15000);
         loadHomeData();
-        return () => { clearTimeout(timer); clearTimeout(timer2); };
+        return () => { clearTimeout(timer1); clearTimeout(timer2); clearTimeout(timer3); };
     }, []);
 
     useEffect(() => {

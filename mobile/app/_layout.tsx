@@ -22,7 +22,7 @@ import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { ToastProvider } from '../src/components/Toast';
 import { NutritionProvider } from '../src/context/NutritionContext';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { notificationsAPI } from '../src/services/api';
+import { notificationsAPI, wakeBackend } from '../src/services/api';
 import { colors } from '../src/styles/theme';
 
 // Configure how notifications are handled when app is in foreground
@@ -138,6 +138,12 @@ export default function RootLayout() {
     });
 
     const [appReady, setAppReady] = useState(false);
+
+    useEffect(() => {
+        // Fire backend wake-up immediately — runs in parallel with font loading
+        // so the server is warm by the time the user reaches the home screen
+        wakeBackend();
+    }, []);
 
     useEffect(() => {
         if (fontsLoaded) {
