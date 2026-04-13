@@ -31,6 +31,11 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const TYPE_FILTERS: Array<{ label: string; value: WorkoutType | 'all' }> = [
     { label: 'All', value: 'all' },
+    { label: 'Push', value: 'push' },
+    { label: 'Pull', value: 'pull' },
+    { label: 'Upper', value: 'upper' },
+    { label: 'Lower', value: 'lower' },
+    { label: 'Full Body', value: 'full_body' },
     { label: 'Chest', value: 'chest' },
     { label: 'Back', value: 'back' },
     { label: 'Legs', value: 'legs' },
@@ -59,6 +64,11 @@ const TYPE_ICONS: Record<WorkoutType, string> = {
     shoulders: 'emoji-people',
     arms: 'sports-gymnastics',
     cardio: 'monitor-heart',
+    push: 'arrow-upward',
+    pull: 'arrow-downward',
+    upper: 'person',
+    lower: 'directions-walk',
+    full_body: 'sports-martial-arts',
 };
 
 // ---------------------------------------------------------------------------
@@ -94,7 +104,7 @@ const WorkoutCard: React.FC<WorkoutCardProps> = React.memo(({ workout, onPress }
                         {workout.name}
                     </Text>
                     <Text style={styles.cardType}>
-                        {workout.type.toUpperCase()}
+                        {workout.type.replace('_', ' ').toUpperCase()}
                     </Text>
                 </View>
                 <View style={[styles.diffBadge, { borderColor: diffColor }]}>
