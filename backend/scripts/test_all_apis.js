@@ -85,8 +85,8 @@ async function run() {
     await testRoute('Login (test)', 'POST', '/api/auth/login', {
         email: 'rahul@example.com', password: 'test123'
     });
-    // Google OAuth route check
-    await testRoute('Google OAuth (exists?)', 'POST', '/api/auth/google', { token: 'test' }, 404);
+    // Google OAuth route — sends a mock token, expects 401 (token is invalid but route exists)
+    await testRoute('Google OAuth', 'POST', '/api/auth/google', { token: 'test' }, 401);
 
     // ── Member ──
     console.log('\n── MEMBER ──');
@@ -106,7 +106,7 @@ async function run() {
     console.log('\n── FRIENDS ──');
     await testRoute('Get Friends', 'GET', '/api/friends');
     await testRoute('Search Friends', 'GET', '/api/friends/search?q=test');
-    await testRoute('Suggested Friends (exists?)', 'GET', '/api/friends/suggested', null, 404);
+    await testRoute('Suggested Friends', 'GET', '/api/friends/suggested');
 
     // ── Learn ──
     console.log('\n── LEARN ──');
