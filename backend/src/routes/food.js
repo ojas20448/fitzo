@@ -48,7 +48,7 @@ router.post('/analyze-text', authenticate, validate({ body: analyzeFoodTextSchem
  * Analyze food from photo using Gemini Vision (FREE tier)
  * Accepts base64 image data
  */
-router.post('/analyze-photo', authenticate, validate({ body: analyzeFoodPhotoSchema }), asyncHandler(async (req, res) => {
+router.post('/analyze-photo', express.json({ limit: '10mb' }), authenticate, validate({ body: analyzeFoodPhotoSchema }), asyncHandler(async (req, res) => {
     const { image, mimeType } = req.body;
 
     // Strip data URL prefix if present (e.g., "data:image/jpeg;base64,...")

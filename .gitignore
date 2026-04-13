@@ -10,3 +10,7 @@ yarn-error.log*
 .DS_Store
 coverage/
 .vscode/
+.idea/
+.tdad/
+*.bak
+backend/scripts/exercisedb_full.json

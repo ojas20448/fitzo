@@ -900,7 +900,7 @@ export const videoAPI = {
 
 export const caloriesBurnedAPI = {
     calculate: async (activity: string, duration: number, weight?: number) => {
-        const response = await api.post('/workouts/calculate-calories', {
+        const response = await api.post('/calories-burned/calculate-calories', {
             activity,
             duration,
             weight

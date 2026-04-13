@@ -24,17 +24,8 @@ const passwordLimiter = rateLimit({
     skip: () => process.env.NODE_ENV === 'development',
 });
 
-// Ensure password reset tokens table exists
-query(`
-    CREATE TABLE IF NOT EXISTS password_reset_tokens (
-        id SERIAL PRIMARY KEY,
-        email TEXT NOT NULL,
-        code TEXT NOT NULL,
-        expires_at TIMESTAMPTZ NOT NULL,
-        used BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-    )
-`).catch(err => console.error('Could not create password_reset_tokens table:', err.message));
+// NOTE: password_reset_tokens table is created via migration
+// See: src/db/migrate_password_reset.sql
 
 /**
  * POST /api/auth/register
@@ -71,12 +62,12 @@ router.post('/register', passwordLimiter, validate({ body: registerSchema }), as
     // Hash password
     const password_hash = await bcrypt.hash(password, 10);
 
-    // Generate username from email (ensure it's unique-ish by appending random if needed, but for now simple)
+    // Generate username from email with collision-safe retry
     let username = email.split('@')[0];
-    // Check if username exists, if so append random string
-    const existingUsername = await query('SELECT id FROM users WHERE username = $1', [username]);
-    if (existingUsername.rows.length > 0) {
-        username += Math.floor(Math.random() * 1000);
+    for (let attempt = 0; attempt < 5; attempt++) {
+        const existingUsername = await query('SELECT id FROM users WHERE username = $1', [username]);
+        if (existingUsername.rows.length === 0) break;
+        username = email.split('@')[0] + Math.floor(Math.random() * 100000);
     }
 
     // Create user
@@ -330,11 +321,12 @@ router.post('/google', asyncHandler(async (req, res) => {
 
         if (!user) {
             // Create new user from Google
-            // Generate unique username from email
+            // Generate unique username from email with collision-safe retry
             let username = email.split('@')[0];
-            const existingUsername = await query('SELECT id FROM users WHERE username = $1', [username]);
-            if (existingUsername.rows.length > 0) {
-                username += Math.floor(Math.random() * 1000);
+            for (let attempt = 0; attempt < 5; attempt++) {
+                const existingUsername = await query('SELECT id FROM users WHERE username = $1', [username]);
+                if (existingUsername.rows.length === 0) break;
+                username = email.split('@')[0] + Math.floor(Math.random() * 100000);
             }
 
             // Generate random password since they use Google

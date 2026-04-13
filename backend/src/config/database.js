@@ -20,7 +20,7 @@ const poolConfig = dbUrl
   ? {
       connectionString: dbUrl,
       ssl: { rejectUnauthorized: false },
-      max: 20,
+      max: 5,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000,
     }
@@ -30,7 +30,7 @@ const poolConfig = dbUrl
       database: process.env.DB_NAME || 'fitzo',
       user: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD || 'password',
-      max: 20,
+      max: 5,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
       ssl: false,

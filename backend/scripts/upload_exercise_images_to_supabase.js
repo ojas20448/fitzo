@@ -9,10 +9,15 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
 // ── Config ──────────────────────────────────────────────────────────────────
-const SUPABASE_URL = 'https://pieyjxokfjvsnfygblmv.supabase.co';
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBpZXlqeG9rZmp2c25meWdibG12Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODUwODYwNCwiZXhwIjoyMDg0MDg0NjA0fQ.rAfGgaHU18QbbwxMousdLluEvvhQbMB6KAV64H-T4-o';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pieyjxokfjvsnfygblmv.supabase.co';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+if (!SUPABASE_SERVICE_KEY) {
+    console.error('❌ SUPABASE_SERVICE_KEY not set. Add it to backend/.env');
+    process.exit(1);
+}
 const BUCKET_NAME = 'exercise-images';
 
 // ── Read exercise file and extract unique GitHub URLs ───────────────────────
