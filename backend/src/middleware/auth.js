@@ -1,10 +1,46 @@
 const jwt = require('jsonwebtoken');
 const { AuthError } = require('../utils/errors');
 const { query } = require('../config/database');
+const cache = require('../services/cache');
+
+// Cache key builder & TTL for user auth data
+const USER_AUTH_TTL = 5 * 60; // 5 minutes
+const userAuthKey = (userId) => `user:${userId}:auth`;
+
+/**
+ * Fetch user by ID — cached in Redis to avoid DB hit on every request.
+ * Returns null if user not found.
+ */
+async function getCachedUser(userId) {
+    // Try cache first
+    const cached = await cache.get(userAuthKey(userId));
+    if (cached) return cached;
+
+    // Cache miss — query DB
+    const result = await query(
+        'SELECT id, email, name, role, gym_id, trainer_id, xp_points, avatar_url FROM users WHERE id = $1',
+        [userId]
+    );
+
+    if (result.rows.length === 0) return null;
+
+    const user = result.rows[0];
+    // Store in cache
+    await cache.set(userAuthKey(userId), user, USER_AUTH_TTL);
+    return user;
+}
+
+/**
+ * Invalidate cached user data (call after profile updates, xp changes, etc.)
+ */
+async function invalidateUserCache(userId) {
+    await cache.del(userAuthKey(userId));
+}
 
 /**
  * JWT Authentication Middleware
- * Extracts and verifies JWT from Authorization header
+ * Extracts and verifies JWT from Authorization header.
+ * User data is cached in Redis for 5 min to avoid a DB query per request.
  */
 const authenticate = async (req, res, next) => {
     try {
@@ -37,18 +73,15 @@ const authenticate = async (req, res, next) => {
             throw new AuthError('Please log in again', 'INVALID_TOKEN');
         }
 
-        // Get user from database
-        const result = await query(
-            'SELECT id, email, name, role, gym_id, trainer_id, xp_points, avatar_url FROM users WHERE id = $1',
-            [decoded.userId]
-        );
+        // Get user (from cache or DB)
+        const user = await getCachedUser(decoded.userId);
 
-        if (result.rows.length === 0) {
+        if (!user) {
             throw new AuthError('User not found. Please log in again', 'USER_NOT_FOUND');
         }
 
         // Attach user to request
-        req.user = result.rows[0];
+        req.user = user;
         next();
     } catch (error) {
         next(error);
@@ -72,11 +105,7 @@ const optionalAuth = async (req, res, next) => {
 
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            const result = await query(
-                'SELECT id, email, name, role, gym_id, trainer_id, xp_points, avatar_url FROM users WHERE id = $1',
-                [decoded.userId]
-            );
-            req.user = result.rows.length > 0 ? result.rows[0] : null;
+            req.user = await getCachedUser(decoded.userId);
         } catch {
             req.user = null;
         }
@@ -123,17 +152,12 @@ const authenticateAdmin = async (req, res, next) => {
             throw new AuthError('Please log in again', 'INVALID_TOKEN');
         }
 
-        const result = await query(
-            'SELECT id, email, name, role, gym_id, trainer_id, xp_points, avatar_url FROM users WHERE id = $1',
-            [decoded.userId]
-        );
+        const user = await getCachedUser(decoded.userId);
 
-        if (result.rows.length === 0) {
+        if (!user) {
             throw new AuthError('User not found. Please log in again', 'USER_NOT_FOUND');
         }
 
-        const user = result.rows[0];
-        
         // Check if user is admin/manager
         if (user.role !== 'manager' && user.role !== 'admin') {
             throw new AuthError('Admin access required', 'ADMIN_REQUIRED');
@@ -151,4 +175,5 @@ module.exports = {
     optionalAuth,
     generateToken,
     authenticateAdmin,
+    invalidateUserCache,
 };

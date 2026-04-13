@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../config/database');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, invalidateUserCache } = require('../middleware/auth');
 const { ValidationError, NotFoundError, asyncHandler } = require('../utils/errors');
 const cache = require('../services/cache');
 
@@ -284,6 +284,9 @@ router.put('/profile', authenticate, asyncHandler(async (req, res) => {
     if (result.rows.length === 0) {
         throw new NotFoundError('User not found');
     }
+
+    // Invalidate cached auth data so next request picks up new name/avatar
+    await invalidateUserCache(userId);
 
     res.json({
         success: true,
