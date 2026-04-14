@@ -469,24 +469,34 @@ router.post('/splits', authenticate, asyncHandler(async (req, res) => {
         throw new ValidationError('Name and days are required');
     }
 
-    // Deactivate existing splits
-    await query(
-        `UPDATE user_splits SET is_active = false WHERE user_id = $1`,
-        [userId]
-    );
+    // Use a transaction to ensure atomicity — prevent orphaned states
+    // where all splits are deactivated but no new one is created
+    await query('BEGIN');
+    try {
+        // Deactivate existing splits
+        await query(
+            `UPDATE user_splits SET is_active = false WHERE user_id = $1`,
+            [userId]
+        );
 
-    // Save new split
-    const result = await query(
-        `INSERT INTO user_splits (user_id, split_id, name, days, days_per_week)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        [userId, split_id, name, days, days_per_week || days.length]
-    );
+        // Save new split (explicitly set is_active = true)
+        const result = await query(
+            `INSERT INTO user_splits (user_id, split_id, name, days, days_per_week, is_active)
+             VALUES ($1, $2, $3, $4, $5, true)
+             RETURNING *`,
+            [userId, split_id, name, days, days_per_week || days.length]
+        );
 
-    res.status(201).json({
-        message: 'Split saved!',
-        split: result.rows[0],
-    });
+        await query('COMMIT');
+
+        res.status(201).json({
+            message: 'Split saved!',
+            split: result.rows[0],
+        });
+    } catch (err) {
+        await query('ROLLBACK');
+        throw err;
+    }
 }));
 
 module.exports = router;

@@ -320,7 +320,7 @@ const HomeScreen: React.FC = () => {
                                 </View>
                                 <View>
                                     <Text style={styles.intentCardLabel}>Today's Training</Text>
-                                    {suggestion && (
+                                    {suggestion && currentIntent.training_pattern && (
                                         <Text style={styles.intentCardSplit}>{suggestion.split_name}</Text>
                                     )}
                                 </View>

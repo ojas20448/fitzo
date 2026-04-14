@@ -201,11 +201,9 @@ export default function WorkoutIntentScreen() {
     };
 
     const handleSplitSelect = async (split: typeof PRESET_SPLITS[0]) => {
-        setSelectedSplit(split);
-        setStep('day');
-
         // Save the split to DB so it persists and enables auto-suggestions
         try {
+            setLoading(true);
             await workoutsAPI.saveSplit({
                 split_id: split.id,
                 name: split.name,
@@ -213,8 +211,12 @@ export default function WorkoutIntentScreen() {
                 days_per_week: split.daysPerWeek,
             });
             setSavedSplit(split);
-        } catch {
-            // Non-critical — split still works for this session
+            setSelectedSplit(split);
+            setStep('day');
+        } catch (error: any) {
+            toast.error('Failed to save split', error?.message || 'Please try again');
+        } finally {
+            setLoading(false);
         }
     };
 

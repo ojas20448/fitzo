@@ -267,9 +267,9 @@ router.get('/feed', authenticate, asyncHandler(async (req, res) => {
 router.get('/suggest', authenticate, asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
-    // 1. Get user's active split
+    // 1. Get user's recent active split
     const splitResult = await query(
-        `SELECT * FROM user_splits WHERE user_id = $1 AND is_active = true LIMIT 1`,
+        `SELECT * FROM user_splits WHERE user_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1`,
         [userId]
     );
 
