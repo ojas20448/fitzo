@@ -52,7 +52,7 @@ This document outlines all identified UI/UX issues and improvement opportunities
 
 ### Color & Theming
 - [ ] **LOW_001**: Inconsistent use of glass surface opacity - some components use `rgba(255, 255, 255, 0.08)` directly instead of `colors.glass.surface`
-- [ ] **LOW_002**: Crowd indicator colors (green/amber/red) break the monochrome "Onyx & Snow" theme - consider using white with varying opacity/glow effects
+- [x] **LOW_002**: Crowd indicator colors (green/amber/red) break the monochrome "Onyx & Snow" theme - consider using white with varying opacity/glow effects
 - [ ] **LOW_003**: The `success` color is `#FFFFFF` in theme but `colors.crowd.low` (green) is used for success states - inconsistent
 - [ ] **LOW_004**: No dark mode toggle - app is locked to dark theme only
 - [ ] **LOW_005**: Missing accent color variations - everything is pure white which can feel monotonous
@@ -113,7 +113,7 @@ This document outlines all identified UI/UX issues and improvement opportunities
 - [ ] **CRD_002**: No history/trend of crowd levels
 
 ### StreakCounter Component
-- [ ] **STK_001**: Fire emoji should animate on streak milestone achievements
+- [x] **STK_001**: Fire emoji should animate on streak milestone achievements
 - [ ] **STK_002**: No "best streak" comparison shown inline
 
 ---
@@ -123,7 +123,7 @@ This document outlines all identified UI/UX issues and improvement opportunities
 ### Login Screen
 - [ ] **LGN_001**: No onboarding flow for first-time users
 - [x] **LGN_002**: Password requirements not shown ✅ Shown on register screen
-- [ ] **LGN_003**: "Forgot Password" leads nowhere (no route defined)
+- [x] **LGN_003**: Forgot password flow needs proper routes ✅ Integrated focus-glow Input component (no route defined)
 - [ ] **LGN_004**: No biometric authentication option (Face ID/Fingerprint)
 - [ ] **LGN_005**: No "Remember me" option
 - [x] **LGN_006**: Error states not shown inline (only alert) ✅ Toast integration
@@ -148,7 +148,7 @@ This document outlines all identified UI/UX issues and improvement opportunities
 - [ ] **WRK_002**: Emoji icons are system default - should use consistent custom icons
 - [x] **WRK_003**: "Rest Day" mixed with workout types is confusing UX ✅ Removed
 - [ ] **WRK_004**: No time/duration input for workout
-- [ ] **WRK_005**: No exercise database/autocomplete
+- [x] **WRK_005**: No exercise database/autocomplete ✅ Added live autocomplete search and body filters
 - [ ] **WRK_006**: Privacy options take up too much vertical space
 - [x] **WRK_007**: Success alert uses system Alert - should use custom modal with animation ✅ Toast + Celebration
 - [ ] **WRK_008**: No photos/media attachment option
@@ -156,7 +156,7 @@ This document outlines all identified UI/UX issues and improvement opportunities
 
 ### Calorie Log Screen
 - [ ] **CAL_001**: Large calorie input is hard to edit (giant font)
-- [ ] **CAL_002**: Quick Add items are not customizable by user
+- [x] **CAL_002**: Quick Add items are not customizable by user ✅ Custom shortcut modal with AsyncStorage persistence
 - [ ] **CAL_003**: No food search/database integration
 - [ ] **CAL_004**: No barcode scanner for packaged foods
 - [ ] **CAL_005**: Macro inputs (protein/carbs/fat) are hidden by default
@@ -301,15 +301,15 @@ This document outlines all identified UI/UX issues and improvement opportunities
 - ✅ ~~BUD_002: Empty states~~ → Created EmptyState component
 
 ### P2 - Medium (Quality of life)
-- [ ] LOW_002: Consistent color theming
+- ✅ ~~LOW_002: Consistent color theming~~ → Monochrome gym crowd indicator colors
 - ✅ ~~BTN_003: Android ripple effects~~ → Added to Button
 - ✅ ~~PRF_006: Skeleton screens~~ → Created Skeleton component
-- [ ] QRC_002: Scanner frame UI
+- ✅ ~~QRC_002: Scanner frame UI~~ → Added visual borders and scanner frame to QR view
 
 ### P3 - Low (Polish)
 - [ ] ANI_006: Tab bar animations
 - ✅ ~~HOM_002: Time-based greeting~~ → Added to HomeScreen
-- [ ] STK_001: Streak animations
+- ✅ ~~STK_001: Streak animations~~ → Fire emoji spring pop animation on streak updates
 - [ ] TYP_001: Consistent typography
 
 ---

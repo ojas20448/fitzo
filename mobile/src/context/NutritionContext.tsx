@@ -25,7 +25,7 @@ interface NutritionContextType {
     lastUpdatedAt: number;
     isLoading: boolean;
     refreshToday: () => Promise<void>;
-    logFoodOptimistic: (food: { calories: number; protein: number; carbs: number; fat: number; serving_size: string; food_name: string; meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack' }) => Promise<{ isGoalHit: boolean }>;
+    logFoodOptimistic: (food: { calories: number; protein: number; carbs: number; fat: number; serving_size: string; food_name: string; meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'; visibility?: string }) => Promise<{ isGoalHit: boolean }>;
 }
 
 const NutritionContext = createContext<NutritionContextType | undefined>(undefined);
@@ -108,6 +108,7 @@ export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         serving_size: string;
         food_name: string;
         meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+        visibility?: string;
     }) => {
         const previousMacros = { ...todayMacros };
         const previousUpdate = lastUpdatedAt;

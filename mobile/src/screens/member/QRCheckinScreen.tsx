@@ -375,6 +375,10 @@ const styles = StyleSheet.create({
     qrFrame: {
         width: FRAME_SIZE,
         height: FRAME_SIZE,
+        borderWidth: 1.5,
+        borderColor: 'rgba(255, 255, 255, 0.25)',
+        borderRadius: 12,
+        overflow: 'hidden',
     },
     corner: {
         position: 'absolute',

@@ -173,6 +173,11 @@ const aiFormAnalysisSchema = z.object({
     description: z.string().min(1, 'Form description is required').max(2000),
 });
 
+const aiTranscribeSchema = z.object({
+    audio: z.string().min(1, 'Audio base64 is required'),
+    mimeType: z.string().min(1, 'Mime type is required'),
+});
+
 module.exports = {
     // Auth
     registerSchema,
@@ -203,4 +208,5 @@ module.exports = {
     aiChatSchema,
     aiWorkoutPlanSchema,
     aiFormAnalysisSchema,
+    aiTranscribeSchema,
 };

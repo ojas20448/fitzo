@@ -269,7 +269,7 @@ export default function ProfileScreen() {
                             style={styles.settingItem}
                             onPress={() => router.push('/member/health-report' as any)}
                         >
-                            <MaterialIcons name="monitoring" size={24} color={colors.text.secondary} />
+                            <MaterialIcons name="show-chart" size={24} color={colors.text.secondary} />
                             <Text style={styles.settingLabel}>Health Report</Text>
                             <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                         </TouchableOpacity>

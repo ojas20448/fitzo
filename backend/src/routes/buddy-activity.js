@@ -77,7 +77,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
     // Get friend's food logs for today
     const foodResult = await query(
-        `SELECT id, meal_name, calories, protein, carbs, fat, visibility, created_at
+        `SELECT id, food_name, calories, protein, carbs, fat, visibility, created_at
          FROM calorie_logs
          WHERE user_id = $1
            AND logged_date = CURRENT_DATE
@@ -187,7 +187,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
                 total_fat: foodSummaryResult.rows[0].total_fat || 0,
                 meals: foodResult.rows.map(f => ({
                     id: f.id,
-                    name: f.meal_name,
+                    name: f.food_name,
                     calories: f.calories,
                     protein: f.protein,
                     carbs: f.carbs,

@@ -5,7 +5,7 @@
 
 const request = require('supertest');
 const app = require('../index');
-const { query } = require('../config/database');
+const { query, pool } = require('../config/database');
 
 describe('Buddy Activity - Privacy Enforcement', () => {
     // Test data
@@ -129,5 +129,9 @@ describe('Buddy Activity - Privacy Enforcement', () => {
             // can_view = true if share_logs_default OR has_visible_logs
             // Should not count private logs
         });
+    });
+
+    afterAll(async () => {
+        await pool.end();
     });
 });

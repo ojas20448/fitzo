@@ -54,13 +54,16 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
     // Load initial data
     useEffect(() => {
         loadBodyParts();
-        loadExercises();
     }, []);
 
-    // Also reload when filter changes
+    // Reload when filter or search changes (with 300ms debounce to avoid spamming searches)
     useEffect(() => {
-        loadExercises();
-    }, [selectedBodyPart]);
+        const timer = setTimeout(() => {
+            loadExercises();
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [selectedBodyPart, searchQuery]);
 
     const loadBodyParts = async () => {
         try {

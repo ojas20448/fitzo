@@ -12,6 +12,15 @@ jest.mock('../src/services/usda', () => ({
 jest.mock('../src/services/fatsecret', () => ({
     searchFoods: jest.fn().mockResolvedValue({ foods: [] })
 }));
+jest.mock('../src/services/ifct2017', () => ({
+    searchFoods: jest.fn().mockReturnValue({ foods: [] })
+}));
+jest.mock('../src/services/openFoodFacts', () => ({
+    searchFoods: jest.fn().mockResolvedValue([])
+}));
+jest.mock('../src/services/apiNinjas', () => ({
+    searchFoods: jest.fn().mockResolvedValue([])
+}));
 
 // Mock Auth Middleware
 jest.mock('../src/middleware/auth', () => ({

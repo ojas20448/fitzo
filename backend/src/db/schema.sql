@@ -35,6 +35,7 @@ CREATE TABLE gyms (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name VARCHAR(100) NOT NULL,
   qr_code VARCHAR(100) UNIQUE NOT NULL,
+  capacity INTEGER NOT NULL DEFAULT 50 CHECK (capacity > 0),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -273,20 +274,29 @@ END;
 $$ LANGUAGE plpgsql;
 
 
--- Function to get crowd level
+-- Function to get crowd level (occupancy-based: active vs gym capacity)
 CREATE OR REPLACE FUNCTION get_crowd_level(p_gym_id UUID)
 RETURNS TABLE(level VARCHAR, count INTEGER) AS $$
 DECLARE
   checkin_count INTEGER;
+  gym_capacity INTEGER;
+  occupancy NUMERIC;
 BEGIN
   SELECT COUNT(*) INTO checkin_count
   FROM attendances
   WHERE gym_id = p_gym_id
   AND checked_in_at > NOW() - INTERVAL '60 minutes';
-  
-  IF checkin_count < 20 THEN
+
+  SELECT COALESCE(capacity, 50) INTO gym_capacity FROM gyms WHERE id = p_gym_id;
+  IF gym_capacity IS NULL OR gym_capacity <= 0 THEN
+    gym_capacity := 50;
+  END IF;
+
+  occupancy := checkin_count::NUMERIC / gym_capacity;
+
+  IF occupancy < 0.4 THEN
     RETURN QUERY SELECT 'low'::VARCHAR, checkin_count;
-  ELSIF checkin_count < 40 THEN
+  ELSIF occupancy < 0.75 THEN
     RETURN QUERY SELECT 'medium'::VARCHAR, checkin_count;
   ELSE
     RETURN QUERY SELECT 'high'::VARCHAR, checkin_count;

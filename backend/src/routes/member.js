@@ -4,6 +4,7 @@ const { query } = require('../config/database');
 const { authenticate, invalidateUserCache } = require('../middleware/auth');
 const { ValidationError, NotFoundError, asyncHandler } = require('../utils/errors');
 const cache = require('../services/cache');
+const { computeCrowd } = require('../utils/crowd');
 
 // Helper functions for intent display formatting
 const formatPattern = (p) => {
@@ -81,24 +82,31 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
             [userId]
         ).catch(err => { console.error('❌ intent:', err.message); return { rows: [] }; }),
 
-        // 3. Crowd level (cached)
-        cache.getOrSet(
-            cache.keys.crowdLevel(gymId),
-            async () => {
-                const r = await query(
-                    `SELECT COUNT(*) as count FROM attendances
-                     WHERE gym_id = $1 AND checked_in_at > NOW() - INTERVAL '60 minutes'`,
-                    [gymId]
-                );
-                const count = parseInt(r.rows[0].count) || 0;
-                return { count, level: count >= 40 ? 'high' : count >= 20 ? 'medium' : 'low' };
-            },
-            cache.TTL.CROWD_LEVEL
-        ).catch(() => ({ count: 0, level: 'low' })),
+        // 3. Crowd level (cached) — occupancy vs gym capacity
+        !gymId
+            ? Promise.resolve(null)
+            : cache.getOrSet(
+                cache.keys.crowdLevel(gymId),
+                async () => {
+                    const r = await query(
+                        `SELECT
+                           (SELECT COUNT(*) FROM attendances
+                            WHERE gym_id = $1 AND checked_in_at > NOW() - INTERVAL '60 minutes') AS count,
+                           (SELECT capacity FROM gyms WHERE id = $1) AS capacity`,
+                        [gymId]
+                    );
+                    const count = parseInt(r.rows[0].count) || 0;
+                    const capacity = r.rows[0].capacity;
+                    return computeCrowd(count, capacity);
+                },
+                cache.TTL.CROWD_LEVEL
+            ).catch(() => computeCrowd(0, null)),
 
-        // 4. Gym name
-        query(`SELECT name FROM gyms WHERE id = $1`, [gymId])
-            .catch(() => ({ rows: [] })),
+        // 4. Gym name + capacity
+        !gymId
+            ? Promise.resolve({ rows: [] })
+            : query(`SELECT name, capacity FROM gyms WHERE id = $1`, [gymId])
+                .catch(() => ({ rows: [] })),
 
         // 5. Streak (cached)
         cache.getOrSet(
@@ -156,9 +164,9 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
         };
     }
 
-    const crowdCount = crowdData.count;
-    const crowdLevel = crowdData.level;
-    const gymName = gymResult.rows.length > 0 ? gymResult.rows[0].name : 'Your Gym';
+    const hasGym = !!gymId && gymResult.rows.length > 0;
+    const crowd = crowdData || computeCrowd(0, hasGym ? gymResult.rows[0].capacity : null);
+    const gymName = hasGym ? gymResult.rows[0].name : null;
     const streak = streakVal;
     const history = historyResult.rows.map(r => r.checkin_date);
     const user = userResult.rows.length > 0 ? userResult.rows[0] : { name: 'Member', xp_points: 0, avatar_url: null };
@@ -201,13 +209,16 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
             checked_in_at: checkinTime
         },
         intent,
-        gym: {
-            name: gymName
-        },
-        crowd: {
-            level: crowdLevel,
-            count: crowdCount
-        },
+        gym: hasGym ? {
+            name: gymName,
+            capacity: crowd.capacity
+        } : null,
+        crowd: hasGym ? {
+            level: crowd.level,
+            count: crowd.active_now,
+            percentage: crowd.percentage,
+            capacity: crowd.capacity
+        } : null,
         streak: {
             current: streak,
             best: streak,

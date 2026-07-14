@@ -4,6 +4,7 @@ const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler, ValidationError, NotFoundError } = require('../utils/errors');
 const cache = require('../services/cache');
+const xpService = require('../services/xpService');
 
 // All routes require authentication
 router.use(authenticate);
@@ -37,10 +38,7 @@ router.post('/', asyncHandler(async (req, res) => {
     );
 
     // Award XP for logging
-    await query(
-        `UPDATE users SET xp_points = xp_points + 2 WHERE id = $1`,
-        [userId]
-    );
+    await xpService.awardXP(userId, 2, 'nutrition', result.rows[0].id);
 
     // Auto-mark attendance for streak tracking
     await query(

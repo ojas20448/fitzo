@@ -103,6 +103,25 @@ async function invalidatePattern(pattern) {
 }
 
 /**
+ * Atomically increment a counter key, setting TTL on first increment.
+ * Used for rate limiting / quotas.
+ * @returns {number|null} New count, or null if Redis unavailable (caller should fall back)
+ */
+async function incrWithExpire(key, ttlSeconds) {
+    if (!cacheEnabled) return null;
+    try {
+        const count = await redis.incr(key);
+        if (count === 1) {
+            await redis.expire(key, ttlSeconds);
+        }
+        return count;
+    } catch (err) {
+        console.error('Cache INCR error:', err.message);
+        return null;
+    }
+}
+
+/**
  * Cache-aside helper: get from cache or compute & store
  */
 async function getOrSet(key, computeFn, ttlSeconds = 300) {
@@ -130,6 +149,7 @@ module.exports = {
     del,
     invalidatePattern,
     getOrSet,
+    incrWithExpire,
     keys,
     TTL,
     cacheEnabled,

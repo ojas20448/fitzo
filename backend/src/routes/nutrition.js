@@ -349,19 +349,25 @@ router.post('/log', authenticate, asyncHandler(async (req, res) => {
         carbs,
         fat,
         serving_size,
-        meal_type = 'snack' // breakfast, lunch, dinner, snack
+        meal_type = 'snack', // breakfast, lunch, dinner, snack
+        visibility = 'friends'
     } = req.body;
 
     if (!food_name || calories === undefined) {
         throw new ValidationError('Food name and calories are required');
     }
 
+    const validVisibility = ['public', 'friends', 'private'];
+    if (!validVisibility.includes(visibility)) {
+        throw new ValidationError('Invalid visibility option');
+    }
+
     const result = await query(
         `INSERT INTO calorie_logs (
-            user_id, food_name, calories, protein, carbs, fat, serving_size, meal_type
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            user_id, food_name, calories, protein, carbs, fat, serving_size, meal_type, visibility
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *`,
-        [userId, food_name, calories, protein || 0, carbs || 0, fat || 0, serving_size, meal_type]
+        [userId, food_name, calories, protein || 0, carbs || 0, fat || 0, serving_size, meal_type, visibility]
     );
 
     res.json({

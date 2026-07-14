@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -15,6 +15,10 @@ import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import GlassCard from '../../components/GlassCard';
 import Button from '../../components/Button';
 import { aiAPI } from '../../services/api';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
+import * as Haptics from 'expo-haptics';
+import { useToast } from '../../components/Toast';
 
 type Message = {
     id: string;
@@ -34,6 +38,94 @@ export default function AICoachScreen() {
     ]);
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(false);
+    const [historyLoading, setHistoryLoading] = useState(true);
+    const [recording, setRecording] = useState<Audio.Recording | null>(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [transcribing, setTranscribing] = useState(false);
+    const toast = useToast();
+
+    const startRecording = async () => {
+        try {
+            const permission = await Audio.requestPermissionsAsync();
+            if (permission.status !== 'granted') {
+                toast.error('Permission Denied', 'Microphone access is required to record audio');
+                return;
+            }
+
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: true,
+                playsInSilentModeIOS: true,
+            });
+
+            const { recording: newRecording } = await Audio.Recording.createAsync(
+                Audio.RecordingOptionsPresets.HIGH_QUALITY
+            );
+
+            setRecording(newRecording);
+            setIsRecording(true);
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        } catch (err: any) {
+            toast.error('Error', 'Failed to start recording');
+            console.error('Failed to start recording', err);
+        }
+    };
+
+    const stopRecording = async () => {
+        if (!recording) return;
+
+        setIsRecording(false);
+        setTranscribing(true);
+        try {
+            await recording.stopAndUnloadAsync();
+            const uri = recording.getURI();
+            setRecording(null);
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+            if (uri) {
+                const base64 = await FileSystem.readAsStringAsync(uri, {
+                    encoding: 'base64',
+                });
+
+                const extension = uri.split('.').pop() || 'm4a';
+                const mimeType = `audio/${extension === 'm4a' ? 'm4a' : extension}`;
+
+                const res = await aiAPI.transcribeAudio(base64, mimeType);
+                if (res.success && res.text) {
+                    setInputText(prev => (prev ? prev + ' ' : '') + res.text);
+                    toast.success('Success', 'Audio transcribed!');
+                } else {
+                    toast.error('Error', 'Failed to transcribe audio');
+                }
+            }
+        } catch (err) {
+            console.error('Failed to stop recording', err);
+            toast.error('Error', 'Failed to transcribe audio');
+        } finally {
+            setTranscribing(false);
+        }
+    };
+
+    useEffect(() => {
+        const loadHistory = async () => {
+            try {
+                const response = await aiAPI.getChatHistory();
+                if (response.success && response.history && response.history.length > 0) {
+                    const formatted = response.history.map((msg: any) => ({
+                        id: msg.id,
+                        role: msg.sender === 'user' ? 'user' : 'assistant',
+                        content: msg.message,
+                        timestamp: new Date(msg.created_at),
+                    }));
+                    setMessages(formatted);
+                }
+            } catch (err) {
+                console.error('Failed to load chat history:', err);
+            } finally {
+                setHistoryLoading(false);
+            }
+        };
+        loadHistory();
+    }, []);
 
     const quickActions = [
         { icon: 'fitness-center', label: 'Workout Plan', action: 'workout' },
@@ -113,7 +205,7 @@ export default function AICoachScreen() {
             <View style={styles.messageBubble}>
                 <Text style={styles.messageText}>{item.content}</Text>
                 <Text style={styles.messageTime}>
-                    {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {(item.timestamp instanceof Date ? item.timestamp : new Date(item.timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
             </View>
         </View>
@@ -130,37 +222,48 @@ export default function AICoachScreen() {
                 </View>
             </View>
 
-            {/* Quick Actions */}
-            {messages.length <= 1 && (
-                <View style={styles.quickActionsContainer}>
-                    <Text style={styles.quickActionsTitle}>Quick Actions</Text>
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.quickActions}
-                    >
-                        {quickActions.map((action, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={styles.quickActionCard}
-                                onPress={() => handleQuickAction(action.action)}
-                            >
-                                <MaterialIcons name={action.icon as any} size={32} color={colors.primary} />
-                                <Text style={styles.quickActionLabel}>{action.label}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+            {historyLoading ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 }}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={{ color: colors.text.muted, fontSize: typography.sizes.sm, fontFamily: typography.fontFamily.medium }}>
+                        Loading chat history...
+                    </Text>
                 </View>
-            )}
+            ) : (
+                <>
+                    {/* Quick Actions */}
+                    {messages.length <= 1 && (
+                        <View style={styles.quickActionsContainer}>
+                            <Text style={styles.quickActionsTitle}>Quick Actions</Text>
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.quickActions}
+                            >
+                                {quickActions.map((action, index) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={styles.quickActionCard}
+                                        onPress={() => handleQuickAction(action.action)}
+                                    >
+                                        <MaterialIcons name={action.icon as any} size={32} color={colors.primary} />
+                                        <Text style={styles.quickActionLabel}>{action.label}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
 
-            {/* Messages */}
-            <FlatList
-                data={messages}
-                renderItem={renderMessage}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.messagesList}
-                inverted={false}
-            />
+                    {/* Messages */}
+                    <FlatList
+                        data={messages}
+                        renderItem={renderMessage}
+                        keyExtractor={(item) => item.id}
+                        contentContainerStyle={styles.messagesList}
+                        inverted={false}
+                    />
+                </>
+            )}
 
             {/* Loading Indicator */}
             {loading && (
@@ -183,9 +286,28 @@ export default function AICoachScreen() {
                         maxLength={500}
                     />
                     <TouchableOpacity
+                        style={[
+                            styles.sendButton,
+                            isRecording && { backgroundColor: colors.error }
+                        ]}
+                        onPress={isRecording ? stopRecording : startRecording}
+                        disabled={loading || transcribing}
+                        accessibilityLabel={isRecording ? "Stop recording" : "Start recording"}
+                    >
+                        {transcribing ? (
+                            <ActivityIndicator size="small" color={colors.background} />
+                        ) : (
+                            <MaterialIcons
+                                name={isRecording ? "stop" : "mic"}
+                                size={24}
+                                color={colors.background}
+                            />
+                        )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
                         style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
                         onPress={() => handleSend()}
-                        disabled={!inputText.trim() || loading}
+                        disabled={!inputText.trim() || loading || isRecording}
                     >
                         <MaterialIcons
                             name="send"

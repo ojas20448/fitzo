@@ -4,6 +4,7 @@ const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, ConflictError, NotFoundError, asyncHandler } = require('../utils/errors');
 const pushNotifications = require('../services/pushNotifications');
+const xpService = require('../services/xpService');
 
 /**
  * POST /api/checkin
@@ -50,6 +51,9 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
         `INSERT INTO attendances (user_id, gym_id) VALUES ($1, $2)`,
         [userId, gym_id]
     );
+
+    // Award XP for gym check-in
+    await xpService.awardXP(userId, 5, 'checkin');
 
     // Calculate new streak
     const streakResult = await query(

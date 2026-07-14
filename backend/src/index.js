@@ -84,6 +84,8 @@ app.get('/api/health', async (req, res) => {
     } catch (err) {
         health.services.database = 'error';
         health.status = 'degraded';
+        const sentry = require('./services/sentry');
+        sentry.captureError(err, { service: 'database_health_check' });
     }
 
     res.status(health.status === 'ok' ? 200 : 503).json(health);
@@ -120,6 +122,7 @@ app.use('/api/health', require('./routes/health'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/buddy-activity', require('./routes/buddy-activity'));
 app.use('/api/readiness', require('./routes/readiness'));
+app.use('/api/leaderboard', require('./routes/leaderboard'));
 
 // 404 handler
 app.use((req, res) => {
@@ -142,8 +145,9 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, () => {
-    console.log(`
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        console.log(`
   🏋️ ═══════════════════════════════════════
 
      FITZO API SERVER
@@ -153,15 +157,16 @@ app.listen(PORT, () => {
   ═══════════════════════════════════════ 🏋️
   `);
 
-    // Keep-alive self-ping: prevent Render free tier from sleeping (pings every 14 min)
-    if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
-        const KEEP_ALIVE_MS = 14 * 60 * 1000; // 14 minutes
-        setInterval(() => {
-            const https = require('https');
-            https.get(`${process.env.RENDER_EXTERNAL_URL}/health`, () => {}).on('error', () => {});
-        }, KEEP_ALIVE_MS);
-        console.log('🔄 Keep-alive ping enabled (every 14 min)');
-    }
-});
+        // Keep-alive self-ping: prevent Render free tier from sleeping (pings every 14 min)
+        if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
+            const KEEP_ALIVE_MS = 14 * 60 * 1000; // 14 minutes
+            setInterval(() => {
+                const https = require('https');
+                https.get(`${process.env.RENDER_EXTERNAL_URL}/health`, () => {}).on('error', () => {});
+            }, KEEP_ALIVE_MS);
+            console.log('🔄 Keep-alive ping enabled (every 14 min)');
+        }
+    });
+}
 
 module.exports = app;

@@ -149,7 +149,7 @@ const SettingsScreen = () => {
                     {
                         text: 'Delete',
                         style: 'destructive',
-                        onPress: async (input) => {
+                        onPress: async (input?: string) => {
                             if (input?.trim() === 'DELETE') {
                                 performDeleteAccount();
                             } else {

@@ -31,7 +31,7 @@ Notifications.setNotificationHandler({
         shouldShowAlert: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
-    }),
+    } as any),
 });
 
 // Register for push notifications and send token to backend
@@ -81,8 +81,8 @@ SplashScreen.preventAutoHideAsync();
 // Component that handles push notification registration once user is authenticated
 function PushNotificationHandler() {
     const { isAuthenticated } = useAuth();
-    const notificationListener = useRef<Notifications.EventSubscription>();
-    const responseListener = useRef<Notifications.EventSubscription>();
+    const notificationListener = useRef<Notifications.Subscription | null>(null);
+    const responseListener = useRef<Notifications.Subscription | null>(null);
 
     useEffect(() => {
         if (!isAuthenticated) return;
@@ -115,12 +115,8 @@ function PushNotificationHandler() {
         });
 
         return () => {
-            if (notificationListener.current) {
-                Notifications.removeNotificationSubscription(notificationListener.current);
-            }
-            if (responseListener.current) {
-                Notifications.removeNotificationSubscription(responseListener.current);
-            }
+            notificationListener.current?.remove();
+            responseListener.current?.remove();
         };
     }, [isAuthenticated]);
 

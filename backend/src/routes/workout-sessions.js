@@ -9,6 +9,7 @@ const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, asyncHandler } = require('../utils/errors');
 const pushNotifications = require('../services/pushNotifications');
+const xpService = require('../services/xpService');
 
 /**
  * GET /api/workouts/exercises
@@ -169,6 +170,9 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
     }
 
     const session = statsResult.rows[0];
+
+    // Award XP for workout completion
+    await xpService.awardXP(userId, 15, 'workout', id);
 
     // 2. Check for PRs (Personal Records)
     // Find max weight for each exercise in this session vs all time previous

@@ -11,13 +11,18 @@ import {
     ScrollView,
     ActivityIndicator,
     Dimensions,
+    Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { foodAPI, caloriesAPI, nutritionAPI, settingsAPI } from '../../services/api';
+import { foodAPI, caloriesAPI, nutritionAPI, settingsAPI, aiAPI } from '../../services/api';
+import Input from '../../components/Input';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
 import Celebration from '../../components/Celebration';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
@@ -70,6 +75,70 @@ const CalorieLogScreen: React.FC = () => {
     const toast = useToast();
     const { logFoodOptimistic } = useNutrition();
     const [searchQuery, setSearchQuery] = useState('');
+    const [recording, setRecording] = useState<Audio.Recording | null>(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [transcribing, setTranscribing] = useState(false);
+
+    const startRecording = async () => {
+        try {
+            const permission = await Audio.requestPermissionsAsync();
+            if (permission.status !== 'granted') {
+                toast.error('Permission Denied', 'Microphone access is required to record audio');
+                return;
+            }
+
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: true,
+                playsInSilentModeIOS: true,
+            });
+
+            const { recording: newRecording } = await Audio.Recording.createAsync(
+                Audio.RecordingOptionsPresets.HIGH_QUALITY
+            );
+
+            setRecording(newRecording);
+            setIsRecording(true);
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        } catch (err: any) {
+            toast.error('Error', 'Failed to start recording');
+            console.error('Failed to start recording', err);
+        }
+    };
+
+    const stopRecording = async () => {
+        if (!recording) return;
+
+        setIsRecording(false);
+        setTranscribing(true);
+        try {
+            await recording.stopAndUnloadAsync();
+            const uri = recording.getURI();
+            setRecording(null);
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+            if (uri) {
+                const base64 = await FileSystem.readAsStringAsync(uri, {
+                    encoding: 'base64',
+                });
+
+                const extension = uri.split('.').pop() || 'm4a';
+                const mimeType = `audio/${extension === 'm4a' ? 'm4a' : extension}`;
+
+                const res = await aiAPI.transcribeAudio(base64, mimeType);
+                if (res.success && res.text) {
+                    setSearchQuery(prev => (prev ? prev + ' ' : '') + res.text);
+                    toast.success('Success', 'Audio transcribed!');
+                } else {
+                    toast.error('Error', 'Failed to transcribe audio');
+                }
+            }
+        } catch (err) {
+            console.error('Failed to stop recording', err);
+            toast.error('Error', 'Failed to transcribe audio');
+        } finally {
+            setTranscribing(false);
+        }
+    };
     const [searchResults, setSearchResults] = useState<FoodItem[]>([]);
     const [searching, setSearching] = useState(false);
     const [selectedFood, setSelectedFood] = useState<FoodDetails | null>(null);
@@ -90,6 +159,15 @@ const CalorieLogScreen: React.FC = () => {
     // Frequent foods
     const [frequentFoods, setFrequentFoods] = useState<any[]>([]);
 
+    // Custom Quick Add Shortcuts States
+    const [customQuickAdds, setCustomQuickAdds] = useState<any[]>([]);
+    const [shortcutModalVisible, setShortcutModalVisible] = useState(false);
+    const [newShortcutName, setNewShortcutName] = useState('');
+    const [newShortcutCalories, setNewShortcutCalories] = useState('');
+    const [newShortcutProtein, setNewShortcutProtein] = useState('');
+    const [newShortcutCarbs, setNewShortcutCarbs] = useState('');
+    const [newShortcutFat, setNewShortcutFat] = useState('');
+
     // Visibility/Privacy
     const [visibility, setVisibility] = useState<'friends' | 'private'>('friends');
     const [shareLogs, setShareLogs] = useState(true);
@@ -97,6 +175,7 @@ const CalorieLogScreen: React.FC = () => {
     useEffect(() => {
         loadFrequentFoods();
         loadSharingPreference();
+        loadCustomQuickAdds();
     }, []);
 
     // Cycle AI progress messages
@@ -107,6 +186,78 @@ const CalorieLogScreen: React.FC = () => {
         const interval = setInterval(() => { i = Math.min(i + 1, messages.length - 1); setAiProgressText(messages[i]); }, 4000);
         return () => clearInterval(interval);
     }, [aiAnalyzing]);
+
+    const loadCustomQuickAdds = async () => {
+        try {
+            const data = await AsyncStorage.getItem('custom_quick_adds');
+            if (data) {
+                setCustomQuickAdds(JSON.parse(data));
+            }
+        } catch (error) {
+            console.error('Failed to load custom quick adds', error);
+        }
+    };
+
+    const saveCustomQuickAdds = async (newList: any[]) => {
+        try {
+            await AsyncStorage.setItem('custom_quick_adds', JSON.stringify(newList));
+            setCustomQuickAdds(newList);
+        } catch (error) {
+            console.error('Failed to save custom quick adds', error);
+        }
+    };
+
+    const handleCreateShortcut = async () => {
+        if (!newShortcutName.trim()) {
+            toast.error('Error', 'Please enter a name for the food shortcut.');
+            return;
+        }
+        const calories = parseFloat(newShortcutCalories) || 0;
+        if (calories <= 0) {
+            toast.error('Error', 'Please enter a valid calorie amount.');
+            return;
+        }
+
+        const newShortcut = {
+            id: 'custom-' + Date.now(),
+            name: newShortcutName.trim(),
+            calories,
+            protein: parseFloat(newShortcutProtein) || 0,
+            carbs: parseFloat(newShortcutCarbs) || 0,
+            fat: parseFloat(newShortcutFat) || 0,
+            isCustom: true
+        };
+
+        const updatedList = [newShortcut, ...customQuickAdds];
+        await saveCustomQuickAdds(updatedList);
+
+        setNewShortcutName('');
+        setNewShortcutCalories('');
+        setNewShortcutProtein('');
+        setNewShortcutCarbs('');
+        setNewShortcutFat('');
+        setShortcutModalVisible(false);
+        toast.success('Shortcut Created', `"${newShortcut.name}" is now on your Quick Add bar.`);
+    };
+
+    const handleDeleteShortcut = (id: string, name: string) => {
+        Alert.alert(
+            'Delete Shortcut',
+            `Are you sure you want to delete the shortcut for "${name}"?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        const updated = customQuickAdds.filter(item => item.id !== id);
+                        await saveCustomQuickAdds(updated);
+                        toast.success('Deleted', `Shortcut for "${name}" removed.`);
+                    }
+                }
+            ]
+        );
+    };
 
     const loadFrequentFoods = async () => {
         setFrequentLoading(true);
@@ -507,6 +658,23 @@ const CalorieLogScreen: React.FC = () => {
                     )}
                     <View style={styles.searchBarDivider} />
                     <Pressable
+                        onPress={isRecording ? stopRecording : startRecording}
+                        style={[styles.barcodeScanBtn, isRecording && { opacity: 0.7 }]}
+                        accessibilityLabel={isRecording ? "Stop recording" : "Record voice description"}
+                        disabled={transcribing}
+                    >
+                        {transcribing ? (
+                            <ActivityIndicator size="small" color={colors.primary} />
+                        ) : (
+                            <MaterialIcons
+                                name={isRecording ? "stop" : "mic"}
+                                size={20}
+                                color={isRecording ? colors.error : colors.text.secondary}
+                            />
+                        )}
+                    </Pressable>
+                    <View style={styles.searchBarDivider} />
+                    <Pressable
                         onPress={() => router.push('/food-scanner')}
                         style={styles.barcodeScanBtn}
                         accessibilityLabel="Scan barcode"
@@ -536,20 +704,59 @@ const CalorieLogScreen: React.FC = () => {
             )}
 
             {/* Frequent Foods */}
-            {
-                !searching && searchQuery === '' && !frequentLoading && frequentFoods.length > 0 && (
-                    <Animated.View entering={FadeIn.duration(500)} style={styles.frequentContainer}>
+            {!searching && searchQuery === '' && !frequentLoading && (
+                <Animated.View entering={FadeIn.duration(500)} style={styles.frequentContainer}>
+                    <View style={styles.sectionHeaderRow}>
                         <Text style={styles.sectionTitle}>QUICK ADD</Text>
+                        <TouchableOpacity 
+                            style={styles.addShortcutBtn}
+                            onPress={() => setShortcutModalVisible(true)}
+                            accessibilityLabel="Add custom food shortcut"
+                        >
+                            <MaterialIcons name="add" size={18} color={colors.primary} />
+                        </TouchableOpacity>
+                    </View>
+                    
+                    {customQuickAdds.length === 0 && frequentFoods.length === 0 ? (
+                        <TouchableOpacity 
+                            style={styles.emptyShortcutCard}
+                            onPress={() => setShortcutModalVisible(true)}
+                        >
+                            <MaterialIcons name="star-outline" size={16} color={colors.text.muted} />
+                            <Text style={styles.emptyShortcutText}>Create custom shortcut</Text>
+                        </TouchableOpacity>
+                    ) : (
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
                             contentContainerStyle={styles.frequentScroll}
                         >
+                            {/* Render Custom user shortcuts first */}
+                            {customQuickAdds.map((food, index) => (
+                                <Animated.View key={`custom-${food.id}`} entering={ZoomIn.delay(index * 50).springify()}>
+                                    <TouchableOpacity
+                                        style={[styles.frequentCard, styles.customShortcutCard]}
+                                        onPress={() => handleQuickAdd(food)}
+                                        onLongPress={() => handleDeleteShortcut(food.id, food.name)}
+                                        delayLongPress={600}
+                                        activeOpacity={0.8}
+                                    >
+                                        <View style={[styles.frequentIcon, styles.customShortcutIcon]}>
+                                            <MaterialIcons name="star" size={14} color={colors.background} />
+                                        </View>
+                                        <Text style={styles.frequentName} numberOfLines={1}>{food.name}</Text>
+                                        <Text style={styles.frequentCals}>{food.calories} cal</Text>
+                                    </TouchableOpacity>
+                                </Animated.View>
+                            ))}
+
+                            {/* Render historical frequent foods */}
                             {frequentFoods.map((food, index) => (
-                                <Animated.View key={index} entering={ZoomIn.delay(index * 50).springify()}>
+                                <Animated.View key={`freq-${index}`} entering={ZoomIn.delay((customQuickAdds.length + index) * 50).springify()}>
                                     <TouchableOpacity
                                         style={styles.frequentCard}
                                         onPress={() => handleQuickAdd(food)}
+                                        activeOpacity={0.8}
                                     >
                                         <View style={styles.frequentIcon}>
                                             <MaterialIcons name="restaurant" size={16} color={colors.primary} />
@@ -560,9 +767,9 @@ const CalorieLogScreen: React.FC = () => {
                                 </Animated.View>
                             ))}
                         </ScrollView>
-                    </Animated.View>
-                )
-            }
+                    )}
+                </Animated.View>
+            )}
 
             {/* Results */}
             {
@@ -900,6 +1107,104 @@ const CalorieLogScreen: React.FC = () => {
                             </View>
                         </>
                     ) : null}
+                </SafeAreaView>
+            </Modal>
+
+            {/* Create Custom Shortcut Modal */}
+            <Modal
+                visible={shortcutModalVisible}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setShortcutModalVisible(false)}
+            >
+                <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
+                    {/* Modal Header */}
+                    <View style={styles.modalHeader}>
+                        <Pressable
+                            onPress={() => setShortcutModalVisible(false)}
+                            style={styles.modalClose}
+                        >
+                            <MaterialIcons name="close" size={24} color={colors.text.primary} />
+                        </Pressable>
+                        <Text style={styles.modalTitle}>New Shortcut</Text>
+                    </View>
+
+                    <ScrollView
+                        contentContainerStyle={styles.shortcutModalContent}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        <View style={styles.shortcutIconWrap}>
+                            <MaterialIcons name="star" size={32} color={colors.primary} />
+                        </View>
+                        <Text style={styles.shortcutSubtitle}>
+                            Create a custom food shortcut so you can quickly log it with one tap.
+                        </Text>
+
+                        <Input
+                            label="Food Name"
+                            placeholder="e.g. Whey Protein, Peanut Butter Toast"
+                            placeholderTextColor={colors.text.muted}
+                            value={newShortcutName}
+                            onChangeText={setNewShortcutName}
+                            leftIcon="restaurant"
+                            containerStyle={{ marginBottom: spacing.md }}
+                            required
+                        />
+
+                        <Input
+                            label="Calories (kcal)"
+                            placeholder="e.g. 150"
+                            placeholderTextColor={colors.text.muted}
+                            value={newShortcutCalories}
+                            onChangeText={setNewShortcutCalories}
+                            keyboardType="numeric"
+                            leftIcon="local-fire-department"
+                            containerStyle={{ marginBottom: spacing.md }}
+                            required
+                        />
+
+                        <View style={styles.shortcutMacrosRow}>
+                            <View style={{ flex: 1 }}>
+                                <Input
+                                    label="Protein (g)"
+                                    placeholder="0"
+                                    placeholderTextColor={colors.text.muted}
+                                    value={newShortcutProtein}
+                                    onChangeText={setNewShortcutProtein}
+                                    keyboardType="numeric"
+                                    containerStyle={{ marginRight: spacing.xs }}
+                                />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Input
+                                    label="Carbs (g)"
+                                    placeholder="0"
+                                    placeholderTextColor={colors.text.muted}
+                                    value={newShortcutCarbs}
+                                    onChangeText={setNewShortcutCarbs}
+                                    keyboardType="numeric"
+                                    containerStyle={{ marginRight: spacing.xs }}
+                                />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Input
+                                    label="Fat (g)"
+                                    placeholder="0"
+                                    placeholderTextColor={colors.text.muted}
+                                    value={newShortcutFat}
+                                    onChangeText={setNewShortcutFat}
+                                    keyboardType="numeric"
+                                />
+                            </View>
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.saveShortcutBtn}
+                            onPress={handleCreateShortcut}
+                        >
+                            <Text style={styles.saveShortcutText}>Save Shortcut</Text>
+                        </TouchableOpacity>
+                    </ScrollView>
                 </SafeAreaView>
             </Modal>
         </SafeAreaView >
@@ -1382,13 +1687,54 @@ const styles = StyleSheet.create({
     frequentContainer: {
         marginBottom: spacing.lg,
     },
+    sectionHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingRight: spacing.xl,
+        marginBottom: spacing.sm,
+    },
     sectionTitle: {
         fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.muted,
         marginLeft: spacing.xl,
-        marginBottom: spacing.sm,
         letterSpacing: 1,
+    },
+    addShortcutBtn: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emptyShortcutCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.xs,
+        marginHorizontal: spacing.xl,
+        padding: spacing.md,
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderStyle: 'dashed',
+    },
+    emptyShortcutText: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+    },
+    customShortcutCard: {
+        borderColor: colors.primary,
+        backgroundColor: colors.glass.surfaceHover,
+    },
+    customShortcutIcon: {
+        backgroundColor: colors.primary,
     },
     frequentScroll: {
         paddingHorizontal: spacing.xl,
@@ -1421,6 +1767,54 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
+    },
+    // New Modal styles
+    shortcutModalContent: {
+        padding: spacing.xl,
+    },
+    shortcutIconWrap: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: colors.glass.surfaceLight,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        justifyContent: 'center',
+        alignItems: 'center',
+        alignSelf: 'center',
+        marginBottom: spacing.md,
+        marginTop: spacing.sm,
+    },
+    shortcutSubtitle: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: spacing.xl,
+        paddingHorizontal: spacing.md,
+    },
+    shortcutMacrosRow: {
+        flexDirection: 'row',
+        gap: spacing.xs,
+        marginBottom: spacing.xl,
+    },
+    saveShortcutBtn: {
+        height: 50,
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 5,
+    },
+    saveShortcutText: {
+        fontSize: typography.sizes.md,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.dark,
     },
     visibilitySection: {
         paddingHorizontal: spacing.lg,

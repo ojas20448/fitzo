@@ -39,9 +39,9 @@ export const colors = {
 
     // Status colors (all white-based for theme consistency)
     crowd: {
-        low: '#22C55E', // green
-        medium: '#F59E0B', // amber
-        high: '#EF4444', // red
+        low: 'rgba(255, 255, 255, 0.45)',
+        medium: 'rgba(255, 255, 255, 0.75)',
+        high: '#FFFFFF',
     },
 
     // Additional
@@ -50,6 +50,7 @@ export const colors = {
     success: '#22C55E',
     warning: '#F59E0B',
     error: '#EF4444',
+    info: '#3B82F6',
 };
 
 export const typography = {

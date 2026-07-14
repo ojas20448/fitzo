@@ -158,22 +158,79 @@ Format as JSON:
 // ===========================================
 // AI COACH CHAT (Hinglish-aware)
 // ===========================================
-async function chatWithCoach(question, context = {}) {
-    const contextStr = Object.keys(context).length > 0
-        ? `\n\nUser context: ${JSON.stringify(context)}`
-        : '';
+// ===========================================
+// AI COACH CHAT (Hinglish-aware + context-aware)
+// ===========================================
+async function chatWithCoach(question, contextPack = {}, messageHistory = []) {
+    // 1. Format the 14-day Context Pack details for the prompt
+    let contextStr = '';
+    
+    if (contextPack && Object.keys(contextPack).length > 0) {
+        const { profile, streak, training, nutrition, readiness, activeSplit, todayIntent } = contextPack;
+        
+        contextStr += `\nUSER DATA & METRICS (LAST 14 DAYS):`;
+        if (profile) {
+            contextStr += `\n- Profile: Goal is ${profile.goal_type || 'maintenance'}. Age: ${profile.age || 'N/A'}, Weight: ${profile.current_weight || 'N/A'}kg (Target: ${profile.target_weight || 'N/A'}kg). Target Calories: ${profile.target_calories || 'N/A'} kcal/day.`;
+            if (profile.ai_profile_summary) {
+                contextStr += `\n- Monthly Coach Notes: ${profile.ai_profile_summary}`;
+            }
+        }
+        contextStr += `\n- Gym Streak: ${streak} days check-in streak.`;
+        
+        if (training) {
+            contextStr += `\n- Muscle Groups Trained (Sets Completed): ${JSON.stringify(training.volume || {})}`;
+            if (training.skippedMuscleGroups && training.skippedMuscleGroups.length > 0) {
+                contextStr += `\n- Skipped Muscle Groups (0 sets in last 14 days): ${training.skippedMuscleGroups.join(', ')}`;
+            }
+            if (training.prs && Object.keys(training.prs).length > 0) {
+                contextStr += `\n- Personal Records (PRs): ${JSON.stringify(training.prs)}`;
+            }
+            if (training.sessions && training.sessions.length > 0) {
+                contextStr += `\n- Recent Workouts Logged: ${training.sessions.slice(0, 3).map(s => `${s.day_name || 'Workout'} completed on ${new Date(s.completed_at).toLocaleDateString()} (${s.duration_minutes || 'N/A'} mins)`).join('; ')}`;
+            }
+        }
+        
+        if (nutrition && nutrition.length > 0) {
+            contextStr += `\n- Recent Daily Calories Logged: ${nutrition.slice(0, 3).map(n => `${n.logged_date}: ${n.calories}kcal (P: ${n.protein}g, C: ${n.carbs}g, F: ${n.fat}g)`).join('; ')}`;
+        }
+        
+        if (readiness && readiness.length > 0) {
+            contextStr += `\n- Recent Readiness Scores (0-100): ${readiness.slice(0, 3).map(r => `${r.log_date}: Score ${r.readiness_score}/100 (${r.recommendation})`).join('; ')}`;
+        }
+        
+        if (activeSplit) {
+            contextStr += `\n- Active Workout Split: ${activeSplit.name} (${activeSplit.days_per_week} days/week).`;
+        }
+        if (todayIntent) {
+            contextStr += `\n- Today's Gym Intent: Focus is ${todayIntent.muscle_group} ("${todayIntent.note || 'No notes'}") logged under label "${todayIntent.session_label || 'Normal'}".`;
+        }
+    }
+
+    // 2. Format the chat history turns
+    let historyStr = '';
+    if (messageHistory && messageHistory.length > 0) {
+        historyStr += `\n\nRECENT CHAT HISTORY (Last 10 turns):`;
+        messageHistory.forEach(msg => {
+            const roleName = msg.sender === 'user' ? 'User' : 'Coach/AI';
+            historyStr += `\n- ${roleName}: ${msg.message}`;
+        });
+    }
 
     const prompt = `${INDIAN_CONTEXT}
 
-You are a friendly, knowledgeable fitness coach for Indian gym-goers. You understand Hinglish and can respond in a mix of English with Hindi words when the user uses them.
+You are the personal AI fitness coach for this user. Unlike other basic chatbots, you actually KNOW this user because you have access to their full training logs, attendance check-ins, Hinglish-first nutrition, and daily readiness. Use this data contextually to provide tailored, hyper-specific feedback.
 
-If the user mentions Indian foods (roti, dal, sabzi, paratha, etc.), provide accurate nutritional info.
-If the user asks about diet, suggest Indian-friendly meal plans with local foods.
-If the user asks about supplements, suggest options available in India (MuscleBlaze, ON India, MyProtein India, etc.).
+CRITICAL COACHING INSTRUCTIONS:
+- You understand Hinglish and should respond in a friendly, practical, encouraging tone using regional gym slang and terms where natural (e.g. "bhai", "yaar", "ghar ka khana", "katori", "diet", etc.).
+- Proactively reference their data to reinforce good habits or point out corrections. (For example, if they ask about chest workout, and they've skipped legs for 12 days, write: "Bhai, chest toh badhiya chal raha hai, but legs ko 12 days se skip kiya hai, aaj intent mein push ki jagah legs kar le?").
+- If they are eating over/under their target calories, reference it.
+- Keep responses relatively brief (2-3 paragraphs, max 150-200 words), highly actionable, and formatted in clear paragraphs or bullet points.
 
-User's question: ${question}${contextStr}
+${contextStr}${historyStr}
 
-Provide actionable advice in 2-3 paragraphs. Be practical and relatable to Indian gym culture.`;
+User's current question: ${question}
+
+Provide your expert coaching advice:`;
 
     try {
         const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
@@ -343,11 +400,41 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
     }
 }
 
+/**
+ * Transcribes audio using Gemini 2.5 Flash's multimodal inputs.
+ *
+ * @param {string} base64Data - Base64 encoded audio
+ * @param {string} mimeType - e.g. 'audio/m4a', 'audio/mp3', 'audio/wav'
+ * @returns {Promise<string>} The transcribed text
+ */
+async function transcribeAudio(base64Data, mimeType) {
+    const prompt = "Transcribe the spoken audio in this file. Provide only the text transcription, matching the languages spoken (usually English or Hinglish). Do not add any introduction, greeting, or explanation.";
+
+    try {
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const result = await model.generateContent([
+            {
+                inlineData: {
+                    data: base64Data,
+                    mimeType: mimeType
+                }
+            },
+            prompt
+        ]);
+        const response = await result.response;
+        return response.text().trim();
+    } catch (error) {
+        console.error('Gemini transcription service error:', error.message);
+        throw new Error('Failed to transcribe audio. Please try again.');
+    }
+}
+
 module.exports = {
     generateWorkoutPlan,
     getNutritionAdvice,
     chatWithCoach,
     analyzeForm,
     analyzeFoodFromText,
-    analyzeFoodFromPhoto
+    analyzeFoodFromPhoto,
+    transcribeAudio
 };

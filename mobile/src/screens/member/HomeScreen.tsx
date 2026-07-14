@@ -16,16 +16,18 @@ import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useNutrition } from '../../context/NutritionContext';
 import { useOfflineStore } from '../../stores/offlineStore';
-import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI, intentAPI } from '../../services/api';
+import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI, intentAPI, aiAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import Badge from '../../components/Badge';
+import CrowdIndicator from '../../components/CrowdIndicator';
 import AnimatedFire from '../../components/AnimatedFire';
 import WeeklyProgress from '../../components/WeeklyProgress';
 import NutritionAnalytics from '../../components/NutritionAnalytics';
 import { SkeletonHomeScreen } from '../../components/Skeleton';
 import EmptyState, { EmptyStateInline } from '../../components/EmptyState';
 import MacroPieChart from '../../components/MacroPieChart';
+import CustomRefreshHeader from '../../components/CustomRefreshHeader';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 
 interface HomeData {
@@ -36,7 +38,13 @@ interface HomeData {
     };
     gym: {
         name: string;
-        crowd_level: 'low' | 'medium' | 'high';
+        capacity?: number;
+    } | null;
+    crowd: {
+        level: 'low' | 'medium' | 'high';
+        count: number;
+        percentage: number;
+        capacity: number;
     } | null;
     checkin: {
         status: 'checked_in' | 'not_checked_in';
@@ -101,6 +109,7 @@ const HomeScreen: React.FC = () => {
     } | null>(null);
     const [suggestionReason, setSuggestionReason] = useState<string | null>(null);
     const [settingIntent, setSettingIntent] = useState(false);
+    const [dailyInsight, setDailyInsight] = useState<string | null>(null);
 
     useEffect(() => {
         // Show progressive loading messages for cold start
@@ -159,11 +168,12 @@ const HomeScreen: React.FC = () => {
         if (showLoader) setLoading(true);
         try {
             // Updated Promise.all to exclude caloriesAPI fetch since it's now handled by context
-            const [homeRes, workoutsRes, friendsRes, suggestRes] = await Promise.all([
+            const [homeRes, workoutsRes, friendsRes, suggestRes, dailyRes] = await Promise.all([
                 memberAPI.getHome(),
                 workoutsAPI.getToday().catch(() => ({ workouts: [], summary: { count: 0, types: [] } })),
                 friendsAPI.getFriends().catch(() => ({ friends: [] })),
                 intentAPI.getSuggestion().catch(() => ({ suggestion: null, reason: null })),
+                aiAPI.getDailyInsight().catch(() => ({ success: false, insight: null }))
             ]);
             setData(homeRes);
             setTodayWorkouts(workoutsRes.workouts || []);
@@ -175,6 +185,10 @@ const HomeScreen: React.FC = () => {
 
             const fetchedFriends = friendsRes?.friends || [];
             setFriends(fetchedFriends);
+
+            if (dailyRes?.success && dailyRes?.insight) {
+                setDailyInsight(dailyRes.insight);
+            }
 
             // Cache home data in offline store for staleness checking
             useOfflineStore.getState().cacheHomeData(homeRes);
@@ -256,10 +270,14 @@ const HomeScreen: React.FC = () => {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        tintColor={colors.primary}
+                        tintColor="transparent"
+                        colors={['transparent']}
+                        progressBackgroundColor="transparent"
                     />
                 }
             >
+                <CustomRefreshHeader refreshing={refreshing} />
+
                 {/* Header - Refined with blur effect */}
                 <Animated.View entering={FadeInDown.duration(600).springify()} style={styles.header}>
                     <Pressable
@@ -301,6 +319,19 @@ const HomeScreen: React.FC = () => {
                         </View>
                     </View>
                 </Animated.View>
+
+                {/* Daily AI Note */}
+                {dailyInsight && (
+                    <Animated.View entering={FadeInDown.delay(50).duration(600).springify()}>
+                        <GlassCard style={styles.insightCard}>
+                            <View style={styles.insightHeader}>
+                                <MaterialIcons name="insights" size={18} color={colors.primary} />
+                                <Text style={styles.insightTitle}>COACH'S DAILY INSIGHT</Text>
+                            </View>
+                            <Text style={styles.insightMessage}>{dailyInsight}</Text>
+                        </GlassCard>
+                    </Animated.View>
+                )}
 
                 {/* Today's Training - Smart Suggestion */}
                 <Animated.View entering={FadeInDown.delay(100).duration(600).springify()}>
@@ -382,6 +413,62 @@ const HomeScreen: React.FC = () => {
                             </View>
                         </Pressable>
                     )}
+                </Animated.View>
+
+                {/* Gym Crowd - live green/yellow/red occupancy light */}
+                <Animated.View entering={FadeInDown.delay(150).duration(600).springify()}>
+                    {data?.gym && data?.crowd ? (
+                        <GlassCard style={styles.gymStatusCard}>
+                            <View style={styles.gymStatusTop}>
+                                <View style={styles.gymStatusLeft}>
+                                    <CrowdIndicator level={data.crowd.level} size="sm" showLabel={false} />
+                                    <View>
+                                        <Text style={styles.gymStatusName}>{data.gym.name}</Text>
+                                        <Text style={styles.gymStatusSub}>
+                                            {data.crowd.count} of {data.crowd.capacity} training now
+                                        </Text>
+                                    </View>
+                                </View>
+                                <Text
+                                    style={[
+                                        styles.gymStatusPct,
+                                        { color: colors.crowd[data.crowd.level] },
+                                    ]}
+                                >
+                                    {data.crowd.percentage}%
+                                </Text>
+                            </View>
+                            <View style={styles.gymStatusBar}>
+                                <View
+                                    style={[
+                                        styles.gymStatusBarFill,
+                                        {
+                                            width: `${Math.max(data.crowd.percentage, 3)}%`,
+                                            backgroundColor: colors.crowd[data.crowd.level],
+                                        },
+                                    ]}
+                                />
+                            </View>
+                        </GlassCard>
+                    ) : data && !data.gym ? (
+                        <Pressable
+                            style={styles.joinGymCard}
+                            onPress={() => router.push('/member/settings' as any)}
+                            accessibilityLabel="Join a gym with an access code"
+                            accessibilityRole="button"
+                        >
+                            <View style={styles.gymStatusLeft}>
+                                <MaterialIcons name="add-business" size={22} color={colors.text.secondary} />
+                                <View>
+                                    <Text style={styles.gymStatusName}>Join your gym</Text>
+                                    <Text style={styles.gymStatusSub}>
+                                        Enter your gym's access code to unlock crowd & check-ins
+                                    </Text>
+                                </View>
+                            </View>
+                            <MaterialIcons name="chevron-right" size={22} color={colors.text.muted} />
+                        </Pressable>
+                    ) : null}
                 </Animated.View>
 
                 {/* Completed Workout Card - Show when workout is logged today */}
@@ -1020,21 +1107,57 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.semiBold,
         color: colors.text.primary,
     },
-    crowdRow: {
+    gymStatusCard: {
+        marginBottom: spacing.lg,
+    },
+    gymStatusTop: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        justifyContent: 'space-between',
+    },
+    gymStatusLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        flex: 1,
+    },
+    gymStatusName: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+    },
+    gymStatusSub: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
         marginTop: 2,
     },
-    crowdDot: {
-        width: 6,
+    gymStatusPct: {
+        fontSize: typography.sizes['2xl'],
+        fontFamily: typography.fontFamily.bold,
+        letterSpacing: typography.letterSpacing.tighter,
+    },
+    gymStatusBar: {
         height: 6,
+        backgroundColor: colors.glass.surface,
+        borderRadius: 3,
+        marginTop: spacing.md,
+        overflow: 'hidden',
+    },
+    gymStatusBarFill: {
+        height: '100%',
         borderRadius: 3,
     },
-    crowdText: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
+    joinGymCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.xl,
+        padding: spacing.lg,
+        marginBottom: spacing.lg,
     },
     welcomeCard: {
         marginBottom: spacing['2xl'],
@@ -1108,6 +1231,30 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.medium,
         color: colors.text.secondary,
         letterSpacing: 0.5,
+    },
+    insightCard: {
+        marginBottom: spacing.lg,
+        padding: spacing.md,
+        borderColor: colors.primary + '25',
+        borderWidth: 1,
+    },
+    insightHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        marginBottom: spacing.xs,
+    },
+    insightTitle: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.primary,
+        letterSpacing: 1,
+    },
+    insightMessage: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.primary,
+        lineHeight: 18,
     },
 });
 

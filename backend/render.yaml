@@ -24,3 +24,17 @@ services:
         sync: false
       - key: CORS_ORIGIN
         sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: AI_BURST_LIMIT
+        sync: false
+      - key: AI_DAILY_LIMIT
+        sync: false
+      - key: AI_MONTHLY_LIMIT
+        sync: false
+      - key: SENTRY_DSN
+        sync: false

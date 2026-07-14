@@ -78,7 +78,7 @@ const WorkoutLogScreen: React.FC = () => {
     const [restSeconds, setRestSeconds] = useState(0);
     const [restDuration, setRestDuration] = useState(90);
     const [restActive, setRestActive] = useState(false);
-    const restIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Number picker bottom sheet state
     const [pickerConfig, setPickerConfig] = useState<PickerConfig>({

@@ -7,17 +7,19 @@ import {
     TouchableOpacity,
     RefreshControl,
     TextInput,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { friendsAPI } from '../../services/api';
+import { friendsAPI, leaderboardAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import EmptyState from '../../components/EmptyState';
 import { SkeletonList } from '../../components/Skeleton';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
+import Celebration from '../../components/Celebration';
 
 interface Friend {
     id: string;
@@ -44,6 +46,15 @@ const GymBuddiesScreen: React.FC = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [nudgingId, setNudgingId] = useState<string | null>(null);
 
+    // Leaderboard & Kudos States
+    const [activeTab, setActiveTab] = useState<'buddies' | 'leaderboard'>('buddies');
+    const [leaderboard, setLeaderboard] = useState<any[]>([]);
+    const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+    const [sendingKudosId, setSendingKudosId] = useState<string | null>(null);
+    const [celebrationVisible, setCelebrationVisible] = useState(false);
+    const [celebrationTitle, setCelebrationTitle] = useState('');
+    const [celebrationSubtitle, setCelebrationSubtitle] = useState('');
+
     useEffect(() => {
         loadData();
     }, []);
@@ -64,10 +75,44 @@ const GymBuddiesScreen: React.FC = () => {
             setFriends(friendsRes.friends || []);
             setPendingRequests(friendsRes.pending_requests || []);
             setSuggested(suggestedRes.suggested || []);
+
+            await loadLeaderboard();
         } catch (error: any) {
             toast.error('Error', error.message || 'Something went wrong');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadLeaderboard = async () => {
+        setLeaderboardLoading(true);
+        try {
+            const res = await leaderboardAPI.getLeaderboard();
+            if (res.success && res.leaderboard) {
+                setLeaderboard(res.leaderboard);
+            }
+        } catch (error: any) {
+            // Non-critical loading error
+        } finally {
+            setLeaderboardLoading(false);
+        }
+    };
+
+    const handleSendKudos = async (receiverId: string, buddyName: string) => {
+        setSendingKudosId(receiverId);
+        try {
+            const res = await leaderboardAPI.sendKudos(receiverId);
+            if (res.success) {
+                setCelebrationTitle('Kudos Fist-Bump! 👊');
+                setCelebrationSubtitle(`You fist-bumped ${buddyName}!`);
+                setCelebrationVisible(true);
+                await loadLeaderboard();
+            }
+        } catch (error: any) {
+            const msg = error?.response?.data?.error || error.message || 'Could not send Kudos';
+            toast.error('Kudos failed', msg);
+        } finally {
+            setSendingKudosId(null);
         }
     };
 
@@ -236,6 +281,22 @@ const GymBuddiesScreen: React.FC = () => {
                 </View>
             )}
 
+            {/* Segmented Control */}
+            <View style={styles.tabContainer}>
+                <TouchableOpacity
+                    style={[styles.tabButton, activeTab === 'buddies' && styles.activeTabButton]}
+                    onPress={() => setActiveTab('buddies')}
+                >
+                    <Text style={[styles.tabLabel, activeTab === 'buddies' && styles.activeTabLabel]}>Buddies</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tabButton, activeTab === 'leaderboard' && styles.activeTabButton]}
+                    onPress={() => setActiveTab('leaderboard')}
+                >
+                    <Text style={[styles.tabLabel, activeTab === 'leaderboard' && styles.activeTabLabel]}>Gym Leaderboard</Text>
+                </TouchableOpacity>
+            </View>
+
             <ScrollView
                 style={styles.content}
                 showsVerticalScrollIndicator={false}
@@ -243,120 +304,185 @@ const GymBuddiesScreen: React.FC = () => {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
                 }
             >
-                {/* Suggested Friends */}
-                {suggested.length > 0 && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Suggested For You</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestedList}>
-                            {suggested.map((user) => (
-                                <GlassCard key={user.id} style={styles.suggestedCard}>
-                                    <Avatar uri={user.avatar_url} size="md" />
-                                    <Text style={styles.suggestedName} numberOfLines={1}>{user.name}</Text>
-                                    {user.last_checkin && (
-                                        <Text style={styles.suggestedSubtext}>Recently at gym</Text>
-                                    )}
-                                    <TouchableOpacity
-                                        style={styles.addSuggestedBtn}
-                                        onPress={() => handleSendRequest(user.id)}
-                                    >
-                                        <MaterialIcons name="person-add" size={16} color={colors.text.primary} />
-                                        <Text style={styles.addSuggestedText}>Add</Text>
-                                    </TouchableOpacity>
-                                </GlassCard>
-                            ))}
-                        </ScrollView>
-                    </View>
-                )}
-
-                {/* Pending Requests */}
-                {pendingRequests.length > 0 && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Friend Requests</Text>
-                        {pendingRequests.map((request) => (
-                            <GlassCard key={request.id} style={styles.requestCard}>
-                                <View style={styles.requestInfo}>
-                                    <Avatar uri={request.avatar_url} size="md" />
-                                    <View style={styles.requestText}>
-                                        <Text style={styles.requestName}>{request.name}</Text>
-                                        <Text style={styles.requestTime}>Wants to be your gym buddy</Text>
-                                    </View>
-                                </View>
-                                <View style={styles.requestActions}>
-                                    <TouchableOpacity
-                                        style={styles.acceptBtn}
-                                        onPress={() => handleAcceptRequest(request.id)}
-                                    >
-                                        <MaterialIcons name="check" size={20} color={colors.background} />
-                                    </TouchableOpacity>
-                                </View>
-                            </GlassCard>
-                        ))}
-                    </View>
-                )}
-
-                {/* Friends List */}
-                {friends.length === 0 ? (
-                    <EmptyState
-                        variant="no-friends"
-                        title="No Gym Buddies Yet"
-                        message="Find friends to train together and stay motivated!"
-                        actionLabel="Add Buddy"
-                        onAction={() => setShowSearch(true)}
-                    />
-                ) : (
-                    friends.map((friend) => {
-                        const status = getFriendStatus(friend);
-                        const showNudge = shouldShowNudge(friend);
-
-                        return (
-                            <GlassCard key={friend.id} style={styles.friendCard}>
-                                <TouchableOpacity
-                                    style={styles.friendTap}
-                                    onPress={() => router.push({
-                                        pathname: '/member/user-profile',
-                                        params: { userId: friend.id, userName: friend.name, userAvatar: friend.avatar_url || '' }
-                                    })}
-                                    activeOpacity={0.7}
-                                >
-                                    <Avatar
-                                        uri={friend.avatar_url}
-                                        size="lg"
-                                        showOnline={friend.worked_out_today || friend.logged_food_today}
-                                    />
-                                    <View style={styles.friendInfo}>
-                                        <Text style={styles.friendName}>{friend.name}</Text>
-                                        <View style={styles.friendMeta}>
-                                            {friend.streak > 0 && (
-                                                <View style={styles.streakBadge}>
-                                                    <Text style={styles.streakText}>{friend.streak}d streak</Text>
-                                                </View>
+                {activeTab === 'buddies' ? (
+                    <>
+                        {/* Suggested Friends */}
+                        {suggested.length > 0 && (
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Suggested For You</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestedList}>
+                                    {suggested.map((user) => (
+                                        <GlassCard key={user.id} style={styles.suggestedCard}>
+                                            <Avatar uri={user.avatar_url} size="md" />
+                                            <Text style={styles.suggestedName} numberOfLines={1}>{user.name}</Text>
+                                            {user.last_checkin && (
+                                                <Text style={styles.suggestedSubtext}>Recently at gym</Text>
                                             )}
-                                            <View style={[styles.statusDot, { backgroundColor: status.color }]} />
-                                            <Text style={styles.statusText}>{status.label}</Text>
+                                            <TouchableOpacity
+                                                style={styles.addSuggestedBtn}
+                                                onPress={() => handleSendRequest(user.id)}
+                                            >
+                                                <MaterialIcons name="person-add" size={16} color={colors.text.primary} />
+                                                <Text style={styles.addSuggestedText}>Add</Text>
+                                            </TouchableOpacity>
+                                        </GlassCard>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        )}
+
+                        {/* Pending Requests */}
+                        {pendingRequests.length > 0 && (
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Friend Requests</Text>
+                                {pendingRequests.map((request) => (
+                                    <GlassCard key={request.id} style={styles.requestCard}>
+                                        <View style={styles.requestInfo}>
+                                            <Avatar uri={request.avatar_url} size="md" />
+                                            <View style={styles.requestText}>
+                                                <Text style={styles.requestName}>{request.name}</Text>
+                                                <Text style={styles.requestTime}>Wants to be your gym buddy</Text>
+                                            </View>
                                         </View>
-                                        {friend.last_workout_date && (
-                                            <Text style={styles.lastWorkout}>
-                                                Last: {formatWorkoutType(friend.last_workout_type)} {getDaysAgo(friend.last_workout_date)}
-                                            </Text>
+                                        <View style={styles.requestActions}>
+                                            <TouchableOpacity
+                                                style={styles.acceptBtn}
+                                                onPress={() => handleAcceptRequest(request.id)}
+                                            >
+                                                <MaterialIcons name="check" size={20} color={colors.background} />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </GlassCard>
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Friends List */}
+                        {friends.length === 0 ? (
+                            <EmptyState
+                                variant="no-friends"
+                                title="No Gym Buddies Yet"
+                                message="Find friends to train together and stay motivated!"
+                                actionLabel="Add Buddy"
+                                onAction={() => setShowSearch(true)}
+                            />
+                        ) : (
+                            friends.map((friend) => {
+                                const status = getFriendStatus(friend);
+                                const showNudge = shouldShowNudge(friend);
+
+                                return (
+                                    <GlassCard key={friend.id} style={styles.friendCard}>
+                                        <TouchableOpacity
+                                            style={styles.friendTap}
+                                            onPress={() => router.push({
+                                                pathname: '/member/user-profile',
+                                                params: { userId: friend.id, userName: friend.name, userAvatar: friend.avatar_url || '' }
+                                            })}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Avatar
+                                                uri={friend.avatar_url}
+                                                size="lg"
+                                                showOnline={friend.worked_out_today || friend.logged_food_today}
+                                            />
+                                            <View style={styles.friendInfo}>
+                                                <Text style={styles.friendName}>{friend.name}</Text>
+                                                <View style={styles.friendMeta}>
+                                                    {friend.streak > 0 && (
+                                                        <View style={styles.streakBadge}>
+                                                            <Text style={styles.streakText}>{friend.streak}d streak</Text>
+                                                        </View>
+                                                    )}
+                                                    <View style={[styles.statusDot, { backgroundColor: status.color }]} />
+                                                    <Text style={styles.statusText}>{status.label}</Text>
+                                                </View>
+                                                {friend.last_workout_date && (
+                                                    <Text style={styles.lastWorkout}>
+                                                        Last: {formatWorkoutType(friend.last_workout_type)} {getDaysAgo(friend.last_workout_date)}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                        </TouchableOpacity>
+                                        {showNudge && (
+                                            <TouchableOpacity
+                                                style={[styles.nudgeBtn, nudgingId === friend.id && styles.nudgeBtnDisabled]}
+                                                onPress={() => handleNudge(friend.id, friend.name)}
+                                                disabled={nudgingId === friend.id}
+                                            >
+                                                <MaterialIcons name="notifications-active" size={18} color={colors.background} />
+                                            </TouchableOpacity>
                                         )}
-                                    </View>
-                                </TouchableOpacity>
-                                {showNudge && (
-                                    <TouchableOpacity
-                                        style={[styles.nudgeBtn, nudgingId === friend.id && styles.nudgeBtnDisabled]}
-                                        onPress={() => handleNudge(friend.id, friend.name)}
-                                        disabled={nudgingId === friend.id}
-                                    >
-                                        <MaterialIcons name="notifications-active" size={18} color={colors.background} />
-                                    </TouchableOpacity>
-                                )}
-                            </GlassCard>
-                        );
-                    })
+                                    </GlassCard>
+                                );
+                            })
+                        )}
+                    </>
+                ) : (
+                    <View style={styles.leaderboardSection}>
+                        {leaderboardLoading ? (
+                            <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 20 }} />
+                        ) : leaderboard.length === 0 ? (
+                            <EmptyState
+                                variant="no-friends"
+                                title="Gym Leaderboard is Empty"
+                                message="Earn XP by completing workouts, logging food, or checking in!"
+                            />
+                        ) : (
+                            leaderboard.map((item, index) => {
+                                let rankIcon = "";
+                                if (index === 0) rankIcon = "👑";
+                                else if (index === 1) rankIcon = "🥈";
+                                else if (index === 2) rankIcon = "🥉";
+                                else rankIcon = `#${index + 1}`;
+
+                                return (
+                                    <GlassCard key={item.id} style={styles.leaderboardRow}>
+                                        <View style={styles.rankContainer}>
+                                            <Text style={styles.rankText}>{rankIcon}</Text>
+                                        </View>
+                                        <Avatar uri={item.avatar_url} size="md" />
+                                        <View style={styles.leaderboardInfo}>
+                                            <Text style={styles.leaderboardName} numberOfLines={1}>{item.name}</Text>
+                                            <Text style={styles.leaderboardXp}>{item.weekly_xp || 0} XP</Text>
+                                        </View>
+                                        <View style={styles.kudosAction}>
+                                            <TouchableOpacity
+                                                onPress={() => handleSendKudos(item.id, item.name)}
+                                                disabled={item.has_kudoed || sendingKudosId === item.id}
+                                                style={[
+                                                    styles.kudosBtn,
+                                                    item.has_kudoed && styles.kudosBtnKudoed
+                                                ]}
+                                            >
+                                                {sendingKudosId === item.id ? (
+                                                    <ActivityIndicator size="small" color={colors.primary} />
+                                                ) : (
+                                                    <View style={styles.kudosInner}>
+                                                        <Text style={[styles.kudosCount, item.has_kudoed && styles.kudosCountKudoed]}>
+                                                            {item.kudos_count || 0}
+                                                        </Text>
+                                                        <Text style={styles.kudosEmoji}>👊</Text>
+                                                    </View>
+                                                )}
+                                            </TouchableOpacity>
+                                        </View>
+                                    </GlassCard>
+                                );
+                            })
+                        )}
+                    </View>
                 )}
 
-                <View style={{ height: 100 }} />
+                <View style={{ height: 120 }} />
             </ScrollView>
+
+            <Celebration
+                visible={celebrationVisible}
+                title={celebrationTitle}
+                subtitle={celebrationSubtitle}
+                onComplete={() => setCelebrationVisible(false)}
+            />
         </SafeAreaView>
     );
 };
@@ -597,6 +723,103 @@ const styles = StyleSheet.create({
     },
     nudgeBtnDisabled: {
         opacity: 0.5,
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: spacing.xl,
+        paddingTop: spacing.md,
+        gap: spacing.md,
+    },
+    tabButton: {
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        backgroundColor: 'transparent',
+    },
+    activeTabButton: {
+        backgroundColor: colors.glass.surfaceLight,
+        borderColor: colors.primary,
+    },
+    tabLabel: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.muted,
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+    },
+    activeTabLabel: {
+        color: colors.primary,
+    },
+    leaderboardSection: {
+        paddingHorizontal: spacing.xl,
+        marginTop: spacing.md,
+        gap: spacing.sm,
+    },
+    leaderboardRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: spacing.md,
+        marginBottom: spacing.xs,
+        gap: spacing.md,
+    },
+    rankContainer: {
+        width: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    rankText: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+    },
+    leaderboardInfo: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    leaderboardName: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+    },
+    leaderboardXp: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.primary,
+        marginTop: 2,
+    },
+    kudosAction: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    kudosBtn: {
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.lg,
+        paddingVertical: spacing.xs,
+        paddingHorizontal: spacing.sm,
+    },
+    kudosBtnKudoed: {
+        borderColor: colors.primary,
+        backgroundColor: colors.glass.surfaceLight,
+    },
+    kudosInner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+    },
+    kudosCount: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.muted,
+    },
+    kudosCountKudoed: {
+        color: colors.primary,
+    },
+    kudosEmoji: {
+        fontSize: typography.sizes.base,
     },
 });
 

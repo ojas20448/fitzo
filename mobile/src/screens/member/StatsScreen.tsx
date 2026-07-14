@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, Share, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { Svg, Rect, Text as SvgText, Circle, G } from 'react-native-svg';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
-import api from '../../services/api';
+import api, { aiAPI } from '../../services/api';
 import { useToast } from '../../components/Toast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNutrition } from '../../context/NutritionContext';
@@ -15,22 +15,44 @@ const StatsScreen = () => {
     const [history, setHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [weeklyRecap, setWeeklyRecap] = useState<any | null>(null);
+    const [recapLoading, setRecapLoading] = useState(true);
     const toast = useToast();
 
     const { calorieGoal } = useNutrition();
     const TARGET_CALS = calorieGoal || 2500;
 
     const loadData = async () => {
+        setRecapLoading(true);
         try {
             const response = await api.get('/nutrition/weekly');
             // Fill in missing days
             const filled = fillMissingDays(response.data.history || []);
             setHistory(filled);
+
+            // Fetch latest AI recap
+            const recapRes = await aiAPI.getWeeklyRecap();
+            if (recapRes.success && recapRes.recap) {
+                setWeeklyRecap(recapRes.recap);
+            }
         } catch (error) {
             toast.error('Error', 'Could not load stats');
         } finally {
             setLoading(false);
             setRefreshing(false);
+            setRecapLoading(false);
+        }
+    };
+
+    const handleShareRecap = async () => {
+        if (!weeklyRecap) return;
+        try {
+            await Share.share({
+                title: 'My Fitzo Weekly AI Recap',
+                message: `🔥 Fitzo Weekly AI Recap:\n\n"${weeklyRecap.summary_text}"\n\n💪 Workouts: ${weeklyRecap.recap_data.workouts_count} | 🎯 Streak: ${weeklyRecap.recap_data.streak_days} days!`,
+            });
+        } catch (error) {
+            toast.error('Error', 'Could not share recap');
         }
     };
 
@@ -137,6 +159,41 @@ const StatsScreen = () => {
                         <MaterialIcons name="insights" size={32} color={colors.primary} />
                     </View>
                 </View>
+
+                {/* Weekly AI Recap */}
+                {recapLoading ? (
+                    <View style={styles.section}>
+                        <ActivityIndicator size="small" color={colors.primary} />
+                        <Text style={[styles.recapMessage, { textAlign: 'center', marginTop: 8 }]}>Loading AI Recap...</Text>
+                    </View>
+                ) : weeklyRecap ? (
+                    <View style={styles.section}>
+                        <View style={styles.recapHeader}>
+                            <View style={styles.recapHeaderLeft}>
+                                <MaterialIcons name="auto-awesome" size={20} color={colors.primary} />
+                                <Text style={styles.recapTitle}>WEEKLY AI RECAP</Text>
+                            </View>
+                            <TouchableOpacity onPress={handleShareRecap} style={styles.shareBtn} accessibilityLabel="Share recap">
+                                <MaterialIcons name="share" size={20} color={colors.text.muted} />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={styles.recapMessage}>{weeklyRecap.summary_text}</Text>
+                        <View style={styles.recapMetrics}>
+                            <View style={styles.metricItem}>
+                                <Text style={styles.metricLabel}>Workouts</Text>
+                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.workouts_count}</Text>
+                            </View>
+                            <View style={styles.metricItem}>
+                                <Text style={styles.metricLabel}>Streak</Text>
+                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.streak_days}d</Text>
+                            </View>
+                            <View style={styles.metricItem}>
+                                <Text style={styles.metricLabel}>Avg Calories</Text>
+                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.avg_calories} kcal</Text>
+                            </View>
+                        </View>
+                    </View>
+                ) : null}
 
                 {/* Charts */}
                 {renderWeeklyChart()}
@@ -265,6 +322,54 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.xl,
         fontFamily: typography.fontFamily.bold,
         marginTop: 4,
+    },
+    recapHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.md,
+    },
+    recapHeaderLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+    },
+    recapTitle: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.primary,
+        letterSpacing: 1,
+    },
+    shareBtn: {
+        padding: spacing.xs,
+    },
+    recapMessage: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.primary,
+        lineHeight: 20,
+        marginBottom: spacing.md,
+    },
+    recapMetrics: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        borderTopWidth: 1,
+        borderTopColor: colors.glass.border,
+        paddingTop: spacing.md,
+    },
+    metricItem: {
+        alignItems: 'center',
+    },
+    metricLabel: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        marginBottom: 4,
+    },
+    metricValue: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
     },
 });
 

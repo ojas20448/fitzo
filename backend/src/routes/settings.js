@@ -1,11 +1,108 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../config/database');
-const { authenticate } = require('../middleware/auth');
-const { ValidationError, asyncHandler } = require('../utils/errors');
+const { authenticate, invalidateUserCache } = require('../middleware/auth');
+const { ValidationError, NotFoundError, asyncHandler } = require('../utils/errors');
+const cache = require('../services/cache');
 
 // All routes require authentication
 router.use(authenticate);
+
+/**
+ * GET /api/settings/gym
+ * Current gym membership info (or gym: null if not enrolled)
+ */
+router.get('/gym', asyncHandler(async (req, res) => {
+    const result = await query(
+        `SELECT g.id, g.name, g.qr_code, g.capacity,
+                (SELECT COUNT(*) FROM users m WHERE m.gym_id = g.id AND m.role = 'member')::int AS member_count
+         FROM users u
+         JOIN gyms g ON u.gym_id = g.id
+         WHERE u.id = $1`,
+        [req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+        return res.json({ gym: null });
+    }
+
+    const gym = result.rows[0];
+    res.json({
+        gym: {
+            id: gym.id,
+            name: gym.name,
+            access_code: gym.qr_code,
+            capacity: gym.capacity,
+            member_count: gym.member_count,
+        }
+    });
+}));
+
+/**
+ * POST /api/settings/gym
+ * Join (or switch) gym using its access code
+ * Body: { gym_code: string }
+ */
+router.post('/gym', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const { gym_code } = req.body;
+
+    if (!gym_code || typeof gym_code !== 'string' || !gym_code.trim()) {
+        throw new ValidationError('Please enter your gym access code');
+    }
+
+    const gymResult = await query(
+        'SELECT id, name, capacity FROM gyms WHERE qr_code = $1',
+        [gym_code.trim().toUpperCase()]
+    );
+
+    if (gymResult.rows.length === 0) {
+        throw new NotFoundError("That access code doesn't match any gym. Ask your gym's front desk!");
+    }
+
+    const gym = gymResult.rows[0];
+
+    if (req.user.gym_id === gym.id) {
+        return res.json({
+            success: true,
+            message: `You're already a member of ${gym.name}! 💪`,
+            gym: { id: gym.id, name: gym.name },
+        });
+    }
+
+    await query('UPDATE users SET gym_id = $1 WHERE id = $2', [gym.id, userId]);
+
+    // Auth middleware caches user (incl. gym_id) — must invalidate
+    await invalidateUserCache(userId);
+    await cache.del(cache.keys.homeData(userId));
+
+    res.json({
+        success: true,
+        message: `Welcome to ${gym.name}! 🏋️`,
+        gym: { id: gym.id, name: gym.name },
+    });
+}));
+
+/**
+ * DELETE /api/settings/gym
+ * Leave current gym
+ */
+router.delete('/gym', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    if (!req.user.gym_id) {
+        throw new ValidationError("You're not enrolled in a gym right now");
+    }
+
+    await query('UPDATE users SET gym_id = NULL WHERE id = $1', [userId]);
+    await invalidateUserCache(userId);
+    await cache.del(cache.keys.homeData(userId));
+
+    res.json({
+        success: true,
+        message: "You've left your gym. Join another anytime with an access code.",
+    });
+}));
 
 /**
  * GET /api/settings/sharing

@@ -42,15 +42,22 @@ const StreakCounter: React.FC<StreakCounterProps> = ({
     const scale = useSharedValue(1);
 
     useEffect(() => {
-        scale.value = withRepeat(
-            withSequence(
-                withTiming(1.2, { duration: 1000 }),
-                withTiming(1, { duration: 1000 })
-            ),
-            -1,
-            true
+        // Big bounce pop on count change (milestone celebration)
+        scale.value = withSequence(
+            withTiming(1.6, { duration: 250 }),
+            withTiming(1.0, { duration: 250 }, () => {
+                // Resume subtle idle pulse
+                scale.value = withRepeat(
+                    withSequence(
+                        withTiming(1.2, { duration: 1000 }),
+                        withTiming(1.0, { duration: 1000 })
+                    ),
+                    -1,
+                    true
+                );
+            })
         );
-    }, []);
+    }, [count]);
 
     const animatedStyle = useAnimatedStyle(() => {
         return {

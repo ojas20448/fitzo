@@ -12,6 +12,7 @@ import Animated, { FadeInDown, FadeInUp, FadeOutUp } from 'react-native-reanimat
 import { useAuth } from '../src/context/AuthContext';
 import { useToast } from '../src/components/Toast';
 import { colors, spacing, borderRadius, typography } from '../src/styles/theme';
+import Input from '../src/components/Input';
 
 type Step = 'email' | 'otp' | 'success';
 
@@ -122,20 +123,18 @@ export default function ForgotPasswordScreen() {
                             Enter your email and we'll send you a 6-digit code to reset your password.
                         </Text>
 
-                        <View style={styles.inputContainer}>
-                            <MaterialIcons name="mail-outline" size={20} color={colors.text.muted} style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Email Address"
-                                placeholderTextColor={colors.text.muted}
-                                value={email}
-                                onChangeText={setEmail}
-                                autoCapitalize="none"
-                                keyboardType="email-address"
-                                returnKeyType="done"
-                                onSubmitEditing={handleSendCode}
-                            />
-                        </View>
+                        <Input
+                            placeholder="Email Address"
+                            placeholderTextColor={colors.text.muted}
+                            value={email}
+                            onChangeText={setEmail}
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                            returnKeyType="done"
+                            onSubmitEditing={handleSendCode}
+                            leftIcon="mail-outline"
+                            containerStyle={{ marginBottom: spacing.lg }}
+                        />
 
                         <TouchableOpacity
                             style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
@@ -179,38 +178,29 @@ export default function ForgotPasswordScreen() {
                             ))}
                         </View>
 
-                        <Text style={styles.label}>New Password</Text>
-                        <View style={styles.inputContainer}>
-                            <MaterialIcons name="lock-outline" size={20} color={colors.text.muted} style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Min. 6 characters"
-                                placeholderTextColor={colors.text.muted}
-                                value={newPassword}
-                                onChangeText={setNewPassword}
-                                secureTextEntry={!showPassword}
-                            />
-                            <TouchableOpacity onPress={() => setShowPassword(v => !v)}>
-                                <MaterialIcons
-                                    name={showPassword ? 'visibility-off' : 'visibility'}
-                                    size={20}
-                                    color={colors.text.muted}
-                                />
-                            </TouchableOpacity>
-                        </View>
+                        <Input
+                            label="New Password"
+                            placeholder="Min. 6 characters"
+                            placeholderTextColor={colors.text.muted}
+                            value={newPassword}
+                            onChangeText={setNewPassword}
+                            secureTextEntry={!showPassword}
+                            leftIcon="lock-outline"
+                            rightIcon={showPassword ? 'visibility-off' : 'visibility'}
+                            onRightIconPress={() => setShowPassword(v => !v)}
+                            containerStyle={{ marginBottom: spacing.md }}
+                        />
 
-                        <Text style={styles.label}>Confirm Password</Text>
-                        <View style={styles.inputContainer}>
-                            <MaterialIcons name="lock-outline" size={20} color={colors.text.muted} style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Re-enter password"
-                                placeholderTextColor={colors.text.muted}
-                                value={confirmPassword}
-                                onChangeText={setConfirmPassword}
-                                secureTextEntry={!showPassword}
-                            />
-                        </View>
+                        <Input
+                            label="Confirm Password"
+                            placeholder="Re-enter password"
+                            placeholderTextColor={colors.text.muted}
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            secureTextEntry={!showPassword}
+                            leftIcon="lock-outline"
+                            containerStyle={{ marginBottom: spacing.xl }}
+                        />
 
                         <TouchableOpacity
                             style={[styles.primaryButton, isLoading && styles.buttonDisabled]}

@@ -310,6 +310,18 @@ export const friendsAPI = {
     },
 };
 
+export const leaderboardAPI = {
+    getLeaderboard: async () => {
+        const response = await api.get('/leaderboard');
+        return response.data;
+    },
+
+    sendKudos: async (receiverId: string) => {
+        const response = await api.post('/leaderboard/kudos', { receiverId });
+        return response.data;
+    },
+};
+
 // ===========================================
 // BUDDY ACTIVITY ENDPOINTS
 // ===========================================
@@ -335,6 +347,21 @@ export const settingsAPI = {
     },
     deleteAccount: async () => {
         const response = await api.delete('/auth/account');
+        return response.data;
+    },
+
+    getGym: async () => {
+        const response = await api.get('/settings/gym');
+        return response.data;
+    },
+
+    joinGym: async (gymCode: string) => {
+        const response = await api.post('/settings/gym', { gym_code: gymCode });
+        return response.data;
+    },
+
+    leaveGym: async () => {
+        const response = await api.delete('/settings/gym');
         return response.data;
     },
 };
@@ -469,6 +496,21 @@ export const managerAPI = {
 
     getTrainers: async () => {
         const response = await api.get('/manager/trainers');
+        return response.data;
+    },
+
+    getAtRisk: async (days: number = 14) => {
+        const response = await api.get(`/manager/at-risk?days=${days}`);
+        return response.data;
+    },
+
+    getRetention: async () => {
+        const response = await api.get('/manager/retention');
+        return response.data;
+    },
+
+    updateGymCapacity: async (capacity: number) => {
+        const response = await api.patch('/manager/gym', { capacity });
         return response.data;
     },
 };
@@ -690,6 +732,7 @@ export const nutritionAPI = {
         fat: number;
         serving_size: string;
         meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+        visibility?: string;
     }) => {
         const response = await api.post('/nutrition/log', data);
         return response.data;
@@ -762,6 +805,26 @@ export const aiAPI = {
 
     chat: async (question: string, context?: any) => {
         const response = await api.post('/ai/chat', { question, context }, { timeout: 60000 });
+        return response.data;
+    },
+
+    getChatHistory: async () => {
+        const response = await api.get('/ai/chat/history');
+        return response.data;
+    },
+
+    getDailyInsight: async () => {
+        const response = await api.get('/ai/daily-insight');
+        return response.data;
+    },
+
+    getWeeklyRecap: async () => {
+        const response = await api.get('/ai/weekly-recap');
+        return response.data;
+    },
+
+    transcribeAudio: async (audio: string, mimeType: string) => {
+        const response = await api.post('/ai/transcribe', { audio, mimeType }, { timeout: 60000 });
         return response.data;
     },
 
@@ -1025,6 +1088,7 @@ export const healthAPI = {
         resting_heart_rate?: number | null;
         sleep_hours?: number | null;
         date?: string;
+        source?: string;
     }) => {
         const response = await api.post('/health/sync', data);
         return response.data;

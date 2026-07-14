@@ -15,6 +15,7 @@ const openFoodFacts = require('../services/openFoodFacts');
 const apiNinjas = require('../services/apiNinjas');
 const { asyncHandler } = require('../utils/errors');
 const { authenticate } = require('../middleware/auth');
+const { aiQuota } = require('../middleware/aiQuota');
 const { validate } = require('../middleware/validate');
 const { analyzeFoodTextSchema, analyzeFoodPhotoSchema } = require('../schemas');
 
@@ -22,7 +23,7 @@ const { analyzeFoodTextSchema, analyzeFoodPhotoSchema } = require('../schemas');
  * POST /api/food/analyze-text
  * Analyze food from text description using Gemini AI
  */
-router.post('/analyze-text', authenticate, validate({ body: analyzeFoodTextSchema }), asyncHandler(async (req, res) => {
+router.post('/analyze-text', authenticate, aiQuota, validate({ body: analyzeFoodTextSchema }), asyncHandler(async (req, res) => {
     const { text } = req.body;
 
     if (process.env.NODE_ENV !== 'production') console.log('🤖 AI Food Text Analysis:', text);
@@ -48,7 +49,7 @@ router.post('/analyze-text', authenticate, validate({ body: analyzeFoodTextSchem
  * Analyze food from photo using Gemini Vision (FREE tier)
  * Accepts base64 image data
  */
-router.post('/analyze-photo', express.json({ limit: '10mb' }), authenticate, validate({ body: analyzeFoodPhotoSchema }), asyncHandler(async (req, res) => {
+router.post('/analyze-photo', express.json({ limit: '10mb' }), authenticate, aiQuota, validate({ body: analyzeFoodPhotoSchema }), asyncHandler(async (req, res) => {
     const { image, mimeType } = req.body;
 
     // Strip data URL prefix if present (e.g., "data:image/jpeg;base64,...")

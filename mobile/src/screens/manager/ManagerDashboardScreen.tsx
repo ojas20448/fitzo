@@ -6,6 +6,12 @@ import {
     ScrollView,
     TouchableOpacity,
     RefreshControl,
+    Modal,
+    TextInput,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -34,6 +40,8 @@ interface DashboardData {
     crowd: {
         level: 'low' | 'medium' | 'high';
         percentage: number;
+        active_now?: number;
+        capacity?: number;
     };
     upcoming_classes: UpcomingClass[];
     trainers: {
@@ -42,11 +50,34 @@ interface DashboardData {
     };
 }
 
+interface AtRiskMember {
+    id: string;
+    name: string;
+    email: string;
+    avatar_url: string | null;
+    last_checkin: string | null;
+    days_inactive: number | null;
+    total_checkins: number;
+}
+
+interface RetentionSummary {
+    week4_retention_pct: number | null;
+    retained: number;
+    eligible: number;
+    note: string | null;
+}
+
 const ManagerDashboardScreen: React.FC = () => {
     const { user, logout } = useAuth();
     const [data, setData] = useState<DashboardData | null>(null);
+    const [atRisk, setAtRisk] = useState<AtRiskMember[]>([]);
+    const [atRiskCount, setAtRiskCount] = useState(0);
+    const [retention, setRetention] = useState<RetentionSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [editedCapacity, setEditedCapacity] = useState('');
+    const [updatingCapacity, setUpdatingCapacity] = useState(false);
 
     useEffect(() => {
         loadDashboard();
@@ -54,8 +85,19 @@ const ManagerDashboardScreen: React.FC = () => {
 
     const loadDashboard = async () => {
         try {
-            const response = await managerAPI.getDashboard();
-            setData(response);
+            const [dashboard, atRiskRes, retentionRes] = await Promise.all([
+                managerAPI.getDashboard(),
+                managerAPI.getAtRisk(14).catch(() => null),
+                managerAPI.getRetention().catch(() => null),
+            ]);
+            setData(dashboard);
+            if (atRiskRes) {
+                setAtRisk(atRiskRes.members.slice(0, 5));
+                setAtRiskCount(atRiskRes.count);
+            }
+            if (retentionRes) {
+                setRetention(retentionRes.summary);
+            }
         } catch (error: any) {
             // silently handled
         } finally {
@@ -67,6 +109,40 @@ const ManagerDashboardScreen: React.FC = () => {
         setRefreshing(true);
         await loadDashboard();
         setRefreshing(false);
+    };
+
+    const handleSaveCapacity = async () => {
+        const capacityNum = parseInt(editedCapacity, 10);
+        if (!capacityNum || isNaN(capacityNum) || capacityNum < 1 || capacityNum > 5000) {
+            Alert.alert('Invalid Capacity', 'Please enter a number between 1 and 5000');
+            return;
+        }
+
+        setUpdatingCapacity(true);
+        try {
+            await managerAPI.updateGymCapacity(capacityNum);
+            
+            // Update local state capacity and percentage
+            if (data) {
+                const activeNow = data.crowd.active_now ?? data.today.active_now ?? 0;
+                const percentage = Math.min(100, Math.round((activeNow / capacityNum) * 100));
+                setData({
+                    ...data,
+                    crowd: {
+                        ...data.crowd,
+                        capacity: capacityNum,
+                        percentage,
+                    }
+                });
+            }
+
+            Alert.alert('Success', `Gym capacity updated to ${capacityNum} members`);
+            setShowSettingsModal(false);
+        } catch (error: any) {
+            Alert.alert('Error', error?.response?.data?.message || 'Failed to update capacity');
+        } finally {
+            setUpdatingCapacity(false);
+        }
     };
 
     if (loading || !data) {
@@ -135,7 +211,14 @@ const ManagerDashboardScreen: React.FC = () => {
                     <Text style={styles.headerSubtitle}>OVERVIEW</Text>
                 </View>
                 <View style={styles.headerActions}>
-                    <TouchableOpacity style={styles.headerBtn} accessibilityLabel="Settings">
+                    <TouchableOpacity
+                        style={styles.headerBtn}
+                        onPress={() => {
+                            setEditedCapacity(String(data.crowd.capacity || 50));
+                            setShowSettingsModal(true);
+                        }}
+                        accessibilityLabel="Settings"
+                    >
                         <MaterialIcons name="settings" size={18} color={colors.text.secondary} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.headerBtn} onPress={logout} accessibilityLabel="Logout">
@@ -183,14 +266,72 @@ const ManagerDashboardScreen: React.FC = () => {
                         <View
                             style={[
                                 styles.crowdBarFill,
-                                { width: `${data.crowd.percentage}%` },
+                                { width: `${Math.max(data.crowd.percentage, 2)}%` },
                                 data.crowd.level === 'low' && { backgroundColor: colors.crowd.low },
                                 data.crowd.level === 'medium' && { backgroundColor: colors.crowd.medium },
                                 data.crowd.level === 'high' && { backgroundColor: colors.crowd.high },
                             ]}
                         />
                     </View>
+                    {data.crowd.capacity != null && (
+                        <Text style={styles.crowdCaption}>
+                            {data.crowd.active_now ?? data.today.active_now} of {data.crowd.capacity} capacity · {data.crowd.percentage}% full
+                        </Text>
+                    )}
                 </GlassCard>
+
+                {/* Member Health: retention + at-risk */}
+                <View style={styles.statsGrid}>
+                    <GlassCard style={styles.statCard}>
+                        <Text style={styles.statNumber}>
+                            {retention?.week4_retention_pct !== null && retention?.week4_retention_pct !== undefined
+                                ? `${retention.week4_retention_pct}%`
+                                : '—'}
+                        </Text>
+                        <Text style={styles.statLabel}>Week-4 Retention</Text>
+                        <Text style={styles.statSubLabel}>
+                            {retention && retention.eligible > 0
+                                ? `${retention.retained}/${retention.eligible} members still active`
+                                : 'Needs 4+ weeks of data'}
+                        </Text>
+                    </GlassCard>
+
+                    <GlassCard style={styles.statCard}>
+                        <Text style={[styles.statNumber, atRiskCount > 0 && styles.atRiskNumber]}>
+                            {atRiskCount}
+                        </Text>
+                        <Text style={styles.statLabel}>At Risk</Text>
+                        <Text style={styles.statSubLabel}>No check-in for 14+ days</Text>
+                    </GlassCard>
+                </View>
+
+                {/* At-Risk Members list */}
+                {atRisk.length > 0 && (
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>Needs a Nudge</Text>
+                            <TouchableOpacity onPress={() => router.push('/manager/people?initialTab=members' as any)}>
+                                <Text style={styles.viewAll}>View all</Text>
+                            </TouchableOpacity>
+                        </View>
+                        {atRisk.map((member) => (
+                            <GlassCard key={member.id} style={styles.atRiskCard}>
+                                <Avatar uri={member.avatar_url || undefined} name={member.name} size="sm" />
+                                <View style={styles.atRiskInfo}>
+                                    <Text style={styles.atRiskName}>{member.name}</Text>
+                                    <Text style={styles.atRiskMeta}>
+                                        {member.days_inactive === null
+                                            ? 'Never checked in'
+                                            : `Last seen ${member.days_inactive} days ago`}
+                                    </Text>
+                                </View>
+                                <View style={styles.atRiskBadge}>
+                                    <MaterialIcons name="warning-amber" size={14} color={colors.crowd?.medium || '#FFB020'} />
+                                </View>
+                            </GlassCard>
+                        ))}
+                    </View>
+                )}
 
                 {/* Quick Actions */}
                 <View style={styles.section}>
@@ -276,6 +417,71 @@ const ManagerDashboardScreen: React.FC = () => {
 
                 <View style={{ height: 100 }} />
             </ScrollView>
+
+            {/* Settings Modal (Gym Capacity Edit) */}
+            <Modal
+                visible={showSettingsModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowSettingsModal(false)}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={styles.modalOverlay}
+                >
+                    <TouchableOpacity
+                        style={styles.modalDismissArea}
+                        activeOpacity={1}
+                        onPress={() => setShowSettingsModal(false)}
+                    />
+                    <GlassCard style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>GYM SETTINGS</Text>
+                            <TouchableOpacity onPress={() => setShowSettingsModal(false)}>
+                                <MaterialIcons name="close" size={24} color={colors.text.primary} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.modalLabel}>Gym Capacity</Text>
+                        <Text style={styles.modalDescription}>
+                            Set the maximum comfortable capacity of your gym. This drives the real-time occupancy crowd indicator (Green/Yellow/Red) for members.
+                        </Text>
+
+                        <TextInput
+                            style={styles.modalInput}
+                            value={editedCapacity}
+                            onChangeText={setEditedCapacity}
+                            placeholder="e.g. 50"
+                            placeholderTextColor={colors.text.muted}
+                            keyboardType="numeric"
+                            maxLength={4}
+                            editable={!updatingCapacity}
+                            accessibilityLabel="Gym capacity"
+                        />
+
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={styles.cancelBtn}
+                                onPress={() => setShowSettingsModal(false)}
+                                disabled={updatingCapacity}
+                            >
+                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.saveBtn, updatingCapacity && styles.saveBtnDisabled]}
+                                onPress={handleSaveCapacity}
+                                disabled={updatingCapacity}
+                            >
+                                {updatingCapacity ? (
+                                    <ActivityIndicator size="small" color={colors.background} />
+                                ) : (
+                                    <Text style={styles.saveBtnText}>Save</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </GlassCard>
+                </KeyboardAvoidingView>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -400,8 +606,52 @@ const styles = StyleSheet.create({
         color: colors.text.secondary,
         marginTop: spacing.xs,
     },
+    statSubLabel: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        marginTop: 2,
+        textAlign: 'center',
+    },
+    atRiskNumber: {
+        color: colors.crowd.medium,
+    },
+    atRiskCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        marginBottom: spacing.sm,
+    },
+    atRiskInfo: {
+        flex: 1,
+    },
+    atRiskName: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+    },
+    atRiskMeta: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.secondary,
+        marginTop: 2,
+    },
+    atRiskBadge: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: colors.glass.surface,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     crowdCard: {
         marginBottom: spacing.xl,
+    },
+    crowdCaption: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        marginTop: spacing.sm,
     },
     crowdBar: {
         height: 8,
@@ -540,6 +790,98 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalDismissArea: {
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+    },
+    modalContent: {
+        width: '90%',
+        maxWidth: 400,
+        padding: spacing.xl,
+        gap: spacing.md,
+        borderRadius: borderRadius.xl,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: colors.glass.border,
+        paddingBottom: spacing.sm,
+    },
+    modalTitle: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.primary,
+        letterSpacing: 1,
+    },
+    modalLabel: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+        marginTop: spacing.sm,
+    },
+    modalDescription: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.secondary,
+        lineHeight: 16,
+    },
+    modalInput: {
+        backgroundColor: colors.glass.surfaceLight,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.lg,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        color: colors.text.primary,
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.bold,
+        minHeight: 44,
+        marginVertical: spacing.xs,
+    },
+    modalActions: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: spacing.md,
+        marginTop: spacing.sm,
+    },
+    cancelBtn: {
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        justifyContent: 'center',
+    },
+    cancelBtnText: {
+        color: colors.text.muted,
+        fontFamily: typography.fontFamily.bold,
+        fontSize: typography.sizes.sm,
+    },
+    saveBtn: {
+        backgroundColor: colors.primary,
+        borderRadius: borderRadius.lg,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
+        justifyContent: 'center',
+        alignItems: 'center',
+        minWidth: 80,
+    },
+    saveBtnDisabled: {
+        opacity: 0.6,
+    },
+    saveBtnText: {
+        color: colors.background,
+        fontFamily: typography.fontFamily.bold,
+        fontSize: typography.sizes.sm,
     },
 });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, Linking, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, Linking, ActivityIndicator, Platform, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -8,16 +8,170 @@ import { colors, typography, spacing, borderRadius } from '../../src/styles/them
 import GlassCard from '../../src/components/GlassCard';
 import { useToast } from '../../src/components/Toast';
 import { isHealthAvailable, requestPermissions, getTodaysSummary } from '../../src/services/healthService';
-import { healthAPI } from '../../src/services/api';
+import { healthAPI, settingsAPI, notificationsAPI } from '../../src/services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+
+const UNITS_STORAGE_KEY = 'fitzo_units';
+const version = Constants.expoConfig?.version || '1.3.0';
+
+interface GymInfo {
+    id: string;
+    name: string;
+    access_code: string;
+    capacity: number;
+    member_count: number;
+}
 
 export default function SettingsScreen() {
-    const { logout, user } = useAuth();
+    const { logout, user, refreshUser } = useAuth();
     const toast = useToast();
 
-    // Mock State for Settings
+    // Preferences & Sharing States
     const [notifications, setNotifications] = useState(true);
-    const [darkMode, setDarkMode] = useState(true);
-    const [units, setUnits] = useState('metric'); // metric | imperial
+    const [units, setUnits] = useState<'metric' | 'imperial'>('metric');
+    const [shareLogs, setShareLogs] = useState(true);
+
+    // Gym membership
+    const [gym, setGym] = useState<GymInfo | null>(null);
+    const [gymLoading, setGymLoading] = useState(true);
+    const [showJoinInput, setShowJoinInput] = useState(false);
+    const [gymCode, setGymCode] = useState('');
+    const [joining, setJoining] = useState(false);
+
+    useEffect(() => {
+        const loadSettings = async () => {
+            // Load Gym membership
+            try {
+                const res = await settingsAPI.getGym();
+                setGym(res.gym);
+            } catch (e) {
+                // ignore
+            } finally {
+                setGymLoading(false);
+            }
+
+            // Load persisted units setting
+            try {
+                const stored = await AsyncStorage.getItem(UNITS_STORAGE_KEY);
+                if (stored === 'metric' || stored === 'imperial') {
+                    setUnits(stored);
+                }
+            } catch (e) {
+                // ignore
+            }
+
+            // Load sharing preference
+            try {
+                const data = await settingsAPI.getSharingPreference();
+                setShareLogs(data.share_logs_default);
+            } catch (e) {
+                setShareLogs(true);
+            }
+
+            // Load notification preference
+            try {
+                const status = await notificationsAPI.getStatus();
+                setNotifications(status.enabled);
+            } catch (e) {
+                // default to true
+            }
+        };
+        loadSettings();
+    }, []);
+
+    const toggleUnits = async () => {
+        const next = units === 'metric' ? 'imperial' : 'metric';
+        setUnits(next);
+        try {
+            await AsyncStorage.setItem(UNITS_STORAGE_KEY, next);
+        } catch (e) {
+            // ignore
+        }
+    };
+
+    const handleShareLogsToggle = async (newValue: boolean) => {
+        setShareLogs(newValue);
+        try {
+            await settingsAPI.updateSharingPreference(newValue);
+            toast.success('Updated', newValue ? 'Logs are now shared with gym buddies.' : 'Logs are now private.');
+        } catch (e) {
+            setShareLogs(!newValue);
+            toast.error('Error', 'Failed to update sharing preferences');
+        }
+    };
+
+    const handleNotificationsToggle = async (newValue: boolean) => {
+        setNotifications(newValue);
+        try {
+            if (newValue) {
+                // Re-register for push notifications
+                const { status } = await import('expo-notifications').then(m => m.getPermissionsAsync());
+                if (status !== 'granted') {
+                    const { status: newStatus } = await import('expo-notifications').then(m => m.requestPermissionsAsync());
+                    if (newStatus !== 'granted') {
+                        setNotifications(false);
+                        toast.warning('Permissions Required', 'Enable notifications in your device settings');
+                        return;
+                    }
+                }
+                const token = await import('expo-notifications').then(m => m.getExpoPushTokenAsync());
+                await notificationsAPI.registerPushToken(token.data, Platform.OS);
+            } else {
+                // Unregister push token
+                await notificationsAPI.unregisterPushToken();
+            }
+        } catch (e) {
+            setNotifications(!newValue);
+            toast.error('Error', 'Failed to update notification preferences');
+        }
+    };
+
+    const handleJoinGym = async () => {
+        const code = gymCode.trim();
+        if (!code) {
+            toast.error('Missing Code', 'Enter the access code from your gym');
+            return;
+        }
+        setJoining(true);
+        try {
+            const res = await settingsAPI.joinGym(code);
+            toast.success('Joined!', res.message);
+            setShowJoinInput(false);
+            setGymCode('');
+            const updated = await settingsAPI.getGym();
+            setGym(updated.gym);
+            await refreshUser();
+        } catch (error: any) {
+            toast.error('Could Not Join', error?.response?.data?.message || 'Check the code and try again');
+        } finally {
+            setJoining(false);
+        }
+    };
+
+    const handleLeaveGym = () => {
+        Alert.alert(
+            'Leave Gym',
+            `Leave ${gym?.name}? Your check-in streak history stays, but you'll stop seeing this gym's crowd and buddies.`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Leave',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await settingsAPI.leaveGym();
+                            setGym(null);
+                            await refreshUser();
+                            toast.success('Left Gym', 'Join another anytime with an access code');
+                        } catch {
+                            toast.error('Error', 'Could not leave gym. Try again.');
+                        }
+                    },
+                },
+            ]
+        );
+    };
 
     // Health Connect
     const [healthAvailable, setHealthAvailable] = useState(false);
@@ -108,6 +262,108 @@ export default function SettingsScreen() {
                     </View>
                 </GlassCard>
 
+                {/* Gym Section */}
+                <Text style={styles.sectionTitle}>My Gym</Text>
+                <GlassCard style={styles.card}>
+                    {gymLoading ? (
+                        <View style={styles.row}>
+                            <ActivityIndicator size="small" color={colors.text.primary} />
+                        </View>
+                    ) : gym ? (
+                        <>
+                            <View style={styles.row}>
+                                <View style={styles.rowLeft}>
+                                    <MaterialIcons name="fitness-center" size={24} color={colors.crowd.low} />
+                                    <View>
+                                        <Text style={styles.rowLabel}>{gym.name}</Text>
+                                        <Text style={styles.rowSub}>
+                                            {gym.member_count} member{gym.member_count === 1 ? '' : 's'} · Code {gym.access_code}
+                                        </Text>
+                                    </View>
+                                </View>
+                                <MaterialIcons name="check-circle" size={22} color={colors.crowd.low} />
+                            </View>
+                            <View style={styles.divider} />
+                            <TouchableOpacity style={styles.row} onPress={handleLeaveGym}>
+                                <View style={styles.rowLeft}>
+                                    <MaterialIcons name="exit-to-app" size={24} color={colors.text.secondary} />
+                                    <Text style={styles.rowLabel}>Leave Gym</Text>
+                                </View>
+                                <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                            </TouchableOpacity>
+                        </>
+                    ) : (
+                        <>
+                            <TouchableOpacity style={styles.row} onPress={() => setShowJoinInput(!showJoinInput)}>
+                                <View style={styles.rowLeft}>
+                                    <MaterialIcons name="add-business" size={24} color={colors.text.secondary} />
+                                    <View>
+                                        <Text style={styles.rowLabel}>Join a Gym</Text>
+                                        <Text style={styles.rowSub}>Enter the access code from your gym's front desk</Text>
+                                    </View>
+                                </View>
+                                <MaterialIcons
+                                    name={showJoinInput ? 'expand-less' : 'expand-more'}
+                                    size={24}
+                                    color={colors.text.muted}
+                                />
+                            </TouchableOpacity>
+                            {showJoinInput && (
+                                <View style={styles.joinForm}>
+                                    <TextInput
+                                        style={styles.codeInput}
+                                        value={gymCode}
+                                        onChangeText={(t) => setGymCode(t.toUpperCase())}
+                                        placeholder="e.g. FITZO-A1B2C3D4"
+                                        placeholderTextColor={colors.text.muted}
+                                        autoCapitalize="characters"
+                                        autoCorrect={false}
+                                        editable={!joining}
+                                        onSubmitEditing={handleJoinGym}
+                                        returnKeyType="go"
+                                        accessibilityLabel="Gym access code"
+                                    />
+                                    <TouchableOpacity
+                                        style={[styles.joinBtn, joining && styles.joinBtnDisabled]}
+                                        onPress={handleJoinGym}
+                                        disabled={joining}
+                                    >
+                                        {joining ? (
+                                            <ActivityIndicator size="small" color={colors.background} />
+                                        ) : (
+                                            <Text style={styles.joinBtnText}>JOIN</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </>
+                    )}
+                </GlassCard>
+
+                {/* Privacy & Sharing */}
+                <Text style={styles.sectionTitle}>Privacy & Sharing</Text>
+                <GlassCard style={styles.card}>
+                    <View style={styles.row}>
+                        <View style={styles.rowLeft}>
+                            <MaterialIcons name="people" size={24} color={colors.text.secondary} />
+                            <View style={{ flex: 1, paddingRight: spacing.md }}>
+                                <Text style={styles.rowLabel}>Share with Gym Buddies</Text>
+                                <Text style={[styles.rowSub, { flexWrap: 'wrap' }]}>
+                                    {shareLogs
+                                        ? 'Buddies can see your workouts & meals'
+                                        : 'Your logs are private to buddies'}
+                                </Text>
+                            </View>
+                        </View>
+                        <Switch
+                            value={shareLogs}
+                            onValueChange={handleShareLogsToggle}
+                            trackColor={{ false: colors.glass.border, true: colors.primary }}
+                            thumbColor={colors.text.primary}
+                        />
+                    </View>
+                </GlassCard>
+
                 {/* Preferences Section */}
                 <Text style={styles.sectionTitle}>Preferences</Text>
                 <GlassCard style={styles.card}>
@@ -118,20 +374,7 @@ export default function SettingsScreen() {
                         </View>
                         <Switch
                             value={notifications}
-                            onValueChange={setNotifications}
-                            trackColor={{ false: colors.glass.border, true: colors.primary }}
-                            thumbColor={colors.text.primary}
-                        />
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.row}>
-                        <View style={styles.rowLeft}>
-                            <MaterialIcons name="dark-mode" size={24} color={colors.text.secondary} />
-                            <Text style={styles.rowLabel}>Dark Mode Icon</Text>
-                        </View>
-                        <Switch
-                            value={darkMode}
-                            onValueChange={setDarkMode}
+                            onValueChange={handleNotificationsToggle}
                             trackColor={{ false: colors.glass.border, true: colors.primary }}
                             thumbColor={colors.text.primary}
                         />
@@ -139,7 +382,7 @@ export default function SettingsScreen() {
                     <View style={styles.divider} />
                     <TouchableOpacity
                         style={styles.row}
-                        onPress={() => setUnits(units === 'metric' ? 'imperial' : 'metric')}
+                        onPress={toggleUnits}
                     >
                         <View style={styles.rowLeft}>
                             <MaterialIcons name="straighten" size={24} color={colors.text.secondary} />
@@ -240,7 +483,7 @@ export default function SettingsScreen() {
                     </TouchableOpacity>
                 </GlassCard>
 
-                <Text style={styles.versionText}>Fitzo v1.2.0</Text>
+                <Text style={styles.versionText}>Fitzo v{version}</Text>
                 <View style={{ height: 40 }} />
             </ScrollView>
         </SafeAreaView>
@@ -322,6 +565,44 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: colors.glass.border,
         marginLeft: 56,
+    },
+    joinForm: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+        paddingHorizontal: spacing.lg,
+        paddingBottom: spacing.lg,
+    },
+    codeInput: {
+        flex: 1,
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.lg,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        color: colors.text.primary,
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.medium,
+        letterSpacing: 1,
+        minHeight: 44,
+    },
+    joinBtn: {
+        backgroundColor: colors.primary,
+        borderRadius: borderRadius.lg,
+        paddingHorizontal: spacing.lg,
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: 44,
+        minWidth: 72,
+    },
+    joinBtnDisabled: {
+        opacity: 0.6,
+    },
+    joinBtnText: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.background,
+        letterSpacing: 1,
     },
     rowSignOut: {
         flexDirection: 'row',

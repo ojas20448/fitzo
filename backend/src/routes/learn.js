@@ -3,6 +3,7 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, NotFoundError, asyncHandler } = require('../utils/errors');
+const xpService = require('../services/xpService');
 
 /**
  * GET /api/learn/lessons
@@ -187,10 +188,7 @@ router.post('/attempt', authenticate, asyncHandler(async (req, res) => {
     );
 
     // Update user XP
-    await query(
-        `UPDATE users SET xp_points = xp_points + $1 WHERE id = $2`,
-        [xpEarned, userId]
-    );
+    await xpService.awardXP(userId, xpEarned, 'lesson', lesson_id);
 
     res.json({
         score,

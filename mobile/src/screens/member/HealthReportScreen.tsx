@@ -211,10 +211,10 @@ export default function HealthReportScreen() {
                     dialogTitle: 'Share Health Report',
                 });
             } else {
-                toast.show('Sharing not available on this device', 'error');
+                toast.error('Sharing not available', 'Sharing not available on this device');
             }
         } catch (e) {
-            toast.show('Failed to share report', 'error');
+            toast.error('Share Failed', 'Failed to share report');
         } finally {
             setSharing(false);
         }
