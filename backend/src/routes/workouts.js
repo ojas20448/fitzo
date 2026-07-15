@@ -3,16 +3,90 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler, ValidationError, NotFoundError } = require('../utils/errors');
+const xpService = require('../services/xpService');
+const { invalidateContextPack } = require('../services/contextPack');
 
 // All routes require authentication
 router.use(authenticate);
+
+/**
+ * Mirror a Smart Log (flat JSON in workout_logs) into the structured
+ * workout_sessions / exercise_logs / set_logs tables.
+ *
+ * WHY: the AI coach context pack, progress charts, PRs, and weekly recap all
+ * read from the structured tables — without this bridge, workouts logged via
+ * the app's main flow are invisible to every analytics + AI feature.
+ *
+ * Best-effort: failures are logged, never break the main logging flow.
+ * Idempotent per day+type: re-logging replaces today's mirrored session.
+ */
+async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibility, durationMinutes) {
+    let parsed;
+    try {
+        parsed = JSON.parse(exercisesJson);
+    } catch {
+        return; // free-text exercises — nothing to mirror
+    }
+    if (!Array.isArray(parsed) || parsed.length === 0) return;
+
+    // Replace any session already mirrored today for this workout type
+    await query(
+        `DELETE FROM workout_sessions
+         WHERE user_id = $1 AND day_name = $2 AND notes = 'smart-log'
+           AND started_at::date = CURRENT_DATE`,
+        [userId, workoutType]
+    );
+
+    const sessionResult = await query(
+        `INSERT INTO workout_sessions (user_id, day_name, visibility, notes, completed_at, duration_minutes)
+         VALUES ($1, $2, $3, 'smart-log', NOW(), $4)
+         RETURNING id`,
+        [userId, workoutType, visibility, durationMinutes || null]
+    );
+    const sessionId = sessionResult.rows[0].id;
+
+    for (let i = 0; i < parsed.length; i++) {
+        const ex = parsed[i];
+        if (!ex || !ex.name) continue;
+
+        // Match against the exercises table by name so category/muscle data flows
+        const match = await query(
+            `SELECT id FROM exercises WHERE LOWER(name) = LOWER($1) LIMIT 1`,
+            [String(ex.name).trim()]
+        );
+        const exerciseId = match.rows[0]?.id || null;
+
+        const logResult = await query(
+            `INSERT INTO exercise_logs (session_id, exercise_id, custom_exercise_name, order_index)
+             VALUES ($1, $2, $3, $4)
+             RETURNING id`,
+            [sessionId, exerciseId, exerciseId ? null : String(ex.name).slice(0, 100), i]
+        );
+        const exerciseLogId = logResult.rows[0].id;
+
+        const sets = Array.isArray(ex.sets) ? ex.sets : [];
+        for (let s = 0; s < sets.length; s++) {
+            const reps = parseInt(sets[s].reps, 10) || 0;
+            const weight = parseFloat(sets[s].weight_kg) || 0;
+            if (reps <= 0 && weight <= 0) continue;
+            // RIR → RPE (rpe = 10 - rir), clamped to a sane 1–10
+            const rir = parseInt(sets[s].rir, 10);
+            const rpe = Number.isFinite(rir) ? Math.min(10, Math.max(1, 10 - rir)) : null;
+            await query(
+                `INSERT INTO set_logs (exercise_log_id, set_number, reps, weight_kg, is_warmup, rpe)
+                 VALUES ($1, $2, $3, $4, false, $5)`,
+                [exerciseLogId, s + 1, reps, weight, rpe]
+            );
+        }
+    }
+}
 
 // ============================================
 // LOG A WORKOUT
 // ============================================
 router.post('/', asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const { workout_type, exercises, notes, visibility = 'friends' } = req.body;
+    const { workout_type, exercises, notes, visibility = 'friends', duration_minutes } = req.body;
 
     // Validation
     const validTypes = ['legs', 'chest', 'back', 'shoulders', 'arms', 'cardio', 'rest'];
@@ -50,13 +124,29 @@ router.post('/', asyncHandler(async (req, res) => {
              RETURNING *`,
             [userId, workout_type, exercises || null, notes || null, visibility]
         );
-
-        // Award XP for logging
-        await query(
-            `UPDATE users SET xp_points = xp_points + 5 WHERE id = $1`,
-            [userId]
-        );
     }
+
+    const isNewLog = existingLog.rows.length === 0;
+
+    // Award XP through xpService so it lands in xp_logs — the weekly gym
+    // leaderboard reads xp_logs, not users.xp_points (was a direct UPDATE
+    // before, which meant workouts never counted toward the leaderboard)
+    if (isNewLog) {
+        await xpService.awardXP(userId, 15, 'workout', result.rows[0].id);
+    }
+
+    // Mirror into structured tables so the AI coach, progress charts, PRs and
+    // weekly recap can see this workout (best-effort, never blocks the log)
+    if (exercises) {
+        try {
+            await mirrorToStructuredLogs(userId, workout_type, exercises, visibility, parseInt(duration_minutes, 10) || null);
+        } catch (err) {
+            console.error('Smart Log mirror failed (workout still saved):', err.message);
+        }
+    }
+
+    // Coach context should reflect this workout immediately
+    invalidateContextPack(userId).catch(() => {});
 
     // Auto-mark attendance for streak tracking
     await query(
@@ -69,7 +159,7 @@ router.post('/', asyncHandler(async (req, res) => {
     res.json({
         success: true,
         workout: result.rows[0],
-        xp_earned: existingLog.rows.length > 0 ? 0 : 5
+        xp_earned: isNewLog ? 15 : 0
     });
 }));
 

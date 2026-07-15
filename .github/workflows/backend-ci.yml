@@ -41,3 +41,12 @@ jobs:
           NODE_ENV: test
           JWT_SECRET: ci-test-secret
           DATABASE_URL: ""
+
+      - name: Wiring audit (mobile nav ↔ screens, api.ts ↔ backend routes)
+        working-directory: backend
+        run: |
+          node scripts/wiring_audit.js | tee /tmp/wiring.txt
+          if grep -q "❌" /tmp/wiring.txt; then
+            echo "::error::Wiring audit found orphaned navigation targets or API calls"
+            exit 1
+          fi

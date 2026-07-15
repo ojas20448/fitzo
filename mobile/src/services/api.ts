@@ -243,11 +243,6 @@ export const intentAPI = {
         return response.data;
     },
 
-    getSessions: async (splitType: string) => {
-        const response = await api.get(`/intent/sessions/${splitType}`);
-        return response.data;
-    },
-
     clearIntent: async () => {
         const response = await api.delete('/intent');
         return response.data;
@@ -520,23 +515,23 @@ export const managerAPI = {
 // ===========================================
 
 export const workoutsAPI = {
-    log: async (data: { workout_type: string; exercises?: string; notes?: string; visibility?: string }) => {
+    log: async (data: { workout_type: string; exercises?: string; notes?: string; visibility?: string; duration_minutes?: number }) => {
         const response = await api.post('/workouts', data);
         return response.data;
     },
 
     startSession: async (data: { split_id: string | null; day_name: string; visibility: string }) => {
-        const response = await api.post('/workouts/sessions', data);
+        const response = await api.post('/workout-sessions/sessions', data);
         return response.data;
     },
 
     getSession: async (sessionId: string) => {
-        const response = await api.get(`/workouts/sessions/${sessionId}`);
+        const response = await api.get(`/workout-sessions/sessions/${sessionId}`);
         return response.data;
     },
 
     completeSession: async (sessionId: string, data: { notes?: string }) => {
-        const response = await api.put(`/workouts/sessions/${sessionId}/complete`, data);
+        const response = await api.put(`/workout-sessions/sessions/${sessionId}/complete`, data);
         return response.data;
     },
 
@@ -586,22 +581,22 @@ export const workoutsAPI = {
     },
 
     searchExercises: async (queryStr: string = '') => {
-        const response = await api.get(`/workouts/exercises?search=${encodeURIComponent(queryStr)}`);
+        const response = await api.get(`/workout-sessions/exercises?search=${encodeURIComponent(queryStr)}`);
         return response.data;
     },
 
     addExerciseToSession: async (sessionId: string, exerciseId: string) => {
-        const response = await api.post(`/workouts/sessions/${sessionId}/exercises`, { exercise_id: exerciseId });
+        const response = await api.post(`/workout-sessions/sessions/${sessionId}/exercises`, { exercise_id: exerciseId });
         return response.data;
     },
 
     addSet: async (exerciseLogId: string, data: { reps: number; weight_kg: number; rpe?: number }) => {
-        const response = await api.post(`/workouts/exercises/${exerciseLogId}/sets`, data);
+        const response = await api.post(`/workout-sessions/exercises/${exerciseLogId}/sets`, data);
         return response.data;
     },
 
     updateSet: async (setId: string, data: { reps?: number; weight_kg?: number; is_failure?: boolean; rpe?: number }) => {
-        const response = await api.put(`/workouts/sets/${setId}`, data);
+        const response = await api.put(`/workout-sessions/sets/${setId}`, data);
         return response.data;
     },
 
@@ -617,15 +612,6 @@ export const workoutsAPI = {
         return response.data;
     },
 
-    like: async (workoutId: string) => {
-        const response = await api.post(`/workouts/${workoutId}/like`);
-        return response.data;
-    },
-
-    unlike: async (workoutId: string) => {
-        const response = await api.delete(`/workouts/${workoutId}/like`);
-        return response.data;
-    },
 };
 
 // ===========================================

@@ -67,6 +67,60 @@
 | Kudos 409 response shape inconsistent with global error format | Low | `ConflictError`; mobile reads `message` first |
 | AI Coach screen was unreachable — route existed but nothing navigated to it | High | Home header sparkle button + daily-insight card now open `/ai-coach` |
 
+## Fixes from full functional audit (July 15, 2026 — 76/76 API checks + wiring audit)
+
+| Bug | Severity | Fix |
+|-----|----------|-----|
+| AI chat + daily insight 500 — context pack queried nonexistent `meal_name` column | Critical | Use `food_name`; schema.sql updated to match live DB |
+| **Active Workout flow 404** — api.ts called `/workouts/sessions/*` but routes live at `/workout-sessions/*` (get/complete/add exercise/log set all broken) | Critical | Repointed 7 paths in api.ts |
+| Notifications status/preferences 500 — `push_platform`, `notification_preferences` etc. columns never migrated | High | `migrations/add_push_metadata.sql` applied to live DB |
+| Progress volume 500 — `COALESCE(muscle_groups, 'other')` on an ARRAY column | High | `muscle_groups[1]` + `array_to_string` filter |
+| Non-UUID `/:id` params returned 500 (pg 22P02) on every detail route | Medium | Global 400 mapping in errorHandler |
+| Unknown exercise ID returned 500 | Medium | 404 |
+| `router.replace('/home')` — route doesn't exist (ExerciseLibrary back button) | Medium | `/(tabs)` |
+| Dead api.ts methods calling nonexistent routes (`intent/sessions`, workout like/unlike) | Low | Removed |
+| `workouts/latest` threw on unknown enum type value | Low | `::text` comparison → `found:false` |
+
+New audit tooling (rerun anytime — both now enforced in CI):
+- `node scripts/full_api_audit.js --url http://localhost:3001` — 76 endpoint checks, 3 roles
+- `node scripts/wiring_audit.js` — mobile nav targets ↔ screens, api.ts ↔ backend routes
+
+## Smart Log bridge (July 15, 2026)
+
+**Problem:** the app logs workouts as flat JSON into `workout_logs`, but the AI coach
+context pack, progress/volume charts, PRs, and weekly recap all read the structured
+`workout_sessions`/`exercise_logs`/`set_logs` tables — which only the orphaned
+ActiveWorkoutScreen wrote to. Real users' training was invisible to every AI +
+analytics feature, and workout XP (direct `users.xp_points` update) never reached
+`xp_logs`, so **workouts never counted on the weekly leaderboard**.
+
+**Fix (POST /api/workouts):**
+- Mirrors every Smart Log into the structured tables (session + exercise logs + sets,
+  RIR→RPE converted, exercise names matched against the exercises table)
+- Idempotent per day+type (`notes='smart-log'` marker; re-log replaces the mirror)
+- XP now goes through `xpService.awardXP` (+15, logged to `xp_logs` → leaderboard) —
+  no double XP on same-day re-log
+- Context pack cache invalidated on log, so the coach sees the workout immediately
+- Mobile now sends `duration_minutes`
+- Verified live end-to-end: session + sets in DB, XP on leaderboard, re-log idempotent
+
+**Status note:** `ActiveWorkoutScreen` (live session mode) remains unreachable by design
+for now — WorkoutLogScreen's Smart Log is the intended flow; its API paths were fixed
+so it can be wired in later as a premium "live mode" without backend work.
+
+## Process rule — migrations
+
+Two of today's critical bugs (`meal_name`, missing push columns) were schema drift:
+code written against columns that were never migrated. Rule going forward:
+**every schema change = a file in `src/db/migrations/` applied via
+`node scripts/run_sql.js`, then reflected in `schema.sql`.** Never ad-hoc SQL.
+
+## Still open (needs owner action)
+
+- `YOUTUBE_API_KEY` on Render — workout videos currently serve mock data
+- `CRON_SECRET` on Render + GitHub secret (then dispatch "AI Coach Cron" once to smoke it)
+- Google OAuth Cloud Console steps (redirect URI, test users, SHA-1)
+
 ## Deploy checklist (do once)
 
 1. Render env: add `CRON_SECRET` (generate: `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"`)

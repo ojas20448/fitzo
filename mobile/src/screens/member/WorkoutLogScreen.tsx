@@ -397,6 +397,7 @@ const WorkoutLogScreen: React.FC = () => {
                 exercises: JSON.stringify(userExercises),
                 notes: 'Logged via Smart Log',
                 visibility: visibility,
+                duration_minutes: Math.max(durationMinutes, 1),
             });
 
             let totalVolume = 0;

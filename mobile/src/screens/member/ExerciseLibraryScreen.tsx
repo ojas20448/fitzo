@@ -42,7 +42,7 @@ export default function ExerciseLibraryScreen() {
                             if (router.canGoBack()) {
                                 router.back();
                             } else {
-                                router.replace('/home' as any);
+                                router.replace('/(tabs)' as any);
                             }
                         }}
                     >

@@ -31,6 +31,14 @@ jobs:
         working-directory: mobile
         run: npx tsc --noEmit
 
+      - name: Wiring audit (nav targets ↔ screens, api.ts ↔ backend routes)
+        run: |
+          node backend/scripts/wiring_audit.js | tee /tmp/wiring.txt
+          if grep -q "❌" /tmp/wiring.txt; then
+            echo "::error::Wiring audit found orphaned navigation targets or API calls"
+            exit 1
+          fi
+
       - name: Expo export check (web)
         working-directory: mobile
         run: npx expo export --platform web --no-minify
