@@ -3,6 +3,7 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, asyncHandler } = require('../utils/errors');
+const { invalidateContextPack } = require('../services/contextPack');
 
 // Valid training patterns (optional)
 const VALID_PATTERNS = [
@@ -150,6 +151,9 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
         console.error('❌ Values:', { userId, training_pattern, emphasis, session_label, visibility, expiresAt });
         throw insertError;
     }
+
+    // Invalidate context pack cache for fresh AI responses
+    invalidateContextPack(userId).catch(() => {});
 
     res.status(201).json({
         message: "Let's go! 💪",

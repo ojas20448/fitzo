@@ -8,6 +8,7 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, asyncHandler } = require('../utils/errors');
+const { invalidateContextPack } = require('../services/contextPack');
 
 /**
  * Calculate macro targets based on calories and goal
@@ -186,6 +187,9 @@ router.post('/profile', authenticate, asyncHandler(async (req, res) => {
     );
 
     const profile = result.rows[0];
+
+    // Invalidate context pack cache for fresh AI responses
+    invalidateContextPack(userId).catch(() => {});
 
     res.json({
         message: 'Profile updated',
@@ -369,6 +373,9 @@ router.post('/log', authenticate, asyncHandler(async (req, res) => {
         RETURNING *`,
         [userId, food_name, calories, protein || 0, carbs || 0, fat || 0, serving_size, meal_type, visibility]
     );
+
+    // Invalidate context pack cache for fresh AI responses
+    invalidateContextPack(userId).catch(() => {});
 
     res.json({
         message: 'Food logged successfully',

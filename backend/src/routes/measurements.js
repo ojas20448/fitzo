@@ -3,6 +3,7 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler } = require('../utils/errors');
+const { invalidateContextPack } = require('../services/contextPack');
 
 /**
  * GET /api/measurements/latest
@@ -70,6 +71,9 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
             [weight, userId]
         );
     }
+
+    // Invalidate context pack cache for fresh AI responses
+    invalidateContextPack(userId).catch(() => {});
 
     res.json({
         message: 'Measurements logged successfully',

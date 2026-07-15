@@ -10,6 +10,7 @@ const { authenticate } = require('../middleware/auth');
 const { ValidationError, asyncHandler } = require('../utils/errors');
 const pushNotifications = require('../services/pushNotifications');
 const xpService = require('../services/xpService');
+const { invalidateContextPack } = require('../services/contextPack');
 
 /**
  * GET /api/workouts/exercises
@@ -288,6 +289,26 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
             }
         } catch (e) { /* silent */ }
     })();
+
+    // Auto-mark attendance for streak tracking on completion
+    try {
+        const attendanceResult = await query(
+            `INSERT INTO attendances (user_id, gym_id, check_date)
+             VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), CURRENT_DATE)
+             ON CONFLICT (user_id, check_date) DO NOTHING
+             RETURNING id`,
+            [userId]
+        );
+        if (attendanceResult.rows.length > 0) {
+            // A new attendance check-in was successfully logged. Award the 5 XP!
+            await xpService.awardXP(userId, 5, 'checkin');
+        }
+    } catch (attError) {
+        console.error('Auto attendance mapping failed during workout completion:', attError.message);
+    }
+
+    // Invalidate context pack cache for fresh AI responses
+    invalidateContextPack(userId).catch(() => {});
 
     res.json({
         message: 'Workout completed! 💪',

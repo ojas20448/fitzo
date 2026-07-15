@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
+const { invalidateContextPack } = require('../services/contextPack');
 
 // Get fitness profile (goals, weight, etc.)
 router.get('/fitness', authenticate, async (req, res, next) => {
@@ -67,6 +68,9 @@ router.put('/fitness', authenticate, async (req, res, next) => {
             [req.user.id, goal_type, current_weight, target_weight, height, age, gender, activity_level, target_calories]
         );
 
+        // Invalidate context pack cache for fresh AI responses
+        invalidateContextPack(req.user.id).catch(() => {});
+
         res.json({ success: true, profile: result.rows[0] });
     } catch (err) {
         next(err);
@@ -96,6 +100,9 @@ router.post('/measurements', authenticate, async (req, res, next) => {
                 [req.user.id, weight]
             );
         }
+
+        // Invalidate context pack cache for fresh AI responses
+        invalidateContextPack(req.user.id).catch(() => {});
 
         res.json({ success: true, measurement: result.rows[0] });
     } catch (err) {

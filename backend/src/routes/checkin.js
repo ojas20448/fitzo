@@ -5,6 +5,7 @@ const { authenticate } = require('../middleware/auth');
 const { ValidationError, ConflictError, NotFoundError, asyncHandler } = require('../utils/errors');
 const pushNotifications = require('../services/pushNotifications');
 const xpService = require('../services/xpService');
+const { invalidateContextPack } = require('../services/contextPack');
 
 /**
  * POST /api/checkin
@@ -72,6 +73,9 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
             data: { streak, screen: 'home' },
         }).catch(() => {});
     }
+
+    // Invalidate context pack cache for fresh AI responses
+    invalidateContextPack(userId).catch(() => {});
 
     res.status(201).json({
         success: true,

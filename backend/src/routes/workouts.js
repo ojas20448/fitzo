@@ -149,17 +149,23 @@ router.post('/', asyncHandler(async (req, res) => {
     invalidateContextPack(userId).catch(() => {});
 
     // Auto-mark attendance for streak tracking
-    await query(
+    const attendanceResult = await query(
         `INSERT INTO attendances (user_id, gym_id, check_date)
          VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), CURRENT_DATE)
-         ON CONFLICT (user_id, check_date) DO NOTHING`,
+         ON CONFLICT (user_id, check_date) DO NOTHING
+         RETURNING id`,
         [userId]
     );
+
+    const checkinXpEarned = attendanceResult.rows.length > 0 ? 5 : 0;
+    if (checkinXpEarned > 0) {
+        await xpService.awardXP(userId, checkinXpEarned, 'checkin');
+    }
 
     res.json({
         success: true,
         workout: result.rows[0],
-        xp_earned: isNewLog ? 15 : 0
+        xp_earned: (isNewLog ? 15 : 0) + checkinXpEarned
     });
 }));
 

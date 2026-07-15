@@ -11,6 +11,7 @@ const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler } = require('../utils/errors');
 const { validate } = require('../middleware/validate');
+const { invalidateContextPack } = require('../services/contextPack');
 const { z } = require('zod');
 
 const syncHealthSchema = z.object({
@@ -70,6 +71,9 @@ router.post('/sync', validate({ body: syncHealthSchema }), asyncHandler(async (r
          RETURNING *`,
         [userId, targetDate, steps, active_calories, resting_heart_rate, sleep_hours]
     );
+
+    // Invalidate context pack cache for fresh AI responses
+    invalidateContextPack(userId).catch(() => {});
 
     res.json({ success: true, health: result.rows[0] });
 }));
