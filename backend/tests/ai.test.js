@@ -12,10 +12,12 @@ jest.mock('../src/services/gemini', () => ({
 jest.mock('../src/config/database', () => ({
     query: jest.fn().mockImplementation((sql, params) => {
         if (sql.includes('SELECT id, sender, message')) {
+            // Route queries ORDER BY created_at DESC (newest first), then reverses
+            // to oldest-first for rendering. Mock rows in DESC order accordingly.
             return {
                 rows: [
-                    { id: '1', sender: 'user', message: 'Hello', created_at: new Date() },
-                    { id: '2', sender: 'ai', message: 'Hi there', created_at: new Date() }
+                    { id: '2', sender: 'ai', message: 'Hi there', created_at: new Date() },
+                    { id: '1', sender: 'user', message: 'Hello', created_at: new Date() }
                 ]
             };
         }

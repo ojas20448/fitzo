@@ -142,9 +142,11 @@ router.get('/latest', asyncHandler(async (req, res) => {
         throw new ValidationError('Workout type is required');
     }
 
+    // Compare as text — workout_type is an enum, and an unknown value in the
+    // query param should mean "not found", not a Postgres 22P02 cast error
     const result = await query(
-        `SELECT * FROM workout_logs 
-         WHERE user_id = $1 AND workout_type = $2
+        `SELECT * FROM workout_logs
+         WHERE user_id = $1 AND workout_type::text = $2
          ORDER BY logged_date DESC, created_at DESC
          LIMIT 1`,
         [userId, type]

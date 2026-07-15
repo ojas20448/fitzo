@@ -301,8 +301,17 @@ const HomeScreen: React.FC = () => {
                         </View>
                     </Pressable>
 
-                    {/* Right side: Check-in + Streak */}
+                    {/* Right side: Coach + Check-in + Streak */}
                     <View style={styles.headerRight}>
+                        {/* AI Coach Button */}
+                        <TouchableOpacity
+                            style={styles.checkinBadge}
+                            onPress={() => router.push('/ai-coach' as any)}
+                            accessibilityLabel="AI Coach"
+                        >
+                            <MaterialIcons name="auto-awesome" size={20} color={colors.text.primary} />
+                        </TouchableOpacity>
+
                         {/* QR Check-in Button */}
                         <TouchableOpacity
                             style={styles.checkinBadge}
@@ -320,16 +329,25 @@ const HomeScreen: React.FC = () => {
                     </View>
                 </Animated.View>
 
-                {/* Daily AI Note */}
+                {/* Daily AI Note — taps through to the coach chat */}
                 {dailyInsight && (
                     <Animated.View entering={FadeInDown.delay(50).duration(600).springify()}>
-                        <GlassCard style={styles.insightCard}>
-                            <View style={styles.insightHeader}>
-                                <MaterialIcons name="insights" size={18} color={colors.primary} />
-                                <Text style={styles.insightTitle}>COACH'S DAILY INSIGHT</Text>
-                            </View>
-                            <Text style={styles.insightMessage}>{dailyInsight}</Text>
-                        </GlassCard>
+                        <Pressable
+                            onPress={() => router.push('/ai-coach' as any)}
+                            accessibilityLabel="Open AI Coach chat"
+                            accessibilityRole="button"
+                        >
+                            <GlassCard style={styles.insightCard}>
+                                <View style={styles.insightHeader}>
+                                    <MaterialIcons name="insights" size={18} color={colors.primary} />
+                                    <Text style={styles.insightTitle}>COACH'S DAILY INSIGHT</Text>
+                                    <View style={{ flex: 1 }} />
+                                    <MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
+                                </View>
+                                <Text style={styles.insightMessage}>{dailyInsight}</Text>
+                                <Text style={styles.insightAskHint}>Ask your coach anything →</Text>
+                            </GlassCard>
+                        </Pressable>
                     </Animated.View>
                 )}
 
@@ -1255,6 +1273,13 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.medium,
         color: colors.text.primary,
         lineHeight: 18,
+    },
+    insightAskHint: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.muted,
+        marginTop: spacing.sm,
+        letterSpacing: 0.5,
     },
 });
 

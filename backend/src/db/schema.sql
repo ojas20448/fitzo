@@ -231,11 +231,13 @@ CREATE INDEX idx_workout_log_visibility ON workout_logs(visibility, logged_date 
 CREATE TABLE calorie_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  food_name VARCHAR(100),
   calories INTEGER NOT NULL CHECK (calories >= 0),
   protein INTEGER DEFAULT 0, -- grams
   carbs INTEGER DEFAULT 0,   -- grams
   fat INTEGER DEFAULT 0,     -- grams
-  meal_name VARCHAR(100),
+  serving_size VARCHAR(100),
+  meal_type VARCHAR(50),
   visibility intent_visibility DEFAULT 'friends',
   logged_date DATE NOT NULL DEFAULT CURRENT_DATE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

@@ -104,10 +104,13 @@ router.get('/volume', asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const { weeks = 8, muscle_group } = req.query;
 
+    // NOTE: e.muscle_groups is a text[] ARRAY — group by the primary (first)
+    // muscle and filter via array_to_string; comparing the array to a plain
+    // string throws "malformed array literal"
     let sql = `
         SELECT
             date_trunc('week', ws.completed_at)::date as week_start,
-            COALESCE(e.muscle_groups, 'other') as muscle_group,
+            COALESCE(e.muscle_groups[1], 'other') as muscle_group,
             SUM(sl.weight_kg * sl.reps) as total_volume,
             COUNT(DISTINCT ws.id) as sessions,
             COUNT(sl.id) as total_sets
@@ -124,7 +127,7 @@ router.get('/volume', asyncHandler(async (req, res) => {
 
     if (muscle_group) {
         params.push(muscle_group);
-        sql += ` AND e.muscle_groups ILIKE '%' || $${params.length} || '%'`;
+        sql += ` AND array_to_string(e.muscle_groups, ',') ILIKE '%' || $${params.length} || '%'`;
     }
 
     sql += ` GROUP BY week_start, muscle_group ORDER BY week_start ASC, muscle_group`;

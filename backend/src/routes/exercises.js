@@ -68,10 +68,14 @@ router.get('/:id', authenticate, async (req, res) => {
     try {
         const { id } = req.params;
         const exercise = await exerciseDB.getExerciseById(id);
+        if (!exercise) {
+            return res.status(404).json({ error: true, message: 'Exercise not found', code: 'NOT_FOUND' });
+        }
         res.json({ success: true, exercise });
     } catch (error) {
         console.error('Error fetching exercise details:', error);
-        res.status(500).json({ error: error.message });
+        // Unknown ID / upstream miss is a 404, not a server failure
+        res.status(404).json({ error: true, message: 'Exercise not found', code: 'NOT_FOUND' });
     }
 });
 

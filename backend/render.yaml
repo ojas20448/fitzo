@@ -38,3 +38,9 @@ services:
         sync: false
       - key: SENTRY_DSN
         sync: false
+      - key: GOOGLE_CLIENT_ID_WEB
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: RENDER_EXTERNAL_URL
+        value: https://fitzo.onrender.com

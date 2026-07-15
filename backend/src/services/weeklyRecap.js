@@ -78,12 +78,14 @@ async function generateWeeklyRecap(userId, weekStartDate) {
          ORDER BY recorded_at DESC`,
         [userId, startOfRecapWeek]
     );
+    // Rows are ordered latest-first: diff = latest − earliest.
+    // Positive diff means weight went UP (gain), negative means it went DOWN (loss).
     const weights = weightResult.rows.map(w => parseFloat(w.weight));
     let weightTrend = 'stable';
     if (weights.length > 1) {
         const diff = weights[0] - weights[weights.length - 1];
-        if (diff > 0.2) weightTrend = 'loss';
-        else if (diff < -0.2) weightTrend = 'gain';
+        if (diff > 0.2) weightTrend = 'gain';
+        else if (diff < -0.2) weightTrend = 'loss';
     }
 
     // 6. Fetch check-in streak
@@ -148,21 +150,24 @@ Provide the weekly summary report:`;
 }
 
 /**
- * Gets the most recent weekly recap for a user.
- * If today is Monday/Tuesday and no recap exists yet, generates it on-the-fly.
+ * Gets the user's recap of the most recently COMPLETED week.
+ * A recap summarizes a finished week — generating one for the in-progress week
+ * would cache a near-empty report on Monday and serve it stale all week.
  *
  * @param {string} userId - User UUID
  * @returns {Promise<Object|null>} The weekly recap object or null
  */
 async function getLatestWeeklyRecap(userId) {
-    const startOfWeek = getStartOfWeek();
+    // Monday of LAST week — the most recent completed Mon–Sun window
+    const lastWeekDate = new Date();
+    lastWeekDate.setDate(lastWeekDate.getDate() - 7);
+    const startOfLastWeek = getStartOfWeek(lastWeekDate);
 
-    // Query for the current week's recap
     const result = await query(
         `SELECT id, recap_data, summary_text, week_start_date
          FROM weekly_recaps
          WHERE user_id = $1 AND week_start_date = $2`,
-        [userId, startOfWeek]
+        [userId, startOfLastWeek]
     );
 
     if (result.rows.length > 0) {
@@ -171,15 +176,44 @@ async function getLatestWeeklyRecap(userId) {
 
     // Generate on-the-fly if missing
     try {
-        return await generateWeeklyRecap(userId, startOfWeek);
+        return await generateWeeklyRecap(userId, startOfLastWeek);
     } catch (err) {
         console.error('Failed generating weekly recap on-the-fly:', err.message);
         return null;
     }
 }
 
+/**
+ * Generates last week's recap for all recently-active users (used by the Monday cron).
+ */
+async function generateAllWeeklyRecaps() {
+    console.log('Starting batch weekly recap generation...');
+    const lastWeekDate = new Date();
+    lastWeekDate.setDate(lastWeekDate.getDate() - 7);
+    const startOfLastWeek = getStartOfWeek(lastWeekDate);
+
+    const activeUsers = await query(
+        `SELECT DISTINCT u.id FROM users u
+         LEFT JOIN workout_sessions s ON s.user_id = u.id AND s.completed_at >= NOW() - INTERVAL '14 days'
+         LEFT JOIN calorie_logs c ON c.user_id = u.id AND c.logged_date >= CURRENT_DATE - INTERVAL '14 days'
+         LEFT JOIN attendances a ON a.user_id = u.id AND a.check_date >= CURRENT_DATE - INTERVAL '14 days'
+         WHERE s.id IS NOT NULL OR c.id IS NOT NULL OR a.id IS NOT NULL`
+    );
+
+    console.log(`Found ${activeUsers.rows.length} active users for weekly recaps.`);
+    for (const user of activeUsers.rows) {
+        try {
+            await generateWeeklyRecap(user.id, startOfLastWeek);
+        } catch (err) {
+            console.error(`Failed weekly recap for user ${user.id}:`, err.message);
+        }
+    }
+    console.log('Batch weekly recap generation finished.');
+}
+
 module.exports = {
     generateWeeklyRecap,
     getLatestWeeklyRecap,
+    generateAllWeeklyRecaps,
     getStartOfWeek
 };

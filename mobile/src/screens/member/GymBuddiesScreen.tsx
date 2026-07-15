@@ -109,7 +109,10 @@ const GymBuddiesScreen: React.FC = () => {
                 await loadLeaderboard();
             }
         } catch (error: any) {
-            const msg = error?.response?.data?.error || error.message || 'Could not send Kudos';
+            const msg = error?.response?.data?.message
+                || (typeof error?.response?.data?.error === 'string' ? error.response.data.error : null)
+                || error.message
+                || 'Could not send Kudos';
             toast.error('Kudos failed', msg);
         } finally {
             setSendingKudosId(null);

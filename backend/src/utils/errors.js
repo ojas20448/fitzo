@@ -114,6 +114,14 @@ const errorHandler = (err, req, res, next) => {
         console.error(err.stack);
     }
 
+    // Postgres "invalid input syntax" (e.g., non-UUID in a /:id param) is a bad
+    // request, not a server error — return 400 instead of a misleading 500
+    if (err.code === '22P02') {
+        err.statusCode = 400;
+        err.message = "That doesn't look like a valid ID";
+        err.isOperational = true;
+    }
+
     const statusCode = err.statusCode || 500;
     const message = getFriendlyMessage(err);
     const code = err.code || 'INTERNAL_ERROR';

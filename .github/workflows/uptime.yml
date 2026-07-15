@@ -1,0 +1,34 @@
+name: Uptime Monitor
+
+# Pings the production API every 30 minutes.
+# - Fails (and GitHub emails the repo owner) if the API or its database is degraded.
+# - Doubles as an external keep-awake for Render's free tier and keeps
+#   Supabase seeing DB activity (the /api/health check runs SELECT 1).
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check API health (DB included)
+        run: |
+          echo "Pinging https://fitzo.onrender.com/api/health ..."
+          # Render free tier cold start can take ~60s — retry up to 3 times
+          for i in 1 2 3; do
+            RESPONSE=$(curl -s -m 90 https://fitzo.onrender.com/api/health || echo '{}')
+            echo "Attempt $i: $RESPONSE"
+            STATUS=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status','unreachable'))" 2>/dev/null || echo "unreachable")
+            if [ "$STATUS" = "ok" ]; then
+              echo "✅ API healthy"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "❌ API status: $STATUS — database or server is degraded!"
+          echo "Check: Render dashboard (service logs) and Supabase dashboard (project may be paused)."
+          exit 1

@@ -108,7 +108,7 @@ async function buildContextPack(userId) {
     const nutritionResult = await query(
         `SELECT logged_date, SUM(calories)::int as calories, SUM(protein)::int as protein,
                 SUM(carbs)::int as carbs, SUM(fat)::int as fat,
-                ARRAY_AGG(meal_name) as meals
+                ARRAY_AGG(food_name) as meals
          FROM calorie_logs
          WHERE user_id = $1 AND logged_date >= CURRENT_DATE - INTERVAL '14 days'
          GROUP BY logged_date

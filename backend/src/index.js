@@ -123,6 +123,7 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/buddy-activity', require('./routes/buddy-activity'));
 app.use('/api/readiness', require('./routes/readiness'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
+app.use('/api/cron', require('./routes/cron'));
 
 // 404 handler
 app.use((req, res) => {
@@ -157,14 +158,17 @@ if (process.env.NODE_ENV !== 'test') {
   ═══════════════════════════════════════ 🏋️
   `);
 
-        // Keep-alive self-ping: prevent Render free tier from sleeping (pings every 14 min)
+        // Keep-alive self-ping: prevent Render free tier from sleeping (pings every 14 min).
+        // IMPORTANT: must hit /api/health (runs SELECT 1) — NOT /health — so Supabase
+        // free tier sees database activity and never auto-pauses the project.
+        // (The July 2026 outage was caused by pinging /health, which never touched the DB.)
         if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
             const KEEP_ALIVE_MS = 14 * 60 * 1000; // 14 minutes
             setInterval(() => {
                 const https = require('https');
-                https.get(`${process.env.RENDER_EXTERNAL_URL}/health`, () => {}).on('error', () => {});
+                https.get(`${process.env.RENDER_EXTERNAL_URL}/api/health`, () => {}).on('error', () => {});
             }, KEEP_ALIVE_MS);
-            console.log('🔄 Keep-alive ping enabled (every 14 min)');
+            console.log('🔄 Keep-alive ping enabled (every 14 min, DB-touching)');
         }
     });
 }

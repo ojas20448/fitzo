@@ -45,18 +45,18 @@ router.post('/nutrition-advice', aiQuota, asyncHandler(async (req, res) => {
     res.json({ success: true, advice });
 }));
 
-// Get chat history with AI coach
+// Get chat history with AI coach (latest 50, returned oldest-first for rendering)
 router.get('/chat/history', asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const result = await query(
         `SELECT id, sender, message, created_at
          FROM coach_messages
          WHERE user_id = $1
-         ORDER BY created_at ASC
+         ORDER BY created_at DESC
          LIMIT 50`,
         [userId]
     );
-    res.json({ success: true, history: result.rows });
+    res.json({ success: true, history: result.rows.reverse() });
 }));
 
 // Get today's proactive daily insight

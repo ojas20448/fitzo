@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
-const { asyncHandler, ValidationError, NotFoundError } = require('../utils/errors');
+const { asyncHandler, ValidationError, NotFoundError, ConflictError } = require('../utils/errors');
 const { getStartOfWeek } = require('../services/weeklyRecap');
 const pushNotifications = require('../services/pushNotifications');
 
@@ -30,7 +30,7 @@ router.get('/', asyncHandler(async (req, res) => {
                 EXISTS(SELECT 1 FROM kudos k WHERE k.sender_id = $3 AND k.receiver_id = u.id AND k.week_start_date = $2) as has_kudoed
          FROM users u
          LEFT JOIN xp_logs x ON u.id = x.user_id AND x.created_at >= $2
-         WHERE u.gym_id = $1
+         WHERE u.gym_id = $1 AND u.role = 'member'
          GROUP BY u.id, u.name, u.avatar_url
          ORDER BY weekly_xp DESC, u.name ASC`,
         [gymId, startOfWeek, userId]
@@ -90,7 +90,7 @@ router.post('/kudos', asyncHandler(async (req, res) => {
         res.json({ success: true, message: `You sent a Kudos fist-bump to ${receiver.name}!` });
     } catch (err) {
         if (err.code === '23505') { // Unique constraint violation
-            return res.status(409).json({ error: 'You have already kudoed this buddy this week!' });
+            throw new ConflictError('You already fist-bumped this buddy this week! 👊');
         }
         console.error('Error sending kudos:', err.message);
         throw err;

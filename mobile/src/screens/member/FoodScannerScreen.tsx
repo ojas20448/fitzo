@@ -36,38 +36,45 @@ export default function FoodScannerScreen() {
         );
     }
 
+    const [base64Image, setBase64Image] = useState<string | null>(null);
+
     const takePicture = async () => {
         if (!cameraRef.current) return;
 
         try {
             const photo = await cameraRef.current.takePictureAsync({
-                quality: 0.8,
-                base64: false,
+                quality: 0.7,
+                base64: true,
             });
             setCapturedImage(photo.uri);
+            if (photo.base64) {
+                setBase64Image(photo.base64);
+            }
         } catch (error: any) {
             Alert.alert('Error', 'Failed to capture photo');
         }
     };
 
     const analyzeFoodPhoto = async () => {
-        if (!capturedImage) return;
+        if (!base64Image) return;
 
         setAnalyzing(true);
         try {
-            // In production, upload to Supabase Storage or Cloudinary first
-            // For now, using a placeholder - you'll need to implement upload
+            const response = await foodPhotoAPI.analyzePhoto(base64Image);
 
-            // This is a demo - you need to upload the image first and get a public URL
-            const response = await foodPhotoAPI.analyzePhoto(capturedImage);
-
-            if (response.success) {
-                setDetectedFood(response.food);
+            if (response.success && response.items && response.items.length > 0) {
+                const combinedName = response.items.map((i: any) => i.name).join(', ');
+                setDetectedFood({
+                    name: combinedName,
+                    calories: response.total.calories,
+                    protein_g: response.total.protein_g,
+                    carbs_g: response.total.carbs_g,
+                    fat_g: response.total.fat_g
+                });
             } else {
                 Alert.alert('Analysis Failed', 'Could not detect food in image');
             }
         } catch (error: any) {
-
             Alert.alert('Error', error.message || 'Failed to analyze food');
         } finally {
             setAnalyzing(false);
@@ -97,6 +104,7 @@ export default function FoodScannerScreen() {
 
     const retake = () => {
         setCapturedImage(null);
+        setBase64Image(null);
         setDetectedFood(null);
     };
 

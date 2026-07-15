@@ -1,0 +1,616 @@
+{
+  "timestamp": "2026-07-15T11:15:25.533Z",
+  "base": "http://localhost:3199",
+  "total": 76,
+  "passed": 76,
+  "results": [
+    {
+      "name": "login member",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "login trainer",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "role": "trainer",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "login manager",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "role": "manager",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "health",
+      "method": "GET",
+      "path": "/health",
+      "role": "-",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "api health (DB)",
+      "method": "GET",
+      "path": "/api/health",
+      "role": "-",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "auth me",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "bad login rejected",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "role": "-",
+      "pass": true,
+      "note": "HTTP 401"
+    },
+    {
+      "name": "auth required",
+      "method": "GET",
+      "path": "/api/member/home",
+      "role": "-",
+      "pass": true,
+      "note": "HTTP 401"
+    },
+    {
+      "name": "member home",
+      "method": "GET",
+      "path": "/api/member/home",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "checkin status",
+      "method": "GET",
+      "path": "/api/checkin/status",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "checkin history",
+      "method": "GET",
+      "path": "/api/checkin/history",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "intent get",
+      "method": "GET",
+      "path": "/api/intent",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "intent feed",
+      "method": "GET",
+      "path": "/api/intent/feed",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "intent suggest",
+      "method": "GET",
+      "path": "/api/intent/suggest",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "friends list",
+      "method": "GET",
+      "path": "/api/friends",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "friends search",
+      "method": "GET",
+      "path": "/api/friends/search?q=priya",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "friends suggested",
+      "method": "GET",
+      "path": "/api/friends/suggested",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "posts feed",
+      "method": "GET",
+      "path": "/api/posts/feed",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "notification status",
+      "method": "GET",
+      "path": "/api/notifications/status",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "notification prefs",
+      "method": "GET",
+      "path": "/api/notifications/preferences",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "leaderboard",
+      "method": "GET",
+      "path": "/api/leaderboard",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "buddy activity bad id → 400",
+      "method": "GET",
+      "path": "/api/buddy-activity/not-a-uuid",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 400"
+    },
+    {
+      "name": "workouts today",
+      "method": "GET",
+      "path": "/api/workouts/today",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "workouts history",
+      "method": "GET",
+      "path": "/api/workouts/history",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "workouts latest",
+      "method": "GET",
+      "path": "/api/workouts/latest?type=chest",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "workouts latest unknown type ok",
+      "method": "GET",
+      "path": "/api/workouts/latest?type=push",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "splits list",
+      "method": "GET",
+      "path": "/api/workouts/splits",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "published splits",
+      "method": "GET",
+      "path": "/api/workouts/published",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "workout sessions",
+      "method": "GET",
+      "path": "/api/workout-sessions/sessions",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "session exercises",
+      "method": "GET",
+      "path": "/api/workout-sessions/exercises",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "exercises list",
+      "method": "GET",
+      "path": "/api/exercises?limit=5",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "exercise search",
+      "method": "GET",
+      "path": "/api/exercises/search/bench",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "exercise bad id → 404",
+      "method": "GET",
+      "path": "/api/exercises/not-a-real-id",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 404"
+    },
+    {
+      "name": "calories today",
+      "method": "GET",
+      "path": "/api/calories/today",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "calories history",
+      "method": "GET",
+      "path": "/api/calories/history",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "calories frequent",
+      "method": "GET",
+      "path": "/api/calories/frequent",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "nutrition today",
+      "method": "GET",
+      "path": "/api/nutrition/today",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "nutrition profile",
+      "method": "GET",
+      "path": "/api/nutrition/profile",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "nutrition weekly",
+      "method": "GET",
+      "path": "/api/nutrition/weekly",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "food search (indian)",
+      "method": "GET",
+      "path": "/api/food/search?q=roti",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "food barcode 404-ok",
+      "method": "GET",
+      "path": "/api/food/barcode/0000000000000",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 404"
+    },
+    {
+      "name": "recipes list",
+      "method": "GET",
+      "path": "/api/recipes",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "calories-burned calc",
+      "method": "POST",
+      "path": "/api/calories-burned/calculate-calories",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "measurements latest",
+      "method": "GET",
+      "path": "/api/measurements/latest",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "measurements history",
+      "method": "GET",
+      "path": "/api/measurements/history",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "progress PRs",
+      "method": "GET",
+      "path": "/api/progress/prs",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "progress volume",
+      "method": "GET",
+      "path": "/api/progress/volume",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "readiness today",
+      "method": "GET",
+      "path": "/api/readiness/today",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "health today",
+      "method": "GET",
+      "path": "/api/health/today",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "health history",
+      "method": "GET",
+      "path": "/api/health/history",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "learn lessons",
+      "method": "GET",
+      "path": "/api/learn/lessons",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "learn progress",
+      "method": "GET",
+      "path": "/api/learn/progress",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "classes list",
+      "method": "GET",
+      "path": "/api/classes",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "my bookings",
+      "method": "GET",
+      "path": "/api/classes/my-bookings",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "settings sharing",
+      "method": "GET",
+      "path": "/api/settings/sharing",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "settings gym",
+      "method": "GET",
+      "path": "/api/settings/gym",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "fitness profile",
+      "method": "GET",
+      "path": "/api/profile/fitness",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "profile measurements",
+      "method": "GET",
+      "path": "/api/profile/measurements",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "ai quota",
+      "method": "GET",
+      "path": "/api/ai/quota",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "ai chat history",
+      "method": "GET",
+      "path": "/api/ai/chat/history",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "ai chat (1 Gemini call)",
+      "method": "POST",
+      "path": "/api/ai/chat",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "ai daily insight",
+      "method": "GET",
+      "path": "/api/ai/daily-insight",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "ai weekly recap",
+      "method": "GET",
+      "path": "/api/ai/weekly-recap",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "food analyze-text (1 Gemini call)",
+      "method": "POST",
+      "path": "/api/food/analyze-text",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "videos search",
+      "method": "GET",
+      "path": "/api/videos/search?q=squat%20form",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "trainer members",
+      "method": "GET",
+      "path": "/api/trainer/members",
+      "role": "trainer",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "trainer schedule",
+      "method": "GET",
+      "path": "/api/trainer/schedule",
+      "role": "trainer",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "trainer blocked for member",
+      "method": "GET",
+      "path": "/api/trainer/members",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 403"
+    },
+    {
+      "name": "manager dashboard",
+      "method": "GET",
+      "path": "/api/manager/dashboard",
+      "role": "manager",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "manager members",
+      "method": "GET",
+      "path": "/api/manager/members",
+      "role": "manager",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "manager trainers",
+      "method": "GET",
+      "path": "/api/manager/trainers",
+      "role": "manager",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "manager at-risk",
+      "method": "GET",
+      "path": "/api/manager/at-risk",
+      "role": "manager",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "manager retention",
+      "method": "GET",
+      "path": "/api/manager/retention",
+      "role": "manager",
+      "pass": true,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "manager blocked for member",
+      "method": "GET",
+      "path": "/api/manager/dashboard",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 403"
+    },
+    {
+      "name": "cron blocked without secret",
+      "method": "POST",
+      "path": "/api/cron/daily-insights",
+      "role": "-",
+      "pass": true,
+      "note": "HTTP 404"
+    },
+    {
+      "name": "unknown route 404",
+      "method": "GET",
+      "path": "/api/does-not-exist",
+      "role": "member",
+      "pass": true,
+      "note": "HTTP 404"
+    }
+  ]
+}

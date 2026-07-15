@@ -15,7 +15,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
  * @param {string} userId - User UUID
  * @returns {Promise<string>} The generated insight string
  */
-async function generateDailyInsight(userId) {
+async function generateDailyInsight(userId, options = {}) {
+    const { sendPush = true } = options;
     // 1. Fetch user's Context Pack
     const contextPack = await contextPackService.getContextPack(userId);
 
@@ -95,15 +96,18 @@ Write the morning insight:`;
 
     const savedNote = result.rows[0]?.note || generatedNote;
 
-    // 4. Send Push Notification if push token exists
-    try {
-        await pushNotifications.sendToUser(userId, {
-            title: "Coach's Daily Insight",
-            body: savedNote,
-            type: 'general'
-        });
-    } catch (notificationError) {
-        console.error('Failed to trigger daily insight push notification:', notificationError.message);
+    // 4. Send Push Notification (only for scheduled/batch generation —
+    //    skip when the user requested it in-app, they're already looking at it)
+    if (sendPush) {
+        try {
+            await pushNotifications.sendToUser(userId, {
+                title: "Coach's Daily Insight",
+                body: savedNote,
+                type: 'general'
+            });
+        } catch (notificationError) {
+            console.error('Failed to trigger daily insight push notification:', notificationError.message);
+        }
     }
 
     return savedNote;
@@ -127,8 +131,8 @@ async function getTodayDailyInsight(userId) {
         return result.rows[0].note;
     }
 
-    // Generate on-the-fly if missing
-    return await generateDailyInsight(userId);
+    // Generate on-the-fly if missing (no push — the user is already in the app)
+    return await generateDailyInsight(userId, { sendPush: false });
 }
 
 /**

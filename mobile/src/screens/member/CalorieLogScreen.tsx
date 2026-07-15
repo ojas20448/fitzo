@@ -16,7 +16,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { foodAPI, caloriesAPI, nutritionAPI, settingsAPI, aiAPI } from '../../services/api';
@@ -71,13 +71,97 @@ interface FoodDetails {
     servings: Serving[];
 }
 
+interface SliderProps {
+    value: number;
+    min: number;
+    max: number;
+    onChange: (val: number) => void;
+}
+
+const CustomSlider: React.FC<SliderProps> = ({ value, min, max, onChange }) => {
+    const widthRef = React.useRef(0);
+    
+    const handleTouch = (event: any) => {
+        const x = event.nativeEvent.locationX;
+        const ratio = Math.max(0, Math.min(1, x / (widthRef.current || 1)));
+        const val = min + ratio * (max - min);
+        const step = max > 10 ? 5 : 0.25;
+        const rounded = Math.round(val / step) * step;
+        onChange(Math.max(min, Math.min(max, rounded)));
+    };
+
+    const percentage = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+
+    return (
+        <View 
+            style={styles.sliderContainer}
+            onLayout={(e) => { widthRef.current = e.nativeEvent.layout.width; }}
+            onTouchStart={handleTouch}
+            onTouchMove={handleTouch}
+        >
+            <View style={styles.sliderTrack} />
+            <View style={[styles.sliderFilledTrack, { width: `${percentage}%` }]} />
+            <View style={[styles.sliderThumb, { left: `${percentage}%` }]} />
+        </View>
+    );
+};
+
 const CalorieLogScreen: React.FC = () => {
     const toast = useToast();
     const { logFoodOptimistic } = useNutrition();
+    
+    const params = useLocalSearchParams<{
+        foodName?: string;
+        calories?: string;
+        protein?: string;
+        carbs?: string;
+        fat?: string;
+        source?: string;
+    }>();
+
     const [searchQuery, setSearchQuery] = useState('');
     const [recording, setRecording] = useState<Audio.Recording | null>(null);
     const [isRecording, setIsRecording] = useState(false);
     const [transcribing, setTranscribing] = useState(false);
+
+    useEffect(() => {
+        if (params.foodName && params.calories) {
+            const calories = parseFloat(params.calories) || 0;
+            const protein = parseFloat(params.protein || '0') || 0;
+            const carbs = parseFloat(params.carbs || '0') || 0;
+            const fat = parseFloat(params.fat || '0') || 0;
+
+            setSelectedFood({
+                id: 'camera-' + Date.now(),
+                name: params.foodName,
+                brand: params.source === 'camera_scan' ? 'Camera Scan' : 'External',
+                servings: [{
+                    id: 'default',
+                    description: '1 serving',
+                    measurementDescription: 'serving',
+                    calories,
+                    protein,
+                    carbs,
+                    fat,
+                    fiber: 0,
+                    sugar: 0
+                }]
+            });
+            setSelectedServing({
+                id: 'default',
+                description: '1 serving',
+                measurementDescription: 'serving',
+                calories,
+                protein,
+                carbs,
+                fat,
+                fiber: 0,
+                sugar: 0
+            });
+            setServingCount(1);
+            setShowDetail(true);
+        }
+    }, [params.foodName, params.calories]);
 
     const startRecording = async () => {
         try {
@@ -677,12 +761,33 @@ const CalorieLogScreen: React.FC = () => {
                     <Pressable
                         onPress={() => router.push('/food-scanner')}
                         style={styles.barcodeScanBtn}
-                        accessibilityLabel="Scan barcode"
+                        accessibilityLabel="Scan food photo"
                     >
-                        <MaterialIcons name="qr-code-scanner" size={20} color={colors.text.secondary} />
+                        <MaterialIcons name="photo-camera" size={20} color={colors.text.secondary} />
                     </Pressable>
                 </View>
             </View>
+
+            {/* Photo Log Banner as Primary Flow */}
+            {!searching && searchQuery === '' && (
+                <Pressable
+                    style={styles.photoLogBanner}
+                    onPress={() => router.push('/food-scanner')}
+                    accessibilityLabel="Log food with photo"
+                    accessibilityRole="button"
+                >
+                    <View style={styles.photoLogLeft}>
+                        <View style={styles.photoLogIconWrap}>
+                            <MaterialIcons name="photo-camera" size={24} color={colors.primary} />
+                        </View>
+                        <View style={styles.photoLogTextWrap}>
+                            <Text style={styles.photoLogTitle}>Log with Camera</Text>
+                            <Text style={styles.photoLogSubtitle}>Snap a picture of your food to auto-log</Text>
+                        </View>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={20} color={colors.text.muted} />
+                </Pressable>
+            )}
 
             {/* AI search results will show Smart Analysis option inline */}
 
@@ -982,20 +1087,34 @@ const CalorieLogScreen: React.FC = () => {
                                                     <MaterialIcons name="add" size={24} color={colors.text.primary} />
                                                 </Pressable>
                                             </View>
+                                            <CustomSlider 
+                                                value={servingCount}
+                                                min={0.25}
+                                                max={5.0}
+                                                onChange={setServingCount}
+                                            />
                                         </>
                                     ) : (
                                         /* Gram Input */
-                                        <View style={styles.gramInputContainer}>
-                                            <TextInput
-                                                style={styles.gramInput}
-                                                value={gramAmount}
-                                                onChangeText={setGramAmount}
-                                                keyboardType="decimal-pad"
-                                                placeholder="100"
-                                                placeholderTextColor={colors.text.subtle}
+                                        <>
+                                            <View style={styles.gramInputContainer}>
+                                                <TextInput
+                                                    style={styles.gramInput}
+                                                    value={gramAmount}
+                                                    onChangeText={setGramAmount}
+                                                    keyboardType="decimal-pad"
+                                                    placeholder="100"
+                                                    placeholderTextColor={colors.text.subtle}
+                                                />
+                                                <Text style={styles.gramLabel}>grams</Text>
+                                            </View>
+                                            <CustomSlider 
+                                                value={parseFloat(gramAmount) || 100}
+                                                min={10}
+                                                max={500}
+                                                onChange={(val) => setGramAmount(val.toString())}
                                             />
-                                            <Text style={styles.gramLabel}>grams</Text>
-                                        </View>
+                                        </>
                                     )}
 
                                     {/* Quick gram presets */}
@@ -1212,6 +1331,77 @@ const CalorieLogScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+    photoLogBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginHorizontal: spacing.xl,
+        marginBottom: spacing.lg,
+        padding: spacing.md,
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    photoLogLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+    },
+    photoLogIconWrap: {
+        width: 44,
+        height: 44,
+        borderRadius: borderRadius.md,
+        backgroundColor: colors.glass.surfaceLight,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    photoLogTextWrap: {
+        gap: 2,
+    },
+    photoLogTitle: {
+        fontSize: typography.sizes.md,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.text.primary,
+    },
+    photoLogSubtitle: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+    },
+    sliderContainer: {
+        height: 40,
+        justifyContent: 'center',
+        position: 'relative',
+        marginHorizontal: spacing.xl,
+        marginVertical: spacing.md,
+    },
+    sliderTrack: {
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: colors.glass.border,
+    },
+    sliderFilledTrack: {
+        position: 'absolute',
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: colors.primary,
+    },
+    sliderThumb: {
+        position: 'absolute',
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: colors.primary,
+        borderWidth: 2,
+        borderColor: colors.background,
+        marginLeft: -10,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 3,
+    },
     container: {
         flex: 1,
         backgroundColor: colors.background,
