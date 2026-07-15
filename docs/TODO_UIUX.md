@@ -253,7 +253,7 @@ This document outlines all identified UI/UX issues and improvement opportunities
 
 ## 🎭 Animation & Micro-interactions
 
-- [ ] **ANI_001**: No page transition animations
+- [x] **ANI_001**: No page transition animations ✅ Native slide/fade stack options added in app _layout.tsx
 - [x] **ANI_002**: Button press feedback is minimal (only haptic) ✅ Added scale animation
 - [x] **ANI_003**: Cards don't have press/scale animations ✅ Created PressableCard
 - [x] **ANI_004**: No celebration animations for achievements ✅ Created Celebration component

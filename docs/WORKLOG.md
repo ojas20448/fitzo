@@ -41,7 +41,7 @@
 | Monthly gym challenge | ⬜ | |
 | Onboarding flow for first-time users (LGN_001) | ✅ | Fully built multi-step OnboardingWizard with TDEE/Macro blueprints |
 | Biometric login (LGN_004) | ⬜ | |
-| Screen transition animations (ANI_001) | ⬜ | |
+| Screen transition animations (ANI_001) | ✅ | Native slide/fade stack options added in app _layout.tsx |
 
 ## Phase 3 — Monetize ⬜ ON HOLD (per decision)
 

@@ -169,22 +169,22 @@ export default function RootLayout() {
                                 screenOptions={{
                                     headerShown: false,
                                     contentStyle: { backgroundColor: colors.background },
-                                    animation: 'fade',
+                                    animation: 'slide_from_right', // Default premium slide-in
                                 }}
                             >
                                 {/* Root level screens */}
                                 <Stack.Screen name="index" />
-                                <Stack.Screen name="login" />
-                                <Stack.Screen name="register" />
+                                <Stack.Screen name="login" options={{ animation: 'fade' }} />
+                                <Stack.Screen name="register" options={{ animation: 'fade' }} />
                                 <Stack.Screen name="forgot-password" />
-                                <Stack.Screen name="(tabs)" />
-                                <Stack.Screen name="onboarding" />
-                                <Stack.Screen name="manager-dashboard" />
-                                <Stack.Screen name="trainer-home" />
-                                <Stack.Screen name="qr-checkin" />
+                                <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+                                <Stack.Screen name="onboarding" options={{ animation: 'slide_from_right' }} />
+                                <Stack.Screen name="manager-dashboard" options={{ animation: 'fade' }} />
+                                <Stack.Screen name="trainer-home" options={{ animation: 'fade' }} />
+                                <Stack.Screen name="qr-checkin" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="workout-intent" />
                                 <Stack.Screen name="workout-videos" />
-                                <Stack.Screen name="food-scanner" />
+                                <Stack.Screen name="food-scanner" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="classes" />
                                 <Stack.Screen name="ai-coach" />
                                 <Stack.Screen name="exercise-library" />
@@ -192,7 +192,7 @@ export default function RootLayout() {
                                 <Stack.Screen name="trainer" />
                                 <Stack.Screen name="manager/people" />
                                 <Stack.Screen name="member/curated-workouts" />
-                                <Stack.Screen name="member/active-workout" />
+                                <Stack.Screen name="member/active-workout" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="member/add-buddy" />
                                 <Stack.Screen name="member/fitness-profile" />
                                 <Stack.Screen name="member/measurements" />
@@ -201,16 +201,16 @@ export default function RootLayout() {
                                 <Stack.Screen name="member/recipes" />
                                 <Stack.Screen name="member/settings" />
                                 <Stack.Screen name="member/workout-recap" />
-                                <Stack.Screen name="member/readiness-checkin" />
+                                <Stack.Screen name="member/readiness-checkin" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="member/nutrition-insights" />
                                 <Stack.Screen name="member/health-report" />
-                                <Stack.Screen name="member/create-post" />
+                                <Stack.Screen name="member/create-post" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="member/user-profile" />
                                 <Stack.Screen name="member/buddy-activity" />
                                 <Stack.Screen name="member-detail/[id]" />
                                 <Stack.Screen name="lesson/[id]" />
-                                <Stack.Screen name="log/calories" />
-                                <Stack.Screen name="log/workout" />
+                                <Stack.Screen name="log/calories" options={{ animation: 'slide_from_bottom' }} />
+                                <Stack.Screen name="log/workout" options={{ animation: 'slide_from_bottom' }} />
                             </Stack>
                         </ToastProvider>
                     </NutritionProvider>
