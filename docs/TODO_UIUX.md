@@ -121,7 +121,7 @@ This document outlines all identified UI/UX issues and improvement opportunities
 ## 📄 Screen-Specific Issues
 
 ### Login Screen
-- [ ] **LGN_001**: No onboarding flow for first-time users
+- [x] **LGN_001**: No onboarding flow for first-time users ✅ Fully functional OnboardingWizard with fitness target calculator
 - [x] **LGN_002**: Password requirements not shown ✅ Shown on register screen
 - [x] **LGN_003**: Forgot password flow needs proper routes ✅ Integrated focus-glow Input component (no route defined)
 - [ ] **LGN_004**: No biometric authentication option (Face ID/Fingerprint)

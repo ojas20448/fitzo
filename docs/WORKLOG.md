@@ -36,10 +36,10 @@
 | XP awards (workout +15, check-in +5) | ✅ | `xpService.js`, `xp_logs` table |
 | Gym leaderboard + kudos | ✅ | Weekly XP ranks, fist-bumps (1/buddy/week), push notifications, confetti UI |
 | UI polish pass (7 TODO_UIUX items) | ✅ | Crowd colors, QR frame, streak animation, exercise autocomplete, forgot-password inputs, custom quick-add, pull-to-refresh |
-| Photo-first food logging as default flow | ⬜ | analyze-photo exists; make it the primary entry point + portion sliders |
+| Photo-first food logging as default flow | ✅ | Installed camera banner entry point + base64 bugfix + portion sliders |
 | Duo streaks | ⬜ | Phase 2/3 boundary |
 | Monthly gym challenge | ⬜ | |
-| Onboarding flow for first-time users (LGN_001) | ⬜ | Highest-impact remaining UX item |
+| Onboarding flow for first-time users (LGN_001) | ✅ | Fully built multi-step OnboardingWizard with TDEE/Macro blueprints |
 | Biometric login (LGN_004) | ⬜ | |
 | Screen transition animations (ANI_001) | ⬜ | |
 
