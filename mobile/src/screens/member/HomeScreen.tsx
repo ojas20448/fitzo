@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     RefreshControl,
     Pressable,
+    Platform,
 } from 'react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +17,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useNutrition } from '../../context/NutritionContext';
 import { useOfflineStore } from '../../stores/offlineStore';
-import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI, intentAPI, aiAPI } from '../../services/api';
+import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI, intentAPI, aiAPI, healthAPI } from '../../services/api';
+import { isHealthAvailable, getTodaysSummary } from '../../services/healthService';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import Badge from '../../components/Badge';
@@ -164,6 +166,25 @@ const HomeScreen: React.FC = () => {
         }, [refreshToday])
     );
 
+    const syncWearableData = async () => {
+        if (!isHealthAvailable()) return;
+        try {
+            const summary = await getTodaysSummary();
+            if (summary.steps > 0 || summary.activeCalories > 0) {
+                await healthAPI.sync({
+                    steps: summary.steps,
+                    active_calories: summary.activeCalories,
+                    resting_heart_rate: summary.restingHeartRate,
+                    sleep_hours: summary.sleepHours,
+                    source: Platform.OS === 'ios' ? 'Apple Health' : 'Health Connect'
+                });
+                console.log('🔄 Wearable data background auto-sync completed');
+            }
+        } catch (err: any) {
+            console.log('Wearable background auto-sync skipped:', err.message);
+        }
+    };
+
     const loadHomeData = async (showLoader = true) => {
         if (showLoader) setLoading(true);
         try {
@@ -192,6 +213,7 @@ const HomeScreen: React.FC = () => {
 
             // Cache home data in offline store for staleness checking
             useOfflineStore.getState().cacheHomeData(homeRes);
+            syncWearableData().catch(() => {});
         } catch {
             // Use cached data on failure - don't block UI with Alert
             const cached = useOfflineStore.getState().getHomeData();
