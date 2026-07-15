@@ -166,7 +166,7 @@ async function chatWithCoach(question, contextPack = {}, messageHistory = []) {
     let contextStr = '';
     
     if (contextPack && Object.keys(contextPack).length > 0) {
-        const { profile, streak, training, nutrition, readiness, activeSplit, todayIntent } = contextPack;
+        const { profile, streak, training, nutrition, readiness, activeSplit, todayIntent, wearables, weightHistory } = contextPack;
         
         contextStr += `\nUSER DATA & METRICS (LAST 14 DAYS):`;
         if (profile) {
@@ -196,6 +196,14 @@ async function chatWithCoach(question, contextPack = {}, messageHistory = []) {
         
         if (readiness && readiness.length > 0) {
             contextStr += `\n- Recent Readiness Scores (0-100): ${readiness.slice(0, 3).map(r => `${r.log_date}: Score ${r.readiness_score}/100 (${r.recommendation})`).join('; ')}`;
+        }
+
+        if (wearables && wearables.length > 0) {
+            contextStr += `\n- Recent Wearable Data (Apple Health/Health Connect): ${wearables.slice(0, 3).map(w => `${w.date}: ${w.steps} steps, ${w.active_calories} active kcal burned${w.resting_heart_rate ? `, Resting HR: ${w.resting_heart_rate} bpm` : ''}${w.sleep_hours ? `, Sleep: ${w.sleep_hours} hrs` : ''}`).join('; ')}`;
+        }
+
+        if (weightHistory && weightHistory.length > 0) {
+            contextStr += `\n- Recent Weight Tracking: ${weightHistory.slice(0, 3).map(w => `${w.log_date}: ${w.weight}kg${w.body_fat ? ` (${w.body_fat}% body fat)` : ''}`).join('; ')}`;
         }
         
         if (activeSplit) {

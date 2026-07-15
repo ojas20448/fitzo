@@ -125,6 +125,20 @@ async function buildContextPack(userId) {
         [userId]
     );
 
+    // 6b. Fetch Last 7 Days Wearable Data (Apple Health / Health Connect auto-sync)
+    let wearableResult = { rows: [] };
+    try {
+        wearableResult = await query(
+            `SELECT date, steps, active_calories, resting_heart_rate, sleep_hours
+             FROM health_data
+             WHERE user_id = $1 AND date >= CURRENT_DATE - INTERVAL '7 days'
+             ORDER BY date DESC`,
+            [userId]
+        );
+    } catch {
+        // Fallback to empty if table or query fails
+    }
+
     // 7. Fetch Last 14 Days Weight History
     const weightResult = await query(
         `SELECT recorded_at::date as log_date, weight, body_fat
@@ -167,6 +181,7 @@ async function buildContextPack(userId) {
         },
         nutrition: nutritionResult.rows,
         readiness: readinessResult.rows,
+        wearables: wearableResult.rows,
         weightHistory: weightResult.rows,
         activeSplit,
         todayIntent

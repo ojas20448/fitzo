@@ -23,7 +23,7 @@ async function generateDailyInsight(userId, options = {}) {
     // 2. Format Context Pack for Gemini prompt
     let contextStr = '';
     if (contextPack) {
-        const { profile, streak, training, nutrition, readiness, activeSplit, todayIntent } = contextPack;
+        const { profile, streak, training, nutrition, readiness, activeSplit, todayIntent, wearables, weightHistory } = contextPack;
         
         contextStr += `User Details:`;
         if (profile) {
@@ -50,6 +50,14 @@ async function generateDailyInsight(userId, options = {}) {
 
         if (readiness && readiness.length > 0) {
             contextStr += `\n- Readiness score today: ${readiness[0].readiness_score}/100. Recommendation: ${readiness[0].recommendation}.`;
+        }
+
+        if (wearables && wearables.length > 0) {
+            contextStr += `\n- Wearable tracking: ${wearables.slice(0, 3).map(w => `${w.date}: ${w.steps} steps, ${w.active_calories} cal`).join('; ')}`;
+        }
+
+        if (weightHistory && weightHistory.length > 0) {
+            contextStr += `\n- Weight history: ${weightHistory.slice(0, 3).map(w => `${w.log_date}: ${w.weight}kg`).join(', ')}`;
         }
 
         if (activeSplit) {
