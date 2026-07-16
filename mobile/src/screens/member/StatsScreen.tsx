@@ -80,7 +80,7 @@ const StatsScreen = () => {
             // exercise matched the catalog — fold them into the six buckets.
             const BUCKET: Record<string, string> = {
                 chest: 'chest', pectorals: 'chest',
-                back: 'back', lats: 'back', traps: 'back', 'upper back': 'back', 'lower back': 'back', rear_delts: 'back',
+                back: 'back', lats: 'back', traps: 'back', 'upper back': 'back', 'lower back': 'back', 'rear delts': 'back', rear_delts: 'back',
                 shoulders: 'shoulders', delts: 'shoulders',
                 arms: 'arms', biceps: 'arms', triceps: 'arms', forearms: 'arms',
                 legs: 'legs', quads: 'legs', hamstrings: 'legs', glutes: 'legs', calves: 'legs',
@@ -92,7 +92,7 @@ const StatsScreen = () => {
                 const latestWeekStart = weeksArray[weeksArray.length - 1]?.week_start;
                 detailedArray.forEach((row: any) => {
                     if (row.week_start === latestWeekStart) {
-                        const muscle = String(row.muscle_group).toLowerCase();
+                        const muscle = String(row.muscle_group).toLowerCase().replace(/_/g, ' ');
                         detailedCounts[muscle] = (detailedCounts[muscle] || 0) + (parseInt(row.total_sets) || 0);
                         
                         const bucket = BUCKET[muscle];
