@@ -141,3 +141,21 @@ code written against columns that were never migrated. Rule going forward:
 | **AI Vision Response Mapping** | Bug Fix | Mapped backend items/total format correctly to detectedFood state instead of expecting legacy `response.food` |
 | **Scanned Details Prefill** | UI Improvement | Parsed scanner navigation parameters in `CalorieLogScreen` via `useLocalSearchParams` to open and prefill details modal immediately |
 | **Portion Sliders** | UI Improvement | Built and integrated a custom high-performance `CustomSlider` component to smoothly adjust serving count or gram amount |
+
+## Bridge audit — unwired producer/consumer pairs (July 16, 2026)
+
+New tool: `node backend/scripts/bridge_audit.js` — builds a write/read matrix for
+every table and flags data collected-but-never-read, read-but-never-written, and
+dead tables. Same bug class that made the AI coach blind to workouts.
+
+| Bridge fixed | Severity | Fix |
+|--------------|----------|-----|
+| **Wearable data never reached the AI coach** — `health_data` (steps/HR/sleep/calories from Apple Health & Health Connect auto-sync) was written but no AI feature read it | High | Context pack now fetches last 7 days of wearables; gemini chat + daily insight prompts already referenced the `wearables` key |
+| **Check-in left 3 caches stale** — writing an attendance didn't invalidate the cached streak (5-min TTL), home data, or gym crowd level, so the home screen showed the old streak after checking in | High | `checkin.js` now busts `userStreak`, `homeData`, and `crowdLevel` caches (matching the context-pack invalidation already there) |
+| **Adopt-split XP bypassed the leaderboard** — `workouts-published.js` awarded XP via a bare `xp_points` UPDATE that never wrote `xp_logs` (same bug we fixed in `workouts.js`) | Medium | Routed through `xpService.awardXP` → now counts on the weekly gym leaderboard |
+| **Push notifications ignored user preferences** — `sendToUser`/`sendToUsers` fetched the token but never checked `notification_preferences`; a user who muted a category still got pushed | Medium | Added `isTypeAllowed()` gate mapping each notification type to its preference flag; muted categories are skipped |
+
+Not bugs (verified, left as-is):
+- `workout_plans`/`calorie_plans`/`class_sessions` are read-only in-app (seed data only, no create endpoint) — deferred B2B trainer/manager tooling, not a wiring break
+- `learn_lessons`/`exercises` read-but-never-written = reference/seed data loaded via SQL scripts (correct)
+- `workout_splits`/`recipe_ingredients` "dead" tables don't exist in the live DB — stale schema.sql definitions superseded by `user_splits` and JSON `ingredients` columns

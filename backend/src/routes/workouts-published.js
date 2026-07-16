@@ -3,6 +3,7 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler, NotFoundError } = require('../utils/errors');
+const xpService = require('../services/xpService');
 
 // All routes require authentication
 router.use(authenticate);
@@ -147,8 +148,9 @@ router.post('/:id/adopt', asyncHandler(async (req, res) => {
         ]
     );
 
-    // 4. Award XP? Sure
-    await query(`UPDATE users SET xp_points = xp_points + 5 WHERE id = $1`, [userId]);
+    // 4. Award XP through xpService so it lands in xp_logs (a bare xp_points
+    //    UPDATE would never reach the weekly gym leaderboard).
+    await xpService.awardXP(userId, 5, 'workout', split.id);
 
     res.json({
         success: true,

@@ -23,6 +23,28 @@ const NotificationType = {
 };
 
 /**
+ * Map a notification type to the users.notification_preferences flag that gates it.
+ * Types not listed here (e.g. GENERAL) are always allowed.
+ */
+const TYPE_TO_PREFERENCE = {
+    [NotificationType.WORKOUT_REMINDER]: 'workoutReminders',
+    [NotificationType.STREAK_ALERT]: 'streakAlerts',
+    [NotificationType.FRIEND_ACTIVITY]: 'friendActivity',
+    [NotificationType.CLASS_REMINDER]: 'classReminders',
+    [NotificationType.ACHIEVEMENT]: 'achievements',
+};
+
+/**
+ * Returns false if the user has explicitly disabled this notification category.
+ * Defaults to true (missing prefs / unknown type = allowed).
+ */
+function isTypeAllowed(preferences, type) {
+    const key = TYPE_TO_PREFERENCE[type];
+    if (!key || !preferences) return true;
+    return preferences[key] !== false;
+}
+
+/**
  * Send a push notification to a single user
  * @param {string} userId - User ID to send notification to
  * @param {Object} notification - Notification content
@@ -33,13 +55,18 @@ const NotificationType = {
  */
 async function sendToUser(userId, notification) {
     const result = await query(
-        'SELECT push_token FROM users WHERE id = $1 AND push_token IS NOT NULL',
+        'SELECT push_token, notification_preferences FROM users WHERE id = $1 AND push_token IS NOT NULL',
         [userId]
     );
 
     if (result.rows.length === 0 || !result.rows[0].push_token) {
         console.log(`No push token for user ${userId}`);
         return { success: false, reason: 'no_token' };
+    }
+
+    // Respect the user's per-category notification toggles
+    if (!isTypeAllowed(result.rows[0].notification_preferences, notification.type)) {
+        return { success: false, reason: 'muted_by_preference' };
     }
 
     const token = result.rows[0].push_token;
@@ -53,12 +80,15 @@ async function sendToUser(userId, notification) {
  */
 async function sendToUsers(userIds, notification) {
     const result = await query(
-        'SELECT id, push_token FROM users WHERE id = ANY($1) AND push_token IS NOT NULL',
+        'SELECT id, push_token, notification_preferences FROM users WHERE id = ANY($1) AND push_token IS NOT NULL',
         [userIds]
     );
 
-    const tokens = result.rows.map(row => row.push_token).filter(Boolean);
-    
+    // Drop users who muted this category
+    const tokens = result.rows
+        .filter(row => row.push_token && isTypeAllowed(row.notification_preferences, notification.type))
+        .map(row => row.push_token);
+
     if (tokens.length === 0) {
         return { success: false, reason: 'no_tokens', sent: 0 };
     }

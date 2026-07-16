@@ -6,6 +6,7 @@ const { ValidationError, ConflictError, NotFoundError, asyncHandler } = require(
 const pushNotifications = require('../services/pushNotifications');
 const xpService = require('../services/xpService');
 const { invalidateContextPack } = require('../services/contextPack');
+const cache = require('../services/cache');
 
 /**
  * POST /api/checkin
@@ -74,8 +75,13 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
         }).catch(() => {});
     }
 
-    // Invalidate context pack cache for fresh AI responses
+    // Invalidate every cached read this check-in just changed, or the home
+    // screen shows a stale streak (5-min TTL), stale home data, and a stale
+    // gym crowd level until the caches expire.
     invalidateContextPack(userId).catch(() => {});
+    cache.del(cache.keys.userStreak(userId)).catch(() => {});
+    cache.del(cache.keys.homeData(userId)).catch(() => {});
+    cache.del(cache.keys.crowdLevel(gym_id)).catch(() => {});
 
     res.status(201).json({
         success: true,

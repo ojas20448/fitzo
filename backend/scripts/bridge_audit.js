@@ -31,9 +31,9 @@ const TABLES = [
     'workout_sessions', 'exercise_logs', 'set_logs', 'exercises',
     'workout_splits', 'published_splits', 'body_measurements',
     'fitness_profiles', 'nutrition_profiles', 'readiness_logs',
-    'health_metrics', 'recipes', 'recipe_ingredients', 'posts', 'post_likes',
+    'health_data', 'recipes', 'recipe_ingredients', 'posts', 'post_likes',
     'comments', 'password_reset_tokens', 'coach_messages', 'daily_insights',
-    'weekly_recaps', 'kudos', 'xp_logs',
+    'weekly_recaps', 'kudos', 'xp_logs', 'user_splits',
 ];
 
 const writers = {}; const readers = {};
