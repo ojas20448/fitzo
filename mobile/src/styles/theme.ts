@@ -29,9 +29,9 @@ export const colors = {
 
     // Glass effects
     glass: {
-        surface: 'rgba(255, 255, 255, 0.06)',
-        surfaceLight: 'rgba(255, 255, 255, 0.08)',
-        surfaceHover: 'rgba(255, 255, 255, 0.11)',
+        surface: 'rgba(255, 255, 255, 0.025)',
+        surfaceLight: 'rgba(255, 255, 255, 0.05)',
+        surfaceHover: 'rgba(255, 255, 255, 0.08)',
         border: 'rgba(255, 255, 255, 0.10)',
         borderLight: 'rgba(255, 255, 255, 0.15)',
         borderHover: 'rgba(255, 255, 255, 0.20)',
@@ -86,8 +86,8 @@ export const typography = {
     },
 
     letterSpacing: {
-        tighter: -0.05,
-        tight: -0.025,
+        tighter: -0.04,
+        tight: -0.03,
         normal: 0,
         wide: 0.1,
         wider: 0.15,

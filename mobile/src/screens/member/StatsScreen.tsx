@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, Share, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
-import { Svg, Rect, Text as SvgText, Circle, G } from 'react-native-svg';
+import { Svg, Rect, Circle, G, Text as SvgText } from 'react-native-svg';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import api, { aiAPI } from '../../services/api';
 import { useToast } from '../../components/Toast';
@@ -11,30 +11,85 @@ import { useNutrition } from '../../context/NutritionContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
+// Define premium muscle color mapping
+const MUSCLE_COLORS = {
+    untrained: { fill: 'rgba(255, 255, 255, 0.04)', stroke: 'rgba(255, 255, 255, 0.12)' },
+    underTarget: { fill: 'rgba(253, 201, 13, 0.12)', stroke: 'rgba(253, 201, 13, 0.6)' },
+    growthZone: { fill: 'rgba(52, 209, 89, 0.18)', stroke: 'rgba(52, 209, 89, 0.8)' },
+};
+
+function getMuscleColors(sets: number) {
+    if (!sets || sets === 0) return MUSCLE_COLORS.untrained;
+    if (sets < 6) return MUSCLE_COLORS.underTarget;
+    return MUSCLE_COLORS.growthZone;
+}
+
 const StatsScreen = () => {
+    const [activeTab, setActiveTab] = useState<'training' | 'nutrition'>('training');
     const [history, setHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [weeklyRecap, setWeeklyRecap] = useState<any | null>(null);
     const [recapLoading, setRecapLoading] = useState(true);
+    const [volumeData, setVolumeData] = useState<Record<string, number>>({
+        chest: 0,
+        back: 0,
+        shoulders: 0,
+        arms: 0,
+        legs: 0,
+        core: 0,
+    });
+    
     const toast = useToast();
-
     const { calorieGoal } = useNutrition();
     const TARGET_CALS = calorieGoal || 2500;
 
     const loadData = async () => {
         setRecapLoading(true);
         try {
-            const response = await api.get('/nutrition/weekly');
-            // Fill in missing days
-            const filled = fillMissingDays(response.data.history || []);
+            const [nutritionRes, recapRes, volumeRes] = await Promise.all([
+                api.get('/nutrition/weekly'),
+                aiAPI.getWeeklyRecap().catch(() => ({ success: false, recap: null })),
+                api.get('/progress/volume?weeks=1').catch(() => ({ data: { weeks: [], detailed: [] } }))
+            ]);
+
+            // 1. Process Nutrition History
+            const filled = fillMissingDays(nutritionRes.data.history || []);
             setHistory(filled);
 
-            // Fetch latest AI recap
-            const recapRes = await aiAPI.getWeeklyRecap();
+            // 2. Process AI Weekly Recap
             if (recapRes.success && recapRes.recap) {
                 setWeeklyRecap(recapRes.recap);
+            } else {
+                setWeeklyRecap(null);
             }
+
+            // 3. Process Muscle Volume
+            const counts: Record<string, number> = {
+                chest: 0,
+                back: 0,
+                shoulders: 0,
+                arms: 0,
+                legs: 0,
+                core: 0,
+            };
+
+            const weeksArray = volumeRes.data?.weeks || [];
+            const detailedArray = volumeRes.data?.detailed || [];
+
+            if (weeksArray.length > 0 && detailedArray.length > 0) {
+                const latestWeekStart = weeksArray[weeksArray.length - 1]?.week_start;
+                detailedArray.forEach((row: any) => {
+                    if (row.week_start === latestWeekStart) {
+                        const group = String(row.muscle_group).toLowerCase();
+                        if (group in counts) {
+                            counts[group] += parseInt(row.total_sets) || 0;
+                        }
+                    }
+                });
+            }
+            setVolumeData(counts);
+
         } catch (error) {
             toast.error('Error', 'Could not load stats');
         } finally {
@@ -89,58 +144,202 @@ const StatsScreen = () => {
         loadData();
     };
 
+    const renderAnatomySection = () => {
+        const bodyHeight = 220;
+        const bodyWidth = 120;
+
+        return (
+            <View style={styles.anatomyContainer}>
+                <View style={styles.recapHeader}>
+                    <Text style={styles.chartTitle}>Muscle Volume Status</Text>
+                    <Text style={styles.targetLabel}>Target: 6 sets/week</Text>
+                </View>
+
+                <View style={styles.bodiesRow}>
+                    {/* Front View */}
+                    <View style={styles.bodyColumn}>
+                        <Text style={styles.bodyLabel}>FRONT</Text>
+                        <Svg width={bodyWidth} height={bodyHeight}>
+                            {/* Head */}
+                            <Circle cx="65" cy="25" r="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
+                            {/* Shoulders */}
+                            <Rect x="25" y="50" width="12" height="16" rx="4" {...getMuscleColors(volumeData.shoulders)} strokeWidth="1.5" />
+                            <Rect x="93" y="50" width="12" height="16" rx="4" {...getMuscleColors(volumeData.shoulders)} strokeWidth="1.5" />
+                            {/* Chest */}
+                            <Rect x="41" y="52" width="22" height="24" rx="4" {...getMuscleColors(volumeData.chest)} strokeWidth="1.5" />
+                            <Rect x="67" y="52" width="22" height="24" rx="4" {...getMuscleColors(volumeData.chest)} strokeWidth="1.5" />
+                            {/* Core (Abs) */}
+                            <Rect x="51" y="80" width="28" height="36" rx="4" {...getMuscleColors(volumeData.core)} strokeWidth="1.5" />
+                            {/* Arms */}
+                            <Rect x="23" y="70" width="12" height="44" rx="4" {...getMuscleColors(volumeData.arms)} strokeWidth="1.5" />
+                            <Rect x="95" y="70" width="12" height="44" rx="4" {...getMuscleColors(volumeData.arms)} strokeWidth="1.5" />
+                            {/* Quads */}
+                            <Rect x="37" y="122" width="24" height="48" rx="6" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
+                            <Rect x="69" y="122" width="24" height="48" rx="6" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
+                            {/* Calves */}
+                            <Rect x="39" y="176" width="18" height="36" rx="4" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
+                            <Rect x="73" y="176" width="18" height="36" rx="4" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
+                        </Svg>
+                    </View>
+
+                    {/* Back View */}
+                    <View style={styles.bodyColumn}>
+                        <Text style={styles.bodyLabel}>BACK</Text>
+                        <Svg width={bodyWidth} height={bodyHeight}>
+                            {/* Head */}
+                            <Circle cx="65" cy="25" r="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
+                            {/* Shoulders */}
+                            <Rect x="25" y="50" width="12" height="16" rx="4" {...getMuscleColors(volumeData.shoulders)} strokeWidth="1.5" />
+                            <Rect x="93" y="50" width="12" height="16" rx="4" {...getMuscleColors(volumeData.shoulders)} strokeWidth="1.5" />
+                            {/* Upper Back */}
+                            <Rect x="41" y="52" width="48" height="18" rx="4" {...getMuscleColors(volumeData.back)} strokeWidth="1.5" />
+                            {/* Lats */}
+                            <Rect x="39" y="72" width="24" height="24" rx="4" {...getMuscleColors(volumeData.back)} strokeWidth="1.5" />
+                            <Rect x="67" y="72" width="24" height="24" rx="4" {...getMuscleColors(volumeData.back)} strokeWidth="1.5" />
+                            {/* Lower Back */}
+                            <Rect x="49" y="98" width="32" height="18" rx="4" {...getMuscleColors(volumeData.back)} strokeWidth="1.5" />
+                            {/* Glutes */}
+                            <Rect x="39" y="120" width="24" height="24" rx="12" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
+                            <Rect x="67" y="120" width="24" height="24" rx="12" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
+                            {/* Arms */}
+                            <Rect x="23" y="70" width="12" height="44" rx="4" {...getMuscleColors(volumeData.arms)} strokeWidth="1.5" />
+                            <Rect x="95" y="70" width="12" height="44" rx="4" {...getMuscleColors(volumeData.arms)} strokeWidth="1.5" />
+                            {/* Hamstrings */}
+                            <Rect x="37" y="148" width="24" height="44" rx="6" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
+                            <Rect x="69" y="148" width="24" height="44" rx="6" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
+                            {/* Calves */}
+                            <Rect x="39" y="196" width="18" height="32" rx="4" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
+                            <Rect x="73" y="196" width="18" height="32" rx="4" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
+                        </Svg>
+                    </View>
+                </View>
+
+                {/* Muscle Breakdown List */}
+                <View style={styles.breakdownList}>
+                    {Object.entries(volumeData).map(([name, sets]) => {
+                        const status = getMuscleColors(sets);
+                        let statusText = 'Untrained';
+                        let badgeColor = 'rgba(255, 255, 255, 0.4)';
+                        if (sets >= 6) {
+                            statusText = 'Growth Zone';
+                            badgeColor = '#34D159';
+                        } else if (sets > 0) {
+                            statusText = 'Under Target';
+                            badgeColor = '#FDC90D';
+                        }
+
+                        return (
+                            <View key={name} style={styles.breakdownItem}>
+                                <View style={styles.breakdownLeft}>
+                                    <Text style={styles.muscleName}>{name.toUpperCase()}</Text>
+                                    <Text style={styles.muscleSets}>{sets} sets completed</Text>
+                                </View>
+                                <View style={[styles.statusBadge, { borderColor: status.stroke }]}>
+                                    <View style={[styles.badgeDot, { backgroundColor: badgeColor }]} />
+                                    <Text style={[styles.statusText, { color: badgeColor }]}>{statusText}</Text>
+                                </View>
+                            </View>
+                        );
+                    })}
+                </View>
+            </View>
+        );
+    };
+
     const renderWeeklyChart = () => {
-        const barWidth = 32;
-        const barSpacing = 16;
-        const chartHeight = 200;
+        const barWidth = 28;
+        const barSpacing = 18;
+        const chartHeight = 180;
         const maxCals = Math.max(TARGET_CALS, ...history.map(d => d.calories)) * 1.1;
 
         return (
             <View style={styles.chartContainer}>
-                <Text style={styles.chartTitle}>Weekly Calories</Text>
-                <Svg width={SCREEN_WIDTH - 40} height={chartHeight + 40}>
-                    {/* Target Line */}
-                    <G y={(1 - TARGET_CALS / maxCals) * chartHeight}>
-                        <Rect x="0" y="0" width="100%" height="1" fill={colors.success} opacity={0.5} strokeDasharray="5,5" />
-                        <SvgText x="0" y="-5" fill={colors.success} fontSize="10">Target</SvgText>
-                    </G>
+                <View style={styles.recapHeader}>
+                    <Text style={styles.chartTitle}>Weekly Calories</Text>
+                    <Text style={styles.targetLabel}>Target: {TARGET_CALS} kcal</Text>
+                </View>
 
-                    {history.map((day, index) => {
-                        const height = (day.calories / maxCals) * chartHeight;
-                        const x = index * (barWidth + barSpacing) + 10;
-                        const y = chartHeight - height;
+                <View style={styles.chartSvgWrapper}>
+                    <Svg width={SCREEN_WIDTH - 80} height={chartHeight + 40}>
+                        {/* Target Line */}
+                        <G y={(1 - TARGET_CALS / maxCals) * chartHeight}>
+                            <Rect x="0" y="0" width="100%" height="1.5" fill={colors.success} opacity={0.6} />
+                        </G>
 
-                        return (
-                            <G key={day.date}>
-                                <Rect
-                                    x={x}
-                                    y={y}
-                                    width={barWidth}
-                                    height={height}
-                                    fill={day.calories > TARGET_CALS * 1.1 ? colors.error : colors.primary}
-                                    rx={4}
-                                />
-                                <SvgText
-                                    x={x + barWidth / 2}
-                                    y={chartHeight + 20}
-                                    fill={colors.text.muted}
-                                    fontSize="12"
-                                    textAnchor="middle"
-                                >
-                                    {day.day}
-                                </SvgText>
-                            </G>
-                        );
-                    })}
-                </Svg>
+                        {history.map((day, index) => {
+                            const height = (day.calories / maxCals) * chartHeight;
+                            const x = index * (barWidth + barSpacing) + 20;
+                            const y = chartHeight - height;
+
+                            return (
+                                <G key={day.date}>
+                                    <Rect
+                                        x={x}
+                                        y={y}
+                                        width={barWidth}
+                                        height={height}
+                                        fill={day.calories > TARGET_CALS * 1.15 ? colors.error : colors.primary}
+                                        rx={4}
+                                        opacity={day.calories > 0 ? 0.9 : 0.05}
+                                    />
+                                    <SvgText
+                                        x={x + barWidth / 2}
+                                        y={chartHeight + 22}
+                                        fill={colors.text.muted}
+                                        fontSize="11"
+                                        textAnchor="middle"
+                                    >
+                                        {day.day[0]}
+                                    </SvgText>
+                                </G>
+                            );
+                        })}
+                    </Svg>
+                </View>
+
+                {/* Macro Distribution - Simple visual */}
+                <View style={styles.macroBalanceCard}>
+                    <Text style={styles.macroCardTitle}>Average Balance</Text>
+                    <View style={styles.macroRow}>
+                        <View style={styles.macroStat}>
+                            <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+                            <Text style={styles.macroLabel}>Protein</Text>
+                            <Text style={styles.macroVal}>30%</Text>
+                        </View>
+                        <View style={styles.macroStat}>
+                            <View style={[styles.dot, { backgroundColor: 'rgba(255, 255, 255, 0.4)' }]} />
+                            <Text style={styles.macroLabel}>Carbs</Text>
+                            <Text style={styles.macroVal}>40%</Text>
+                        </View>
+                        <View style={styles.macroStat}>
+                            <View style={[styles.dot, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]} />
+                            <Text style={styles.macroLabel}>Fat</Text>
+                            <Text style={styles.macroVal}>30%</Text>
+                        </View>
+                    </View>
+                </View>
             </View>
         );
     };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            {/* Header Tabs */}
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Progress</Text>
+                <View style={styles.tabsWrapper}>
+                    <TouchableOpacity 
+                        style={[styles.tabButton, activeTab === 'training' && styles.tabActive]}
+                        onPress={() => setActiveTab('training')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'training' && styles.tabTextActive]}>Training</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                        style={[styles.tabButton, activeTab === 'nutrition' && styles.tabActive]}
+                        onPress={() => setActiveTab('nutrition')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'nutrition' && styles.tabTextActive]}>Nutrition</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView
@@ -149,14 +348,23 @@ const StatsScreen = () => {
                     <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
                 }
             >
-                {/* Score Card */}
+                {/* Score Card / Metric Top Banner */}
                 <View style={styles.scoreCard}>
                     <View>
-                        <Text style={styles.scoreLabel}>Weekly Score</Text>
-                        <Text style={styles.scoreValue}>87%</Text>
+                        <Text style={styles.scoreLabel}>{activeTab === 'training' ? 'Weekly Workouts' : 'Daily Average'}</Text>
+                        <Text style={styles.scoreValue}>
+                            {activeTab === 'training' 
+                                ? `${weeklyRecap?.recap_data?.workouts_count || 0} sessions` 
+                                : `${weeklyRecap?.recap_data?.avg_calories || 0} kcal`
+                            }
+                        </Text>
                     </View>
                     <View style={styles.scoreIcon}>
-                        <MaterialIcons name="insights" size={32} color={colors.primary} />
+                        <MaterialIcons 
+                            name={activeTab === 'training' ? 'fitness-center' : 'restaurant-menu'} 
+                            size={28} 
+                            color={colors.primary} 
+                        />
                     </View>
                 </View>
 
@@ -164,61 +372,39 @@ const StatsScreen = () => {
                 {recapLoading ? (
                     <View style={styles.section}>
                         <ActivityIndicator size="small" color={colors.primary} />
-                        <Text style={[styles.recapMessage, { textAlign: 'center', marginTop: 8 }]}>Loading AI Recap...</Text>
+                        <Text style={[styles.recapMessage, { textAlign: 'center', marginTop: 8 }]}>Parsing progress history...</Text>
                     </View>
                 ) : weeklyRecap ? (
                     <View style={styles.section}>
                         <View style={styles.recapHeader}>
                             <View style={styles.recapHeaderLeft}>
-                                <MaterialIcons name="auto-awesome" size={20} color={colors.primary} />
-                                <Text style={styles.recapTitle}>WEEKLY AI RECAP</Text>
+                                <MaterialIcons name="auto-awesome" size={16} color={colors.primary} />
+                                <Text style={styles.recapTitle}>WEEKLY REPORT</Text>
                             </View>
                             <TouchableOpacity onPress={handleShareRecap} style={styles.shareBtn} accessibilityLabel="Share recap">
-                                <MaterialIcons name="share" size={20} color={colors.text.muted} />
+                                <MaterialIcons name="share" size={18} color={colors.text.muted} />
                             </TouchableOpacity>
                         </View>
                         <Text style={styles.recapMessage}>{weeklyRecap.summary_text}</Text>
                         <View style={styles.recapMetrics}>
                             <View style={styles.metricItem}>
-                                <Text style={styles.metricLabel}>Workouts</Text>
-                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.workouts_count}</Text>
+                                <Text style={styles.metricLabel}>Workout Load</Text>
+                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.workouts_count} workouts</Text>
                             </View>
                             <View style={styles.metricItem}>
-                                <Text style={styles.metricLabel}>Streak</Text>
-                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.streak_days}d</Text>
+                                <Text style={styles.metricLabel}>Gym Attendance</Text>
+                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.checkin_count} days</Text>
                             </View>
                             <View style={styles.metricItem}>
-                                <Text style={styles.metricLabel}>Avg Calories</Text>
-                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.avg_calories} kcal</Text>
+                                <Text style={styles.metricLabel}>Streak Size</Text>
+                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.streak_days} days</Text>
                             </View>
                         </View>
                     </View>
                 ) : null}
 
-                {/* Charts */}
-                {renderWeeklyChart()}
-
-                {/* Macro Distribution - Simple visual */}
-                <View style={styles.section}>
-                    <Text style={styles.chartTitle}>Macro Balance (Avg)</Text>
-                    <View style={styles.macroRow}>
-                        <View style={styles.macroStat}>
-                            <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-                            <Text style={styles.macroLabel}>Protein</Text>
-                            <Text style={styles.macroVal}>30%</Text>
-                        </View>
-                        <View style={styles.macroStat}>
-                            <View style={[styles.dot, { backgroundColor: '#4ECDC4' }]} />
-                            <Text style={styles.macroLabel}>Carbs</Text>
-                            <Text style={styles.macroVal}>40%</Text>
-                        </View>
-                        <View style={styles.macroStat}>
-                            <View style={[styles.dot, { backgroundColor: '#FF6B6B' }]} />
-                            <Text style={styles.macroLabel}>Fat</Text>
-                            <Text style={styles.macroVal}>30%</Text>
-                        </View>
-                    </View>
-                </View>
+                {/* Render Selected View */}
+                {activeTab === 'training' ? renderAnatomySection() : renderWeeklyChart()}
 
             </ScrollView>
         </SafeAreaView>
@@ -231,19 +417,43 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background,
     },
     header: {
-        padding: spacing.xl,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
         borderBottomWidth: 1,
         borderBottomColor: colors.glass.border,
+        alignItems: 'center',
     },
-    headerTitle: {
-        fontSize: typography.sizes['2xl'],
-        fontFamily: typography.fontFamily.bold,
+    tabsWrapper: {
+        flexDirection: 'row',
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.md,
+        padding: 4,
+        width: '100%',
+        maxWidth: 320,
+    },
+    tabButton: {
+        flex: 1,
+        paddingVertical: spacing.sm,
+        alignItems: 'center',
+        borderRadius: borderRadius.sm,
+    },
+    tabActive: {
+        backgroundColor: colors.glass.surfaceLight,
+        ...shadows.glowCard,
+    },
+    tabText: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+        letterSpacing: typography.letterSpacing.tight,
+    },
+    tabTextActive: {
         color: colors.text.primary,
     },
     content: {
         padding: spacing.xl,
         gap: spacing.xl,
-        paddingBottom: 100, // Tab bar padding
+        paddingBottom: 120, // Tab bar padding
     },
     scoreCard: {
         flexDirection: 'row',
@@ -258,76 +468,167 @@ const styles = StyleSheet.create({
     },
     scoreLabel: {
         color: colors.text.muted,
-        fontSize: typography.sizes.sm,
+        fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.medium,
-        marginBottom: 4,
+        marginBottom: 6,
         textTransform: 'uppercase',
-        letterSpacing: 1,
+        letterSpacing: 1.5,
     },
     scoreValue: {
         color: colors.primary,
-        fontSize: typography.sizes['4xl'],
-        fontFamily: typography.fontFamily.bold,
+        fontSize: typography.sizes['2xl'],
+        fontFamily: typography.fontFamily.medium,
+        letterSpacing: typography.letterSpacing.tight,
     },
     scoreIcon: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
         backgroundColor: colors.glass.surfaceLight,
         justifyContent: 'center',
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.glass.border,
     },
-    chartContainer: {
-        padding: spacing.lg,
+    anatomyContainer: {
+        padding: spacing.xl,
         backgroundColor: colors.glass.surface,
         borderRadius: borderRadius.xl,
         borderWidth: 1,
         borderColor: colors.glass.border,
+    },
+    chartContainer: {
+        padding: spacing.xl,
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.xl,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    chartSvgWrapper: {
         alignItems: 'center',
+        marginVertical: spacing.lg,
     },
     chartTitle: {
         fontSize: typography.sizes.lg,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.primary,
+        letterSpacing: typography.letterSpacing.tight,
+    },
+    targetLabel: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+    },
+    bodiesRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        marginTop: spacing.xl,
+        marginBottom: spacing.xl,
+    },
+    bodyColumn: {
+        alignItems: 'center',
+        gap: spacing.md,
+    },
+    bodyLabel: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.muted,
+        letterSpacing: 2,
+    },
+    breakdownList: {
+        borderTopWidth: 1,
+        borderTopColor: colors.glass.border,
+        paddingTop: spacing.lg,
+        gap: spacing.md,
+    },
+    breakdownItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: spacing.xs,
+    },
+    breakdownLeft: {
+        gap: 2,
+    },
+    muscleName: {
+        fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
-        marginBottom: spacing.xl,
-        alignSelf: 'flex-start',
+        letterSpacing: 1,
     },
-    section: {
-        padding: spacing.lg,
-        backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius.xl,
+    muscleSets: {
+        fontSize: typography.sizes.sm,
+        color: colors.text.muted,
+    },
+    statusBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingVertical: 4,
+        paddingHorizontal: 10,
+        borderRadius: borderRadius.sm,
         borderWidth: 1,
-        borderColor: colors.glass.border,
+        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    },
+    badgeDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+    },
+    statusText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    macroBalanceCard: {
+        borderTopWidth: 1,
+        borderTopColor: colors.glass.border,
+        paddingTop: spacing.xl,
+        marginTop: spacing.sm,
+    },
+    macroCardTitle: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.primary,
+        marginBottom: spacing.md,
     },
     macroRow: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        marginTop: spacing.md,
     },
     macroStat: {
         alignItems: 'center',
     },
     dot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        marginBottom: 8,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        marginBottom: 6,
     },
     macroLabel: {
         color: colors.text.muted,
-        fontSize: typography.sizes.sm,
+        fontSize: typography.sizes.xs,
     },
     macroVal: {
         color: colors.text.primary,
-        fontSize: typography.sizes.xl,
+        fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.bold,
-        marginTop: 4,
+        marginTop: 2,
+    },
+    section: {
+        padding: spacing.xl,
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.xl,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
     },
     recapHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.md,
+        marginBottom: spacing.xs,
     },
     recapHeaderLeft: {
         flexDirection: 'row',
@@ -338,36 +639,38 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.bold,
         color: colors.primary,
-        letterSpacing: 1,
+        letterSpacing: 1.5,
     },
     shareBtn: {
         padding: spacing.xs,
     },
     recapMessage: {
         fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.primary,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.secondary,
         lineHeight: 20,
-        marginBottom: spacing.md,
+        marginBottom: spacing.lg,
     },
     recapMetrics: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
+        justifyContent: 'space-between',
         borderTopWidth: 1,
         borderTopColor: colors.glass.border,
-        paddingTop: spacing.md,
+        paddingTop: spacing.lg,
+        gap: spacing.md,
     },
     metricItem: {
+        flex: 1,
         alignItems: 'center',
+        gap: 4,
     },
     metricLabel: {
         fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.regular,
         color: colors.text.muted,
-        marginBottom: 4,
     },
     metricValue: {
-        fontSize: typography.sizes.base,
+        fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
     },
