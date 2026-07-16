@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator, Alert, Image, PanResponder, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -26,7 +26,6 @@ export default function WorkoutRecapScreen() {
     const [streak, setStreak] = useState(0);
     const [progressPct, setProgressPct] = useState<number | null>(null);
     const [sharing, setSharing] = useState(false);
-    const [cardStyle, setCardStyle] = useState<'dark' | 'receipt'>('dark');
     const [photoUri, setPhotoUri] = useState<string | null>(null);
     const [showCamera, setShowCamera] = useState(false);
     const [cameraFacing, setCameraFacing] = useState<'front' | 'back'>('front');
@@ -34,6 +33,29 @@ export default function WorkoutRecapScreen() {
     const cameraRef = useRef<any>(null);
 
     const viewShotRef = useRef<View>(null);
+
+    // PanResponder for draggable receipt card overlay
+    const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderGrant: () => {
+                pan.setOffset({
+                    x: (pan.x as any)._value,
+                    y: (pan.y as any)._value,
+                });
+                pan.setValue({ x: 0, y: 0 });
+            },
+            onPanResponderMove: Animated.event(
+                [null, { dx: pan.x, dy: pan.y }],
+                { useNativeDriver: false }
+            ),
+            onPanResponderRelease: () => {
+                pan.flattenOffset();
+            },
+        })
+    ).current;
 
     useEffect(() => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -164,55 +186,55 @@ export default function WorkoutRecapScreen() {
         <View style={styles.container}>
             {/* ── Share card (full screen, captured by ViewShot) ── */}
             <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }} style={styles.cardWrap}>
-                {cardStyle === 'receipt' ? (
-                    <View style={styles.receiptCenter}>
-                        <ReceiptShareCard
-                            title={
-                                session?.name || session?.day_name
-                                    ? `${session.name || session.day_name} · Total weight moved`
-                                    : 'Total weight moved'
-                            }
-                            headlineValue={`${(recap.volume || 0).toLocaleString()} KG`}
-                            headlineCaption={weightEquivalence(recap.volume || 0)}
-                            rows={[
-                                { label: 'Duration', value: `${recap.duration || 0} min` },
-                                { label: 'Sets', value: `${recap.sets || 0}` },
-                                ...(streak > 0 ? [{ label: 'Streak', value: `${streak} days` }] : []),
-                            ]}
-                            total={{ label: 'Total', value: `${(recap.volume || 0).toLocaleString()} kg` }}
-                            prs={
-                                recap.prs?.length
-                                    ? recap.prs.map((pr: any) => ({
-                                          name: pr.exercise_name || pr.name || 'PR',
-                                          current: pr.current || `${pr.weight_kg || ''} kg x ${pr.reps || ''}`,
-                                          previous: pr.previous,
-                                      }))
-                                    : undefined
-                            }
-                            date={new Date()}
-                        />
-                    </View>
+                {/* Background image or gradient */}
+                {photoUri ? (
+                    <Image source={{ uri: photoUri }} style={StyleSheet.absoluteFill} />
                 ) : (
-                    <WorkoutShareCard
-                        recap={{
-                            duration: recap.duration || 0,
-                            volume: recap.volume || 0,
-                            sets: recap.sets || 0,
-                            prs: recap.prs,
-                            totalWorkouts: recap.totalWorkouts,
-                            totalLifetimeVolume: recap.totalLifetimeVolume,
-                            gymPercentile: recap.gymPercentile,
-                        }}
-                        user={{ name: user?.name || 'Athlete', streak }}
-                        intent={session ? {
-                            emphasis: session.emphasis,
-                            session_label: session.name || session.day_name,
-                        } : null}
-                        progressPct={progressPct}
-                        date={new Date()}
-                        backgroundImage={photoUri}
+                    <LinearGradient
+                        colors={['#18181B', '#09090B']}
+                        style={StyleSheet.absoluteFill}
                     />
                 )}
+
+                {/* Draggable Receipt Card */}
+                <Animated.View
+                    {...panResponder.panHandlers}
+                    style={[
+                        styles.draggableReceipt,
+                        {
+                            transform: [
+                                { translateX: pan.x },
+                                { translateY: pan.y }
+                            ]
+                        }
+                    ]}
+                >
+                    <ReceiptShareCard
+                        title={
+                            session?.name || session?.day_name
+                                ? `${session.name || session.day_name} · Total weight moved`
+                                : 'Total weight moved'
+                        }
+                        headlineValue={`${(recap.volume || 0).toLocaleString()} KG`}
+                        headlineCaption={weightEquivalence(recap.volume || 0)}
+                        rows={[
+                            { label: 'Duration', value: `${recap.duration || 0} min` },
+                            { label: 'Sets', value: `${recap.sets || 0}` },
+                            ...(streak > 0 ? [{ label: 'Streak', value: `${streak} days` }] : []),
+                        ]}
+                        total={{ label: 'Total', value: `${(recap.volume || 0).toLocaleString()} kg` }}
+                        prs={
+                            recap.prs?.length
+                                ? recap.prs.map((pr: any) => ({
+                                      name: pr.exercise_name || pr.name || 'PR',
+                                      current: pr.current || `${pr.weight_kg || ''} kg x ${pr.reps || ''}`,
+                                      previous: pr.previous,
+                                  }))
+                                : undefined
+                        }
+                        date={new Date()}
+                    />
+                </Animated.View>
             </ViewShot>
 
             {/* ── Controls overlay at bottom ── */}
@@ -222,30 +244,17 @@ export default function WorkoutRecapScreen() {
                 pointerEvents="box-none"
             >
                 <SafeAreaView edges={['bottom']} style={styles.controls}>
-                    {/* Card style toggle */}
-                    <View style={styles.styleToggle}>
-                        {(['dark', 'receipt'] as const).map(s => (
-                            <TouchableOpacity
-                                key={s}
-                                style={[styles.styleToggleBtn, cardStyle === s && styles.styleToggleBtnActive]}
-                                onPress={() => setCardStyle(s)}
-                            >
-                                <Text style={[styles.styleToggleText, cardStyle === s && styles.styleToggleTextActive]}>
-                                    {s === 'dark' ? 'STORY' : 'RECEIPT'}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
+                    <Text style={styles.dragHint}>
+                        💡 Tap and drag the receipt paper to position it
+                    </Text>
 
-                    {/* Add / Remove Photo (dark card only) */}
-                    {cardStyle === 'dark' && (
-                        <View style={styles.photoRow}>
-                            <TouchableOpacity style={styles.photoBtn} onPress={photoUri ? () => setPhotoUri(null) : handleOpenCamera}>
-                                <MaterialIcons name={photoUri ? 'close' : 'camera-alt'} size={20} color="#fff" />
-                                <Text style={styles.photoBtnText}>{photoUri ? 'REMOVE PHOTO' : 'ADD PHOTO'}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
+                    {/* Add / Remove Photo */}
+                    <View style={styles.photoRow}>
+                        <TouchableOpacity style={styles.photoBtn} onPress={photoUri ? () => setPhotoUri(null) : handleOpenCamera}>
+                            <MaterialIcons name={photoUri ? 'close' : 'camera-alt'} size={20} color="#fff" />
+                            <Text style={styles.photoBtnText}>{photoUri ? 'REMOVE PHOTO' : 'ADD PHOTO / SELFIE'}</Text>
+                        </TouchableOpacity>
+                    </View>
 
                     <TouchableOpacity style={styles.shareBtn} onPress={handleShare} disabled={sharing}>
                         {sharing ? (
@@ -278,36 +287,18 @@ const styles = StyleSheet.create({
     cardWrap: {
         flex: 1,
     },
-    receiptCenter: {
-        flex: 1,
-        backgroundColor: '#000',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    styleToggle: {
-        flexDirection: 'row',
+    draggableReceipt: {
+        position: 'absolute',
         alignSelf: 'center',
-        backgroundColor: 'rgba(255,255,255,0.08)',
-        borderRadius: borderRadius.full,
-        padding: 3,
-        gap: 2,
+        top: '18%',
     },
-    styleToggleBtn: {
-        paddingVertical: 6,
-        paddingHorizontal: 18,
-        borderRadius: borderRadius.full,
-    },
-    styleToggleBtnActive: {
-        backgroundColor: 'rgba(255,255,255,0.92)',
-    },
-    styleToggleText: {
+    dragHint: {
+        color: 'rgba(255, 255, 255, 0.45)',
         fontSize: 11,
-        fontFamily: typography.fontFamily.bold,
-        color: 'rgba(255,255,255,0.7)',
-        letterSpacing: 1.5,
-    },
-    styleToggleTextActive: {
-        color: '#000',
+        fontFamily: typography.fontFamily.medium,
+        textAlign: 'center',
+        marginBottom: 8,
+        letterSpacing: 0.5,
     },
     emptyContainer: {
         flex: 1,
