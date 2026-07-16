@@ -190,6 +190,7 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
             );
             const p = unitProgress.rows[0];
             learn = {
+                id: lesson.id,
                 title: lesson.unit_title, lesson: `Lesson ${lesson.order_index}`,
                 topic: lesson.title, progress: Math.round((p.completed_count / p.total_count) * 100)
             };

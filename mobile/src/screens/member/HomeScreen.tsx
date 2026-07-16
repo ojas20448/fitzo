@@ -71,6 +71,7 @@ interface HomeData {
         message: string;
     };
     learn?: {
+        id: string;
         title: string;
         lesson: string;
         topic: string;
@@ -601,14 +602,25 @@ const HomeScreen: React.FC = () => {
                     >
                         {friends.length > 0 ? (
                             friends.map((friend) => (
-                                <View key={friend.id} style={styles.squadMember}>
+                                <TouchableOpacity
+                                    key={friend.id}
+                                    style={styles.squadMember}
+                                    onPress={() => router.push({
+                                        pathname: '/member/user-profile' as any,
+                                        params: {
+                                            userId: friend.id,
+                                            userName: friend.name,
+                                            userAvatar: friend.avatar_url || ''
+                                        }
+                                    })}
+                                >
                                     <View style={styles.squadAvatar}>
                                         <Avatar size="lg" uri={friend.avatar_url} name={friend.name} />
                                     </View>
                                     <Text style={styles.squadName} numberOfLines={1}>
                                         {(friend.name || 'Friend').split(' ')[0]}
                                     </Text>
-                                </View>
+                                </TouchableOpacity>
                             ))
                         ) : (
                             <EmptyStateInline
@@ -655,7 +667,7 @@ const HomeScreen: React.FC = () => {
 
                         <Pressable
                             style={styles.learningCard}
-                            onPress={() => router.push('/(tabs)/learn' as any)}
+                            onPress={() => data?.learn?.id && router.push(`/lesson/${data.learn.id}` as any)}
                         >
                             <View style={styles.learningThumbnail}>
                                 <View style={styles.playButton}>
