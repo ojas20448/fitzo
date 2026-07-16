@@ -110,7 +110,7 @@ router.get('/volume', asyncHandler(async (req, res) => {
     let sql = `
         SELECT
             date_trunc('week', ws.completed_at)::date as week_start,
-            COALESCE(e.muscle_groups[1], 'other') as muscle_group,
+            COALESCE(e.muscle_groups[1], el.muscle_group, 'other') as muscle_group,
             SUM(sl.weight_kg * sl.reps) as total_volume,
             COUNT(DISTINCT ws.id) as sessions,
             COUNT(sl.id) as total_sets
@@ -127,10 +127,14 @@ router.get('/volume', asyncHandler(async (req, res) => {
 
     if (muscle_group) {
         params.push(muscle_group);
-        sql += ` AND array_to_string(e.muscle_groups, ',') ILIKE '%' || $${params.length} || '%'`;
+        sql += ` AND (array_to_string(e.muscle_groups, ',') ILIKE '%' || $${params.length} || '%'
+                  OR el.muscle_group ILIKE '%' || $${params.length} || '%')`;
     }
 
-    sql += ` GROUP BY week_start, muscle_group ORDER BY week_start ASC, muscle_group`;
+    // NOTE: must group by the full COALESCE expression — a bare "muscle_group"
+    // here resolves to the el.muscle_group COLUMN (columns shadow aliases in
+    // GROUP BY), which breaks the select expression with error 42803.
+    sql += ` GROUP BY week_start, COALESCE(e.muscle_groups[1], el.muscle_group, 'other') ORDER BY week_start ASC, muscle_group`;
 
     const result = await query(sql, params);
 

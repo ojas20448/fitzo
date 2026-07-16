@@ -35,7 +35,8 @@ async function buildContextPack(userId) {
     // 4. Fetch Last 14 Days Workout History
     const sessionsResult = await query(
         `SELECT s.id, s.day_name, s.completed_at, s.duration_minutes, s.notes,
-                el.id as log_id, COALESCE(e.name, el.custom_exercise_name) as exercise_name, e.category as exercise_category,
+                el.id as log_id, COALESCE(e.name, el.custom_exercise_name) as exercise_name,
+                COALESCE(e.category, el.muscle_group) as exercise_category,
                 sl.set_number, sl.reps, sl.weight_kg, sl.rpe
          FROM workout_sessions s
          LEFT JOIN exercise_logs el ON el.session_id = s.id

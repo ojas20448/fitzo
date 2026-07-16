@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import WorkoutShareCard from '../../components/WorkoutShareCard';
+import ReceiptShareCard, { weightEquivalence } from '../../components/ReceiptShareCard';
 import { memberAPI, workoutsAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -25,6 +26,7 @@ export default function WorkoutRecapScreen() {
     const [streak, setStreak] = useState(0);
     const [progressPct, setProgressPct] = useState<number | null>(null);
     const [sharing, setSharing] = useState(false);
+    const [cardStyle, setCardStyle] = useState<'dark' | 'receipt'>('dark');
     const [photoUri, setPhotoUri] = useState<string | null>(null);
     const [showCamera, setShowCamera] = useState(false);
     const [cameraFacing, setCameraFacing] = useState<'front' | 'back'>('front');
@@ -162,25 +164,55 @@ export default function WorkoutRecapScreen() {
         <View style={styles.container}>
             {/* ── Share card (full screen, captured by ViewShot) ── */}
             <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }} style={styles.cardWrap}>
-                <WorkoutShareCard
-                    recap={{
-                        duration: recap.duration || 0,
-                        volume: recap.volume || 0,
-                        sets: recap.sets || 0,
-                        prs: recap.prs,
-                        totalWorkouts: recap.totalWorkouts,
-                        totalLifetimeVolume: recap.totalLifetimeVolume,
-                        gymPercentile: recap.gymPercentile,
-                    }}
-                    user={{ name: user?.name || 'Athlete', streak }}
-                    intent={session ? {
-                        emphasis: session.emphasis,
-                        session_label: session.name || session.day_name,
-                    } : null}
-                    progressPct={progressPct}
-                    date={new Date()}
-                    backgroundImage={photoUri}
-                />
+                {cardStyle === 'receipt' ? (
+                    <View style={styles.receiptCenter}>
+                        <ReceiptShareCard
+                            title={
+                                session?.name || session?.day_name
+                                    ? `${session.name || session.day_name} · Total weight moved`
+                                    : 'Total weight moved'
+                            }
+                            headlineValue={`${(recap.volume || 0).toLocaleString()} KG`}
+                            headlineCaption={weightEquivalence(recap.volume || 0)}
+                            rows={[
+                                { label: 'Duration', value: `${recap.duration || 0} min` },
+                                { label: 'Sets', value: `${recap.sets || 0}` },
+                                ...(streak > 0 ? [{ label: 'Streak', value: `${streak} days` }] : []),
+                            ]}
+                            total={{ label: 'Total', value: `${(recap.volume || 0).toLocaleString()} kg` }}
+                            prs={
+                                recap.prs?.length
+                                    ? recap.prs.map((pr: any) => ({
+                                          name: pr.exercise_name || pr.name || 'PR',
+                                          current: pr.current || `${pr.weight_kg || ''} kg x ${pr.reps || ''}`,
+                                          previous: pr.previous,
+                                      }))
+                                    : undefined
+                            }
+                            date={new Date()}
+                        />
+                    </View>
+                ) : (
+                    <WorkoutShareCard
+                        recap={{
+                            duration: recap.duration || 0,
+                            volume: recap.volume || 0,
+                            sets: recap.sets || 0,
+                            prs: recap.prs,
+                            totalWorkouts: recap.totalWorkouts,
+                            totalLifetimeVolume: recap.totalLifetimeVolume,
+                            gymPercentile: recap.gymPercentile,
+                        }}
+                        user={{ name: user?.name || 'Athlete', streak }}
+                        intent={session ? {
+                            emphasis: session.emphasis,
+                            session_label: session.name || session.day_name,
+                        } : null}
+                        progressPct={progressPct}
+                        date={new Date()}
+                        backgroundImage={photoUri}
+                    />
+                )}
             </ViewShot>
 
             {/* ── Controls overlay at bottom ── */}
@@ -190,13 +222,30 @@ export default function WorkoutRecapScreen() {
                 pointerEvents="box-none"
             >
                 <SafeAreaView edges={['bottom']} style={styles.controls}>
-                    {/* Add / Remove Photo */}
-                    <View style={styles.photoRow}>
-                        <TouchableOpacity style={styles.photoBtn} onPress={photoUri ? () => setPhotoUri(null) : handleOpenCamera}>
-                            <MaterialIcons name={photoUri ? 'close' : 'camera-alt'} size={20} color="#fff" />
-                            <Text style={styles.photoBtnText}>{photoUri ? 'REMOVE PHOTO' : 'ADD PHOTO'}</Text>
-                        </TouchableOpacity>
+                    {/* Card style toggle */}
+                    <View style={styles.styleToggle}>
+                        {(['dark', 'receipt'] as const).map(s => (
+                            <TouchableOpacity
+                                key={s}
+                                style={[styles.styleToggleBtn, cardStyle === s && styles.styleToggleBtnActive]}
+                                onPress={() => setCardStyle(s)}
+                            >
+                                <Text style={[styles.styleToggleText, cardStyle === s && styles.styleToggleTextActive]}>
+                                    {s === 'dark' ? 'STORY' : 'RECEIPT'}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
                     </View>
+
+                    {/* Add / Remove Photo (dark card only) */}
+                    {cardStyle === 'dark' && (
+                        <View style={styles.photoRow}>
+                            <TouchableOpacity style={styles.photoBtn} onPress={photoUri ? () => setPhotoUri(null) : handleOpenCamera}>
+                                <MaterialIcons name={photoUri ? 'close' : 'camera-alt'} size={20} color="#fff" />
+                                <Text style={styles.photoBtnText}>{photoUri ? 'REMOVE PHOTO' : 'ADD PHOTO'}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
 
                     <TouchableOpacity style={styles.shareBtn} onPress={handleShare} disabled={sharing}>
                         {sharing ? (
@@ -228,6 +277,37 @@ const styles = StyleSheet.create({
     },
     cardWrap: {
         flex: 1,
+    },
+    receiptCenter: {
+        flex: 1,
+        backgroundColor: '#000',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    styleToggle: {
+        flexDirection: 'row',
+        alignSelf: 'center',
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        borderRadius: borderRadius.full,
+        padding: 3,
+        gap: 2,
+    },
+    styleToggleBtn: {
+        paddingVertical: 6,
+        paddingHorizontal: 18,
+        borderRadius: borderRadius.full,
+    },
+    styleToggleBtnActive: {
+        backgroundColor: 'rgba(255,255,255,0.92)',
+    },
+    styleToggleText: {
+        fontSize: 11,
+        fontFamily: typography.fontFamily.bold,
+        color: 'rgba(255,255,255,0.7)',
+        letterSpacing: 1.5,
+    },
+    styleToggleTextActive: {
+        color: '#000',
     },
     emptyContainer: {
         flex: 1,

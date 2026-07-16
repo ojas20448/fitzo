@@ -10,6 +10,24 @@ const { invalidateContextPack } = require('../services/contextPack');
 router.use(authenticate);
 
 /**
+ * Normalize a client-reported target muscle (e.g. 'pectorals', 'quads',
+ * 'upper back') into the six buckets the heatmap/volume features use.
+ */
+function normalizeMuscle(target) {
+    if (!target) return null;
+    const t = String(target).toLowerCase().trim();
+    const MAP = {
+        pectorals: 'chest', chest: 'chest',
+        delts: 'shoulders', shoulders: 'shoulders', 'rear delts': 'shoulders',
+        traps: 'back', lats: 'back', 'upper back': 'back', 'lower back': 'back', back: 'back',
+        biceps: 'arms', triceps: 'arms', forearms: 'arms', arms: 'arms',
+        quads: 'legs', hamstrings: 'legs', glutes: 'legs', calves: 'legs', legs: 'legs', adductors: 'legs', abductors: 'legs',
+        abs: 'core', core: 'core', obliques: 'core',
+    };
+    return MAP[t] || null;
+}
+
+/**
  * Mirror a Smart Log (flat JSON in workout_logs) into the structured
  * workout_sessions / exercise_logs / set_logs tables.
  *
@@ -48,19 +66,30 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
     for (let i = 0; i < parsed.length; i++) {
         const ex = parsed[i];
         if (!ex || !ex.name) continue;
+        const name = String(ex.name).trim();
 
-        // Match against the exercises table by name so category/muscle data flows
+        // Match against the exercises table: exact first, then containment either
+        // way ("Barbell Bench Press" contains "Bench Press"), longest name wins.
         const match = await query(
-            `SELECT id FROM exercises WHERE LOWER(name) = LOWER($1) LIMIT 1`,
-            [String(ex.name).trim()]
+            `SELECT id FROM exercises
+             WHERE LOWER(name) = LOWER($1)
+                OR LOWER($1) LIKE '%' || LOWER(name) || '%'
+                OR LOWER(name) LIKE '%' || LOWER($1) || '%'
+             ORDER BY (LOWER(name) = LOWER($1)) DESC, LENGTH(name) DESC
+             LIMIT 1`,
+            [name]
         );
         const exerciseId = match.rows[0]?.id || null;
 
+        // The client already knows the muscle — store it so volume/heatmap
+        // attribution works even without a catalog match.
+        const muscle = normalizeMuscle(ex.target) || normalizeMuscle(workoutType);
+
         const logResult = await query(
-            `INSERT INTO exercise_logs (session_id, exercise_id, custom_exercise_name, order_index)
-             VALUES ($1, $2, $3, $4)
+            `INSERT INTO exercise_logs (session_id, exercise_id, custom_exercise_name, order_index, muscle_group)
+             VALUES ($1, $2, $3, $4, $5)
              RETURNING id`,
-            [sessionId, exerciseId, exerciseId ? null : String(ex.name).slice(0, 100), i]
+            [sessionId, exerciseId, exerciseId ? null : name.slice(0, 100), i, muscle]
         );
         const exerciseLogId = logResult.rows[0].id;
 

@@ -159,3 +159,26 @@ Not bugs (verified, left as-is):
 - `workout_plans`/`calorie_plans`/`class_sessions` are read-only in-app (seed data only, no create endpoint) — deferred B2B trainer/manager tooling, not a wiring break
 - `learn_lessons`/`exercises` read-but-never-written = reference/seed data loaded via SQL scripts (correct)
 - `workout_splits`/`recipe_ingredients` "dead" tables don't exist in the live DB — stale schema.sql definitions superseded by `user_splits` and JSON `ingredients` columns
+
+## Heatmap data fix + receipt share cards (July 16, 2026)
+
+**Heatmap audit (Antigravity commit a1d709a):** UI solid, but the data chain was broken —
+Smart Log exercises rarely matched the 38-row exercises catalog ("Barbell Bench Press"
+!= "Bench Press") so muscle attribution fell to 'other' and the heatmap stayed grey.
+Fixes:
+- `exercise_logs.muscle_group` column (migration applied) — client-reported target
+  muscle stored directly, normalized to the six buckets
+- Containment name matching (either direction, longest wins) → "Barbell Bench Press"
+  now matches "Bench Press"
+- volume + contextPack queries fall back to `el.muscle_group`; fixed GROUP BY
+  alias-shadowing (42803)
+- StatsScreen folds specific muscles (biceps, quads, lats…) into the six buckets
+- Verified live: chest 2 sets / arms 1 set attributed from a Smart Log with targets
+
+**Receipt share cards (PUSH-inspired):** new `ReceiptShareCard.tsx` — thermal-receipt
+aesthetic (cream paper on black, monospace, black section bars, SVG barbell/trophy
+line-art, hand-drawn ink circle around the total, Indian weight equivalences:
+elephants/auto-rickshaws/Royal Enfields/gas cylinders/watermelons). Wired into
+WorkoutRecapScreen with a STORY/RECEIPT toggle through the existing
+ViewShot + expo-sharing pipeline. RN letterSpacing note: values are points, not %,
+so "Swiss tracking" needs fontSize-proportional values.

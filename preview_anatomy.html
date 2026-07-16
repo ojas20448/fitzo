@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitzo Anatomy SVG Preview</title>
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 500;
+            letter-spacing: -0.03em;
+            margin-bottom: 30px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .bodies-row {
+            display: flex;
+            gap: 60px;
+            margin-bottom: 30px;
+        }
+        .body-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        .label {
+            font-size: 11px;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 2px;
+        }
+        svg {
+            background: rgba(255, 255, 255, 0.01);
+            border-radius: 12px;
+        }
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1px solid;
+        }
+        .untrained .dot { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.15); }
+        .under-target .dot { background: rgba(253, 201, 13, 0.12); border-color: rgba(253, 201, 13, 0.6); }
+        .growth-zone .dot { background: rgba(52, 209, 89, 0.18); border-color: rgba(52, 209, 89, 0.8); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Anatomy Vector Heatmap Preview</h1>
+        
+        <div class="bodies-row">
+            <!-- Front View -->
+            <div class="body-column">
+                <span class="label">FRONT</span>
+                <svg width="130" height="230">
+                    <!-- Head (Untrained) -->
+                    <circle cx="65" cy="25" r="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+                    
+                    <!-- Shoulders (Under Target - Yellow) -->
+                    <rect x="25" y="50" width="12" height="16" rx="4" fill="rgba(253, 201, 13, 0.12)" stroke="rgba(253, 201, 13, 0.6)" stroke-width="1.5" />
+                    <rect x="93" y="50" width="12" height="16" rx="4" fill="rgba(253, 201, 13, 0.12)" stroke="rgba(253, 201, 13, 0.6)" stroke-width="1.5" />
+                    
+                    <!-- Chest (Growth Zone - Green) -->
+                    <rect x="41" y="52" width="22" height="24" rx="4" fill="rgba(52, 209, 89, 0.18)" stroke="rgba(52, 209, 89, 0.8)" stroke-width="1.5" />
+                    <rect x="67" y="52" width="22" height="24" rx="4" fill="rgba(52, 209, 89, 0.18)" stroke="rgba(52, 209, 89, 0.8)" stroke-width="1.5" />
+                    
+                    <!-- Core/Abs (Untrained) -->
+                    <rect x="51" y="80" width="28" height="36" rx="4" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+                    
+                    <!-- Arms (Under Target - Yellow) -->
+                    <rect x="23" y="70" width="12" height="44" rx="4" fill="rgba(253, 201, 13, 0.12)" stroke="rgba(253, 201, 13, 0.6)" stroke-width="1.5" />
+                    <rect x="95" y="70" width="12" height="44" rx="4" fill="rgba(253, 201, 13, 0.12)" stroke="rgba(253, 201, 13, 0.6)" stroke-width="1.5" />
+                    
+                    <!-- Quads (Growth Zone - Green) -->
+                    <rect x="37" y="122" width="24" height="48" rx="6" fill="rgba(52, 209, 89, 0.18)" stroke="rgba(52, 209, 89, 0.8)" stroke-width="1.5" />
+                    <rect x="69" y="122" width="24" height="48" rx="6" fill="rgba(52, 209, 89, 0.18)" stroke="rgba(52, 209, 89, 0.8)" stroke-width="1.5" />
+                    
+                    <!-- Calves (Untrained) -->
+                    <rect x="39" y="176" width="18" height="36" rx="4" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+                    <rect x="73" y="176" width="18" height="36" rx="4" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+                </svg>
+            </div>
+
+            <!-- Back View -->
+            <div class="body-column">
+                <span class="label">BACK</span>
+                <svg width="130" height="230">
+                    <!-- Head -->
+                    <circle cx="65" cy="25" r="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+                    
+                    <!-- Shoulders (Yellow) -->
+                    <rect x="25" y="50" width="12" height="16" rx="4" fill="rgba(253, 201, 13, 0.12)" stroke="rgba(253, 201, 13, 0.6)" stroke-width="1.5" />
+                    <rect x="93" y="50" width="12" height="16" rx="4" fill="rgba(253, 201, 13, 0.12)" stroke="rgba(253, 201, 13, 0.6)" stroke-width="1.5" />
+                    
+                    <!-- Upper Back (Untrained) -->
+                    <rect x="41" y="52" width="48" height="18" rx="4" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+                    <!-- Lats (Untrained) -->
+                    <rect x="39" y="72" width="24" height="24" rx="4" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+                    <rect x="67" y="72" width="24" height="24" rx="4" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+                    <!-- Lower Back (Untrained) -->
+                    <rect x="49" y="98" width="32" height="18" rx="4" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+                    
+                    <!-- Glutes (Growth Zone - Green) -->
+                    <rect x="39" y="120" width="24" height="24" rx="12" fill="rgba(52, 209, 89, 0.18)" stroke="rgba(52, 209, 89, 0.8)" stroke-width="1.5" />
+                    <rect x="67" y="120" width="24" height="24" rx="12" fill="rgba(52, 209, 89, 0.18)" stroke="rgba(52, 209, 89, 0.8)" stroke-width="1.5" />
+                    
+                    <!-- Arms (Yellow) -->
+                    <rect x="23" y="70" width="12" height="44" rx="4" fill="rgba(253, 201, 13, 0.12)" stroke="rgba(253, 201, 13, 0.6)" stroke-width="1.5" />
+                    <rect x="95" y="70" width="12" height="44" rx="4" fill="rgba(253, 201, 13, 0.12)" stroke="rgba(253, 201, 13, 0.6)" stroke-width="1.5" />
+                    
+                    <!-- Hamstrings (Growth Zone - Green) -->
+                    <rect x="37" y="148" width="24" height="44" rx="6" fill="rgba(52, 209, 89, 0.18)" stroke="rgba(52, 209, 89, 0.8)" stroke-width="1.5" />
+                    <rect x="69" y="148" width="24" height="44" rx="6" fill="rgba(52, 209, 89, 0.18)" stroke="rgba(52, 209, 89, 0.8)" stroke-width="1.5" />
+                    
+                    <!-- Calves (Untrained) -->
+                    <rect x="39" y="196" width="18" height="32" rx="4" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+                    <rect x="73" y="196" width="18" height="32" rx="4" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+                </svg>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item untrained">
+                <div class="dot"></div>
+                <span>Untrained</span>
+            </div>
+            <div class="legend-item under-target">
+                <div class="dot"></div>
+                <span>Under Target</span>
+            </div>
+            <div class="legend-item growth-zone">
+                <div class="dot"></div>
+                <span>Growth Zone</span>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

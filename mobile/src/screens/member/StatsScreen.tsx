@@ -77,13 +77,24 @@ const StatsScreen = () => {
             const weeksArray = volumeRes.data?.weeks || [];
             const detailedArray = volumeRes.data?.detailed || [];
 
+            // Backend returns specific muscles (biceps, quads, lats…) when the
+            // exercise matched the catalog — fold them into the six buckets.
+            const BUCKET: Record<string, string> = {
+                chest: 'chest', pectorals: 'chest',
+                back: 'back', lats: 'back', traps: 'back', 'upper back': 'back', 'lower back': 'back', rear_delts: 'back',
+                shoulders: 'shoulders', delts: 'shoulders',
+                arms: 'arms', biceps: 'arms', triceps: 'arms', forearms: 'arms',
+                legs: 'legs', quads: 'legs', hamstrings: 'legs', glutes: 'legs', calves: 'legs',
+                core: 'core', abs: 'core', obliques: 'core',
+            };
+
             if (weeksArray.length > 0 && detailedArray.length > 0) {
                 const latestWeekStart = weeksArray[weeksArray.length - 1]?.week_start;
                 detailedArray.forEach((row: any) => {
                     if (row.week_start === latestWeekStart) {
-                        const group = String(row.muscle_group).toLowerCase();
-                        if (group in counts) {
-                            counts[group] += parseInt(row.total_sets) || 0;
+                        const bucket = BUCKET[String(row.muscle_group).toLowerCase()];
+                        if (bucket && bucket in counts) {
+                            counts[bucket] += parseInt(row.total_sets) || 0;
                         }
                     }
                 });
