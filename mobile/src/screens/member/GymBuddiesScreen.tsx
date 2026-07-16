@@ -19,6 +19,7 @@ import EmptyState from '../../components/EmptyState';
 import { SkeletonList } from '../../components/Skeleton';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
+import { useAuth } from '../../context/AuthContext';
 import Celebration from '../../components/Celebration';
 
 interface Friend {
@@ -35,6 +36,7 @@ interface Friend {
 }
 
 const GymBuddiesScreen: React.FC = () => {
+    const { user } = useAuth();
     const toast = useToast();
     const [friends, setFriends] = useState<Friend[]>([]);
     const [pendingRequests, setPendingRequests] = useState<any[]>([]);
@@ -426,11 +428,28 @@ const GymBuddiesScreen: React.FC = () => {
                         {leaderboardLoading ? (
                             <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 20 }} />
                         ) : leaderboard.length === 0 ? (
-                            <EmptyState
-                                variant="no-friends"
-                                title="Gym Leaderboard is Empty"
-                                message="Earn XP by completing workouts, logging food, or checking in!"
-                            />
+                            !user?.gym_name ? (
+                                <View style={{ alignItems: 'center', padding: spacing.xl }}>
+                                    <EmptyState
+                                        variant="no-friends"
+                                        title="No Gym Joined"
+                                        message="Join a gym to access your local squad's weekly XP leaderboard."
+                                    />
+                                    <TouchableOpacity
+                                        style={styles.joinGymBtn}
+                                        onPress={() => router.push('/profile' as any)}
+                                    >
+                                        <MaterialIcons name="add-business" size={20} color={colors.background} style={{ marginRight: 8 }} />
+                                        <Text style={styles.joinGymBtnText}>JOIN YOUR GYM</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <EmptyState
+                                    variant="no-friends"
+                                    title="Gym Leaderboard is Empty"
+                                    message="Earn XP by completing workouts, logging food, or checking in!"
+                                />
+                            )
                         ) : (
                             leaderboard.map((item, index) => {
                                 let rankIcon = "";
@@ -823,6 +842,24 @@ const styles = StyleSheet.create({
     },
     kudosEmoji: {
         fontSize: typography.sizes.base,
+    },
+    joinGymBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.primary,
+        borderRadius: borderRadius.lg,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
+        marginTop: spacing.md,
+        width: '100%',
+        maxWidth: 240,
+    },
+    joinGymBtnText: {
+        color: colors.text.dark,
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        letterSpacing: 1,
     },
 });
 

@@ -584,6 +584,12 @@ const HomeScreen: React.FC = () => {
 
                 {/* Weekly Workout Progress */}
                 <View style={styles.section}>
+                    <View style={[styles.sectionHeader, { marginBottom: spacing.sm }]}>
+                        <Text style={styles.sectionTitle}>Weekly Activity</Text>
+                        <TouchableOpacity onPress={() => router.push('/stats' as any)}>
+                            <Text style={styles.viewAllLink}>VIEW HEATMAP</Text>
+                        </TouchableOpacity>
+                    </View>
                     <WeeklyProgress history={data?.streak.history || []} />
                 </View>
 

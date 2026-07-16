@@ -275,6 +275,16 @@ export default function ProfileScreen() {
 
                         <TouchableOpacity
                             style={styles.settingItem}
+                            onPress={() => router.push('/stats' as any)}
+                        >
+                            <MaterialIcons name="blur-on" size={24} color={colors.text.secondary} />
+                            <Text style={styles.settingLabel}>Anatomy Heatmap</Text>
+                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                        </TouchableOpacity>
+                        <View style={styles.settingDivider} />
+
+                        <TouchableOpacity
+                            style={styles.settingItem}
                             onPress={() => router.push('/member/fitness-profile' as any)}
                         >
                             <MaterialIcons name="calculate" size={24} color={colors.text.secondary} />
