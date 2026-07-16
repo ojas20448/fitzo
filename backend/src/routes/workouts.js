@@ -62,6 +62,7 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
         [userId, workoutType, visibility, durationMinutes || null]
     );
     const sessionId = sessionResult.rows[0].id;
+    const prs = [];
 
     for (let i = 0; i < parsed.length; i++) {
         const ex = parsed[i];
@@ -93,7 +94,24 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
         );
         const exerciseLogId = logResult.rows[0].id;
 
+        // Previous best for this exercise (before today's session) — used to
+        // detect PRs. Matches by catalog id when available, else stored name.
+        const prevBest = await query(
+            `SELECT sl.weight_kg, sl.reps
+             FROM set_logs sl
+             JOIN exercise_logs el ON el.id = sl.exercise_log_id
+             JOIN workout_sessions ws ON ws.id = el.session_id
+             WHERE ws.user_id = $1 AND ws.id <> $2 AND sl.is_warmup = false
+               AND ($3::uuid IS NOT NULL AND el.exercise_id = $3
+                    OR LOWER(el.custom_exercise_name) = LOWER($4))
+             ORDER BY sl.weight_kg DESC, sl.reps DESC
+             LIMIT 1`,
+            [userId, sessionId, exerciseId, name]
+        );
+        const prev = prevBest.rows[0] || null;
+
         const sets = Array.isArray(ex.sets) ? ex.sets : [];
+        let bestSet = null;
         for (let s = 0; s < sets.length; s++) {
             const reps = parseInt(sets[s].reps, 10) || 0;
             const weight = parseFloat(sets[s].weight_kg) || 0;
@@ -106,8 +124,23 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
                  VALUES ($1, $2, $3, $4, false, $5)`,
                 [exerciseLogId, s + 1, reps, weight, rpe]
             );
+            if (weight > 0 && (!bestSet || weight > bestSet.weight)) {
+                bestSet = { weight, reps };
+            }
+        }
+
+        // New PR = heavier top set than anything before (needs at least one
+        // prior record so a first-ever log doesn't spam trophies)
+        if (bestSet && prev && bestSet.weight > parseFloat(prev.weight_kg)) {
+            prs.push({
+                name,
+                current: `${bestSet.weight} kg x ${bestSet.reps}`,
+                previous: `${parseFloat(prev.weight_kg)} kg x ${prev.reps}`,
+            });
         }
     }
+
+    return prs;
 }
 
 // ============================================
@@ -166,9 +199,10 @@ router.post('/', asyncHandler(async (req, res) => {
 
     // Mirror into structured tables so the AI coach, progress charts, PRs and
     // weekly recap can see this workout (best-effort, never blocks the log)
+    let prs = [];
     if (exercises) {
         try {
-            await mirrorToStructuredLogs(userId, workout_type, exercises, visibility, parseInt(duration_minutes, 10) || null);
+            prs = await mirrorToStructuredLogs(userId, workout_type, exercises, visibility, parseInt(duration_minutes, 10) || null) || [];
         } catch (err) {
             console.error('Smart Log mirror failed (workout still saved):', err.message);
         }
@@ -194,7 +228,8 @@ router.post('/', asyncHandler(async (req, res) => {
     res.json({
         success: true,
         workout: result.rows[0],
-        xp_earned: (isNewLog ? 15 : 0) + checkinXpEarned
+        xp_earned: (isNewLog ? 15 : 0) + checkinXpEarned,
+        prs
     });
 }));
 

@@ -2,27 +2,15 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, Share, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
-import { Svg, Rect, Circle, G, Text as SvgText } from 'react-native-svg';
+import { Svg, Rect, G, Text as SvgText } from 'react-native-svg';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import api, { aiAPI } from '../../services/api';
 import { useToast } from '../../components/Toast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNutrition } from '../../context/NutritionContext';
+import AnatomyHeatmap, { getMuscleColors } from '../../components/AnatomyHeatmap';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-
-// Define premium muscle color mapping
-const MUSCLE_COLORS = {
-    untrained: { fill: 'rgba(255, 255, 255, 0.04)', stroke: 'rgba(255, 255, 255, 0.12)' },
-    underTarget: { fill: 'rgba(253, 201, 13, 0.12)', stroke: 'rgba(253, 201, 13, 0.6)' },
-    growthZone: { fill: 'rgba(52, 209, 89, 0.18)', stroke: 'rgba(52, 209, 89, 0.8)' },
-};
-
-function getMuscleColors(sets: number) {
-    if (!sets || sets === 0) return MUSCLE_COLORS.untrained;
-    if (sets < 6) return MUSCLE_COLORS.underTarget;
-    return MUSCLE_COLORS.growthZone;
-}
 
 const StatsScreen = () => {
     const [activeTab, setActiveTab] = useState<'training' | 'nutrition'>('training');
@@ -166,64 +154,7 @@ const StatsScreen = () => {
                     <Text style={styles.targetLabel}>Target: 6 sets/week</Text>
                 </View>
 
-                <View style={styles.bodiesRow}>
-                    {/* Front View */}
-                    <View style={styles.bodyColumn}>
-                        <Text style={styles.bodyLabel}>FRONT</Text>
-                        <Svg width={bodyWidth} height={bodyHeight}>
-                            {/* Head */}
-                            <Circle cx="65" cy="25" r="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
-                            {/* Shoulders */}
-                            <Rect x="25" y="50" width="12" height="16" rx="4" {...getMuscleColors(volumeData.shoulders)} strokeWidth="1.5" />
-                            <Rect x="93" y="50" width="12" height="16" rx="4" {...getMuscleColors(volumeData.shoulders)} strokeWidth="1.5" />
-                            {/* Chest */}
-                            <Rect x="41" y="52" width="22" height="24" rx="4" {...getMuscleColors(volumeData.chest)} strokeWidth="1.5" />
-                            <Rect x="67" y="52" width="22" height="24" rx="4" {...getMuscleColors(volumeData.chest)} strokeWidth="1.5" />
-                            {/* Core (Abs) */}
-                            <Rect x="51" y="80" width="28" height="36" rx="4" {...getMuscleColors(volumeData.core)} strokeWidth="1.5" />
-                            {/* Arms */}
-                            <Rect x="23" y="70" width="12" height="44" rx="4" {...getMuscleColors(volumeData.arms)} strokeWidth="1.5" />
-                            <Rect x="95" y="70" width="12" height="44" rx="4" {...getMuscleColors(volumeData.arms)} strokeWidth="1.5" />
-                            {/* Quads */}
-                            <Rect x="37" y="122" width="24" height="48" rx="6" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
-                            <Rect x="69" y="122" width="24" height="48" rx="6" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
-                            {/* Calves */}
-                            <Rect x="39" y="176" width="18" height="36" rx="4" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
-                            <Rect x="73" y="176" width="18" height="36" rx="4" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
-                        </Svg>
-                    </View>
-
-                    {/* Back View */}
-                    <View style={styles.bodyColumn}>
-                        <Text style={styles.bodyLabel}>BACK</Text>
-                        <Svg width={bodyWidth} height={bodyHeight}>
-                            {/* Head */}
-                            <Circle cx="65" cy="25" r="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
-                            {/* Shoulders */}
-                            <Rect x="25" y="50" width="12" height="16" rx="4" {...getMuscleColors(volumeData.shoulders)} strokeWidth="1.5" />
-                            <Rect x="93" y="50" width="12" height="16" rx="4" {...getMuscleColors(volumeData.shoulders)} strokeWidth="1.5" />
-                            {/* Upper Back */}
-                            <Rect x="41" y="52" width="48" height="18" rx="4" {...getMuscleColors(volumeData.back)} strokeWidth="1.5" />
-                            {/* Lats */}
-                            <Rect x="39" y="72" width="24" height="24" rx="4" {...getMuscleColors(volumeData.back)} strokeWidth="1.5" />
-                            <Rect x="67" y="72" width="24" height="24" rx="4" {...getMuscleColors(volumeData.back)} strokeWidth="1.5" />
-                            {/* Lower Back */}
-                            <Rect x="49" y="98" width="32" height="18" rx="4" {...getMuscleColors(volumeData.back)} strokeWidth="1.5" />
-                            {/* Glutes */}
-                            <Rect x="39" y="120" width="24" height="24" rx="12" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
-                            <Rect x="67" y="120" width="24" height="24" rx="12" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
-                            {/* Arms */}
-                            <Rect x="23" y="70" width="12" height="44" rx="4" {...getMuscleColors(volumeData.arms)} strokeWidth="1.5" />
-                            <Rect x="95" y="70" width="12" height="44" rx="4" {...getMuscleColors(volumeData.arms)} strokeWidth="1.5" />
-                            {/* Hamstrings */}
-                            <Rect x="37" y="148" width="24" height="44" rx="6" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
-                            <Rect x="69" y="148" width="24" height="44" rx="6" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
-                            {/* Calves */}
-                            <Rect x="39" y="196" width="18" height="32" rx="4" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
-                            <Rect x="73" y="196" width="18" height="32" rx="4" {...getMuscleColors(volumeData.legs)} strokeWidth="1.5" />
-                        </Svg>
-                    </View>
-                </View>
+                <AnatomyHeatmap volume={volumeData} bodyWidth={bodyWidth} bodyHeight={bodyHeight} />
 
                 {/* Muscle Breakdown List */}
                 <View style={styles.breakdownList}>

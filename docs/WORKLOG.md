@@ -182,3 +182,17 @@ elephants/auto-rickshaws/Royal Enfields/gas cylinders/watermelons). Wired into
 WorkoutRecapScreen with a STORY/RECEIPT toggle through the existing
 ViewShot + expo-sharing pipeline. RN letterSpacing note: values are points, not %,
 so "Swiss tracking" needs fontSize-proportional values.
+
+## PR detection + anatomical heatmap + share flow (July 16, 2026)
+
+- **PR detection wired end-to-end**: POST /api/workouts now compares each exercise's
+  top set against the user's previous best (catalog-id or name match, excludes the
+  current session) and returns `prs[]` — verified live (75kg beat 70kg → PR fired).
+  Lights up both the dark story card's PR display and the receipt trophy variant.
+- **AnatomyHeatmap component**: organic muscle-shaped SVG paths (left side authored,
+  right side mirrored — always symmetric) replace the blocky rectangles. Front: delts,
+  pecs, biceps, forearms, abs, obliques, quads, shins. Back: traps, lats, lower back,
+  triceps, glutes, hamstrings, calves. Neutral head/neck/pelvis/hands.
+- Share flow confirmed: finish workout → recap screen → STORY/RECEIPT toggle →
+  ViewShot PNG → expo-sharing sheet (Instagram Stories, WhatsApp, etc.)
+- Removed stray preview_anatomy.html from repo root
