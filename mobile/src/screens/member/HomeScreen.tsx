@@ -493,7 +493,7 @@ const HomeScreen: React.FC = () => {
                     ) : data && !data.gym ? (
                         <Pressable
                             style={styles.joinGymCard}
-                            onPress={() => router.push('/member/settings' as any)}
+                            onPress={() => router.push('/profile' as any)}
                             accessibilityLabel="Join a gym with an access code"
                             accessibilityRole="button"
                         >

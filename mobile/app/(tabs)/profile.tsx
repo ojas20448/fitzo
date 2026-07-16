@@ -9,12 +9,13 @@ import {
     Modal,
     TextInput,
     Linking,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
-import { memberAPI, caloriesAPI, nutritionAPI, measurementsAPI } from '../../src/services/api';
+import { memberAPI, caloriesAPI, nutritionAPI, measurementsAPI, settingsAPI } from '../../src/services/api';
 import Avatar from '../../src/components/Avatar';
 import GlassCard from '../../src/components/GlassCard';
 import Button from '../../src/components/Button';
@@ -42,6 +43,11 @@ export default function ProfileScreen() {
     const [editName, setEditName] = useState('');
     const [editAvatar, setEditAvatar] = useState('');
     const [saving, setSaving] = useState(false);
+
+    // Gym join states
+    const [showJoinInput, setShowJoinInput] = useState(false);
+    const [gymCode, setGymCode] = useState('');
+    const [joining, setJoining] = useState(false);
 
     // Preset Avatars
     const AVATAR_PRESETS = [
@@ -131,6 +137,27 @@ export default function ProfileScreen() {
         }
     };
 
+    const handleJoinGym = async () => {
+        if (!gymCode.trim()) {
+            toast.error('Missing Code', 'Enter the access code from your gym');
+            return;
+        }
+
+        setJoining(true);
+        try {
+            const res = await settingsAPI.joinGym(gymCode.trim());
+            toast.success('Gym Joined', `Welcome to ${res.gym.name}!`);
+            setGymCode('');
+            setShowJoinInput(false);
+            await refreshUser();
+            await loadData();
+        } catch (err: any) {
+            toast.error('Error', err.response?.data?.error || 'Could not join gym');
+        } finally {
+            setJoining(false);
+        }
+    };
+
     if (loading) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
@@ -207,6 +234,61 @@ export default function ProfileScreen() {
                     </View>
                 </View>
 
+                {/* Join Gym Card - Show if user has no gym */}
+                {!user?.gym_name && (
+                    <GlassCard style={styles.joinGymCard}>
+                        <TouchableOpacity 
+                            style={styles.joinGymHeader} 
+                            onPress={() => setShowJoinInput(!showJoinInput)}
+                            accessibilityLabel="Join your gym"
+                            accessibilityRole="button"
+                        >
+                            <View style={styles.joinGymLeft}>
+                                <MaterialIcons name="add-business" size={22} color={colors.text.secondary} />
+                                <View style={{ marginLeft: spacing.sm, flex: 1 }}>
+                                    <Text style={styles.joinGymTitle}>Join your gym</Text>
+                                    <Text style={styles.joinGymSub}>
+                                        Enter your gym's access code to unlock crowd & check-ins
+                                    </Text>
+                                </View>
+                            </View>
+                            <MaterialIcons 
+                                name={showJoinInput ? 'expand-less' : 'expand-more'} 
+                                size={22} 
+                                color={colors.text.muted} 
+                            />
+                        </TouchableOpacity>
+
+                        {showJoinInput && (
+                            <View style={styles.joinForm}>
+                                <TextInput
+                                    style={styles.codeInput}
+                                    value={gymCode}
+                                    onChangeText={(t) => setGymCode(t.toUpperCase())}
+                                    placeholder="e.g. FITZO-A1B2C3D4"
+                                    placeholderTextColor={colors.text.muted}
+                                    autoCapitalize="characters"
+                                    autoCorrect={false}
+                                    editable={!joining}
+                                    onSubmitEditing={handleJoinGym}
+                                    returnKeyType="go"
+                                    accessibilityLabel="Gym access code"
+                                />
+                                <TouchableOpacity
+                                    style={[styles.joinBtn, joining && styles.joinBtnDisabled]}
+                                    onPress={handleJoinGym}
+                                    disabled={joining}
+                                >
+                                    {joining ? (
+                                        <ActivityIndicator size="small" color={colors.background} />
+                                    ) : (
+                                        <Text style={styles.joinBtnText}>JOIN</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </GlassCard>
+                )}
 
                 {/* Monthly Progress */}
                 <View style={styles.section}>
@@ -728,5 +810,69 @@ const styles = StyleSheet.create({
         padding: spacing.xl,
         borderTopWidth: 1,
         borderTopColor: colors.glass.border,
+    },
+
+    joinGymCard: {
+        marginHorizontal: spacing.xl,
+        marginTop: spacing.md,
+        marginBottom: spacing.sm,
+        padding: spacing.md,
+        borderRadius: borderRadius.xl,
+    },
+    joinGymHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    joinGymLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    joinGymTitle: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+    },
+    joinGymSub: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        marginTop: 2,
+    },
+    joinForm: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+        marginTop: spacing.md,
+        borderTopWidth: 1,
+        borderTopColor: colors.glass.border,
+        paddingTop: spacing.md,
+    },
+    codeInput: {
+        flex: 1,
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.md,
+        padding: spacing.sm,
+        fontSize: typography.sizes.sm,
+        color: colors.text.primary,
+        fontFamily: typography.fontFamily.medium,
+        textTransform: 'uppercase',
+    },
+    joinBtn: {
+        backgroundColor: colors.primary,
+        borderRadius: borderRadius.md,
+        paddingHorizontal: spacing.xl,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    joinBtnDisabled: {
+        opacity: 0.5,
+    },
+    joinBtnText: {
+        color: colors.text.dark,
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
     },
 });
