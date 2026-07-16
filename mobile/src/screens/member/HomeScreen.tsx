@@ -491,24 +491,6 @@ const HomeScreen: React.FC = () => {
                                 />
                             </View>
                         </GlassCard>
-                    ) : data && !data.gym ? (
-                        <Pressable
-                            style={styles.joinGymCard}
-                            onPress={() => router.push('/profile' as any)}
-                            accessibilityLabel="Join a gym with an access code"
-                            accessibilityRole="button"
-                        >
-                            <View style={styles.gymStatusLeft}>
-                                <MaterialIcons name="add-business" size={22} color={colors.text.secondary} />
-                                <View>
-                                    <Text style={styles.gymStatusName}>Join your gym</Text>
-                                    <Text style={styles.gymStatusSub}>
-                                        Enter your gym's access code to unlock crowd & check-ins
-                                    </Text>
-                                </View>
-                            </View>
-                            <MaterialIcons name="chevron-right" size={22} color={colors.text.muted} />
-                        </Pressable>
                     ) : null}
                 </Animated.View>
 
