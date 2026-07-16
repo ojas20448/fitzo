@@ -3,7 +3,6 @@ import {
     View,
     Text,
     StyleSheet,
-    Pressable,
     TouchableOpacity,
     Animated,
 } from 'react-native';
@@ -14,17 +13,17 @@ import { colors, typography, spacing, borderRadius, shadows } from '../../styles
 interface RestTimerPillProps {
     seconds: number;
     onDismiss: () => void;
-    onChangeDuration: () => void;
+    onAddSeconds: (secs: number) => void;
 }
 
-const RestTimerPill: React.FC<RestTimerPillProps> = ({ seconds, onDismiss, onChangeDuration }) => {
+const RestTimerPill: React.FC<RestTimerPillProps> = ({ seconds, onDismiss, onAddSeconds }) => {
     const insets = useSafeAreaInsets();
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         Animated.timing(fadeAnim, {
             toValue: 1,
-            duration: 250,
+            duration: 200,
             useNativeDriver: true,
         }).start();
     }, []);
@@ -39,16 +38,25 @@ const RestTimerPill: React.FC<RestTimerPillProps> = ({ seconds, onDismiss, onCha
                 styles.pill,
                 { bottom: insets.bottom + 80, opacity: fadeAnim },
             ]}
-            pointerEvents="box-none"
         >
-            <Pressable onPress={onChangeDuration} style={styles.pillInner}>
-                <MaterialIcons name="timer" size={18} color={colors.text.primary} />
-                <Text style={styles.pillLabel}>REST</Text>
+            {/* Timer Display block */}
+            <View style={styles.timerBlock}>
+                <MaterialIcons name="timer" size={16} color={colors.primary} />
                 <Text style={styles.pillTime}>{label}</Text>
-            </Pressable>
-            <TouchableOpacity onPress={onDismiss} hitSlop={12} style={styles.pillClose}>
-                <MaterialIcons name="close" size={16} color={colors.text.muted} />
-            </TouchableOpacity>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Actions block */}
+            <View style={styles.actionBlock}>
+                <TouchableOpacity onPress={() => onAddSeconds(30)} style={styles.actionBtn}>
+                    <Text style={styles.actionBtnText}>+30S</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={onDismiss} style={styles.skipBtn} accessibilityLabel="Skip rest">
+                    <MaterialIcons name="skip-next" size={18} color={colors.text.muted} />
+                </TouchableOpacity>
+            </View>
         </Animated.View>
     );
 };
@@ -59,35 +67,56 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(20, 20, 20, 0.92)',
+        backgroundColor: 'rgba(20, 20, 20, 0.95)',
         borderRadius: borderRadius.full,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm + 2,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
         borderWidth: 1,
         borderColor: colors.glass.borderLight,
         ...shadows.glass,
         zIndex: 100,
+        gap: spacing.md,
     },
-    pillInner: {
+    timerBlock: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.sm,
-    },
-    pillLabel: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.bold,
-        color: colors.text.muted,
-        letterSpacing: 2,
+        paddingLeft: spacing.xs,
     },
     pillTime: {
-        fontSize: typography.sizes.lg,
+        fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
-        minWidth: 44,
+        minWidth: 36,
     },
-    pillClose: {
-        marginLeft: spacing.md,
+    divider: {
+        width: 1,
+        height: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    },
+    actionBlock: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+    },
+    actionBtn: {
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        borderRadius: borderRadius.sm,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 4,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+    },
+    actionBtnText: {
+        fontSize: 10,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+        letterSpacing: 0.5,
+    },
+    skipBtn: {
         padding: spacing.xs,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
 

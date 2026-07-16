@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, Share, ActivityIndicator, TouchableOpacity } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { Svg, Rect, G, Text as SvgText } from 'react-native-svg';
@@ -39,6 +40,21 @@ const StatsScreen = () => {
     const [detailedData, setDetailedData] = useState<Record<string, number>>({});
     const [expandedMuscle, setExpandedMuscle] = useState<string | null>(null);
     
+    const scrollRef = useRef<ScrollView>(null);
+
+    const handleMusclePress = useCallback((muscle: string) => {
+        setExpandedMuscle(prev => prev === muscle ? null : muscle);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        
+        // Scroll down to the breakdown list to make it fully visible
+        setTimeout(() => {
+            scrollRef.current?.scrollTo({
+                y: 360,
+                animated: true,
+            });
+        }, 120);
+    }, []);
+
     const toast = useToast();
     const { calorieGoal } = useNutrition();
     const TARGET_CALS = calorieGoal || 2500;
@@ -170,7 +186,7 @@ const StatsScreen = () => {
                     <Text style={styles.targetLabel}>Target: 6 sets/week</Text>
                 </View>
 
-                <AnatomyHeatmap volume={{ ...volumeData, ...detailedData }} bodyWidth={bodyWidth} bodyHeight={bodyHeight} />
+                <AnatomyHeatmap volume={{ ...volumeData, ...detailedData }} bodyWidth={bodyWidth} bodyHeight={bodyHeight} onMusclePress={handleMusclePress} />
 
                 {/* Muscle Breakdown List */}
                 <View style={styles.breakdownList}>
@@ -339,6 +355,7 @@ const StatsScreen = () => {
             </View>
 
             <ScrollView
+                ref={scrollRef}
                 contentContainerStyle={styles.content}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />

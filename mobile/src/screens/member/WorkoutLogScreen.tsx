@@ -130,7 +130,7 @@ const WorkoutLogScreen: React.FC = () => {
                     restIntervalRef.current = null;
                     setRestActive(false);
                     // Haptic pulse on zero
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                     return 0;
                 }
                 return prev - 1;
@@ -607,7 +607,7 @@ const WorkoutLogScreen: React.FC = () => {
                 <RestTimerPill
                     seconds={restSeconds}
                     onDismiss={dismissRestTimer}
-                    onChangeDuration={() => setShowRestConfig(true)}
+                    onAddSeconds={(secs) => setRestSeconds((prev) => prev + secs)}
                 />
             )}
 

@@ -62,44 +62,44 @@ const Mirrored: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     </>
 );
 
-const BodyFront: React.FC<{ v: Vol; width: number; height: number }> = ({ v, width, height }) => (
+const BodyFront: React.FC<{ v: Vol; width: number; height: number; onPress?: (muscle: string) => void }> = ({ v, width, height, onPress }) => (
     <Svg width={width} height={height} viewBox="0 0 130 230">
         {/* Neutral: head, neck, pelvis */}
         <Circle cx={65} cy={15} r={10.5} {...NEUTRAL} strokeWidth={SW} />
         <Rect x={60} y={26} width={10} height={8} rx={3} {...NEUTRAL} strokeWidth={SW} />
         <Path d="M52 118 Q65 129 78 118 L74.5 130 Q65 136 55.5 130 Z" {...NEUTRAL} strokeWidth={SW} />
         <Mirrored>
-            <Path d={DELT} {...getMuscleColors(v.shoulders)} strokeWidth={SW} />
-            <Path d={PEC} {...getMuscleColors(v.chest)} strokeWidth={SW} />
-            <Path d={UPPER_ARM} {...getMuscleColors(v.biceps ?? v.arms)} strokeWidth={SW} />
-            <Path d={FOREARM} {...getMuscleColors(v.forearms ?? v.arms)} strokeWidth={SW} />
+            <Path d={DELT} {...getMuscleColors(v.shoulders)} strokeWidth={SW} onPress={() => onPress?.('shoulders')} />
+            <Path d={PEC} {...getMuscleColors(v.chest)} strokeWidth={SW} onPress={() => onPress?.('chest')} />
+            <Path d={UPPER_ARM} {...getMuscleColors(v.biceps ?? v.arms)} strokeWidth={SW} onPress={() => onPress?.('arms')} />
+            <Path d={FOREARM} {...getMuscleColors(v.forearms ?? v.arms)} strokeWidth={SW} onPress={() => onPress?.('arms')} />
             <Path d={HAND} {...NEUTRAL} strokeWidth={SW} />
-            <Path d={OBLIQUE} {...getMuscleColors(v.obliques ?? v.core)} strokeWidth={SW} />
-            <Path d={QUAD} {...getMuscleColors(v.quads ?? v.legs)} strokeWidth={SW} />
-            <Path d={SHIN} {...getMuscleColors(v.calves ?? v.legs)} strokeWidth={SW} />
+            <Path d={OBLIQUE} {...getMuscleColors(v.obliques ?? v.core)} strokeWidth={SW} onPress={() => onPress?.('core')} />
+            <Path d={QUAD} {...getMuscleColors(v.quads ?? v.legs)} strokeWidth={SW} onPress={() => onPress?.('legs')} />
+            <Path d={SHIN} {...getMuscleColors(v.calves ?? v.legs)} strokeWidth={SW} onPress={() => onPress?.('legs')} />
         </Mirrored>
         {/* Abs column (centered, not mirrored) */}
-        <Rect x={56} y={80} width={18} height={36} rx={7} {...getMuscleColors(v.abs ?? v.core)} strokeWidth={SW} />
+        <Rect x={56} y={80} width={18} height={36} rx={7} {...getMuscleColors(v.abs ?? v.core)} strokeWidth={SW} onPress={() => onPress?.('core')} />
     </Svg>
 );
 
-const BodyBack: React.FC<{ v: Vol; width: number; height: number }> = ({ v, width, height }) => (
+const BodyBack: React.FC<{ v: Vol; width: number; height: number; onPress?: (muscle: string) => void }> = ({ v, width, height, onPress }) => (
     <Svg width={width} height={height} viewBox="0 0 130 230">
         <Circle cx={65} cy={15} r={10.5} {...NEUTRAL} strokeWidth={SW} />
         <Rect x={60} y={26} width={10} height={7} rx={3} {...NEUTRAL} strokeWidth={SW} />
-        <Path d={TRAP} {...getMuscleColors(v.traps ?? v.back)} strokeWidth={SW} />
+        <Path d={TRAP} {...getMuscleColors(v.traps ?? v.back)} strokeWidth={SW} onPress={() => onPress?.('back')} />
         <Mirrored>
-            <Path d={DELT} {...getMuscleColors(v.shoulders)} strokeWidth={SW} />
-            <Path d={LAT} {...getMuscleColors(v.lats ?? v.back)} strokeWidth={SW} />
-            <Path d={UPPER_ARM} {...getMuscleColors(v.triceps ?? v.arms)} strokeWidth={SW} />
-            <Path d={FOREARM} {...getMuscleColors(v.forearms ?? v.arms)} strokeWidth={SW} />
+            <Path d={DELT} {...getMuscleColors(v.shoulders)} strokeWidth={SW} onPress={() => onPress?.('shoulders')} />
+            <Path d={LAT} {...getMuscleColors(v.lats ?? v.back)} strokeWidth={SW} onPress={() => onPress?.('back')} />
+            <Path d={UPPER_ARM} {...getMuscleColors(v.triceps ?? v.arms)} strokeWidth={SW} onPress={() => onPress?.('arms')} />
+            <Path d={FOREARM} {...getMuscleColors(v.forearms ?? v.arms)} strokeWidth={SW} onPress={() => onPress?.('arms')} />
             <Path d={HAND} {...NEUTRAL} strokeWidth={SW} />
-            <Path d={GLUTE} {...getMuscleColors(v.glutes ?? v.legs)} strokeWidth={SW} />
-            <Path d={HAMSTRING} {...getMuscleColors(v.hamstrings ?? v.legs)} strokeWidth={SW} />
-            <Path d={CALF} {...getMuscleColors(v.calves ?? v.legs)} strokeWidth={SW} />
+            <Path d={GLUTE} {...getMuscleColors(v.glutes ?? v.legs)} strokeWidth={SW} onPress={() => onPress?.('legs')} />
+            <Path d={HAMSTRING} {...getMuscleColors(v.hamstrings ?? v.legs)} strokeWidth={SW} onPress={() => onPress?.('legs')} />
+            <Path d={CALF} {...getMuscleColors(v.calves ?? v.legs)} strokeWidth={SW} onPress={() => onPress?.('legs')} />
         </Mirrored>
         {/* Lower back (centered) */}
-        <Rect x={57} y={88} width={16} height={22} rx={6} {...getMuscleColors(v['lower back'] ?? v.back)} strokeWidth={SW} />
+        <Rect x={57} y={88} width={16} height={22} rx={6} {...getMuscleColors(v['lower back'] ?? v.back)} strokeWidth={SW} onPress={() => onPress?.('back')} />
     </Svg>
 );
 
@@ -107,17 +107,18 @@ interface AnatomyHeatmapProps {
     volume: Vol;
     bodyWidth?: number;
     bodyHeight?: number;
+    onMusclePress?: (muscle: string) => void;
 }
 
-const AnatomyHeatmap: React.FC<AnatomyHeatmapProps> = ({ volume, bodyWidth = 130, bodyHeight = 230 }) => (
+const AnatomyHeatmap: React.FC<AnatomyHeatmapProps> = ({ volume, bodyWidth = 130, bodyHeight = 230, onMusclePress }) => (
     <View style={styles.row}>
         <View style={styles.col}>
             <Text style={styles.label}>FRONT</Text>
-            <BodyFront v={volume} width={bodyWidth} height={bodyHeight} />
+            <BodyFront v={volume} width={bodyWidth} height={bodyHeight} onPress={onMusclePress} />
         </View>
         <View style={styles.col}>
             <Text style={styles.label}>BACK</Text>
-            <BodyBack v={volume} width={bodyWidth} height={bodyHeight} />
+            <BodyBack v={volume} width={bodyWidth} height={bodyHeight} onPress={onMusclePress} />
         </View>
     </View>
 );
