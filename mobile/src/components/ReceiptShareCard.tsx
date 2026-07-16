@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
-import Svg, { Rect, Ellipse, Line } from 'react-native-svg';
+import { View, Text, StyleSheet, Dimensions, Platform, Image } from 'react-native';
+import Svg, { Ellipse, Line } from 'react-native-svg';
 
 /**
  * ReceiptShareCard — thermal-receipt style shareable (PUSH-inspired).
  *
- * Cream paper on black, monospace type, black section bars, line-art barbell,
+ * Cream paper on black, VT323 bitmap font, black section bars, dithered halftone graphics,
  * a fun "weight of X" equivalence, and a hand-drawn ink circle around the total.
  * Captured via the same ViewShot pipeline as WorkoutShareCard.
  */
@@ -13,7 +13,8 @@ import Svg, { Rect, Ellipse, Line } from 'react-native-svg';
 const { width: SW } = Dimensions.get('window');
 const CARD_W = Math.min(SW - 48, 360);
 
-const MONO = Platform.select({ ios: 'Courier New', android: 'monospace', default: 'monospace' });
+// Premium VT323 retro bitmap font loaded globally in app layout
+const MONO = 'VT323_400Regular';
 
 // Indian-flavored weight equivalences — pick the one that lands in a fun range
 const EQUIVALENTS: { kg: number; singular: string; plural: string }[] = [
@@ -35,35 +36,6 @@ export function weightEquivalence(totalKg: number): string {
     const count = Math.max(1, Math.round(totalKg / EQUIVALENTS[EQUIVALENTS.length - 1].kg));
     return `The weight of ${count.toLocaleString()} watermelons`;
 }
-
-// Bold line-art barbell (1-bit look, no dithering needed)
-const BarbellArt: React.FC = () => (
-    <Svg width={180} height={72} viewBox="0 0 180 72">
-        {/* bar */}
-        <Rect x={10} y={33} width={160} height={6} rx={3} fill="#141414" />
-        {/* inner plates */}
-        <Rect x={40} y={12} width={12} height={48} rx={4} fill="#141414" />
-        <Rect x={128} y={12} width={12} height={48} rx={4} fill="#141414" />
-        {/* outer plates */}
-        <Rect x={26} y={20} width={10} height={32} rx={4} fill="#141414" />
-        <Rect x={144} y={20} width={10} height={32} rx={4} fill="#141414" />
-        {/* collars */}
-        <Rect x={56} y={28} width={6} height={16} rx={2} fill="#141414" />
-        <Rect x={118} y={28} width={6} height={16} rx={2} fill="#141414" />
-    </Svg>
-);
-
-// Trophy line-art for PR receipts
-const TrophyArt: React.FC = () => (
-    <Svg width={120} height={90} viewBox="0 0 120 90">
-        <Rect x={38} y={8} width={44} height={38} rx={10} fill="#141414" />
-        <Rect x={26} y={12} width={12} height={22} rx={6} fill="none" stroke="#141414" strokeWidth={5} />
-        <Rect x={82} y={12} width={12} height={22} rx={6} fill="none" stroke="#141414" strokeWidth={5} />
-        <Rect x={54} y={46} width={12} height={14} fill="#141414" />
-        <Rect x={42} y={60} width={36} height={8} rx={2} fill="#141414" />
-        <Rect x={34} y={70} width={52} height={9} rx={2} fill="#141414" />
-    </Svg>
-);
 
 // Hand-drawn ink circle (two offset ellipses = sketchy pen look)
 const InkCircle: React.FC<{ width: number; height: number; color?: string }> = ({ width, height, color = '#2B5CE6' }) => (
@@ -111,6 +83,19 @@ const ReceiptShareCard = React.forwardRef<View, ReceiptShareCardProps>(
         const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
         const hasPrs = !!prs && prs.length > 0;
 
+        // Select dithered image based on PR status or Indian weight equivalence
+        let ditherImage = require('../../assets/barbell_dither.png');
+        if (hasPrs) {
+            ditherImage = require('../../assets/trophy_dither.png');
+        } else if (headlineCaption) {
+            const captionLower = headlineCaption.toLowerCase();
+            if (captionLower.includes('elephant')) {
+                ditherImage = require('../../assets/elephant_dither.png');
+            } else if (captionLower.includes('rickshaw')) {
+                ditherImage = require('../../assets/rickshaw_dither.png');
+            }
+        }
+
         return (
             <View ref={ref} style={styles.stage} collapsable={false}>
                 <View style={styles.paper}>
@@ -132,7 +117,7 @@ const ReceiptShareCard = React.forwardRef<View, ReceiptShareCardProps>(
 
                     {/* Art + headline */}
                     <View style={styles.artWrap}>
-                        {hasPrs ? <TrophyArt /> : <BarbellArt />}
+                        <Image source={ditherImage} style={styles.ditherArt} resizeMode="contain" />
                         <Text style={styles.headline}>{headlineValue}</Text>
                         {!!headlineCaption && <Text style={styles.caption}>{headlineCaption}</Text>}
                     </View>
@@ -219,11 +204,10 @@ const styles = StyleSheet.create({
     wordmark: {
         fontFamily: MONO,
         fontSize: 26,
-        fontWeight: '900',
         color: '#141414',
         letterSpacing: -1,
     },
-    reg: { fontSize: 10, fontWeight: '700' },
+    reg: { fontSize: 10 },
     timestamp: { alignItems: 'flex-end' },
     tsText: { fontFamily: MONO, fontSize: 11, color: '#141414' },
     bar: {
@@ -240,13 +224,16 @@ const styles = StyleSheet.create({
         color: '#F1EEE6',
         letterSpacing: 2,
     },
-    artWrap: { alignItems: 'center', paddingVertical: 22 },
+    artWrap: { alignItems: 'center', paddingVertical: 14 },
+    ditherArt: {
+        width: 140,
+        height: 80,
+    },
     headline: {
         fontFamily: MONO,
         fontSize: 32,
-        fontWeight: '700',
         color: '#141414',
-        marginTop: 14,
+        marginTop: 10,
         letterSpacing: 1,
     },
     caption: {
@@ -264,7 +251,7 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
     },
     rowLabel: { fontFamily: MONO, fontSize: 14.5, color: '#141414' },
-    rowValue: { fontFamily: MONO, fontSize: 14.5, color: '#141414', fontWeight: '700' },
+    rowValue: { fontFamily: MONO, fontSize: 14.5, color: '#141414' },
     rowSub: { fontFamily: MONO, fontSize: 12, color: '#5A5850' },
     circledWrap: {
         paddingHorizontal: 18,

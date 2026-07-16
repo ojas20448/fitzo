@@ -8,8 +8,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
+import { useFonts } from 'expo-font';
 import {
-    useFonts,
     Lexend_300Light,
     Lexend_400Regular,
     Lexend_500Medium,
@@ -131,6 +131,7 @@ export default function RootLayout() {
         Lexend_600SemiBold,
         Lexend_700Bold,
         Lexend_800ExtraBold,
+        'VT323_400Regular': require('../assets/fonts/VT323-Regular.ttf'),
     });
 
     const [appReady, setAppReady] = useState(false);
