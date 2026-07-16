@@ -234,62 +234,6 @@ export default function ProfileScreen() {
                     </View>
                 </View>
 
-                {/* Join Gym Card - Show if user has no gym */}
-                {!user?.gym_name && (
-                    <GlassCard style={styles.joinGymCard}>
-                        <TouchableOpacity 
-                            style={styles.joinGymHeader} 
-                            onPress={() => setShowJoinInput(!showJoinInput)}
-                            accessibilityLabel="Join your gym"
-                            accessibilityRole="button"
-                        >
-                            <View style={styles.joinGymLeft}>
-                                <MaterialIcons name="add-business" size={22} color={colors.text.secondary} />
-                                <View style={{ marginLeft: spacing.sm, flex: 1 }}>
-                                    <Text style={styles.joinGymTitle}>Join your gym</Text>
-                                    <Text style={styles.joinGymSub}>
-                                        Enter your gym's access code to unlock crowd & check-ins
-                                    </Text>
-                                </View>
-                            </View>
-                            <MaterialIcons 
-                                name={showJoinInput ? 'expand-less' : 'expand-more'} 
-                                size={22} 
-                                color={colors.text.muted} 
-                            />
-                        </TouchableOpacity>
-
-                        {showJoinInput && (
-                            <View style={styles.joinForm}>
-                                <TextInput
-                                    style={styles.codeInput}
-                                    value={gymCode}
-                                    onChangeText={(t) => setGymCode(t.toUpperCase())}
-                                    placeholder="e.g. FITZO-A1B2C3D4"
-                                    placeholderTextColor={colors.text.muted}
-                                    autoCapitalize="characters"
-                                    autoCorrect={false}
-                                    editable={!joining}
-                                    onSubmitEditing={handleJoinGym}
-                                    returnKeyType="go"
-                                    accessibilityLabel="Gym access code"
-                                />
-                                <TouchableOpacity
-                                    style={[styles.joinBtn, joining && styles.joinBtnDisabled]}
-                                    onPress={handleJoinGym}
-                                    disabled={joining}
-                                >
-                                    {joining ? (
-                                        <ActivityIndicator size="small" color={colors.background} />
-                                    ) : (
-                                        <Text style={styles.joinBtnText}>JOIN</Text>
-                                    )}
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </GlassCard>
-                )}
-
                 {/* Monthly Progress */}
                 <View style={styles.section}>
                     <Text style={styles.sectionLabel}>Activity History</Text>
@@ -391,6 +335,62 @@ export default function ProfileScreen() {
                         </TouchableOpacity>
                     </GlassCard>
                 </View>
+
+                {/* Join Gym Card - Show if user has no gym */}
+                {!user?.gym_name && (
+                    <GlassCard style={[styles.joinGymCard, { marginHorizontal: 0, marginTop: spacing.xl, marginBottom: spacing.sm }]}>
+                        <TouchableOpacity 
+                            style={styles.joinGymHeader} 
+                            onPress={() => setShowJoinInput(!showJoinInput)}
+                            accessibilityLabel="Join your gym"
+                            accessibilityRole="button"
+                        >
+                            <View style={styles.joinGymLeft}>
+                                <MaterialIcons name="add-business" size={22} color={colors.text.secondary} />
+                                <View style={{ marginLeft: spacing.sm, flex: 1 }}>
+                                    <Text style={styles.joinGymTitle}>Join your gym</Text>
+                                    <Text style={styles.joinGymSub}>
+                                        Enter your gym's access code to unlock crowd & check-ins
+                                    </Text>
+                                </View>
+                            </View>
+                            <MaterialIcons 
+                                name={showJoinInput ? 'expand-less' : 'expand-more'} 
+                                size={22} 
+                                color={colors.text.muted} 
+                            />
+                        </TouchableOpacity>
+
+                        {showJoinInput && (
+                            <View style={styles.joinForm}>
+                                <TextInput
+                                    style={styles.codeInput}
+                                    value={gymCode}
+                                    onChangeText={(t) => setGymCode(t.toUpperCase())}
+                                    placeholder="e.g. FITZO-A1B2C3D4"
+                                    placeholderTextColor={colors.text.muted}
+                                    autoCapitalize="characters"
+                                    autoCorrect={false}
+                                    editable={!joining}
+                                    onSubmitEditing={handleJoinGym}
+                                    returnKeyType="go"
+                                    accessibilityLabel="Gym access code"
+                                />
+                                <TouchableOpacity
+                                    style={[styles.joinBtn, joining && styles.joinBtnDisabled]}
+                                    onPress={handleJoinGym}
+                                    disabled={joining}
+                                >
+                                    {joining ? (
+                                        <ActivityIndicator size="small" color={colors.background} />
+                                    ) : (
+                                        <Text style={styles.joinBtnText}>JOIN</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </GlassCard>
+                )}
 
                 {/* Logout */}
                 <Button

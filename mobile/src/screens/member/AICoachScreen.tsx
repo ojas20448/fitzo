@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import GlassCard from '../../components/GlassCard';
 import Button from '../../components/Button';
@@ -215,10 +216,13 @@ export default function AICoachScreen() {
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
             <View style={styles.header}>
-                <MaterialIcons name="smart-toy" size={28} color={colors.primary} />
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton} accessibilityLabel="Go back">
+                    <MaterialIcons name="chevron-left" size={32} color={colors.text.primary} />
+                </TouchableOpacity>
+                <MaterialIcons name="smart-toy" size={26} color={colors.primary} style={{ marginRight: spacing.sm }} />
                 <View style={styles.headerText}>
                     <Text style={styles.headerTitle}>AI Coach</Text>
-                    <Text style={styles.headerSubtitle}>Powered by Gemini Pro</Text>
+                    <Text style={styles.headerSubtitle}>Powered by Fitzo</Text>
                 </View>
             </View>
 
@@ -334,6 +338,11 @@ const styles = StyleSheet.create({
         gap: spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: colors.glass.border,
+    },
+    backButton: {
+        marginRight: -4,
+        marginLeft: -8,
+        padding: 4,
     },
     headerText: {
         flex: 1,
