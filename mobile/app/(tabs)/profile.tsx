@@ -51,14 +51,14 @@ export default function ProfileScreen() {
 
     // Preset Avatars
     const AVATAR_PRESETS = [
-        'https://api.dicebear.com/7.x/avataaars/png?seed=Felix',
-        'https://api.dicebear.com/7.x/avataaars/png?seed=Aneka',
-        'https://api.dicebear.com/7.x/avataaars/png?seed=Mark',
-        'https://api.dicebear.com/7.x/avataaars/png?seed=Jasmine',
-        'https://api.dicebear.com/7.x/avataaars/png?seed=Diego',
-        'https://api.dicebear.com/7.x/avataaars/png?seed=Sarah',
-        'https://api.dicebear.com/7.x/bottts/png?seed=1',
-        'https://api.dicebear.com/7.x/bottts/png?seed=2'
+        'avatar_zeus',
+        'avatar_discobolus',
+        'avatar_lion',
+        'avatar_kettlebell',
+        'avatar_trophy',
+        'avatar_runner',
+        'avatar_heart',
+        'avatar_barbell',
     ];
 
     useFocusEffect(

@@ -12,6 +12,15 @@ import AnatomyHeatmap, { getMuscleColors } from '../../components/AnatomyHeatmap
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
+const SUB_MUSCLES: Record<string, string[]> = {
+    chest: ['pectorals'],
+    back: ['lats', 'traps', 'upper back', 'lower back', 'rear delts'],
+    shoulders: ['delts'],
+    arms: ['biceps', 'triceps', 'forearms'],
+    legs: ['quads', 'hamstrings', 'glutes', 'calves'],
+    core: ['abs', 'obliques'],
+};
+
 const StatsScreen = () => {
     const [activeTab, setActiveTab] = useState<'training' | 'nutrition'>('training');
     const [history, setHistory] = useState<any[]>([]);
@@ -27,6 +36,8 @@ const StatsScreen = () => {
         legs: 0,
         core: 0,
     });
+    const [detailedData, setDetailedData] = useState<Record<string, number>>({});
+    const [expandedMuscle, setExpandedMuscle] = useState<string | null>(null);
     
     const toast = useToast();
     const { calorieGoal } = useNutrition();
@@ -76,17 +87,22 @@ const StatsScreen = () => {
                 core: 'core', abs: 'core', obliques: 'core',
             };
 
+            const detailedCounts: Record<string, number> = {};
             if (weeksArray.length > 0 && detailedArray.length > 0) {
                 const latestWeekStart = weeksArray[weeksArray.length - 1]?.week_start;
                 detailedArray.forEach((row: any) => {
                     if (row.week_start === latestWeekStart) {
-                        const bucket = BUCKET[String(row.muscle_group).toLowerCase()];
+                        const muscle = String(row.muscle_group).toLowerCase();
+                        detailedCounts[muscle] = (detailedCounts[muscle] || 0) + (parseInt(row.total_sets) || 0);
+                        
+                        const bucket = BUCKET[muscle];
                         if (bucket && bucket in counts) {
                             counts[bucket] += parseInt(row.total_sets) || 0;
                         }
                     }
                 });
             }
+            setDetailedData(detailedCounts);
             setVolumeData(counts);
 
         } catch (error) {
@@ -154,7 +170,7 @@ const StatsScreen = () => {
                     <Text style={styles.targetLabel}>Target: 6 sets/week</Text>
                 </View>
 
-                <AnatomyHeatmap volume={volumeData} bodyWidth={bodyWidth} bodyHeight={bodyHeight} />
+                <AnatomyHeatmap volume={{ ...volumeData, ...detailedData }} bodyWidth={bodyWidth} bodyHeight={bodyHeight} />
 
                 {/* Muscle Breakdown List */}
                 <View style={styles.breakdownList}>
@@ -170,16 +186,54 @@ const StatsScreen = () => {
                             badgeColor = '#FDC90D';
                         }
 
+                        const isExpanded = expandedMuscle === name;
+
                         return (
-                            <View key={name} style={styles.breakdownItem}>
-                                <View style={styles.breakdownLeft}>
-                                    <Text style={styles.muscleName}>{name.toUpperCase()}</Text>
-                                    <Text style={styles.muscleSets}>{sets} sets completed</Text>
-                                </View>
-                                <View style={[styles.statusBadge, { borderColor: status.stroke }]}>
-                                    <View style={[styles.badgeDot, { backgroundColor: badgeColor }]} />
-                                    <Text style={[styles.statusText, { color: badgeColor }]}>{statusText}</Text>
-                                </View>
+                            <View key={name} style={{ marginBottom: spacing.xs }}>
+                                <TouchableOpacity 
+                                    style={styles.breakdownItem} 
+                                    onPress={() => setExpandedMuscle(isExpanded ? null : name)}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={styles.breakdownLeft}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                            <Text style={styles.muscleName}>{name.toUpperCase()}</Text>
+                                            <MaterialIcons 
+                                                name={isExpanded ? 'expand-less' : 'expand-more'} 
+                                                size={18} 
+                                                color={colors.text.muted} 
+                                            />
+                                        </View>
+                                        <Text style={styles.muscleSets}>{sets} sets completed</Text>
+                                    </View>
+                                    <View style={[styles.statusBadge, { borderColor: status.stroke }]}>
+                                        <View style={[styles.badgeDot, { backgroundColor: badgeColor }]} />
+                                        <Text style={[styles.statusText, { color: badgeColor }]}>{statusText}</Text>
+                                    </View>
+                                </TouchableOpacity>
+
+                                {isExpanded && (
+                                    <View style={styles.subMuscleContainer}>
+                                        {SUB_MUSCLES[name]?.map(sub => {
+                                            const subSets = detailedData[sub] || 0;
+                                            let subBadgeColor = 'rgba(255, 255, 255, 0.3)';
+                                            if (subSets >= 6) subBadgeColor = '#34D159';
+                                            else if (subSets > 0) subBadgeColor = '#FDC90D';
+
+                                            return (
+                                                <View key={sub} style={styles.subMuscleRow}>
+                                                    <Text style={styles.subMuscleName}>
+                                                        {sub.toUpperCase()}
+                                                    </Text>
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                                        <Text style={styles.subMuscleSets}>{subSets} sets</Text>
+                                                        <View style={[styles.subBadgeDot, { backgroundColor: subBadgeColor }]} />
+                                                    </View>
+                                                </View>
+                                            );
+                                        })}
+                                    </View>
+                                )}
                             </View>
                         );
                     })}
@@ -615,6 +669,39 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
+    },
+    subMuscleContainer: {
+        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.md,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        marginTop: 2,
+        marginLeft: spacing.lg,
+        gap: spacing.xs,
+    },
+    subMuscleRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: spacing.xs,
+    },
+    subMuscleName: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.secondary,
+        letterSpacing: 0.5,
+    },
+    subMuscleSets: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.muted,
+    },
+    subBadgeDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
     },
 });
 

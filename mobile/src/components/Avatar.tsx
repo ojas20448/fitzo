@@ -15,6 +15,17 @@ interface AvatarProps {
 // BlurHash placeholder - neutral gray pattern
 const PLACEHOLDER_BLURHASH = 'L5H2EC=PM+yV0g-mq.wG9c010J}I';
 
+const LOCAL_AVATARS: Record<string, any> = {
+    avatar_zeus: require('../../assets/avatar_zeus.png'),
+    avatar_discobolus: require('../../assets/avatar_discobolus.png'),
+    avatar_lion: require('../../assets/avatar_lion.png'),
+    avatar_kettlebell: require('../../assets/avatar_kettlebell.png'),
+    avatar_trophy: require('../../assets/avatar_trophy.png'),
+    avatar_runner: require('../../assets/avatar_runner.png'),
+    avatar_heart: require('../../assets/avatar_heart.png'),
+    avatar_barbell: require('../../assets/avatar_barbell.png'),
+};
+
 const Avatar: React.FC<AvatarProps> = ({
     uri,
     name,
@@ -60,6 +71,8 @@ const Avatar: React.FC<AvatarProps> = ({
 
     const dimension = getSize();
     const onlineIndicatorSize = Math.max(dimension / 5, 10);
+    
+    const imageSource = uri && LOCAL_AVATARS[uri] ? LOCAL_AVATARS[uri] : { uri };
 
     return (
         <View
@@ -88,7 +101,7 @@ const Avatar: React.FC<AvatarProps> = ({
             {/* Image overlay - using expo-image for automatic caching */}
             {uri && (
                 <Image
-                    source={{ uri }}
+                    source={imageSource}
                     style={[
                         styles.image,
                         {
