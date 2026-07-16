@@ -37,7 +37,7 @@ const ScrollWheelPicker: React.FC<ScrollWheelPickerProps> = ({
         }
     }, [selectedValue]);
 
-    const handleMomentumEnd = useCallback(
+    const handleScrollEnd = useCallback(
         (e: any) => {
             const offsetY = e.nativeEvent.contentOffset.y;
             let idx = Math.round(offsetY / PICKER_ITEM_HEIGHT);
@@ -62,7 +62,8 @@ const ScrollWheelPicker: React.FC<ScrollWheelPickerProps> = ({
                 showsVerticalScrollIndicator={false}
                 snapToInterval={PICKER_ITEM_HEIGHT}
                 decelerationRate="fast"
-                onMomentumScrollEnd={handleMomentumEnd}
+                onMomentumScrollEnd={handleScrollEnd}
+                onScrollEndDrag={handleScrollEnd}
                 contentContainerStyle={{
                     paddingVertical: padCount * PICKER_ITEM_HEIGHT,
                 }}
