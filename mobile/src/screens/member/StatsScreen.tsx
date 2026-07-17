@@ -4,12 +4,15 @@ import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { Svg, Rect, G, Text as SvgText } from 'react-native-svg';
+import ViewShot, { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import api, { aiAPI } from '../../services/api';
 import { useToast } from '../../components/Toast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNutrition } from '../../context/NutritionContext';
 import AnatomyHeatmap, { getMuscleColors } from '../../components/AnatomyHeatmap';
+import ReceiptShareCard from '../../components/ReceiptShareCard';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -130,15 +133,28 @@ const StatsScreen = () => {
         }
     };
 
+    const recapShotRef = useRef<View>(null);
+
     const handleShareRecap = async () => {
         if (!weeklyRecap) return;
         try {
-            await Share.share({
-                title: 'My Fitzo Weekly AI Recap',
-                message: `🔥 Fitzo Weekly AI Recap:\n\n"${weeklyRecap.summary_text}"\n\n💪 Workouts: ${weeklyRecap.recap_data.workouts_count} | 🎯 Streak: ${weeklyRecap.recap_data.streak_days} days!`,
-            });
-        } catch (error) {
-            toast.error('Error', 'Could not share recap');
+            // Capture the receipt-style card as an image (matches workout recap sharing)
+            const uri = await captureRef(recapShotRef, { format: 'png', quality: 1, result: 'tmpfile' });
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share your week' });
+                return;
+            }
+            throw new Error('sharing unavailable');
+        } catch {
+            // Fallback: plain text share
+            try {
+                await Share.share({
+                    title: 'My Fitzo Weekly AI Recap',
+                    message: `🔥 Fitzo Weekly AI Recap:\n\n"${weeklyRecap.summary_text}"\n\n💪 Workouts: ${weeklyRecap.recap_data.workouts_count} | 🎯 Streak: ${weeklyRecap.recap_data.streak_days} days!`,
+                });
+            } catch {
+                toast.error('Error', 'Could not share recap');
+            }
         }
     };
 
@@ -420,6 +436,26 @@ const StatsScreen = () => {
                 {activeTab === 'training' ? renderAnatomySection() : renderWeeklyChart()}
 
             </ScrollView>
+
+            {/* Off-screen receipt for weekly recap sharing (captured by ViewShot) */}
+            {weeklyRecap && (
+                <View style={{ position: 'absolute', left: -4000, top: 0 }} pointerEvents="none">
+                    <ViewShot ref={recapShotRef} options={{ format: 'png', quality: 1 }}>
+                        <ReceiptShareCard
+                            title="Weekly Recap"
+                            headlineValue={`${weeklyRecap.recap_data.workouts_count} WORKOUTS`}
+                            headlineCaption={`${weeklyRecap.recap_data.checkin_count} gym check-ins this week`}
+                            rows={[
+                                { label: 'Avg calories', value: `${weeklyRecap.recap_data.avg_calories || 0} kcal` },
+                                { label: 'Avg protein', value: `${weeklyRecap.recap_data.avg_protein || 0} g` },
+                                { label: 'Weight trend', value: `${weeklyRecap.recap_data.weight_trend || 'stable'}` },
+                            ]}
+                            total={{ label: 'Streak', value: `${weeklyRecap.recap_data.streak_days} days` }}
+                            date={new Date()}
+                        />
+                    </ViewShot>
+                </View>
+            )}
         </SafeAreaView>
     );
 };

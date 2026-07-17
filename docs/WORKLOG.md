@@ -196,3 +196,17 @@ so "Swiss tracking" needs fontSize-proportional values.
 - Share flow confirmed: finish workout → recap screen → STORY/RECEIPT toggle →
   ViewShot PNG → expo-sharing sheet (Instagram Stories, WhatsApp, etc.)
 - Removed stray preview_anatomy.html from repo root
+
+## Best-user polish pass (July 17, 2026)
+
+- **Exercise catalog seeded: 38 → 164 rows** (`scripts/seed_exercises_from_catalog.js`,
+  insert-only) — Smart Log name matching, heatmap muscle attribution, PR detection,
+  and coach context all sharpen; 126 mobile-catalog exercises added with normalized
+  muscle_groups + category + is_compound heuristic
+- **Weekly recap share is now a 1-bit receipt** — StatsScreen captures a
+  ReceiptShareCard (workouts headline, check-ins caption, calories/protein/trend rows,
+  streak circled in ink) via the ViewShot pipeline; text share kept as fallback
+- Verified avatar system end-to-end (8 dithered presets → picker → PUT /member/profile
+  → auth-cache invalidation) — already fully wired, no changes needed
+- Food depth reviewed: 1,000+ local Indian foods + IFCT2017 + OpenFoodFacts + USDA +
+  AI photo/text logging — depth is sufficient; no additions needed

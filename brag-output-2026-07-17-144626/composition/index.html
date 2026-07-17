@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;700;900&family=VT323&display=swap" rel="stylesheet" />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        margin: 0; width: 1920px; height: 1080px; overflow: hidden;
+        background: #000;
+      }
+      body { font-family: "Lexend", sans-serif; color: #fff; }
+      .mono { font-family: "VT323", monospace; }
+
+      .center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+
+      /* ── Receipt ── */
+      #receipt {
+        width: 460px; background: #F1EEE6; color: #141414; border-radius: 14px;
+        padding: 30px 30px 38px; transform: rotate(-0.6deg);
+        box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+        font-family: "VT323", monospace;
+      }
+      .r-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+      .r-brand { font-size: 44px; letter-spacing: -1px; font-weight: 400; }
+      .r-brand sup { font-size: 14px; }
+      .r-ts { text-align: right; font-size: 20px; line-height: 1.3; }
+      .r-bar { display: inline-block; background: #1A1A1A; color: #F1EEE6; font-size: 20px; letter-spacing: 3px; padding: 4px 12px; margin: 6px 0 10px; }
+      .r-art { display: block; margin: 14px auto 8px; width: 300px; height: auto; image-rendering: pixelated; }
+      .r-big { text-align: center; font-size: 62px; letter-spacing: 2px; margin-top: 4px; }
+      .r-cap { text-align: center; font-size: 24px; margin-top: 2px; }
+      .r-dash { border-top: 3px dashed #141414; margin: 16px 0 10px; }
+      .r-row { display: flex; justify-content: space-between; font-size: 26px; align-items: center; }
+      .r-total { position: relative; padding: 8px 18px; }
+      .r-total svg { position: absolute; inset: 0; overflow: visible; }
+
+      /* ── Wordmark ── */
+      .logo-tile { width: 150px; height: 150px; border-radius: 32px; background: #0E0E0E; border: 1px solid rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; }
+      .logo-tile svg { width: 96px; height: 96px; }
+      .wordmark { font-size: 110px; font-weight: 900; letter-spacing: -4px; }
+      .tagline { font-size: 42px; font-weight: 400; color: rgba(255,255,255,0.7); letter-spacing: -0.5px; }
+
+      /* ── Shared glass ── */
+      .glass { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10); border-radius: 24px; }
+
+      /* ── Coach scene ── */
+      .h-left { position: absolute; left: 140px; top: 0; bottom: 0; width: 700px; display: flex; flex-direction: column; justify-content: center; }
+      .headline { font-size: 72px; font-weight: 700; letter-spacing: -2px; line-height: 1.08; }
+      .sub { margin-top: 22px; font-size: 30px; color: rgba(255,255,255,0.55); font-weight: 400; }
+      .chat-panel { position: absolute; right: 150px; top: 280px; width: 740px; padding: 46px; }
+      .bubble-user { margin-left: auto; max-width: 70%; background: #fff; color: #000; border-radius: 22px 22px 6px 22px; padding: 20px 30px; font-size: 32px; font-weight: 500; width: fit-content; }
+      .bubble-coach { margin-top: 28px; max-width: 92%; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 22px 22px 22px 6px; padding: 26px 32px; font-size: 33px; line-height: 1.45; font-weight: 400; }
+      .bubble-coach .char { opacity: 0; }
+      .coach-label { font-size: 19px; color: rgba(255,255,255,0.45); letter-spacing: 3px; margin-bottom: 10px; }
+      .chips { display: flex; gap: 14px; margin-top: 26px; }
+      .chip { font-size: 21px; color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; padding: 9px 20px; }
+
+      /* ── Heatmap scene ── */
+      .bodies { position: absolute; right: 200px; top: 50%; transform: translateY(-50%); display: flex; gap: 90px; }
+      .bodycol { text-align: center; }
+      .bodycol .lbl { font-size: 20px; letter-spacing: 5px; color: rgba(255,255,255,0.45); margin-bottom: 14px; font-weight: 500; }
+      .muscle { fill: rgba(255,255,255,0.05); stroke: rgba(255,255,255,0.14); stroke-width: 1.4; }
+      .neutral { fill: rgba(255,255,255,0.035); stroke: rgba(255,255,255,0.10); stroke-width: 1.4; }
+      .counter-row { display: flex; align-items: baseline; gap: 16px; margin-top: 30px; }
+      .counter { font-size: 64px; font-weight: 700; letter-spacing: -1px; }
+      .counter-lbl { font-size: 26px; color: rgba(255,255,255,0.55); }
+      .zone-pill { display: inline-flex; align-items: center; gap: 12px; margin-top: 26px; font-size: 30px; font-weight: 500; color: #34D159; border: 1.5px solid rgba(52,209,89,0.55); border-radius: 999px; padding: 12px 28px; width: fit-content; }
+      .zone-dot { width: 12px; height: 12px; border-radius: 50%; background: #34D159; }
+
+      /* ── Food + gym scene ── */
+      .duo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 60px; }
+      .card { width: 560px; padding: 40px 44px; }
+      .card-title { font-size: 20px; letter-spacing: 4px; color: rgba(255,255,255,0.45); margin-bottom: 22px; font-weight: 500; }
+      .food-line { font-size: 36px; font-weight: 500; min-height: 52px; }
+      .food-line .char { opacity: 0; }
+      .macros { display: flex; gap: 34px; margin-top: 28px; }
+      .macro { text-align: center; }
+      .macro b { display: block; font-size: 44px; font-weight: 700; }
+      .macro span { font-size: 20px; color: rgba(255,255,255,0.5); }
+      .lb-row { display: flex; align-items: center; gap: 20px; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 27px; }
+      .lb-row:last-child { border-bottom: none; }
+      .lb-rank { width: 40px; color: rgba(255,255,255,0.45); font-weight: 700; }
+      .lb-name { flex: 1; font-weight: 500; }
+      .lb-xp { color: rgba(255,255,255,0.6); }
+      .kudos { font-size: 30px; transform: scale(0); display: inline-block; }
+
+      /* ── Outro ── */
+      .outro-wrap { display: flex; flex-direction: column; align-items: center; gap: 34px; }
+      .outro-brand { display: flex; align-items: center; gap: 30px; }
+      .cta-line { font-size: 34px; color: rgba(255,255,255,0.55); font-weight: 400; }
+      .cta-line b { color: #fff; font-weight: 500; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="21"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!-- ══ AUDIO ══ -->
+      <audio id="music" data-start="0" data-volume="0.5" src="assets/music/happy-beats-business-moves-vol-9-by-ende-dot-app.mp3"></audio>
+      <!-- printer ticks (receipt blocks) -->
+      <audio id="sfx-1" data-start="0.45" data-volume="0.7" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx-2" data-start="0.95" data-volume="0.7" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx-3" data-start="1.45" data-volume="0.7" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx-4" data-start="1.95" data-volume="0.7" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx-5" data-start="2.45" data-volume="0.7" src="assets/sfx/click_002.ogg"></audio>
+      <!-- pen scribble -->
+      <audio id="sfx-6" data-start="3.05" data-volume="0.5" src="assets/sfx/keypress-002.wav"></audio>
+      <!-- wordmark stamp — beat-locked: 4.23s -->
+      <audio id="sfx-7" data-start="4.23" data-volume="0.9" src="assets/sfx/drop_002.ogg"></audio>
+      <!-- coach typing -->
+      <audio id="sfx-8" data-start="7.65" data-volume="0.5" src="assets/sfx/keypress-001.wav"></audio>
+      <audio id="sfx-9" data-start="7.90" data-volume="0.5" src="assets/sfx/keypress-002.wav"></audio>
+      <audio id="sfx-10" data-start="8.15" data-volume="0.5" src="assets/sfx/keypress-003.wav"></audio>
+      <audio id="sfx-11" data-start="8.40" data-volume="0.5" src="assets/sfx/keypress-001.wav"></audio>
+      <audio id="sfx-12" data-start="8.65" data-volume="0.5" src="assets/sfx/keypress-002.wav"></audio>
+      <!-- context chips — beat-grid: 8.96, 9.50, 10.01 -->
+      <audio id="sfx-13" data-start="8.96" data-volume="0.6" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx-14" data-start="9.50" data-volume="0.6" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx-15" data-start="10.01" data-volume="0.6" src="assets/sfx/click_002.ogg"></audio>
+      <!-- muscle flips — beat-grid: 11.06, 11.60, 12.12 -->
+      <audio id="sfx-16" data-start="11.06" data-volume="0.6" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx-17" data-start="11.60" data-volume="0.6" src="assets/sfx/click_002.ogg"></audio>
+      <audio id="sfx-18" data-start="12.12" data-volume="0.6" src="assets/sfx/click_002.ogg"></audio>
+      <!-- growth-zone label — beat-locked: 12.65s -->
+      <audio id="sfx-19" data-start="12.65" data-volume="0.8" src="assets/sfx/drop_002.ogg"></audio>
+      <!-- food typing -->
+      <audio id="sfx-20" data-start="16.30" data-volume="0.5" src="assets/sfx/keypress-003.wav"></audio>
+      <audio id="sfx-21" data-start="16.55" data-volume="0.5" src="assets/sfx/keypress-001.wav"></audio>
+      <audio id="sfx-22" data-start="16.80" data-volume="0.5" src="assets/sfx/keypress-002.wav"></audio>
+      <!-- kudos pop — beat: 17.91 -->
+      <audio id="sfx-23" data-start="17.91" data-volume="0.7" src="assets/sfx/click_002.ogg"></audio>
+      <!-- final stamp — beat: 18.96 -->
+      <audio id="sfx-24" data-start="18.96" data-volume="0.9" src="assets/sfx/drop_002.ogg"></audio>
+
+      <!-- ══ SCENE 1 · Receipt prints · 0–4.2 ══ -->
+      <div id="s1" class="clip center" data-start="0" data-duration="4.2" data-track-index="1">
+        <div id="receipt">
+          <div class="r-head r-block">
+            <div class="r-brand">FITZO<sup>®</sup></div>
+            <div class="r-ts">17 JUL 2026<br />18:42</div>
+          </div>
+          <div class="r-block"><span class="r-bar">TOTAL WEIGHT MOVED</span></div>
+          <img class="r-art r-block" src="assets/img/rickshaw_dither.png" alt="" />
+          <div class="r-big r-block">12,480 KG</div>
+          <div class="r-cap r-block">The weight of 17 auto-rickshaws</div>
+          <div class="r-dash r-block"></div>
+          <div class="r-row r-block">
+            <span>Total</span>
+            <span class="r-total">
+              <svg viewBox="0 0 190 62">
+                <ellipse id="ink1" cx="95" cy="31" rx="88" ry="26" fill="none" stroke="#2B5CE6" stroke-width="3" />
+                <ellipse id="ink2" cx="98" cy="29" rx="84" ry="23" fill="none" stroke="#2B5CE6" stroke-width="2" opacity="0.55" />
+              </svg>
+              12,480 kg
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SCENE 2 · Wordmark · 4.2–6.9 ══ -->
+      <div id="s2" class="clip center" data-start="4.2" data-duration="2.7" data-track-index="2">
+        <div class="outro-wrap">
+          <div class="outro-brand" id="brand2">
+            <div class="logo-tile">
+              <svg viewBox="0 0 100 100"><path d="M25 80V20H75L65 35H42V44H62L55 57H42V80H25Z" fill="#fff" /></svg>
+            </div>
+            <div class="wordmark">FITZO</div>
+          </div>
+          <div class="tagline" id="tag2">The coach that actually knows you.</div>
+        </div>
+      </div>
+
+      <!-- ══ SCENE 3 · The coach knows · 6.9–10.55 ══ -->
+      <div id="s3" class="clip" data-start="6.9" data-duration="3.65" data-track-index="3" style="position:absolute; inset:0;">
+        <div id="s3inner" style="position:absolute; inset:0;">
+        <div class="h-left">
+          <div class="headline" id="h3">An AI coach that<br />reads your training.</div>
+          <div class="sub" id="h3sub">Workouts · food · sleep · streaks — all of it.</div>
+        </div>
+        <div class="chat-panel glass" id="panel3">
+          <div class="bubble-user" id="bu">kya karu aaj? 🏋️</div>
+          <div class="bubble-coach" id="bc">
+            <div class="coach-label">FITZO COACH</div>
+            <div id="coachText">Bench up 7.5 kg this month. But you've skipped legs 12 days — today's the day 🦵</div>
+          </div>
+          <div class="chips">
+            <div class="chip c3">14-day volume</div>
+            <div class="chip c3">sleep 7.2h</div>
+            <div class="chip c3">streak 12 🔥</div>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <!-- ══ SCENE 4 · Growth zones · 10.55–15.9 ══ -->
+      <div id="s4" class="clip" data-start="10.55" data-duration="5.35" data-track-index="4" style="position:absolute; inset:0;">
+        <div id="s4inner" style="position:absolute; inset:0;">
+        <div class="h-left">
+          <div class="headline" id="h4">See where<br />you're growing.</div>
+          <div class="counter-row" id="cr4">
+            <span class="counter" id="setCounter">2</span>
+            <span class="counter-lbl">sets this week</span>
+          </div>
+          <div class="zone-pill" id="zonePill"><span class="zone-dot"></span>Growth zone</div>
+        </div>
+        <div class="bodies" id="bodies4">
+          <div class="bodycol">
+            <div class="lbl">FRONT</div>
+            <svg width="300" height="530" viewBox="0 0 130 230">
+              <circle cx="65" cy="15" r="10.5" class="neutral" />
+              <rect x="60" y="26" width="10" height="8" rx="3" class="neutral" />
+              <path d="M52 118 Q65 129 78 118 L74.5 130 Q65 136 55.5 130 Z" class="neutral" />
+              <g id="fl">
+                <path class="muscle m-delts" d="M51 41 Q40 41 36.5 52 Q41 58 50 55 Q53 47 51 41 Z" />
+                <path class="muscle m-chest" d="M52 54 Q42.5 57 44 71 Q50 80 63.5 76 L63.5 56 Q57.5 52 52 54 Z" />
+                <path class="muscle m-arms" d="M36 56 Q29.5 61 29.5 74 Q30.5 86 37 89 Q42 83 41.5 70 Q41 60 36 56 Z" />
+                <path class="muscle m-arms" d="M32 92 Q26.5 97 25 110 Q24.5 121 28.5 127 Q34 124 35 111 Q36 98 32 92 Z" />
+                <path class="neutral" d="M26 130 Q22 131 22 136 Q22 141 26.5 141.5 Q30.5 141 30.5 136 Q30.5 131 26 130 Z" />
+                <path class="muscle" d="M50 80 Q46.5 89 48.5 108 Q51 114 53.5 112 L53.5 82 Q51.5 80 50 80 Z" />
+                <path class="muscle m-legs" d="M50 128 Q43.5 137 44.5 161 Q46 178 54 183 Q60.5 176 60 150 Q59.5 133 50 128 Z" />
+                <path class="muscle m-legs" d="M50 189 Q45.5 195 46.5 209 Q48.5 221 54 223 Q58 216 56.5 201 Q55.5 191 50 189 Z" />
+              </g>
+              <use href="#fl" transform="translate(130,0) scale(-1,1)" />
+              <rect x="56" y="80" width="18" height="36" rx="7" class="muscle" />
+            </svg>
+          </div>
+          <div class="bodycol">
+            <div class="lbl">BACK</div>
+            <svg width="300" height="530" viewBox="0 0 130 230">
+              <circle cx="65" cy="15" r="10.5" class="neutral" />
+              <rect x="60" y="26" width="10" height="7" rx="3" class="neutral" />
+              <path class="muscle m-back" d="M65 31 L47.5 45 Q65 55 82.5 45 Z" />
+              <g id="bl">
+                <path class="muscle m-delts" d="M51 41 Q40 41 36.5 52 Q41 58 50 55 Q53 47 51 41 Z" />
+                <path class="muscle m-back" d="M51.5 49 Q43 58 45.5 78 Q53 90 63.5 84 L63.5 51 Q57 46.5 51.5 49 Z" />
+                <path class="muscle m-arms" d="M36 56 Q29.5 61 29.5 74 Q30.5 86 37 89 Q42 83 41.5 70 Q41 60 36 56 Z" />
+                <path class="muscle m-arms" d="M32 92 Q26.5 97 25 110 Q24.5 121 28.5 127 Q34 124 35 111 Q36 98 32 92 Z" />
+                <path class="neutral" d="M26 130 Q22 131 22 136 Q22 141 26.5 141.5 Q30.5 141 30.5 136 Q30.5 131 26 130 Z" />
+                <path class="muscle m-legs" d="M63.5 113 Q48 112.5 47.5 125 Q47.5 137 63.5 135 Z" />
+                <path class="muscle m-legs" d="M50 139 Q44.5 147 45.5 167 Q47.5 181 55 185 Q60.5 178 59.5 153 Q59 141 50 139 Z" />
+                <path class="muscle m-legs" d="M50 191 Q45 197 46 210 Q48 221 54 223 Q58.5 215 57 201 Q56 192 50 191 Z" />
+              </g>
+              <use href="#bl" transform="translate(130,0) scale(-1,1)" />
+              <rect x="57" y="88" width="16" height="22" rx="6" class="muscle m-back" />
+            </svg>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <!-- ══ SCENE 5 · Dal to biryani + gym · 15.9–18.9 ══ -->
+      <div id="s5" class="clip" data-start="15.9" data-duration="3.0" data-track-index="5" style="position:absolute; inset:0;">
+        <div class="duo">
+          <div class="card glass" id="foodCard">
+            <div class="card-title">LOG FOOD · DAL TO BIRYANI</div>
+            <div class="food-line" id="foodLine">2 roti · dal · 100g paneer</div>
+            <div class="macros">
+              <div class="macro"><b id="mP">0</b><span>protein g</span></div>
+              <div class="macro"><b id="mC">0</b><span>carbs g</span></div>
+              <div class="macro"><b id="mF">0</b><span>fat g</span></div>
+            </div>
+          </div>
+          <div class="card glass" id="gymCard">
+            <div class="card-title">YOUR GYM · THIS WEEK</div>
+            <div class="lb-row"><span class="lb-rank">1</span><span class="lb-name">Rahul</span><span class="lb-xp">45 XP</span><span class="kudos" id="kudos">👊</span></div>
+            <div class="lb-row"><span class="lb-rank">2</span><span class="lb-name">Priya</span><span class="lb-xp">30 XP</span></div>
+            <div class="lb-row"><span class="lb-rank">3</span><span class="lb-name">You</span><span class="lb-xp">25 XP 🔥</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SCENE 6 · Outro · 18.85–21 ══ -->
+      <div id="s6" class="clip center" data-start="18.85" data-duration="2.15" data-track-index="6">
+        <div class="outro-wrap">
+          <div class="outro-brand" id="brand6">
+            <div class="logo-tile">
+              <svg viewBox="0 0 100 100"><path d="M25 80V20H75L65 35H42V44H62L55 57H42V80H25Z" fill="#fff" /></svg>
+            </div>
+            <div class="wordmark">FITZO</div>
+          </div>
+          <div class="tagline" id="tag6">The coach that actually knows you.</div>
+          <div class="cta-line" id="cta6">Early access → <b>fitzoapp.in</b></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Split text nodes into spans for deterministic typewriter reveals
+      function splitChars(id) {
+        const el = document.getElementById(id);
+        const text = el.textContent;
+        el.textContent = "";
+        for (const ch of text) {
+          const span = document.createElement("span");
+          span.className = "char";
+          span.textContent = ch;
+          el.appendChild(span);
+        }
+      }
+      splitChars("coachText");
+      splitChars("foodLine");
+
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      /* ══ Scene 1 · receipt prints 0–4.2 ══ */
+      tl.fromTo("#receipt", { y: -560 }, { y: 0, duration: 2.6, ease: "none" }, 0.2);
+      tl.fromTo("#receipt", { clipPath: "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0% 0)", duration: 2.6, ease: "steps(9)" }, 0.2);
+      tl.fromTo("#ink1", { strokeDasharray: 380, strokeDashoffset: 380 }, { strokeDashoffset: 0, duration: 0.5, ease: "power1.inOut" }, 3.0);
+      tl.fromTo("#ink2", { strokeDasharray: 360, strokeDashoffset: 360 }, { strokeDashoffset: 0, duration: 0.45, ease: "power1.inOut" }, 3.2);
+      tl.to("#receipt", { y: -700, opacity: 0.9, duration: 0.35, ease: "power2.in" }, 3.85);
+      tl.set("#receipt", { opacity: 0 }, 4.2); // hard kill at clip boundary
+
+      /* ══ Scene 2 · wordmark — beat-locked: 4.23s ══ */
+      tl.fromTo("#brand2", { scale: 1.18, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.32, ease: "power3.out" }, 4.23);
+      tl.fromTo("#tag2", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 4.75);
+      tl.to("#s2 .outro-wrap", { opacity: 0, y: -20, duration: 0.3, ease: "power2.in" }, 6.55);
+      tl.set("#s2 .outro-wrap", { opacity: 0 }, 6.9); // hard kill at clip boundary
+
+      /* ══ Scene 3 · coach 6.9–10.55 ══ */
+      tl.fromTo("#h3", { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 7.0);
+      tl.fromTo("#h3sub", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 7.25);
+      tl.fromTo("#panel3", { opacity: 0, x: 70 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 7.05);
+      tl.fromTo("#bu", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.6)" }, 7.3);
+      tl.fromTo("#bc", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 7.6);
+      tl.to("#coachText .char", { opacity: 1, duration: 0.01, stagger: 0.018, ease: "none" }, 7.65);
+      // context chips — beat-grid: 8.96, 9.50, 10.01
+      tl.fromTo(".c3", { opacity: 0, y: 14, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.25, ease: "back.out(1.5)", stagger: 0.54 }, 8.96);
+      tl.to("#s3inner", { opacity: 0, duration: 0.25, ease: "power1.in" }, 10.3);
+      tl.set("#s3inner", { opacity: 0 }, 10.55); // hard kill at clip boundary
+
+      /* ══ Scene 4 · heatmap — beat-locked: 10.54s cue starts the scene ══ */
+      tl.fromTo("#bodies4", { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 10.6);
+      tl.fromTo("#h4", { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 10.7);
+      tl.fromTo("#cr4", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 10.9);
+      // amber flash then green settle per group — beat-grid: 11.06, 11.60, 12.12
+      const flip = (sel, t) => {
+        tl.to(sel, { fill: "rgba(253,201,13,0.16)", stroke: "rgba(253,201,13,0.85)", duration: 0.18, ease: "none" }, t);
+        tl.to(sel, { fill: "rgba(52,209,89,0.18)", stroke: "rgba(52,209,89,0.85)", duration: 0.24, ease: "none" }, t + 0.22);
+      };
+      flip(".m-chest, .m-delts", 11.06);
+      flip(".m-back, .m-arms", 11.6);
+      flip(".m-legs", 12.12);
+      // counter 2 → 8 while flips land
+      const counterProxy = { v: 2 };
+      tl.to(counterProxy, {
+        v: 8, duration: 1.55, ease: "none",
+        onUpdate() { document.getElementById("setCounter").textContent = Math.round(counterProxy.v); },
+      }, 11.06);
+      // growth-zone pill — beat-locked: 12.65s
+      tl.fromTo("#zonePill", { opacity: 0, scale: 0.85, y: 14 }, { opacity: 1, scale: 1, y: 0, duration: 0.3, ease: "back.out(1.6)" }, 12.65);
+      tl.to("#s4inner", { opacity: 0, duration: 0.28, ease: "power1.in" }, 15.6);
+      tl.set("#s4inner", { opacity: 0 }, 15.9); // hard kill at clip boundary
+
+      /* ══ Scene 5 · food + gym 15.9–18.9 ══ */
+      tl.fromTo("#foodCard", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 15.95);
+      tl.fromTo("#gymCard", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 16.1);
+      tl.to("#foodLine .char", { opacity: 1, duration: 0.01, stagger: 0.03, ease: "none" }, 16.3);
+      const macros = { p: 0, c: 0, f: 0 };
+      tl.to(macros, {
+        p: 42, c: 68, f: 18, duration: 0.7, ease: "power1.out",
+        onUpdate() {
+          document.getElementById("mP").textContent = Math.round(macros.p);
+          document.getElementById("mC").textContent = Math.round(macros.c);
+          document.getElementById("mF").textContent = Math.round(macros.f);
+        },
+      }, 17.15);
+      // kudos pop — beat: 17.91
+      tl.to("#kudos", { scale: 1, duration: 0.32, ease: "back.out(2.4)" }, 17.91);
+      tl.to("#s5 .duo", { opacity: 0, scale: 0.97, duration: 0.28, ease: "power1.in" }, 18.55);
+      tl.set("#s5 .duo", { opacity: 0 }, 18.85); // hard kill at clip boundary
+
+      /* ══ Scene 6 · outro — beat: 18.96 ══ */
+      tl.fromTo("#brand6", { scale: 1.16, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: "power3.out" }, 18.96);
+      tl.fromTo("#tag6", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 19.35);
+      tl.fromTo("#cta6", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 19.7);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
