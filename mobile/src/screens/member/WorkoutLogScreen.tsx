@@ -220,28 +220,65 @@ const WorkoutLogScreen: React.FC = () => {
     // Exercise CRUD
     // -----------------------------------------------------------------------
 
+    // "60kg → Bar + 20 · 2.5 per side" — standard 20kg bar, standard plates
+    const plateBreakdown = (total: number): string => {
+        const BAR = 20;
+        if (!total || total <= BAR) return total === BAR ? 'Empty bar (20 kg)' : ' ';
+        const PLATES = [25, 20, 15, 10, 5, 2.5, 1.25];
+        let perSide = (total - BAR) / 2;
+        const used: string[] = [];
+        for (const p of PLATES) {
+            while (perSide >= p - 0.001) {
+                used.push(p % 1 === 0 ? String(p) : String(p));
+                perSide -= p;
+            }
+        }
+        if (used.length === 0) return ' ';
+        const rem = perSide > 0.001 ? ` (+${perSide.toFixed(2)})` : '';
+        return `Bar + ${used.join(' · ')} per side${rem}`;
+    };
+
     const handleAddExercise = useCallback(
         (exercise: any) => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+            // Previous-set ghosting: if this exercise appeared in the last
+            // workout of this type, pre-create the same number of sets, each
+            // showing last session's numbers as a hint (values stay empty).
+            const prevExercise = lastWorkoutPreview?.find(
+                (e) => e.name.toLowerCase() === String(exercise.name).toLowerCase(),
+            );
+            const ghostSets =
+                prevExercise && prevExercise.sets.length > 0
+                    ? prevExercise.sets.map((s) => ({
+                          id: Math.random().toString(),
+                          weight_kg: '',
+                          reps: '',
+                          rir: '',
+                          completed: false,
+                          previous: s.previous,
+                      }))
+                    : [
+                          {
+                              id: Math.random().toString(),
+                              weight_kg: '',
+                              reps: '',
+                              rir: '',
+                              completed: false,
+                          },
+                      ];
+
             const newExercise: UserExercise = {
                 id: exercise.id,
                 name: exercise.name,
                 gifUrl: exercise.gifUrl,
                 target: exercise.target,
-                sets: [
-                    {
-                        id: Math.random().toString(),
-                        weight_kg: '',
-                        reps: '',
-                        rir: '',
-                        completed: false,
-                    },
-                ],
+                sets: ghostSets,
             };
             setUserExercises((prev) => [...prev, newExercise]);
             setShowPicker(false);
         },
-        [],
+        [lastWorkoutPreview],
     );
 
     const addSet = useCallback((exerciseIndex: number) => {
@@ -257,6 +294,7 @@ const WorkoutLogScreen: React.FC = () => {
                         id: Math.random().toString(),
                         weight_kg: prevSet ? prevSet.weight_kg : '',
                         reps: prevSet ? prevSet.reps : '',
+                        previous: prevSet?.previous,
                         rir: '',
                         completed: false,
                     },
@@ -839,6 +877,11 @@ const WorkoutLogScreen: React.FC = () => {
                                     : undefined
                             }
                         />
+
+                        {/* Live plate calculator (barbell math: 20kg bar, per side) */}
+                        {pickerConfig.type === 'weight' && (
+                            <Text style={styles.plateHint}>{plateBreakdown(pickerConfig.currentValue)}</Text>
+                        )}
                     </Animated.View>
                 </View>
             )}
@@ -1226,6 +1269,14 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.md,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
+    },
+    plateHint: {
+        textAlign: 'center',
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+        paddingVertical: spacing.sm,
+        minHeight: 34,
     },
     pickerDoneText: {
         fontSize: typography.sizes.md,

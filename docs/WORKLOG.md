@@ -210,3 +210,20 @@ so "Swiss tracking" needs fontSize-proportional values.
   → auth-cache invalidation) — already fully wired, no changes needed
 - Food depth reviewed: 1,000+ local Indian foods + IFCT2017 + OpenFoodFacts + USDA +
   AI photo/text logging — depth is sufficient; no additions needed
+
+## UX sprint: coach chips, logger parity, home simplification, feed rescue (July 17, 2026)
+
+- **Coach starter prompts sharpened** — the three empty-state chips now ask
+  context-pack questions ("What should I train today?" / "Rate my week" /
+  "Plan my nutrition") so first replies showcase that the coach reads YOUR data
+- **Previous-set ghosting** — adding an exercise you did last time pre-creates the
+  same number of sets, each showing "60kg x 8" hints (ExerciseCard already had the
+  UI; the data was never attached); manual +set carries the hint forward
+- **Plate calculator** — live "Bar + 20 · 2.5 per side" line under the weight
+  scroll-wheel (20kg bar, standard plates, remainder shown)
+- **Home simplified** — Nutrition + Weekly Activity merged into one "Today" block;
+  Learn card now appears only when a lesson is in progress (progress > 0)
+- **Feed rescue** — discovery: SquadFeedScreen AND create-post were BOTH orphaned;
+  the entire posts system renders nowhere. Pragmatic merge: squad feed is now THE
+  one feed (route + layout registration + "VIEW FEED" link on home's Gym Buddies
+  header). Posts/comments backend stays dormant pending a real feed merge design.

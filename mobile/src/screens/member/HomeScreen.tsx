@@ -536,10 +536,10 @@ const HomeScreen: React.FC = () => {
                     </TouchableOpacity>
                 </Animated.View>
 
-                {/* Today's Nutrition */}
+                {/* Today — nutrition + weekly activity in one block (simplified) */}
                 <Animated.View entering={FadeInDown.delay(300).duration(600).springify()} style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Today's Nutrition</Text>
+                        <Text style={styles.sectionTitle}>Today</Text>
                         <TouchableOpacity onPress={() => router.push('/log/calories' as any)}>
                             <Text style={styles.viewAllLink}>LOG FOOD</Text>
                         </TouchableOpacity>
@@ -554,6 +554,9 @@ const HomeScreen: React.FC = () => {
                         fat={todayMacros.fat || 0}
                         fatTarget={macroTargets.fat}
                     />
+                    <View style={{ marginTop: spacing.md }}>
+                        <WeeklyProgress history={data?.streak.history || []} />
+                    </View>
                     <TouchableOpacity
                         style={styles.insightsButton}
                         onPress={() => router.push('/member/nutrition-insights' as any)}
@@ -564,17 +567,6 @@ const HomeScreen: React.FC = () => {
                     </TouchableOpacity>
                 </Animated.View>
 
-                {/* Weekly Workout Progress */}
-                <View style={styles.section}>
-                    <View style={[styles.sectionHeader, { marginBottom: spacing.sm }]}>
-                        <Text style={styles.sectionTitle}>Weekly Activity</Text>
-                        <TouchableOpacity onPress={() => router.push('/stats' as any)}>
-                            <Text style={styles.viewAllLink}>VIEW HEATMAP</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <WeeklyProgress history={data?.streak.history || []} />
-                </View>
-
                 {/* Gym Buddies - Friend Avatars */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
@@ -582,6 +574,9 @@ const HomeScreen: React.FC = () => {
                             <Text style={styles.sectionTitle}>Gym Buddies</Text>
                             <Text style={styles.sectionSub}>{activeFriendsCount} of your gym squads worked out today</Text>
                         </View>
+                        <TouchableOpacity onPress={() => router.push('/member/squad-feed' as any)}>
+                            <Text style={styles.viewAllLink}>VIEW FEED</Text>
+                        </TouchableOpacity>
                     </View>
                     <ScrollView
                         horizontal
@@ -644,7 +639,8 @@ const HomeScreen: React.FC = () => {
                 </View>
 
                 {/* Continuing Learning Card */}
-                {data?.learn && (
+                {/* Learn card only when a lesson is actually in progress — not for brand-new users */}
+                {data?.learn && data.learn.progress > 0 && (
                     <View style={styles.section}>
                         <View style={styles.sectionHeader}>
                             <Text style={styles.sectionTitle}>Continuing Learning</Text>

@@ -128,10 +128,12 @@ export default function AICoachScreen() {
         loadHistory();
     }, []);
 
+    // Prompts phrased to hit the context pack — the coach answers from YOUR
+    // data (volume, skipped muscles, streak, macros), not generic advice.
     const quickActions = [
-        { icon: 'fitness-center', label: 'Workout Plan', action: 'workout' },
-        { icon: 'restaurant', label: 'Nutrition Advice', action: 'nutrition' },
-        { icon: 'assessment', label: 'Form Check', action: 'form' },
+        { icon: 'fitness-center', label: 'What should I train today?', action: 'today' },
+        { icon: 'assessment', label: 'Rate my week', action: 'rate-week' },
+        { icon: 'restaurant', label: 'Plan my nutrition', action: 'nutrition' },
     ];
 
     const handleSend = async (customMessage?: string) => {
@@ -176,14 +178,14 @@ export default function AICoachScreen() {
     const handleQuickAction = async (action: string) => {
         let message = '';
         switch (action) {
-            case 'workout':
-                message = 'Create a 4-day workout plan for muscle gain';
+            case 'today':
+                message = 'What should I train today? Look at what I have and haven\'t trained recently.';
+                break;
+            case 'rate-week':
+                message = 'Rate my week — training, food and consistency. Be honest.';
                 break;
             case 'nutrition':
-                message = 'What should I eat for muscle gain?';
-                break;
-            case 'form':
-                message = 'How do I perform a proper squat?';
+                message = 'Plan my nutrition for my goal based on what I\'ve been eating.';
                 break;
         }
         handleSend(message);
