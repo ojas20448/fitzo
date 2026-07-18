@@ -227,3 +227,18 @@ so "Swiss tracking" needs fontSize-proportional values.
   the entire posts system renders nowhere. Pragmatic merge: squad feed is now THE
   one feed (route + layout registration + "VIEW FEED" link on home's Gym Buddies
   header). Posts/comments backend stays dormant pending a real feed merge design.
+
+## Squad Feed redesign (July 18, 2026)
+
+Routing the orphaned feed wasn't enough — the screen itself was v0 (dead heart
+button stuck at 0, comment button wired to nothing, raw locale dates, gold
+accent breaking mono). Full redesign to app standards:
+- App-pattern header (SQUAD · FEED), glass cards, workout-type pill
+- Real content: exercise names ("Bench Press · Incline DB +2 more"),
+  computed "12 sets · 2,340 kg" from the exercises JSON
+- Relative time (2h ago / yesterday)
+- ONE real action: comments — wired to the existing CommentModal +
+  /api/comments/:workoutId (backend verified); count refreshes on close;
+  the fake like button is gone
+- Skeleton loading + EmptyState with "Find buddies" action
+- Strict theme tokens, no off-palette color

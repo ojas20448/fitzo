@@ -1,0 +1,34 @@
+# Root EAS ignore configuration for Fitzo workspace
+
+# Ignore node_modules everywhere
+node_modules/
+**/node_modules/
+
+# Ignore native build folders
+mobile/android/
+mobile/ios/
+**/android/
+**/ios/
+
+# Ignore Expo and Metro caching
+mobile/.expo/
+**/.expo/
+mobile/dist/
+**/dist/
+
+# Ignore environment files
+.env.local
+.env.production.local
+.env.development.local
+
+# Ignore heavy media launch folders recursively
+brag-output/
+brag-output-new/
+brag-output-*/
+
+# Ignore temporary agents & skills directories
+.agents/
+.claude/
+.tdad/
+.idea/
+.vscode/
