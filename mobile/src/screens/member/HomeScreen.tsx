@@ -519,7 +519,7 @@ const HomeScreen: React.FC = () => {
                 <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} style={styles.actionButtons}>
                     <TouchableOpacity
                         style={styles.primaryActionBtn}
-                        onPress={() => router.push('/log/workout' as any)}
+                        onPress={() => router.push('/workout-intent' as any)}
                         accessibilityLabel="Log workout"
                     >
                         <MaterialIcons name="add" size={20} color={colors.text.dark} />

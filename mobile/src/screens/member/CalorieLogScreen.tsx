@@ -822,20 +822,35 @@ const CalorieLogScreen: React.FC = () => {
                         </TouchableOpacity>
                     </View>
                     
-                    {customQuickAdds.length === 0 && frequentFoods.length === 0 ? (
-                        <TouchableOpacity 
-                            style={styles.emptyShortcutCard}
-                            onPress={() => setShortcutModalVisible(true)}
-                        >
-                            <MaterialIcons name="star-outline" size={16} color={colors.text.muted} />
-                            <Text style={styles.emptyShortcutText}>Create custom shortcut</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.frequentScroll}
-                        >
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.frequentScroll}
+                    >
+                        {customQuickAdds.length === 0 && frequentFoods.length === 0 ? (
+                            [
+                                { id: 'pop-1', name: 'Whey Protein', calories: 120, protein: 24, carbs: 2, fat: 1.5, serving_size: '1 scoop (30g)' },
+                                { id: 'pop-2', name: '2 Eggs', calories: 140, protein: 12, carbs: 1, fat: 10, serving_size: '2 eggs' },
+                                { id: 'pop-3', name: 'Oatmeal', calories: 190, protein: 6, carbs: 32, fat: 3.5, serving_size: '1 cup' },
+                                { id: 'pop-4', name: 'Chicken Breast', calories: 165, protein: 31, carbs: 0, fat: 3.6, serving_size: '100g' },
+                                { id: 'pop-5', name: 'White Rice', calories: 130, protein: 2.7, carbs: 28, fat: 0.3, serving_size: '100g' },
+                                { id: 'pop-6', name: 'Banana', calories: 105, protein: 1.3, carbs: 27, fat: 0.3, serving_size: '1 medium' },
+                            ].map((food, index) => (
+                                <Animated.View key={`pop-${food.id}`} entering={ZoomIn.delay(index * 50).springify()}>
+                                    <TouchableOpacity
+                                        style={[styles.frequentCard, styles.customShortcutCard]}
+                                        onPress={() => handleQuickAdd(food)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <View style={[styles.frequentIcon, styles.customShortcutIcon]}>
+                                            <MaterialIcons name="flash-on" size={14} color={colors.background} />
+                                        </View>
+                                        <Text style={styles.frequentName} numberOfLines={1}>{food.name}</Text>
+                                        <Text style={styles.frequentCals}>{food.calories} cal</Text>
+                                    </TouchableOpacity>
+                                </Animated.View>
+                            ))
+                        ) : null}
                             {/* Render Custom user shortcuts first */}
                             {customQuickAdds.map((food, index) => (
                                 <Animated.View key={`custom-${food.id}`} entering={ZoomIn.delay(index * 50).springify()}>
@@ -872,7 +887,6 @@ const CalorieLogScreen: React.FC = () => {
                                 </Animated.View>
                             ))}
                         </ScrollView>
-                    )}
                 </Animated.View>
             )}
 

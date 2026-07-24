@@ -438,8 +438,38 @@ export default function OnboardingWizard() {
                 target_fat: macros.fat,
             } as any);
 
-            if (form.split_id && form.split_id !== 'custom') {
-                try { await workoutsAPI.adoptSplit(form.split_id); } catch { }
+            if (form.split_id) {
+                try {
+                    if (form.split_id === 'full_body') {
+                        await workoutsAPI.saveSplit({
+                            split_id: 'full_body',
+                            name: 'Full Body 3-Day',
+                            days: ['Full Body A', 'Full Body B', 'Full Body C'],
+                            days_per_week: 3,
+                        });
+                    } else if (form.split_id === 'upper_lower') {
+                        await workoutsAPI.saveSplit({
+                            split_id: 'upper_lower',
+                            name: 'Upper / Lower 4-Day',
+                            days: ['Upper A', 'Lower A', 'Upper B', 'Lower B'],
+                            days_per_week: 4,
+                        });
+                    } else if (form.split_id === 'ppl') {
+                        await workoutsAPI.saveSplit({
+                            split_id: 'ppl',
+                            name: 'Push / Pull / Legs',
+                            days: ['Push', 'Pull', 'Legs', 'Push', 'Pull', 'Legs'],
+                            days_per_week: 6,
+                        });
+                    } else {
+                        await workoutsAPI.saveSplit({
+                            split_id: 'custom',
+                            name: 'Push / Pull / Legs Custom',
+                            days: ['Push', 'Pull', 'Legs'],
+                            days_per_week: 3,
+                        });
+                    }
+                } catch { }
             }
 
             completeOnboarding();

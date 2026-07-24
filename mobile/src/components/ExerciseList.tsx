@@ -24,6 +24,7 @@ interface ExerciseListProps {
     mode?: 'view' | 'select';
     onSelect?: (exercise: any) => void;
     initialFilter?: string; // e.g., 'legs', 'push' (mapped to bodies)
+    allowedBodyParts?: string[];
 }
 
 // Helper function to get icon based on body part
@@ -43,7 +44,7 @@ const getExerciseIcon = (bodyPart: string): keyof typeof MaterialIcons.glyphMap 
     return iconMap[bodyPart?.toLowerCase()] || 'fitness-center';
 };
 
-export default function ExerciseList({ mode = 'view', onSelect, initialFilter }: ExerciseListProps) {
+export default function ExerciseList({ mode = 'view', onSelect, initialFilter, allowedBodyParts }: ExerciseListProps) {
     const [exercises, setExercises] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -54,7 +55,7 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
     // Load initial data
     useEffect(() => {
         loadBodyParts();
-    }, []);
+    }, [allowedBodyParts]);
 
     // Reload when filter or search changes (with 300ms debounce to avoid spamming searches)
     useEffect(() => {
@@ -63,21 +64,26 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [selectedBodyPart, searchQuery]);
+    }, [selectedBodyPart, searchQuery, allowedBodyParts]);
 
     const loadBodyParts = async () => {
         try {
             // Use local body parts + any from API if needed
             const { bodyPartsList } = require('../data/defaultExercises');
-            setBodyParts(bodyPartsList);
+            let list = [...bodyPartsList];
 
             // Optionally fetch more from API
             const response = await exerciseAPI.getBodyParts();
             if (response.bodyParts) {
-                // Merge unique
-                const combined = Array.from(new Set([...bodyPartsList, ...response.bodyParts]));
-                setBodyParts(combined);
+                list = Array.from(new Set([...list, ...response.bodyParts]));
             }
+
+            if (allowedBodyParts && allowedBodyParts.length > 0) {
+                const allowedSet = new Set(allowedBodyParts.map(b => b.toLowerCase()));
+                list = list.filter(b => allowedSet.has(b.toLowerCase()));
+            }
+
+            setBodyParts(list);
         } catch (error: any) {
             // Silently handle - parent screen manages error state
         }
@@ -106,7 +112,12 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter }:
             // 1. Filter by Body Part (Local)
             if (selectedBodyPart) {
                 results = results.filter((ex: any) =>
-                    ex.bodyPart.toLowerCase() === selectedBodyPart.toLowerCase()
+                    ex.bodyPart?.toLowerCase() === selectedBodyPart.toLowerCase()
+                );
+            } else if (allowedBodyParts && allowedBodyParts.length > 0) {
+                const allowedSet = new Set(allowedBodyParts.map(b => b.toLowerCase()));
+                results = results.filter((ex: any) =>
+                    allowedSet.has((ex.bodyPart || ex.category || '').toLowerCase())
                 );
             }
 

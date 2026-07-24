@@ -515,7 +515,7 @@ export const managerAPI = {
 // ===========================================
 
 export const workoutsAPI = {
-    log: async (data: { workout_type: string; exercises?: string; notes?: string; visibility?: string; duration_minutes?: number }) => {
+    log: async (data: { workout_type: string; day_name?: string; exercises?: string; notes?: string; visibility?: string; duration_minutes?: number }) => {
         const response = await api.post('/workouts', data);
         return response.data;
     },

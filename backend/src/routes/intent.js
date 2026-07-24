@@ -318,9 +318,20 @@ router.get('/suggest', authenticate, asyncHandler(async (req, res) => {
         );
 
         // Find last day's position in the split
-        const lastIndex = splitDays.findIndex(
+        let lastIndex = splitDays.findIndex(
             d => d.toLowerCase() === lastDayName?.toLowerCase()
         );
+
+        if (lastIndex === -1 && lastDayName) {
+            const lower = lastDayName.toLowerCase();
+            lastIndex = splitDays.findIndex(d => {
+                const dl = d.toLowerCase();
+                if ((lower.includes('chest') || lower.includes('push')) && (dl.includes('push') || dl.includes('chest'))) return true;
+                if ((lower.includes('back') || lower.includes('pull')) && (dl.includes('pull') || dl.includes('back'))) return true;
+                if (lower.includes('leg') && dl.includes('leg')) return true;
+                return false;
+            });
+        }
 
         if (lastIndex !== -1) {
             // Next day in the cycle (wraps around)

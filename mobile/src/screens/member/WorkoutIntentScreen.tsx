@@ -164,7 +164,7 @@ export default function WorkoutIntentScreen() {
                 intentAPI.getSuggestion().catch(() => null),
             ]);
 
-            const active = splitResult?.splits?.find((s: any) => s.is_active);
+            const active = splitResult?.splits?.find((s: any) => s.is_active) || splitResult?.splits?.[0];
 
             if (active?.days?.length > 0) {
                 const split = {

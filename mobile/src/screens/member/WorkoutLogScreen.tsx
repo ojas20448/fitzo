@@ -60,6 +60,21 @@ const WorkoutLogScreen: React.FC = () => {
         return 'chest';
     };
 
+    const getAllowedBodyParts = (type: string, sessionLabel?: string) => {
+        const label = (sessionLabel || type || '').toLowerCase();
+        if (label.includes('push')) return ['chest', 'shoulders', 'arms'];
+        if (label.includes('pull')) return ['back', 'arms'];
+        if (label.includes('leg')) return ['legs', 'core'];
+        if (label.includes('chest')) return ['chest', 'shoulders', 'arms'];
+        if (label.includes('back')) return ['back', 'arms'];
+        if (label.includes('shoulder')) return ['shoulders', 'arms'];
+        if (label.includes('arm')) return ['arms'];
+        if (label.includes('upper')) return ['chest', 'back', 'shoulders', 'arms'];
+        if (label.includes('lower')) return ['legs', 'core'];
+        if (label.includes('cardio')) return ['cardio'];
+        return undefined;
+    };
+
     const [workoutType, setWorkoutType] = useState(
         mapIntentToType(initialIntent?.session_label || ''),
     );
@@ -116,26 +131,29 @@ const WorkoutLogScreen: React.FC = () => {
     // Rest Timer Logic
     // -----------------------------------------------------------------------
 
+    const restTargetTimeRef = useRef<number | null>(null);
+
     const startRestTimer = useCallback(() => {
-        // Clear any running timer
         if (restIntervalRef.current) clearInterval(restIntervalRef.current);
 
+        const targetTime = Date.now() + restDuration * 1000;
+        restTargetTimeRef.current = targetTime;
         setRestSeconds(restDuration);
         setRestActive(true);
 
         restIntervalRef.current = setInterval(() => {
-            setRestSeconds((prev) => {
-                if (prev <= 1) {
-                    clearInterval(restIntervalRef.current!);
-                    restIntervalRef.current = null;
-                    setRestActive(false);
-                    // Haptic pulse on zero
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
+            if (!restTargetTimeRef.current) return;
+            const diff = Math.max(0, Math.ceil((restTargetTimeRef.current - Date.now()) / 1000));
+            setRestSeconds(diff);
+
+            if (diff <= 0) {
+                clearInterval(restIntervalRef.current!);
+                restIntervalRef.current = null;
+                restTargetTimeRef.current = null;
+                setRestActive(false);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+        }, 500);
     }, [restDuration]);
 
     const dismissRestTimer = useCallback(() => {
@@ -178,6 +196,10 @@ const WorkoutLogScreen: React.FC = () => {
                         })),
                     }));
                     setLastWorkoutPreview(prefilled);
+                    // Auto-fill exercises into current log if user has no exercises set yet
+                    if (!params.curatedExercises) {
+                        setUserExercises((prev) => (prev.length === 0 ? prefilled : prev));
+                    }
                 }
             } else {
                 setLastWorkoutPreview(null);
@@ -430,8 +452,10 @@ const WorkoutLogScreen: React.FC = () => {
                 (new Date().getTime() - startTime.getTime()) / 60000,
             );
 
+            const sessionLabel = initialIntent?.session_label || workoutType;
             const result = await workoutsAPI.log({
                 workout_type: workoutType,
+                day_name: sessionLabel,
                 exercises: JSON.stringify(userExercises),
                 notes: 'Logged via Smart Log',
                 visibility: visibility,
@@ -729,6 +753,7 @@ const WorkoutLogScreen: React.FC = () => {
                         mode="select"
                         onSelect={handleAddExercise}
                         initialFilter={workoutType !== 'Workout' ? workoutType : undefined}
+                        allowedBodyParts={getAllowedBodyParts(workoutType, initialIntent?.session_label)}
                     />
                 </View>
             </Modal>

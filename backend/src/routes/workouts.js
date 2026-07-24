@@ -38,7 +38,7 @@ function normalizeMuscle(target) {
  * Best-effort: failures are logged, never break the main logging flow.
  * Idempotent per day+type: re-logging replaces today's mirrored session.
  */
-async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibility, durationMinutes) {
+async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibility, durationMinutes, dayName) {
     let parsed;
     try {
         parsed = JSON.parse(exercisesJson);
@@ -47,19 +47,21 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
     }
     if (!Array.isArray(parsed) || parsed.length === 0) return;
 
-    // Replace any session already mirrored today for this workout type
+    const sessionDayName = dayName || workoutType;
+
+    // Replace any session already mirrored today for this workout type/day
     await query(
         `DELETE FROM workout_sessions
-         WHERE user_id = $1 AND day_name = $2 AND notes = 'smart-log'
+         WHERE user_id = $1 AND (day_name = $2 OR day_name = $3) AND notes = 'smart-log'
            AND started_at::date = CURRENT_DATE`,
-        [userId, workoutType]
+        [userId, sessionDayName, workoutType]
     );
 
     const sessionResult = await query(
         `INSERT INTO workout_sessions (user_id, day_name, visibility, notes, completed_at, duration_minutes)
          VALUES ($1, $2, $3, 'smart-log', NOW(), $4)
          RETURNING id`,
-        [userId, workoutType, visibility, durationMinutes || null]
+        [userId, sessionDayName, visibility, durationMinutes || null]
     );
     const sessionId = sessionResult.rows[0].id;
     const prs = [];
@@ -148,7 +150,7 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
 // ============================================
 router.post('/', asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const { workout_type, exercises, notes, visibility = 'friends', duration_minutes } = req.body;
+    const { workout_type, day_name, exercises, notes, visibility = 'friends', duration_minutes } = req.body;
 
     // Validation
     const validTypes = ['legs', 'chest', 'back', 'shoulders', 'arms', 'cardio', 'rest'];
@@ -202,7 +204,7 @@ router.post('/', asyncHandler(async (req, res) => {
     let prs = [];
     if (exercises) {
         try {
-            prs = await mirrorToStructuredLogs(userId, workout_type, exercises, visibility, parseInt(duration_minutes, 10) || null) || [];
+            prs = await mirrorToStructuredLogs(userId, workout_type, exercises, visibility, parseInt(duration_minutes, 10) || null, day_name) || [];
         } catch (err) {
             console.error('Smart Log mirror failed (workout still saved):', err.message);
         }
@@ -302,14 +304,18 @@ router.get('/latest', asyncHandler(async (req, res) => {
         throw new ValidationError('Workout type is required');
     }
 
-    // Compare as text — workout_type is an enum, and an unknown value in the
-    // query param should mean "not found", not a Postgres 22P02 cast error
+    const lowerType = String(type).toLowerCase().trim();
+    let typeMatches = [lowerType];
+    if (lowerType === 'chest' || lowerType === 'push') typeMatches = ['chest', 'push'];
+    if (lowerType === 'back' || lowerType === 'pull') typeMatches = ['back', 'pull'];
+    if (lowerType === 'legs') typeMatches = ['legs', 'lower'];
+
     const result = await query(
         `SELECT * FROM workout_logs
-         WHERE user_id = $1 AND workout_type::text = $2
+         WHERE user_id = $1 AND LOWER(workout_type::text) = ANY($2)
          ORDER BY logged_date DESC, created_at DESC
          LIMIT 1`,
-        [userId, type]
+        [userId, typeMatches]
     );
 
     res.json({
@@ -384,7 +390,12 @@ router.get('/splits', asyncHandler(async (req, res) => {
         [userId]
     );
 
-    res.json({ splits: result.rows });
+    const rows = result.rows || [];
+    if (rows.length > 0 && !rows.some(r => r.is_active)) {
+        rows[0].is_active = true;
+    }
+
+    res.json({ splits: rows });
 }));
 
 module.exports = router;

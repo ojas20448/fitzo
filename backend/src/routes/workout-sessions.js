@@ -132,9 +132,52 @@ router.post('/sessions', authenticate, asyncHandler(async (req, res) => {
         [userId, split_id, day_name, visibility]
     );
 
+    const newSession = result.rows[0];
+
+    // Pre-fill exercises and set targets from previous session for this day_name
+    if (day_name) {
+        try {
+            const prevSession = await query(
+                `SELECT id FROM workout_sessions
+                 WHERE user_id = $1 AND LOWER(day_name) = LOWER($2) AND id != $3 AND completed_at IS NOT NULL
+                 ORDER BY completed_at DESC LIMIT 1`,
+                [userId, day_name, newSession.id]
+            );
+            if (prevSession.rows.length > 0) {
+                const prevId = prevSession.rows[0].id;
+                const prevExercises = await query(
+                    `SELECT * FROM exercise_logs WHERE session_id = $1 ORDER BY order_index`,
+                    [prevId]
+                );
+                for (let i = 0; i < prevExercises.rows.length; i++) {
+                    const exLog = prevExercises.rows[i];
+                    const newExLog = await query(
+                        `INSERT INTO exercise_logs (session_id, exercise_id, custom_exercise_name, order_index, muscle_group)
+                         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+                        [newSession.id, exLog.exercise_id, exLog.custom_exercise_name, i, exLog.muscle_group]
+                    );
+                    const newLogId = newExLog.rows[0].id;
+                    const prevSets = await query(
+                        `SELECT * FROM set_logs WHERE exercise_log_id = $1 ORDER BY set_number`,
+                        [exLog.id]
+                    );
+                    for (const s of prevSets.rows) {
+                        await query(
+                            `INSERT INTO set_logs (exercise_log_id, set_number, reps, weight_kg, rpe)
+                             VALUES ($1, $2, $3, $4, $5)`,
+                            [newLogId, s.set_number, s.reps, s.weight_kg, s.rpe]
+                        );
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Failed to pre-fill live session exercises:', err);
+        }
+    }
+
     res.status(201).json({
         message: 'Workout started!',
-        session: result.rows[0],
+        session: newSession,
     });
 }));
 
