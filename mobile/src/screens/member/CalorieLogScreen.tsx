@@ -828,28 +828,54 @@ const CalorieLogScreen: React.FC = () => {
                         contentContainerStyle={styles.frequentScroll}
                     >
                         {customQuickAdds.length === 0 && frequentFoods.length === 0 ? (
-                            [
-                                { id: 'pop-1', name: 'Whey Protein', calories: 120, protein: 24, carbs: 2, fat: 1.5, serving_size: '1 scoop (30g)' },
-                                { id: 'pop-2', name: '2 Eggs', calories: 140, protein: 12, carbs: 1, fat: 10, serving_size: '2 eggs' },
-                                { id: 'pop-3', name: 'Oatmeal', calories: 190, protein: 6, carbs: 32, fat: 3.5, serving_size: '1 cup' },
-                                { id: 'pop-4', name: 'Chicken Breast', calories: 165, protein: 31, carbs: 0, fat: 3.6, serving_size: '100g' },
-                                { id: 'pop-5', name: 'White Rice', calories: 130, protein: 2.7, carbs: 28, fat: 0.3, serving_size: '100g' },
-                                { id: 'pop-6', name: 'Banana', calories: 105, protein: 1.3, carbs: 27, fat: 0.3, serving_size: '1 medium' },
-                            ].map((food, index) => (
-                                <Animated.View key={`pop-${food.id}`} entering={ZoomIn.delay(index * 50).springify()}>
-                                    <TouchableOpacity
-                                        style={[styles.frequentCard, styles.customShortcutCard]}
-                                        onPress={() => handleQuickAdd(food)}
-                                        activeOpacity={0.8}
-                                    >
-                                        <View style={[styles.frequentIcon, styles.customShortcutIcon]}>
-                                            <MaterialIcons name="flash-on" size={14} color={colors.background} />
-                                        </View>
-                                        <Text style={styles.frequentName} numberOfLines={1}>{food.name}</Text>
-                                        <Text style={styles.frequentCals}>{food.calories} cal</Text>
-                                    </TouchableOpacity>
-                                </Animated.View>
-                            ))
+                            (() => {
+                                const hour = new Date().getHours();
+                                const presets = hour >= 5 && hour < 11
+                                    ? [
+                                        { id: 'pop-1', name: 'Oatmeal', calories: 190, protein: 6, carbs: 32, fat: 3.5, serving_size: '1 cup' },
+                                        { id: 'pop-2', name: '2 Eggs', calories: 140, protein: 12, carbs: 1, fat: 10, serving_size: '2 eggs' },
+                                        { id: 'pop-3', name: 'Greek Yogurt', calories: 130, protein: 17, carbs: 6, fat: 0.7, serving_size: '170g' },
+                                        { id: 'pop-4', name: 'Whey Protein', calories: 120, protein: 24, carbs: 2, fat: 1.5, serving_size: '1 scoop (30g)' },
+                                        { id: 'pop-5', name: 'Banana', calories: 105, protein: 1.3, carbs: 27, fat: 0.3, serving_size: '1 medium' },
+                                      ]
+                                    : hour >= 11 && hour < 16
+                                    ? [
+                                        { id: 'pop-1', name: 'Chicken Breast', calories: 165, protein: 31, carbs: 0, fat: 3.6, serving_size: '100g' },
+                                        { id: 'pop-2', name: 'White Rice', calories: 130, protein: 2.7, carbs: 28, fat: 0.3, serving_size: '100g' },
+                                        { id: 'pop-3', name: 'Greek Salad', calories: 210, protein: 5, carbs: 11, fat: 16, serving_size: '1 bowl' },
+                                        { id: 'pop-4', name: 'Whey Protein', calories: 120, protein: 24, carbs: 2, fat: 1.5, serving_size: '1 scoop (30g)' },
+                                        { id: 'pop-5', name: 'Banana', calories: 105, protein: 1.3, carbs: 27, fat: 0.3, serving_size: '1 medium' },
+                                      ]
+                                    : hour >= 16 && hour < 22
+                                    ? [
+                                        { id: 'pop-1', name: 'Grilled Salmon', calories: 206, protein: 22, carbs: 0, fat: 12, serving_size: '100g' },
+                                        { id: 'pop-2', name: 'Chicken Breast', calories: 165, protein: 31, carbs: 0, fat: 3.6, serving_size: '100g' },
+                                        { id: 'pop-3', name: 'Brown Rice', calories: 111, protein: 2.6, carbs: 23, fat: 0.9, serving_size: '100g' },
+                                        { id: 'pop-4', name: 'Whey Protein', calories: 120, protein: 24, carbs: 2, fat: 1.5, serving_size: '1 scoop (30g)' },
+                                      ]
+                                    : [
+                                        { id: 'pop-1', name: 'Whey Protein', calories: 120, protein: 24, carbs: 2, fat: 1.5, serving_size: '1 scoop (30g)' },
+                                        { id: 'pop-2', name: 'Cottage Cheese', calories: 160, protein: 28, carbs: 6, fat: 2.3, serving_size: '1 cup' },
+                                        { id: 'pop-3', name: 'Handful Almonds', calories: 164, protein: 6, carbs: 6, fat: 14, serving_size: '28g' },
+                                        { id: 'pop-4', name: 'Banana', calories: 105, protein: 1.3, carbs: 27, fat: 0.3, serving_size: '1 medium' },
+                                      ];
+
+                                return presets.map((food, index) => (
+                                    <Animated.View key={`pop-${food.id}`} entering={ZoomIn.delay(index * 50).springify()}>
+                                        <TouchableOpacity
+                                            style={[styles.frequentCard, styles.customShortcutCard]}
+                                            onPress={() => handleQuickAdd(food)}
+                                            activeOpacity={0.8}
+                                        >
+                                            <View style={[styles.frequentIcon, styles.customShortcutIcon]}>
+                                                <MaterialIcons name="flash-on" size={14} color={colors.background} />
+                                            </View>
+                                            <Text style={styles.frequentName} numberOfLines={1}>{food.name}</Text>
+                                            <Text style={styles.frequentCals}>{food.calories} cal</Text>
+                                        </TouchableOpacity>
+                                    </Animated.View>
+                                ));
+                            })()
                         ) : null}
                             {/* Render Custom user shortcuts first */}
                             {customQuickAdds.map((food, index) => (

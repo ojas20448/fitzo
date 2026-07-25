@@ -959,6 +959,8 @@ const styles = StyleSheet.create({
         height: 64,
         backgroundColor: colors.primary,
         borderRadius: borderRadius.xl,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.35)',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',

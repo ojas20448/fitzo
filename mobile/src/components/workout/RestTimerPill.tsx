@@ -87,7 +87,8 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
-        minWidth: 36,
+        fontVariant: ['tabular-nums'],
+        minWidth: 44,
     },
     divider: {
         width: 1,

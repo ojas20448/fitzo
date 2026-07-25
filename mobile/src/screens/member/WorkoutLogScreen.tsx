@@ -14,6 +14,7 @@ import {
     Animated,
     Dimensions,
     Platform,
+    LayoutAnimation,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -304,6 +305,7 @@ const WorkoutLogScreen: React.FC = () => {
     );
 
     const addSet = useCallback((exerciseIndex: number) => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setUserExercises((prev) => {
             const updated = [...prev];
             const sets = updated[exerciseIndex].sets;
@@ -334,6 +336,7 @@ const WorkoutLogScreen: React.FC = () => {
                 style: 'destructive',
                 onPress: () => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     setUserExercises((prev) => {
                         const updated = [...prev];
                         const sets = [...updated[exerciseIndex].sets];
@@ -355,9 +358,12 @@ const WorkoutLogScreen: React.FC = () => {
                 sets[setIndex] = { ...sets[setIndex], [field]: value };
                 updated[exerciseIndex] = { ...updated[exerciseIndex], sets };
 
-                // Trigger rest timer when a set becomes completed
+                // Trigger rest timer & layered double-pulse haptics when a set becomes completed
                 if (field === 'completed' && value === true && !wasCompleted) {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    setTimeout(() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }, 80);
                     // Start rest timer (via setTimeout to avoid setState-in-setState)
                     setTimeout(() => startRestTimer(), 0);
                 }
@@ -376,6 +382,7 @@ const WorkoutLogScreen: React.FC = () => {
                 style: 'destructive',
                 onPress: () => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     setUserExercises((prev) => {
                         const updated = [...prev];
                         updated.splice(index, 1);
