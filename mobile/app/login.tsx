@@ -38,12 +38,13 @@ export default function LoginScreen() {
     const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
         androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
         iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
         clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     });
 
     React.useEffect(() => {
         if (response?.type === 'success') {
-            const idToken = response.params?.id_token;
+            const idToken = response.params?.id_token || response.authentication?.idToken;
             if (idToken) {
                 handleGoogleLogin(idToken);
             } else {
