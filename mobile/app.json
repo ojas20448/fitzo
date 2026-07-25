@@ -84,7 +84,13 @@
         }
       ],
       "expo-asset",
-      "@kingstinct/react-native-healthkit",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Fitzo reads your health data (steps, heart rate, sleep) to give you a complete fitness picture",
+          "NSHealthUpdateUsageDescription": "Fitzo saves your workout data to Apple Health"
+        }
+      ],
       "react-native-health-connect",
       [
         "expo-build-properties",
