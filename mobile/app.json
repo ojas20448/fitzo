@@ -23,7 +23,15 @@
       "infoPlist": {
         "NSCameraUsageDescription": "We need camera access to scan the gym QR code for check-in",
         "NSHealthShareUsageDescription": "Fitzo reads your health data (steps, heart rate, sleep) to give you a complete fitness picture",
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": ["remote-notification"],
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.1030039443378-k15ujl968cs24u1t6ln06oaapudt03e2",
+              "fitzo"
+            ]
+          }
+        ]
       }
     },
     "android": {

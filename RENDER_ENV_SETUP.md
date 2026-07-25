@@ -26,10 +26,12 @@ USDA_API_KEY=qznVri73qSDmwb9tiadFC1Qbe8aO45w7gjcPohA1
 RAPIDAPI_KEY=a2fd290823msh7ac3463cfd94a54p102f99jsn08cf65848b9a
 ```
 
-### Google OAuth (Optional - for web login)
+### Google OAuth (Required for Google Sign-In on iOS TestFlight / Android / Web)
 
 ```
-GOOGLE_CLIENT_ID=1030039443378-ek0r7ar68qfjga2dmj5inr7e715g5c1f.apps.googleusercontent.com
+GOOGLE_CLIENT_ID_WEB=1030039443378-ek0r7ar68qfjga2dmj5inr7e715g5c1f.apps.googleusercontent.com
+GOOGLE_CLIENT_ID_IOS=1030039443378-k15ujl968cs24u1t6ln06oaapudt03e2.apps.googleusercontent.com
+GOOGLE_CLIENT_ID_ANDROID=1030039443378-u3vdk2fq3ebu90sv2okvimbta1rs2d7v.apps.googleusercontent.com
 ```
 
 ---
