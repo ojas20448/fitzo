@@ -315,7 +315,14 @@ router.get('/:id/busy-times', authenticate, asyncHandler(async (req, res) => {
             return computeBusyTimes(result.rows);
         },
         cache.TTL.BUSY_TIMES
-    ).catch(() => computeBusyTimes([]));
+    ).catch((err) => {
+        // Degrade gracefully, but never silently: without this log a broken
+        // query is indistinguishable from "not enough check-ins yet" — same
+        // 200, same empty grid, nothing in the logs. Matches the
+        // log-then-fall-back pattern in services/cache.js.
+        console.error('busy-times query failed:', err.message);
+        return computeBusyTimes([]);
+    });
 
     res.json({ success: true, busy_times: busyTimes });
 }));
