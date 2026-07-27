@@ -189,10 +189,16 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
                 [userId, lesson.unit]
             );
             const p = unitProgress.rows[0];
+            // COUNT() comes back as a string from pg. With no lessons in the unit
+            // this divided by zero, and NaN serialises to null over JSON — which
+            // the client then rendered as "NaN%".
+            const completed = Number(p.completed_count) || 0;
+            const total = Number(p.total_count) || 0;
             learn = {
                 id: lesson.id,
                 title: lesson.unit_title, lesson: `Lesson ${lesson.order_index}`,
-                topic: lesson.title, progress: Math.round((p.completed_count / p.total_count) * 100)
+                topic: lesson.title,
+                progress: total > 0 ? Math.round((completed / total) * 100) : 0
             };
         } catch {}
     }
