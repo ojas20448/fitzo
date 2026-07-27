@@ -31,6 +31,8 @@ import EmptyState, { EmptyStateInline } from '../../components/EmptyState';
 import MacroPieChart from '../../components/MacroPieChart';
 import ProgressRing from '../../components/ProgressRing';
 import CustomRefreshHeader from '../../components/CustomRefreshHeader';
+import BusyTimesStrip from '../../components/BusyTimesStrip';
+import { gymAPI, BusyTimes } from '../../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 
 interface HomeData {
@@ -119,6 +121,7 @@ const HomeScreen: React.FC = () => {
     // zeros, which the user believes. Track the failure explicitly instead.
     const [error, setError] = useState<'offline' | 'error' | null>(null);
     const [isStale, setIsStale] = useState(false);
+    const [busyTimes, setBusyTimes] = useState<BusyTimes | null>(null);
 
     useEffect(() => {
         // Show progressive loading messages for cold start
@@ -154,6 +157,13 @@ const HomeScreen: React.FC = () => {
         };
         fetchActive();
     }, []);
+
+    useEffect(() => {
+        if (!user?.gym_id) return;
+        gymAPI.getBusyTimes(user.gym_id)
+            .then((r) => setBusyTimes(r.busy_times))
+            .catch(() => setBusyTimes(null));
+    }, [user?.gym_id]);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -546,6 +556,16 @@ const HomeScreen: React.FC = () => {
                         </GlassCard>
                     ) : null}
                 </Animated.View>
+
+                {busyTimes && (
+                    <View style={{ marginTop: spacing.md }}>
+                        <BusyTimesStrip
+                            grid={busyTimes.grid}
+                            quietest={busyTimes.quietest}
+                            confidence={busyTimes.confidence}
+                        />
+                    </View>
+                )}
 
                 {/* Completed Workout Card - Show when workout is logged today */}
                 {hasLoggedWorkoutToday && (
