@@ -192,6 +192,25 @@ export const memberAPI = {
 };
 
 // ===========================================
+// GYM ENDPOINTS
+// ===========================================
+
+export interface BusyTimes {
+    grid: number[][] | null;
+    peak: { dow: number; hour: number; score: number } | null;
+    quietest: { dow: number; hour: number; score: number } | null;
+    totalSamples: number;
+    confidence: 'none' | 'low' | 'good';
+}
+
+export const gymAPI = {
+    getBusyTimes: async (gymId: string): Promise<{ success: boolean; busy_times: BusyTimes }> => {
+        const response = await api.get(`/gyms/${gymId}/busy-times`);
+        return response.data;
+    },
+};
+
+// ===========================================
 // CHECK-IN ENDPOINTS
 // ===========================================
 
