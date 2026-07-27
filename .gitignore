@@ -14,3 +14,6 @@ coverage/
 .tdad/
 *.bak
 backend/scripts/exercisedb_full.json
+
+# SDD scratch workspace (ledger, briefs, review packages)
+.superpowers/
