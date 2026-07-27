@@ -55,7 +55,12 @@ const DEFAULT_SESSION_MINUTES = 90;
  * Explicit checkout wins; otherwise assume a standard session length.
  */
 function presenceWindowEnd(checkedInAt, checkedOutAt, sessionMinutes = DEFAULT_SESSION_MINUTES) {
-    if (checkedOutAt) return new Date(checkedOutAt);
+    if (checkedOutAt) {
+        const checkoutDate = new Date(checkedOutAt);
+        if (!Number.isNaN(checkoutDate.getTime())) {
+            return checkoutDate;
+        }
+    }
     return new Date(new Date(checkedInAt).getTime() + sessionMinutes * 60 * 1000);
 }
 

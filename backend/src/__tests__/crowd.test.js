@@ -64,6 +64,19 @@ describe('presenceWindowEnd', () => {
         expect(end.toISOString()).toBe('2026-07-27T07:30:00.000Z');
         expect(DEFAULT_SESSION_MINUTES).toBe(90);
     });
+
+    it('respects explicit checkout time even if beyond default session length', () => {
+        const inAt = new Date('2026-07-27T06:00:00Z');
+        const outAt = new Date('2026-07-27T08:30:00Z');
+        expect(presenceWindowEnd(inAt, outAt).toISOString()).toBe(outAt.toISOString());
+    });
+
+    it('falls back to auto-expiry if checkout is unparseable', () => {
+        const inAt = new Date('2026-07-27T06:00:00Z');
+        const invalidOut = 'not a date';
+        const end = presenceWindowEnd(inAt, invalidOut);
+        expect(end.toISOString()).toBe('2026-07-27T07:30:00.000Z');
+    });
 });
 
 describe('isPresent', () => {
@@ -99,5 +112,27 @@ describe('isPresent', () => {
         const now = new Date('2026-07-27T07:00:00Z');
         expect(isPresent({ checked_in_at: null, checked_out_at: null }, now)).toBe(false);
         expect(isPresent(null, now)).toBe(false);
+    });
+
+    it('counts a member at the exact check-in time (boundary)', () => {
+        expect(isPresent({ checked_in_at: inAt, checked_out_at: null }, inAt)).toBe(true);
+    });
+
+    it('excludes a member at the exact window end time (boundary)', () => {
+        const end = presenceWindowEnd(inAt, null);
+        expect(isPresent({ checked_in_at: inAt, checked_out_at: null }, end)).toBe(false);
+    });
+
+    it('respects long explicit checkout beyond default session length', () => {
+        const longOut = new Date('2026-07-27T08:30:00Z');
+        const stillInside = new Date('2026-07-27T07:30:00Z');
+        const afterLongOut = new Date('2026-07-27T09:00:00Z');
+        expect(isPresent({ checked_in_at: inAt, checked_out_at: longOut }, stillInside)).toBe(true);
+        expect(isPresent({ checked_in_at: inAt, checked_out_at: longOut }, afterLongOut)).toBe(false);
+    });
+
+    it('falls back to auto-expiry if checked_out_at is unparseable', () => {
+        const now = new Date('2026-07-27T07:00:00Z');
+        expect(isPresent({ checked_in_at: inAt, checked_out_at: 'invalid date' }, now)).toBe(true);
     });
 });
