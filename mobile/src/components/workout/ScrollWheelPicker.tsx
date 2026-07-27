@@ -21,21 +21,42 @@ const ScrollWheelPicker: React.FC<ScrollWheelPickerProps> = ({
     formatLabel,
 }) => {
     const scrollRef = useRef<ScrollView>(null);
-    const [internalIndex, setInternalIndex] = useState(() => {
-        const idx = values.indexOf(selectedValue);
-        return idx >= 0 ? idx : 0;
-    });
+
+    /**
+     * Index of the closest item to `value`.
+     *
+     * Deliberately not indexOf: the value may be off-grid (a weight saved under
+     * the old 0.5kg step, or typed by hand), and indexOf would return -1 and
+     * silently reset the wheel to the first item — i.e. 0kg. Snapping to the
+     * nearest item keeps the user near where they were.
+     */
+    const nearestIndex = useCallback(
+        (value: number) => {
+            if (!values.length) return 0;
+            let best = 0;
+            let bestDelta = Math.abs(values[0] - value);
+            for (let i = 1; i < values.length; i++) {
+                const delta = Math.abs(values[i] - value);
+                if (delta < bestDelta) {
+                    bestDelta = delta;
+                    best = i;
+                }
+            }
+            return best;
+        },
+        [values],
+    );
+
+    const [internalIndex, setInternalIndex] = useState(() => nearestIndex(selectedValue));
 
     useEffect(() => {
-        const idx = values.indexOf(selectedValue);
-        if (idx >= 0) {
-            scrollRef.current?.scrollTo({
-                y: idx * PICKER_ITEM_HEIGHT,
-                animated: false,
-            });
-            setInternalIndex(idx);
-        }
-    }, [selectedValue]);
+        const idx = nearestIndex(selectedValue);
+        scrollRef.current?.scrollTo({
+            y: idx * PICKER_ITEM_HEIGHT,
+            animated: false,
+        });
+        setInternalIndex(idx);
+    }, [selectedValue, nearestIndex]);
 
     const handleScrollEnd = useCallback(
         (e: any) => {

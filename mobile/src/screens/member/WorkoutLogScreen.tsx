@@ -15,6 +15,7 @@ import {
     Dimensions,
     Platform,
     LayoutAnimation,
+    TextInput,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -32,7 +33,6 @@ import {
     PICKER_HEIGHT,
     WEIGHT_VALUES,
     REPS_VALUES,
-    WORKOUT_TYPES,
     REST_PRESETS,
 } from '../../components/workout';
 import type { ExerciseSet, UserExercise, PickerConfig } from '../../components/workout';
@@ -76,8 +76,26 @@ const WorkoutLogScreen: React.FC = () => {
         return undefined;
     };
 
+    // workoutType is still the value persisted to the API and used to look up the
+    // previous session, but it is now derived only — never chosen by hand.
     const [workoutType, setWorkoutType] = useState(
         mapIntentToType(initialIntent?.session_label || ''),
+    );
+
+    // What the user actually declared ("Push"), not the muscle it collapses to.
+    // mapIntentToType has to fold push -> chest because WORKOUT_TYPES has no
+    // push/pull concept, which is why the header used to read "Chest" on a push
+    // day. Show the intent's own words when we have them.
+    const sessionLabel = (initialIntent?.session_label || initialIntent?.display || '').trim();
+    const sessionTitle = sessionLabel
+        ? sessionLabel.charAt(0).toUpperCase() + sessionLabel.slice(1)
+        : workoutType.charAt(0).toUpperCase() + workoutType.slice(1);
+
+    // Muscles this session trains, used both as the header subtitle and to filter
+    // the exercise picker.
+    const sessionMuscles = useMemo(
+        () => getAllowedBodyParts(workoutType, sessionLabel) ?? [],
+        [workoutType, sessionLabel],
     );
 
     // Core state
@@ -405,6 +423,7 @@ const WorkoutLogScreen: React.FC = () => {
             const raw = type === 'weight' ? set.weight_kg : set.reps;
             const numVal = parseFloat(String(raw || 0)) || 0;
 
+            setTypingValue(null); // always open on the wheel
             setPickerConfig({
                 visible: true,
                 type,
@@ -423,6 +442,30 @@ const WorkoutLogScreen: React.FC = () => {
         [userExercises, pickerSlideAnim],
     );
 
+    // Measured, not guessed: the footer's height changes with the safe-area inset
+    // and with whether the visibility bar is shown, so the list's bottom padding
+    // has to follow it or the last exercise hides underneath.
+    const [footerHeight, setFooterHeight] = useState(140);
+
+    // null = wheel mode; a string = keyboard mode holding the in-progress text.
+    // Kept as a string so a half-typed "9." doesn't get coerced to a number.
+    const [typingValue, setTypingValue] = useState<string | null>(null);
+
+    const toggleTyping = useCallback(() => {
+        setTypingValue((prev) => {
+            if (prev !== null) {
+                // Leaving keyboard mode: carry what was typed back to the wheel.
+                const parsed = parseFloat(prev);
+                if (Number.isFinite(parsed)) {
+                    setPickerConfig((cfg) => ({ ...cfg, currentValue: parsed }));
+                }
+                return null;
+            }
+            const v = pickerConfig.currentValue;
+            return v ? String(v % 1 === 0 ? v : Number(v.toFixed(2))) : '';
+        });
+    }, [pickerConfig.currentValue]);
+
     const closePicker = useCallback(() => {
         Animated.timing(pickerSlideAnim, {
             toValue: SCREEN_HEIGHT,
@@ -430,6 +473,7 @@ const WorkoutLogScreen: React.FC = () => {
             useNativeDriver: true,
         }).start(() => {
             setPickerConfig((prev) => ({ ...prev, visible: false }));
+            setTypingValue(null);
         });
     }, [pickerSlideAnim]);
 
@@ -494,9 +538,10 @@ const WorkoutLogScreen: React.FC = () => {
                 params: {
                     recap: JSON.stringify(recap),
                     session: JSON.stringify({
-                        name: workoutType.charAt(0).toUpperCase() + workoutType.slice(1),
+                        // Match the header: the recap should say "Push", not "Chest".
+                        name: sessionTitle,
                         day_name: workoutType,
-                        emphasis: [workoutType],
+                        emphasis: sessionMuscles.length ? sessionMuscles : [workoutType],
                     }),
                 },
             });
@@ -532,35 +577,20 @@ const WorkoutLogScreen: React.FC = () => {
     const ListHeader = useMemo(
         () => (
             <View>
-                {/* Workout Type Selector */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>WORKOUT TYPE</Text>
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.typeRow}
-                    >
-                        {WORKOUT_TYPES.map((type) => (
-                            <TouchableOpacity
-                                key={type}
-                                onPress={() => setWorkoutType(type)}
-                                style={[
-                                    styles.typePill,
-                                    workoutType === type && styles.typePillActive,
-                                ]}
-                            >
-                                <Text
-                                    style={[
-                                        styles.typePillText,
-                                        workoutType === type && styles.typePillTextActive,
-                                    ]}
-                                >
-                                    {type.toUpperCase()}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
+                {/* The manual WORKOUT TYPE pill row lived here. It was removed:
+                    the session is already declared as an intent (e.g. "Push"),
+                    and the row could only express single muscles, so a push day
+                    had to be mislabelled as "Chest". The session now takes its
+                    name from the intent, and the exercise picker filters to the
+                    muscles that session actually trains via getAllowedBodyParts. */}
+                {sessionMuscles.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionLabel}>TRAINING TODAY</Text>
+                        <Text style={styles.sessionMuscles}>
+                            {sessionMuscles.map((m) => m.toUpperCase()).join(' · ')}
+                        </Text>
+                    </View>
+                )}
 
                 {/* Repeat Last Banner - Loading */}
                 {fetchingLastWorkout && !lastWorkoutPreview && userExercises.length === 0 && (
@@ -602,13 +632,13 @@ const WorkoutLogScreen: React.FC = () => {
                 )}
             </View>
         ),
-        [workoutType, lastWorkoutPreview, userExercises.length],
+        [workoutType, sessionMuscles, lastWorkoutPreview, userExercises.length],
     );
 
     // Footer component for FlatList
     const ListFooter = useMemo(
         () => (
-            <View style={{ paddingBottom: 140 }}>
+            <View style={{ paddingBottom: footerHeight + spacing.lg }}>
                 {/* Browse Templates Button */}
                 <TouchableOpacity
                     style={styles.browseTemplatesBtn}
@@ -636,7 +666,10 @@ const WorkoutLogScreen: React.FC = () => {
                 </TouchableOpacity>
             </View>
         ),
-        [workoutType],
+        // footerHeight must be here: it is measured after first layout, and
+        // without it the memo keeps the initial 140 forever and the last
+        // exercise stays hidden behind the footer.
+        [workoutType, footerHeight],
     );
 
     // -----------------------------------------------------------------------
@@ -652,8 +685,8 @@ const WorkoutLogScreen: React.FC = () => {
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
                     <Text style={styles.headerLabel}>LOG WORKOUT</Text>
-                    <Text style={styles.headerTitle}>
-                        {workoutType.charAt(0).toUpperCase() + workoutType.slice(1)}
+                    <Text style={styles.headerTitle} numberOfLines={1}>
+                        {sessionTitle}
                     </Text>
                 </View>
                 <View style={styles.headerBtn} />
@@ -680,7 +713,18 @@ const WorkoutLogScreen: React.FC = () => {
                 />
             )}
 
-            {/* Visibility Picker */}
+            {/* Fixed footer: visibility + finish.
+                These used to be two separately-positioned absolute bars, with the
+                visibility bar pinned at a hardcoded `bottom: 72` that guessed the
+                finish bar's height. The real height is
+                paddingTop + button + insets.bottom + paddingBottom, so on any
+                device with a home indicator (insets.bottom = 34) the finish bar
+                grew to ~110 and covered the visibility options. Stacking them in
+                one container removes the guess entirely. */}
+            <View
+                style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}
+                onLayout={(e) => setFooterHeight(e.nativeEvent.layout.height)}
+            >
             {shareLogs && (
                 <View style={styles.visibilityBar}>
                     <Text style={styles.visibilityLabel}>Who sees this workout?</Text>
@@ -724,13 +768,14 @@ const WorkoutLogScreen: React.FC = () => {
                 </View>
             )}
 
-            {/* Fixed Bottom: Finish Workout */}
-            <View style={[styles.bottomBar, { paddingBottom: insets.bottom + spacing.sm }]}>
+            <View style={styles.bottomBar}>
                 <TouchableOpacity
                     style={[styles.finishBtn, loading && { opacity: 0.5 }]}
                     onPress={handleFinish}
                     disabled={loading}
                     activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel="Finish workout"
                 >
                     {loading ? (
                         <ActivityIndicator color={colors.background} size="small" />
@@ -738,6 +783,7 @@ const WorkoutLogScreen: React.FC = () => {
                         <Text style={styles.finishBtnText}>Finish Workout</Text>
                     )}
                 </TouchableOpacity>
+            </View>
             </View>
 
             {/* -------- MODALS -------- */}
@@ -883,32 +929,75 @@ const WorkoutLogScreen: React.FC = () => {
                     >
                         {/* Picker header */}
                         <View style={styles.pickerHeader}>
-                            <TouchableOpacity onPress={closePicker}>
+                            <TouchableOpacity onPress={closePicker} hitSlop={12}>
                                 <Text style={styles.pickerCancelText}>Cancel</Text>
                             </TouchableOpacity>
                             <Text style={styles.pickerTitle}>
                                 {pickerConfig.type === 'weight' ? 'Weight (kg)' : 'Reps'}
                             </Text>
                             <TouchableOpacity
-                                onPress={() => handlePickerConfirm(pickerConfig.currentValue)}
+                                onPress={() => handlePickerConfirm(typingValue !== null
+                                    ? (parseFloat(typingValue) || 0)
+                                    : pickerConfig.currentValue)}
+                                hitSlop={12}
                             >
                                 <Text style={styles.pickerDoneText}>Done</Text>
                             </TouchableOpacity>
                         </View>
 
-                        {/* Scroll wheel */}
-                        <ScrollWheelPicker
-                            values={pickerConfig.type === 'weight' ? WEIGHT_VALUES : REPS_VALUES}
-                            selectedValue={pickerConfig.currentValue}
-                            onValueChange={(v) =>
-                                setPickerConfig((prev) => ({ ...prev, currentValue: v }))
-                            }
-                            formatLabel={
-                                pickerConfig.type === 'weight'
-                                    ? (v) => (v % 1 === 0 ? v.toString() : v.toFixed(1))
-                                    : undefined
-                            }
-                        />
+                        {/* Type / wheel toggle. Scrolling is fine for nudging a
+                            weight, but hopeless for jumping to an exact number. */}
+                        <TouchableOpacity
+                            style={styles.pickerModeToggle}
+                            onPress={toggleTyping}
+                            hitSlop={8}
+                            accessibilityRole="button"
+                            accessibilityLabel={typingValue !== null ? 'Use scroll wheel' : 'Type a value'}
+                        >
+                            <MaterialIcons
+                                name={typingValue !== null ? 'toll' : 'keyboard'}
+                                size={16}
+                                color={colors.text.secondary}
+                            />
+                            <Text style={styles.pickerModeToggleText}>
+                                {typingValue !== null ? 'USE WHEEL' : 'TYPE A NUMBER'}
+                            </Text>
+                        </TouchableOpacity>
+
+                        {typingValue !== null ? (
+                            <View style={styles.pickerTypeWrap}>
+                                <TextInput
+                                    style={styles.pickerTypeInput}
+                                    value={typingValue}
+                                    onChangeText={setTypingValue}
+                                    keyboardType="decimal-pad"
+                                    autoFocus
+                                    selectTextOnFocus
+                                    placeholder="0"
+                                    placeholderTextColor={colors.text.subtle}
+                                    returnKeyType="done"
+                                    onSubmitEditing={() =>
+                                        handlePickerConfirm(parseFloat(typingValue) || 0)
+                                    }
+                                />
+                                <Text style={styles.pickerTypeUnit}>
+                                    {pickerConfig.type === 'weight' ? 'kg' : 'reps'}
+                                </Text>
+                            </View>
+                        ) : (
+                            <ScrollWheelPicker
+                                values={pickerConfig.type === 'weight' ? WEIGHT_VALUES : REPS_VALUES}
+                                selectedValue={pickerConfig.currentValue}
+                                onValueChange={(v) =>
+                                    setPickerConfig((prev) => ({ ...prev, currentValue: v }))
+                                }
+                                formatLabel={
+                                    pickerConfig.type === 'weight'
+                                        ? (v) => (v % 1 === 0 ? v.toString() : v.toFixed(1))
+                                        : undefined
+                                }
+                            />
+                        )}
 
                         {/* Live plate calculator (barbell math: 20kg bar, per side) */}
                         {pickerConfig.type === 'weight' && (
@@ -980,30 +1069,12 @@ const styles = StyleSheet.create({
         marginBottom: spacing.sm,
     },
 
-    // Type pills
-    typeRow: {
-        flexDirection: 'row',
-        gap: spacing.sm,
-    },
-    typePill: {
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius.full,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
-    },
-    typePillActive: {
-        backgroundColor: colors.primary + '18',
-        borderColor: colors.primary,
-    },
-    typePillText: {
-        fontSize: typography.sizes.xs,
+    // Muscles trained in this session, derived from the intent
+    sessionMuscles: {
+        fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.semiBold,
         color: colors.text.secondary,
-    },
-    typePillTextActive: {
-        color: colors.primary,
+        letterSpacing: 1,
     },
 
     // Repeat Last Banner
@@ -1078,16 +1149,21 @@ const styles = StyleSheet.create({
     },
 
     // Bottom bar
-    bottomBar: {
+    // The only positioned element. Its children stack in normal flow, so the
+    // finish button can never overlap the visibility options regardless of
+    // safe-area inset or whether the visibility bar is shown at all.
+    footer: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        paddingHorizontal: spacing.lg,
-        paddingTop: spacing.md,
-        backgroundColor: 'rgba(0,0,0,0.85)',
+        backgroundColor: colors.background,
         borderTopWidth: 1,
         borderTopColor: colors.glass.border,
+    },
+    bottomBar: {
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.md,
     },
     finishBtn: {
         backgroundColor: colors.primary,
@@ -1302,6 +1378,50 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
     },
+    pickerModeToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'center',
+        gap: spacing.sm,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        marginBottom: spacing.sm,
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        backgroundColor: colors.glass.surface,
+    },
+    pickerModeToggleText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.secondary,
+        letterSpacing: 1,
+    },
+    pickerTypeWrap: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        justifyContent: 'center',
+        gap: spacing.sm,
+        // Matches ScrollWheelPicker's height (48 * 5) so swapping modes does not
+        // make the sheet jump.
+        height: 240,
+        paddingTop: spacing['3xl'],
+    },
+    pickerTypeInput: {
+        minWidth: 140,
+        textAlign: 'center',
+        fontSize: 52,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+        paddingVertical: spacing.sm,
+        borderBottomWidth: 2,
+        borderBottomColor: colors.glass.borderLight,
+    },
+    pickerTypeUnit: {
+        fontSize: typography.sizes.lg,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+    },
     plateHint: {
         textAlign: 'center',
         fontSize: typography.sizes.sm,
@@ -1316,16 +1436,9 @@ const styles = StyleSheet.create({
         color: colors.primary,
     },
     visibilityBar: {
-        position: 'absolute',
-        bottom: 72,
-        left: 0,
-        right: 0,
         paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
+        paddingTop: spacing.md,
         gap: spacing.md,
-        borderTopWidth: 1,
-        borderTopColor: colors.glass.border,
-        backgroundColor: colors.background,
     },
     visibilityLabel: {
         fontSize: typography.sizes.xs,
