@@ -38,6 +38,7 @@ const TTL = {
     HOME_DATA: 2 * 60,          // 2 min — balance freshness
     FOOD_SEARCH: 30 * 60,       // 30 min — external API results
     USER_STREAK: 5 * 60,        // 5 min — changes once per day
+    BUSY_TIMES: 60 * 60 * 6,    // 6 hours — 8 weeks of history barely moves
 };
 
 /**
@@ -141,6 +142,7 @@ const keys = {
     homeData: (userId) => `user:${userId}:home`,
     foodSearch: (query) => `food:search:${query.toLowerCase().trim()}`,
     exerciseDb: (category) => `exercises:${category || 'all'}`,
+    busyTimes: (gymId) => `gym:${gymId}:busytimes`,
 };
 
 module.exports = {
