@@ -67,9 +67,11 @@ const BusyTimesStrip: React.FC<BusyTimesStripProps> = ({
             </View>
 
             <View style={styles.axis}>
-                <Text style={styles.axisLabel}>{formatHour(START_HOUR)}</Text>
-                <Text style={styles.axisLabel}>{formatHour(12)}</Text>
-                <Text style={styles.axisLabel}>{formatHour(END_HOUR)}</Text>
+                {hours.map((h) => (
+                    <View key={h} style={styles.axisSlot}>
+                        {h % 6 === 0 && <Text style={styles.axisLabel}>{formatHour(h)}</Text>}
+                    </View>
+                ))}
             </View>
 
             {quietest && (
@@ -117,7 +119,8 @@ const styles = StyleSheet.create({
     },
     barMed: { backgroundColor: colors.warning },
     barHigh: { backgroundColor: colors.error },
-    axis: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs },
+    axis: { flexDirection: 'row', marginTop: spacing.xs, gap: 2 },
+    axisSlot: { flex: 1, alignItems: 'center' },
     axisLabel: {
         fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.medium,
