@@ -53,7 +53,10 @@ router.get('/:id/busy-times', authenticate, asyncHandler(async (req, res) => {
             return computeBusyTimes(result.rows);
         },
         cache.TTL.BUSY_TIMES
-    ).catch(() => computeBusyTimes([]));
+    ).catch((err) => {
+        console.error('Busy-times query error:', err.message);
+        return computeBusyTimes([]);
+    });
 
     res.json({ success: true, busy_times: busyTimes });
 }));
