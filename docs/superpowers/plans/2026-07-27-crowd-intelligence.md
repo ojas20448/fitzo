@@ -118,7 +118,7 @@ describe('computeBusyTimes', () => {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `cd backend && npx jest busy-times -v`
+Run: `cd backend && npx jest busy-times --verbose`
 Expected: FAIL — `Cannot find module '../utils/busyTimes'`
 
 - [ ] **Step 3: Write the implementation**
@@ -216,8 +216,8 @@ module.exports = {
 
 - [ ] **Step 4: Run the test to verify it passes**
 
-Run: `cd backend && npx jest busy-times -v`
-Expected: PASS — 7 tests
+Run: `cd backend && npx jest busy-times --verbose`
+Expected: PASS — 8 tests
 
 - [ ] **Step 5: Commit**
 
@@ -688,7 +688,7 @@ describe('isPresent', () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd backend && npx jest crowd -v`
+Run: `cd backend && npx jest crowd --verbose`
 Expected: FAIL — `presenceWindowEnd is not a function`
 
 - [ ] **Step 3: Implement**
@@ -740,7 +740,7 @@ module.exports = {
 
 - [ ] **Step 4: Run to verify it passes**
 
-Run: `cd backend && npx jest crowd -v`
+Run: `cd backend && npx jest crowd --verbose`
 Expected: PASS — original crowd tests plus 8 new ones
 
 - [ ] **Step 5: Commit**
@@ -971,7 +971,7 @@ describe('shouldAlertQuiet', () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd backend && npx jest quiet-hours -v`
+Run: `cd backend && npx jest quiet-hours --verbose`
 Expected: FAIL — `Cannot find module '../services/quietHours'`
 
 - [ ] **Step 3: Register the notification type and its mute toggle**
@@ -1126,7 +1126,7 @@ module.exports = {
 
 - [ ] **Step 5: Run to verify it passes**
 
-Run: `cd backend && npx jest quiet-hours -v`
+Run: `cd backend && npx jest quiet-hours --verbose`
 Expected: PASS — 8 tests
 
 - [ ] **Step 6: Add the cron endpoint**

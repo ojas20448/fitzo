@@ -174,7 +174,7 @@ describe('buildServingVariants', () => {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `cd backend && npx jest cooking-medium -v`
+Run: `cd backend && npx jest cooking-medium --verbose`
 Expected: FAIL — `Cannot find module '../utils/cookingMedium'`
 
 - [ ] **Step 3: Write the implementation**
@@ -286,7 +286,7 @@ module.exports = {
 
 - [ ] **Step 4: Run the test to verify it passes**
 
-Run: `cd backend && npx jest cooking-medium -v`
+Run: `cd backend && npx jest cooking-medium --verbose`
 Expected: PASS — 15 tests
 
 - [ ] **Step 5: Commit**
@@ -492,7 +492,7 @@ describe('canonicalCategory', () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd backend && npx jest food-categories -v`
+Run: `cd backend && npx jest food-categories --verbose`
 Expected: FAIL — `Cannot find module '../utils/foodCategories'`
 
 - [ ] **Step 3: Implement**
@@ -541,7 +541,7 @@ module.exports = { canonicalCategory, CATEGORY_ALIASES };
 
 - [ ] **Step 4: Run to verify it passes**
 
-Run: `cd backend && npx jest food-categories -v`
+Run: `cd backend && npx jest food-categories --verbose`
 Expected: PASS — 5 tests
 
 - [ ] **Step 5: Write the normalisation script**
@@ -705,7 +705,7 @@ describe('normaliseFoodKey', () => {
 
 - [ ] **Step 3: Run to verify it fails**
 
-Run: `cd backend && npx jest food-prefs -v`
+Run: `cd backend && npx jest food-prefs --verbose`
 Expected: FAIL — `Cannot find module '../services/foodPrefs'`
 
 - [ ] **Step 4: Implement**
@@ -791,7 +791,7 @@ module.exports = {
 
 - [ ] **Step 5: Run to verify it passes**
 
-Run: `cd backend && npx jest food-prefs -v`
+Run: `cd backend && npx jest food-prefs --verbose`
 Expected: PASS — 5 tests
 
 - [ ] **Step 6: Apply the migration**
@@ -994,7 +994,7 @@ describe('validateComboItems', () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd backend && npx jest bulk-log -v`
+Run: `cd backend && npx jest bulk-log --verbose`
 Expected: FAIL — `Cannot find module '../utils/mealCombo'`
 
 - [ ] **Step 3: Implement the validator**
@@ -1060,7 +1060,7 @@ module.exports = { validateComboItems, MAX_COMBO_ITEMS, MAX_ITEM_CALORIES };
 
 - [ ] **Step 4: Run to verify it passes**
 
-Run: `cd backend && npx jest bulk-log -v`
+Run: `cd backend && npx jest bulk-log --verbose`
 Expected: PASS — 7 tests
 
 - [ ] **Step 5: Add the bulk endpoint**
