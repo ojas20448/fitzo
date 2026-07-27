@@ -594,14 +594,19 @@ Add state next to the other `useState` declarations:
 const [busyTimes, setBusyTimes] = useState<BusyTimes | null>(null);
 ```
 
-In the existing home-data effect, after home data resolves and `gym_id` is known, add a non-blocking fetch. It must never break the home screen if it fails:
+**Where `gym_id` comes from — read this before writing the fetch.** `GET /api/member/home` does **not** return a gym id. Its payload has `gym: { name, capacity }` only (`backend/src/routes/member.js:208-222`). Reaching for `data.gym_id` yields `undefined`, the fetch never fires, and the strip silently never renders — while the wiring audit still passes.
+
+The id lives on the authenticated user instead: `AuthContext.User` declares `gym_id: string` (`mobile/src/context/AuthContext.tsx:49`), and `HomeScreen` already destructures it at line 97 (`const { user } = useAuth();`). Use that — no backend change is needed.
+
+Add a non-blocking fetch that can never break the home screen:
 
 ```tsx
-if (data?.gym_id) {
-    gymAPI.getBusyTimes(data.gym_id)
+useEffect(() => {
+    if (!user?.gym_id) return;
+    gymAPI.getBusyTimes(user.gym_id)
         .then((r) => setBusyTimes(r.busy_times))
         .catch(() => setBusyTimes(null));
-}
+}, [user?.gym_id]);
 ```
 
 - [ ] **Step 3: Render the strip**
