@@ -780,6 +780,24 @@ ALTER TABLE attendances
 CREATE INDEX IF NOT EXISTS idx_attendance_open_session
   ON attendances (gym_id, checked_in_at DESC)
   WHERE checked_out_at IS NULL;
+
+-- Task 7 support: when this member was last sent a quiet-hours nudge.
+-- Without it the 24h cooldown cannot be enforced and a manual cron
+-- re-trigger double-notifies everyone.
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS quiet_alert_sent_at TIMESTAMP WITH TIME ZONE;
+
+-- Task 7 support: give quiet-hours alerts their own mute toggle, so a daily
+-- push is something members can switch off like every other category.
+UPDATE users
+   SET notification_preferences =
+       COALESCE(notification_preferences, '{}'::jsonb) || '{"quietHours": true}'::jsonb
+ WHERE notification_preferences IS NULL
+    OR NOT (notification_preferences ? 'quietHours');
+
+ALTER TABLE users
+  ALTER COLUMN notification_preferences
+  SET DEFAULT '{"workoutReminders": true, "streakAlerts": true, "friendActivity": true, "classReminders": true, "achievements": true, "marketing": false, "quietHours": true}'::jsonb;
 ```
 
 - [ ] **Step 2: Apply the migration**
@@ -876,14 +894,20 @@ git commit -m "feat(crowd): add checkout endpoint and correct occupancy to sessi
 **Files:**
 - Create: `backend/src/services/quietHours.js`
 - Create: `backend/src/__tests__/quiet-hours.test.js`
+- Modify: `backend/src/services/pushNotifications.js` (add the type + preference mapping)
 - Modify: `backend/src/routes/cron.js`
 - Modify: `.github/workflows/ai-cron.yml`
 
 **Interfaces:**
-- Consumes: `computeBusyTimes` (Task 1), `isPresent` (Task 5), `sendToUser` from `backend/src/services/pushNotifications.js`.
+- Consumes: `computeBusyTimes` (Task 1), `sendToUser` from `backend/src/services/pushNotifications.js`, and the `users.quiet_alert_sent_at` column added in Task 6.
 - Produces:
   - `shouldAlertQuiet({ currentScore, confidence, alreadyCheckedIn, lastAlertHoursAgo })` → `boolean`
   - `runQuietAlerts()` → `Promise<{ sent: number, skipped: number }>`
+
+> **Two corrections from the pre-flight scan — both are requirements, not suggestions:**
+>
+> 1. **The cooldown must be real.** `lastAlertHoursAgo` must be derived from `users.quiet_alert_sent_at`, and the column must be stamped after a successful send. Passing the constant `ALERT_COOLDOWN_HOURS` in makes the guard a no-op (`24 < 24` is false) — tested logic that never fires, and a manual `workflow_dispatch` would double-notify every member.
+> 2. **The alert must be mutable.** `notification.type` is read at the **top level** by `sendToUser` — a `type` nested inside `data` is invisible to `isTypeAllowed`. Set `type: 'quiet_hours'` on the notification object itself and register it in `TYPE_TO_PREFERENCE`, or members get a daily push they cannot switch off.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -926,6 +950,18 @@ describe('shouldAlertQuiet', () => {
         expect(shouldAlertQuiet({ ...base, lastAlertHoursAgo: 3 })).toBe(false);
     });
 
+    it('treats "never alerted" (null) as cooldown satisfied', () => {
+        // users.quiet_alert_sent_at is NULL until the first send — this must
+        // read as eligible, not as "0 hours ago".
+        expect(shouldAlertQuiet({ ...base, lastAlertHoursAgo: null })).toBe(true);
+        expect(shouldAlertQuiet({ ...base, lastAlertHoursAgo: undefined })).toBe(true);
+    });
+
+    it('alerts again once the cooldown has fully elapsed', () => {
+        expect(shouldAlertQuiet({ ...base, lastAlertHoursAgo: 23.9 })).toBe(false);
+        expect(shouldAlertQuiet({ ...base, lastAlertHoursAgo: 24 })).toBe(true);
+    });
+
     it('alerts exactly at the threshold boundary', () => {
         expect(shouldAlertQuiet({ ...base, currentScore: QUIET_SCORE_THRESHOLD })).toBe(true);
         expect(shouldAlertQuiet({ ...base, currentScore: QUIET_SCORE_THRESHOLD + 1 })).toBe(false);
@@ -938,7 +974,23 @@ describe('shouldAlertQuiet', () => {
 Run: `cd backend && npx jest quiet-hours -v`
 Expected: FAIL — `Cannot find module '../services/quietHours'`
 
-- [ ] **Step 3: Implement the decision function and batch**
+- [ ] **Step 3: Register the notification type and its mute toggle**
+
+In `backend/src/services/pushNotifications.js`, add to the `NotificationType` object (line 16):
+
+```js
+    QUIET_HOURS: 'quiet_hours',
+```
+
+And to the `TYPE_TO_PREFERENCE` map (line 29):
+
+```js
+    [NotificationType.QUIET_HOURS]: 'quietHours',
+```
+
+The matching `quietHours` preference key is added to every user's `notification_preferences` by the Task 6 migration.
+
+- [ ] **Step 4: Implement the decision function and batch**
 
 Create `backend/src/services/quietHours.js`:
 
@@ -1008,6 +1060,7 @@ async function runQuietAlerts() {
 
         const members = await query(
             `SELECT u.id,
+                    EXTRACT(EPOCH FROM (NOW() - u.quiet_alert_sent_at)) / 3600 AS hours_since_alert,
                     EXISTS (
                       SELECT 1 FROM attendances a
                        WHERE a.user_id = u.id
@@ -1019,21 +1072,41 @@ async function runQuietAlerts() {
         );
 
         for (const m of members.rows) {
+            // NULL (never alerted) must read as "cooldown satisfied", not 0 hours.
+            const lastAlertHoursAgo = m.hours_since_alert === null
+                ? null
+                : Number(m.hours_since_alert);
+
             const decision = shouldAlertQuiet({
                 currentScore,
                 confidence: busy.confidence,
                 alreadyCheckedIn: m.checked_in_today,
-                lastAlertHoursAgo: ALERT_COOLDOWN_HOURS, // cron runs at most once/day
+                lastAlertHoursAgo,
             });
             if (!decision) { skipped++; continue; }
 
             try {
-                await pushNotifications.sendToUser(m.id, {
+                const result = await pushNotifications.sendToUser(m.id, {
                     title: 'Your gym is quiet right now',
                     body: 'Good window for a session — fewer people than usual.',
+                    // Top level: sendToUser reads notification.type to check the
+                    // user's mute toggle. Nested in `data` it would be invisible.
+                    type: 'quiet_hours',
                     data: { type: 'quiet_hours' },
                 });
-                sent++;
+
+                // Only stamp the cooldown when something was actually delivered.
+                // Stamping on a muted/tokenless user would suppress a future
+                // alert they never received.
+                if (result && result.success) {
+                    await query(
+                        `UPDATE users SET quiet_alert_sent_at = NOW() WHERE id = $1`,
+                        [m.id]
+                    );
+                    sent++;
+                } else {
+                    skipped++;
+                }
             } catch {
                 skipped++;
             }
@@ -1051,12 +1124,12 @@ module.exports = {
 };
 ```
 
-- [ ] **Step 4: Run to verify it passes**
+- [ ] **Step 5: Run to verify it passes**
 
 Run: `cd backend && npx jest quiet-hours -v`
-Expected: PASS — 6 tests
+Expected: PASS — 8 tests
 
-- [ ] **Step 5: Add the cron endpoint**
+- [ ] **Step 6: Add the cron endpoint**
 
 In `backend/src/routes/cron.js`, add the require at the top:
 
@@ -1078,7 +1151,7 @@ router.post('/quiet-alerts', asyncHandler(async (req, res) => {
 }));
 ```
 
-- [ ] **Step 6: Schedule it**
+- [ ] **Step 7: Schedule it**
 
 In `.github/workflows/ai-cron.yml`, add a schedule entry and a matching branch in the endpoint-picker step, following the existing `daily-insights` / `weekly-recaps` pattern exactly:
 
@@ -1093,15 +1166,15 @@ elif [ "${{ github.event.schedule }}" = "30 12 * * *" ]; then
   echo "endpoint=quiet-alerts" >> $GITHUB_OUTPUT
 ```
 
-- [ ] **Step 7: Full verification**
+- [ ] **Step 8: Full verification**
 
 Run: `cd backend && find src -name '*.js' -exec node --check {} + && npx jest && node scripts/wiring_audit.js`
 Expected: syntax clean; all suites PASS; `nav orphans=0, api orphans=0`
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add backend/src/services/quietHours.js backend/src/__tests__/quiet-hours.test.js backend/src/routes/cron.js .github/workflows/ai-cron.yml
+git add backend/src/services/quietHours.js backend/src/__tests__/quiet-hours.test.js backend/src/services/pushNotifications.js backend/src/routes/cron.js .github/workflows/ai-cron.yml
 git commit -m "feat(crowd): add quiet-hours push notification batch"
 ```
 
