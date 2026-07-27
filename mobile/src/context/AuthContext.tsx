@@ -1,8 +1,42 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI, setAuthToken, getAuthToken, removeAuthToken, wakeBackend } from '../services/api';
 import { authEvents } from '../services/authEvents';
 import { useOfflineStore } from '../stores/offlineStore';
+
+/**
+ * Last-known user profile, cached alongside the auth token.
+ *
+ * The token lives in SecureStore and is valid for 90 days, but a session also
+ * needs a `user` object to render. Without a cache, a cold/unreachable backend
+ * at launch left us with a valid token and no user — which previously got
+ * "resolved" by deleting the token and forcing a re-login. We now fall back to
+ * the cached profile and refresh it in the background instead.
+ */
+const USER_CACHE_KEY = 'fitzo_cached_user';
+
+const cacheUser = async (user: User | null) => {
+    try {
+        if (user) await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+        else await AsyncStorage.removeItem(USER_CACHE_KEY);
+    } catch {
+        // Cache is an optimisation; never let it break auth.
+    }
+};
+
+const readCachedUser = async (): Promise<User | null> => {
+    try {
+        const raw = await AsyncStorage.getItem(USER_CACHE_KEY);
+        return raw ? (JSON.parse(raw) as User) : null;
+    } catch {
+        return null;
+    }
+};
+
+/** Only a genuine 401 means the session is dead. Everything else is transport. */
+const isAuthFailure = (error: any) =>
+    error?.status === 401 || error?.code === 'AUTH_REQUIRED';
 
 // Types
 export type UserRole = 'member' | 'trainer' | 'manager';
@@ -53,6 +87,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const { token, user } = await authAPI.devLogin();
             await setAuthToken(token);
+            await cacheUser(user);
 
             setState({
                 user,
@@ -87,36 +122,45 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     const checkAuth = async () => {
-        try {
-            const token = await getAuthToken();
-            if (token) {
-                // Wake the backend while checking auth (Render free tier cold start)
-                wakeBackend();
-                const { user } = await authAPI.getMe();
-                setState({
-                    user,
-                    token,
-                    isLoading: false,
-                    isAuthenticated: true,
-                });
-            } else {
+        const token = await getAuthToken();
 
-                setState({
-                    user: null,
-                    token: null,
-                    isLoading: false,
-                    isAuthenticated: false,
-                });
+        if (!token) {
+            setState({ user: null, token: null, isLoading: false, isAuthenticated: false });
+            return;
+        }
+
+        try {
+            // MUST be awaited. The backend is on Render's free tier, where a cold
+            // start takes 30-50s. Firing this off unawaited meant getMe() raced a
+            // sleeping server and usually lost.
+            await wakeBackend();
+
+            const { user } = await authAPI.getMe();
+            await cacheUser(user);
+            setState({ user, token, isLoading: false, isAuthenticated: true });
+        } catch (error: any) {
+            // Previously this deleted the token on ANY error. Because a cold
+            // backend or a flaky connection throws here, a perfectly valid
+            // 90-day token was being wiped on launch — that is what made people
+            // log in over and over. Only a real 401 ends the session now.
+            if (isAuthFailure(error)) {
+                await removeAuthToken();
+                await cacheUser(null);
+                setState({ user: null, token: null, isLoading: false, isAuthenticated: false });
+                return;
             }
-        } catch (error) {
-            // Token invalid or expired
-            await removeAuthToken();
-            setState({
-                user: null,
-                token: null,
-                isLoading: false,
-                isAuthenticated: false,
-            });
+
+            // Transport failure: keep the token, restore the last known profile
+            // and let individual requests retry.
+            const cached = await readCachedUser();
+            if (cached) {
+                useOfflineStore.getState().setOnline(false);
+                setState({ user: cached, token, isLoading: false, isAuthenticated: true });
+            } else {
+                // No cached profile to render, so we cannot enter the app — but
+                // we still keep the token so the next launch can recover.
+                setState({ user: null, token, isLoading: false, isAuthenticated: false });
+            }
         }
     };
 
@@ -124,6 +168,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const { token, user } = await authAPI.login({ email, password });
             await setAuthToken(token);
+            await cacheUser(user);
 
             setState({
                 user,
@@ -147,14 +192,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             });
             await setAuthToken(token);
 
+            const registeredUser = {
+                ...user,
+                onboarding_completed: user.onboarding_completed ?? false,
+            };
+            await cacheUser(registeredUser);
+
             // Initialize offline store
             useOfflineStore.getState().setOnline(true);
 
             setState({
-                user: {
-                    ...user,
-                    onboarding_completed: user.onboarding_completed ?? false
-                },
+                user: registeredUser,
                 token,
                 isLoading: false,
                 isAuthenticated: true,
@@ -167,6 +215,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const logout = async () => {
         await removeAuthToken();
+        await cacheUser(null);
         setState({
             user: null,
             token: null,
@@ -181,6 +230,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const { token, user } = await authAPI.googleLogin(idToken);
             await setAuthToken(token);
+            await cacheUser(user);
 
             // Initialize offline store
             useOfflineStore.getState().setOnline(true);
@@ -207,10 +257,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const refreshUser = async () => {
         try {
             const { user } = await authAPI.getMe();
+            await cacheUser(user);
             setState((prev) => ({ ...prev, user }));
-        } catch (error) {
-            // If refresh fails, logout
-            await logout();
+        } catch (error: any) {
+            // Only a real 401 should end the session. This used to log out on any
+            // failure, so a momentary signal drop mid-session bounced the user to
+            // the login screen.
+            if (isAuthFailure(error)) {
+                await logout();
+            }
+            // Otherwise keep the current profile; the next refresh will catch up.
         }
     };
 

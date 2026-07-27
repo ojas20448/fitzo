@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -38,18 +39,34 @@ export default function FoodScannerScreen() {
 
     const [base64Image, setBase64Image] = useState<string | null>(null);
 
+    // A phone camera shoots ~12MP. Base64 of that JPEG is 2-4MB, which is far
+    // more than Gemini Vision needs and slow/flaky to upload on mobile data.
+    // Downscaling the long edge to 1024px puts the payload at roughly 100-200KB
+    // with no measurable loss in recognition quality.
+    const MAX_EDGE = 1024;
+
     const takePicture = async () => {
         if (!cameraRef.current) return;
 
         try {
-            const photo = await cameraRef.current.takePictureAsync({
-                quality: 0.7,
+            // base64 is deliberately NOT requested here — we only need the file
+            // URI, and asking for base64 of the full-size shot would allocate the
+            // multi-MB string we are trying to avoid.
+            const photo = await cameraRef.current.takePictureAsync({ quality: 0.9 });
+            setCapturedImage(photo.uri);
+
+            const rendered = await ImageManipulator
+                .manipulate(photo.uri)
+                .resize({ width: MAX_EDGE })
+                .renderAsync();
+
+            const { base64 } = await rendered.saveAsync({
+                format: SaveFormat.JPEG,
+                compress: 0.7,
                 base64: true,
             });
-            setCapturedImage(photo.uri);
-            if (photo.base64) {
-                setBase64Image(photo.base64);
-            }
+
+            if (base64) setBase64Image(base64);
         } catch (error: any) {
             Alert.alert('Error', 'Failed to capture photo');
         }
@@ -75,7 +92,16 @@ export default function FoodScannerScreen() {
                 Alert.alert('Analysis Failed', 'Could not detect food in image');
             }
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Failed to analyze food');
+            // NB: the axios interceptor in services/api.ts rejects a FLAT
+            // { message, code, status } object — `error.response` is stripped.
+            if (error?.status === 413 || error?.code === 'PAYLOAD_TOO_LARGE') {
+                // Should be unreachable now that we downscale before upload, but
+                // surface it plainly rather than as a generic failure if it ever
+                // regresses.
+                Alert.alert('Photo Too Large', 'That photo was too large to upload. Please try again.');
+            } else {
+                Alert.alert('Error', error.message || 'Failed to analyze food');
+            }
         } finally {
             setAnalyzing(false);
         }
