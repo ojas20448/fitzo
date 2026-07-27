@@ -38,7 +38,25 @@ app.use(cors({
     credentials: true,
 }));
 
-// Body parsing — 1MB global limit (image routes override with higher limit)
+// Body parsing.
+//
+// ORDER IS LOAD-BEARING. `express.json` sets `req._body = true` once it has
+// consumed the stream, and every later json parser short-circuits on that flag.
+// So the FIRST parser to run wins, and a route-level `express.json({limit})`
+// mounted further down can never raise the ceiling — it is dead code, and the
+// global limit below would reject the request with a 413 long before the router
+// is ever reached.
+//
+// Therefore: large-body routes (base64 image / audio uploads) must declare
+// their parser HERE, above the global default.
+const LARGE_BODY_ROUTES = [
+    '/api/food/analyze-photo',  // base64 food photo -> Gemini Vision
+    '/api/ai/transcribe',       // base64 audio -> speech-to-text
+];
+LARGE_BODY_ROUTES.forEach((route) => {
+    app.use(route, express.json({ limit: '10mb' }));
+});
+
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 

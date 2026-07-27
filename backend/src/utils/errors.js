@@ -122,6 +122,17 @@ const errorHandler = (err, req, res, next) => {
         err.isOperational = true;
     }
 
+    // body-parser rejects oversized payloads with type 'entity.too.large'. It is
+    // not flagged operational, so it used to fall through to the generic
+    // "Something went wrong" — which told the user nothing and made an oversized
+    // food photo look like a server crash.
+    if (err.type === 'entity.too.large' || err.statusCode === 413 || err.status === 413) {
+        err.statusCode = 413;
+        err.message = 'That file is too large to upload. Please try a smaller image.';
+        err.isOperational = true;
+        err.code = 'PAYLOAD_TOO_LARGE';
+    }
+
     const statusCode = err.statusCode || 500;
     const message = getFriendlyMessage(err);
     const code = err.code || 'INTERNAL_ERROR';

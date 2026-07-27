@@ -49,7 +49,10 @@ router.post('/analyze-text', authenticate, aiQuota, validate({ body: analyzeFood
  * Analyze food from photo using Gemini Vision (FREE tier)
  * Accepts base64 image data
  */
-router.post('/analyze-photo', express.json({ limit: '10mb' }), authenticate, aiQuota, validate({ body: analyzeFoodPhotoSchema }), asyncHandler(async (req, res) => {
+// NOTE: the 10mb body limit for this route is declared in src/index.js
+// (LARGE_BODY_ROUTES), not here. A route-level express.json() would be a no-op —
+// the global parser has already consumed the body by the time we reach it.
+router.post('/analyze-photo', authenticate, aiQuota, validate({ body: analyzeFoodPhotoSchema }), asyncHandler(async (req, res) => {
     const { image, mimeType } = req.body;
 
     // Strip data URL prefix if present (e.g., "data:image/jpeg;base64,...")
