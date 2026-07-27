@@ -12,7 +12,7 @@ import Animated, {
     useSharedValue, useAnimatedStyle, withRepeat,
     withTiming, withSequence, Easing,
 } from 'react-native-reanimated';
-import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
+import { colors, typography, spacing, borderRadius, shadows, shadow } from '../../styles/theme';
 import { nutritionAPI, workoutsAPI, healthAPI } from '../../services/api';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../context/AuthContext';
@@ -401,9 +401,15 @@ export default function OnboardingWizard() {
         );
     }, []);
 
-    const progressGlowStyle = useAnimatedStyle(() => ({
-        shadowOpacity: progressGlow.value,
-    }));
+    // Android ignores `shadowOpacity` entirely (see styles/theme.ts), so
+    // animating it there is a silent no-op. Drive the whole shadow via an
+    // animated `boxShadow` string on Android instead; iOS keeps the cheaper
+    // native shadowOpacity path it already renders correctly.
+    const progressGlowStyle = useAnimatedStyle(() =>
+        Platform.OS === 'ios'
+            ? { shadowOpacity: progressGlow.value }
+            : { boxShadow: `0px 0px 16px rgba(255, 255, 255, ${progressGlow.value})` }
+    );
 
     // ── Navigation ───────────────────────────────────────────────
     const nextStep = useCallback(() => {
@@ -1202,10 +1208,10 @@ const s = StyleSheet.create({
         height: 2,
         backgroundColor: colors.primary,
         borderRadius: 1,
-        shadowColor: '#FFFFFF',
-        shadowOffset: { width: 0, height: 0 },
-        shadowRadius: 8,
-        elevation: 4,
+        // Was: shadowRadius 8 + elevation 4 with no shadowOpacity — that is a
+        // no-op on iOS (opacity defaults to 0) but drew a white Material halo
+        // on Android. Now identical on both.
+        ...shadow({ blur: 8, color: '#FFFFFF', opacity: 0.5 }),
     },
 
     // ── Scroll / layout ──────────────────────────────────────────

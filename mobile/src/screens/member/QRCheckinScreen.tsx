@@ -20,7 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { checkinAPI } from '../../services/api';
 import Button from '../../components/Button';
-import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
+import { colors, typography, spacing, borderRadius, shadows, shadow } from '../../styles/theme';
 
 const FRAME_SIZE = 280;
 const CORNER_SIZE = 40;
@@ -237,11 +237,7 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 2,
         backgroundColor: colors.primary,
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 10,
-        elevation: 5,
+        ...shadow({ blur: 10, color: colors.primary, opacity: 1 }),
     },
     container: {
         flex: 1,

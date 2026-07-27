@@ -6,6 +6,8 @@
  * Inspired by refined minimal dark UI patterns
  */
 
+import { Platform, type ViewStyle } from 'react-native';
+
 export const colors = {
     // Core colors
     background: '#000000',
@@ -116,43 +118,67 @@ export const borderRadius = {
     full: 9999,
 };
 
+/**
+ * Cross-platform shadow builder.
+ *
+ * WHY THIS EXISTS — do not "simplify" this back to plain shadow* + elevation:
+ *
+ * React Native's Android UIManager has NO handling for `shadowOffset`,
+ * `shadowOpacity` or `shadowRadius` (verified: zero references in
+ * ReactAndroid/.../uimanager). The only iOS shadow prop Android reads is
+ * `shadowColor`, and it forwards it to `setOutlineAmbientShadowColor` /
+ * `setOutlineSpotShadowColor` — i.e. it merely *tints the elevation shadow*.
+ *
+ * Net effect of the old `{ shadowColor:'#FFF', shadowOpacity:0.18, shadowRadius:8, elevation:8 }`:
+ *   iOS     → soft, 18%-opacity white glow (intended)
+ *   Android → opacity + radius discarded; a full-strength white Material
+ *             outline shadow at elevation 8. Hard, boxy, bright halo. And
+ *             because our surfaces are ~92% transparent, that white outline
+ *             shadow shows straight THROUGH the card as a lighter inner box.
+ *
+ * Fix: on Android use `boxShadow` (natively implemented since RN 0.76 /
+ * new arch — see OutsetBoxShadowDrawable.kt), which honours colour, opacity,
+ * offset and blur exactly like iOS. `elevation` is deliberately omitted on
+ * Android so no Material outline shadow is drawn at all.
+ *
+ * Note: CSS blur-radius ≈ 2× iOS shadowRadius, hence the `blur * 2` below —
+ * that is what makes the two platforms match visually.
+ */
+export const shadow = (
+    { x = 0, y = 0, blur, color, opacity }:
+    { x?: number; y?: number; blur: number; color: string; opacity: number }
+) => Platform.select({
+    // iOS is already correct — keep the exact same values it renders today.
+    ios: {
+        shadowColor: color,
+        shadowOffset: { width: x, height: y },
+        shadowOpacity: opacity,
+        shadowRadius: blur,
+    },
+    android: {
+        boxShadow: `${x}px ${y}px ${blur * 2}px ${hexToRgba(color, opacity)}`,
+    },
+    default: {
+        boxShadow: `${x}px ${y}px ${blur * 2}px ${hexToRgba(color, opacity)}`,
+    },
+}) as ViewStyle;
+
+function hexToRgba(hex: string, alpha: number): string {
+    const h = hex.replace('#', '');
+    const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    const r = parseInt(full.slice(0, 2), 16);
+    const g = parseInt(full.slice(2, 4), 16);
+    const b = parseInt(full.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export const shadows = {
-    glass: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.5,
-        shadowRadius: 30,
-        elevation: 8,
-    },
-    glow: {
-        shadowColor: '#FFFFFF',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.15,
-        shadowRadius: 20,
-        elevation: 10,
-    },
-    glowMd: {
-        shadowColor: '#FFFFFF',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.2,
-        shadowRadius: 25,
-        elevation: 12,
-    },
-    glowLg: {
-        shadowColor: '#FFFFFF',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.3,
-        shadowRadius: 40,
-        elevation: 15,
-    },
+    glass:  shadow({ y: 4, blur: 30, color: '#000000', opacity: 0.5 }),
+    glow:   shadow({ blur: 20, color: '#FFFFFF', opacity: 0.15 }),
+    glowMd: shadow({ blur: 25, color: '#FFFFFF', opacity: 0.2 }),
+    glowLg: shadow({ blur: 40, color: '#FFFFFF', opacity: 0.3 }),
     // Tight, contained glow — hugs the card border instead of bleeding outward
-    glowCard: {
-        shadowColor: '#FFFFFF',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.18,
-        shadowRadius: 8,
-        elevation: 8,
-    },
+    glowCard: shadow({ blur: 8, color: '#FFFFFF', opacity: 0.18 }),
 };
 
 // Common style patterns

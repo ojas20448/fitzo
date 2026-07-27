@@ -14,3 +14,6 @@ dist/
 
 expo-env.d.ts
 # @end expo-cli
+
+# Pre-fix icon originals + mask verification renders (not bundled)
+.icon-backup/

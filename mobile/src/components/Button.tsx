@@ -11,7 +11,7 @@ import {
     View,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { colors, typography, borderRadius, spacing } from '../styles/theme';
+import { colors, typography, borderRadius, spacing, shadow } from '../styles/theme';
 
 interface ButtonProps {
     title: string;
@@ -239,20 +239,10 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.bold,
         textAlign: 'center',
     },
-    primaryShadow: {
-        shadowColor: '#FFFFFF',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.2,
-        shadowRadius: 15,
-        elevation: 8,
-    },
-    dangerShadow: {
-        shadowColor: colors.error,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        elevation: 6,
-    },
+    // Use the shared platform-aware builder — raw shadow*/elevation renders a
+    // hard white Material halo on Android (Android ignores opacity/radius).
+    primaryShadow: shadow({ blur: 15, color: '#FFFFFF', opacity: 0.2 }),
+    dangerShadow: shadow({ blur: 10, color: colors.error, opacity: 0.3 }),
     pressed: {
         opacity: 0.85,
     },

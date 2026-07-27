@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions, Platform, Image } from 'react-native';
 import Svg, { Ellipse, Line } from 'react-native-svg';
+import { shadow } from '../styles/theme';
 
 /**
  * ReceiptShareCard — thermal-receipt style shareable (PUSH-inspired).
@@ -189,11 +190,7 @@ const styles = StyleSheet.create({
         paddingTop: 18,
         paddingBottom: 26,
         transform: [{ rotate: '-0.6deg' }],
-        shadowColor: '#000',
-        shadowOpacity: 0.55,
-        shadowRadius: 18,
-        shadowOffset: { width: 0, height: 8 },
-        elevation: 10,
+        ...shadow({ y: 8, blur: 18, color: '#000000', opacity: 0.55 }),
     },
     headerRow: {
         flexDirection: 'row',

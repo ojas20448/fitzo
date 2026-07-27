@@ -10,7 +10,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { colors, typography, spacing, borderRadius } from '../styles/theme';
+import { colors, typography, spacing, borderRadius, shadow } from '../styles/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -234,11 +234,8 @@ const styles = StyleSheet.create({
         borderLeftWidth: 4,
         padding: spacing.md,
         marginBottom: spacing.sm,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
+        ...shadow({ y: 4, blur: 8, color: '#000000', opacity: 0.3 }),
+        zIndex: 8, // was implied by elevation: 8 on Android
     },
     iconContainer: {
         width: 40,

@@ -5,7 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { intentAPI, workoutsAPI } from '../../services/api';
 import { useToast } from '../../components/Toast';
-import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
+import { colors, typography, spacing, borderRadius, shadows, shadow } from '../../styles/theme';
 
 // Preset splits
 const PRESET_SPLITS = [
@@ -1045,11 +1045,10 @@ const styles = StyleSheet.create({
         paddingTop: spacing.xl,
         paddingBottom: spacing['3xl'],
         paddingHorizontal: spacing.xl,
-        elevation: 10,
-        shadowColor: 'black',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
+        // zIndex replaces the stacking side-effect that elevation: 10 provided
+        // on Android for this absolutely-positioned bottom bar.
+        zIndex: 10,
+        ...shadow({ y: -4, blur: 8, color: '#000000', opacity: 0.1 }),
     },
     privacyToggle: {
         flexDirection: 'row',
@@ -1069,11 +1068,7 @@ const styles = StyleSheet.create({
     },
     privacyOptionActive: {
         backgroundColor: colors.primary,
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 2,
+        ...shadow({ y: 2, blur: 4, color: colors.primary, opacity: 0.3 }),
     },
     privacyText: {
         fontSize: typography.sizes.sm,

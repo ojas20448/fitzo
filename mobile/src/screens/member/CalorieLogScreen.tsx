@@ -25,7 +25,7 @@ import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import Celebration from '../../components/Celebration';
 import { useToast } from '../../components/Toast';
-import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
+import { colors, typography, spacing, borderRadius, shadows, shadow } from '../../styles/theme';
 import { defaultFoods } from '../../data/defaultFoods';
 import { useNutrition } from '../../context/NutritionContext';
 import { FoodCacheService } from '../../services/FoodCacheService';
@@ -1436,11 +1436,7 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: colors.background,
         marginLeft: -10,
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 3,
+        ...shadow({ y: 2, blur: 4, color: colors.primary, opacity: 0.3 }),
     },
     container: {
         flex: 1,
@@ -2035,11 +2031,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        elevation: 5,
+        ...shadow({ y: 4, blur: 10, color: colors.primary, opacity: 0.3 }),
     },
     saveShortcutText: {
         fontSize: typography.sizes.md,

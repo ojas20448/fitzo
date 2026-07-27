@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Pressable, Animated, StyleSheet, ViewStyle, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { colors, borderRadius, spacing } from '../styles/theme';
+import { colors, borderRadius, spacing, shadow } from '../styles/theme';
 
 interface PressableCardProps {
     children: React.ReactNode;
@@ -78,11 +78,7 @@ const PressableCard: React.FC<PressableCardProps> = ({
                 return {
                     backgroundColor: colors.surface,
                     borderColor: colors.glass.border,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    elevation: 8,
+                    ...shadow({ y: 4, blur: 8, color: '#000000', opacity: 0.3 }),
                 };
             default:
                 return {
