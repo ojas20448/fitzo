@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator, Alert, Image, PanResponder, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator, Alert, Image } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -34,28 +36,76 @@ export default function WorkoutRecapScreen() {
 
     const viewShotRef = useRef<View>(null);
 
-    // PanResponder for draggable receipt card overlay
-    const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
-            onPanResponderGrant: () => {
-                pan.setOffset({
-                    x: (pan.x as any)._value,
-                    y: (pan.y as any)._value,
-                });
-                pan.setValue({ x: 0, y: 0 });
-            },
-            onPanResponderMove: Animated.event(
-                [null, { dx: pan.x, dy: pan.y }],
-                { useNativeDriver: false }
-            ),
-            onPanResponderRelease: () => {
-                pan.flattenOffset();
-            },
+    // Receipt placement: free drag + pinch to resize + two-finger rotate.
+    //
+    // This replaces a PanResponder/Animated.ValueXY setup that could only
+    // translate. PanResponder cannot run alongside a pinch without fighting it
+    // for the touch, so scaling was impossible; gesture-handler composes the
+    // three gestures simultaneously and reanimated keeps them on the UI thread.
+    const translateX = useSharedValue(0);
+    const translateY = useSharedValue(0);
+    const savedX = useSharedValue(0);
+    const savedY = useSharedValue(0);
+    const scale = useSharedValue(1);
+    const savedScale = useSharedValue(1);
+    const rotation = useSharedValue(0);
+    const savedRotation = useSharedValue(0);
+
+    const MIN_SCALE = 0.4;
+    const MAX_SCALE = 2.5;
+
+    const dragGesture = Gesture.Pan()
+        .averageTouches(true)
+        .onUpdate((e) => {
+            translateX.value = savedX.value + e.translationX;
+            translateY.value = savedY.value + e.translationY;
         })
-    ).current;
+        .onEnd(() => {
+            savedX.value = translateX.value;
+            savedY.value = translateY.value;
+        });
+
+    const pinchGesture = Gesture.Pinch()
+        .onUpdate((e) => {
+            const next = savedScale.value * e.scale;
+            // Clamp on the UI thread so the card can never be scaled to nothing
+            // or blown past the screen.
+            scale.value = Math.min(Math.max(next, MIN_SCALE), MAX_SCALE);
+        })
+        .onEnd(() => {
+            savedScale.value = scale.value;
+        });
+
+    const rotateGesture = Gesture.Rotation()
+        .onUpdate((e) => {
+            rotation.value = savedRotation.value + e.rotation;
+        })
+        .onEnd(() => {
+            savedRotation.value = rotation.value;
+        });
+
+    const composedGesture = Gesture.Simultaneous(dragGesture, pinchGesture, rotateGesture);
+
+    const receiptAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [
+            { translateX: translateX.value },
+            { translateY: translateY.value },
+            { scale: scale.value },
+            { rotateZ: `${(rotation.value * 180) / Math.PI}deg` },
+        ],
+    }));
+
+    const resetPlacement = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
+        scale.value = withSpring(1);
+        rotation.value = withSpring(0);
+        savedX.value = 0;
+        savedY.value = 0;
+        savedScale.value = 1;
+        savedRotation.value = 0;
+    };
 
     useEffect(() => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -196,20 +246,11 @@ export default function WorkoutRecapScreen() {
                     />
                 )}
 
-                {/* Draggable Receipt Card */}
-                <Animated.View
-                    {...panResponder.panHandlers}
-                    style={[
-                        styles.draggableReceipt,
-                        {
-                            transform: [
-                                { translateX: pan.x },
-                                { translateY: pan.y }
-                            ]
-                        }
-                    ]}
-                >
+                {/* Receipt: drag to place, pinch to resize, twist to angle */}
+                <GestureDetector gesture={composedGesture}>
+                    <Reanimated.View style={[styles.draggableReceipt, receiptAnimatedStyle]}>
                     <ReceiptShareCard
+                        transparentStage
                         title={
                             session?.name || session?.day_name
                                 ? `${session.name || session.day_name} · Total weight moved`
@@ -234,7 +275,8 @@ export default function WorkoutRecapScreen() {
                         }
                         date={new Date()}
                     />
-                </Animated.View>
+                    </Reanimated.View>
+                </GestureDetector>
             </ViewShot>
 
             {/* ── Controls overlay at bottom ── */}
@@ -244,9 +286,19 @@ export default function WorkoutRecapScreen() {
                 pointerEvents="box-none"
             >
                 <SafeAreaView edges={['bottom']} style={styles.controls}>
-                    <Text style={styles.dragHint}>
-                        💡 Tap and drag the receipt paper to position it
-                    </Text>
+                    <View style={styles.hintRow}>
+                        <Text style={styles.dragHint}>
+                            💡 Drag to move · pinch to resize · twist to angle
+                        </Text>
+                        <TouchableOpacity
+                            onPress={resetPlacement}
+                            hitSlop={12}
+                            accessibilityRole="button"
+                            accessibilityLabel="Reset receipt position and size"
+                        >
+                            <Text style={styles.resetHint}>RESET</Text>
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Add / Remove Photo */}
                     <View style={styles.photoRow}>
@@ -292,13 +344,25 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         top: '18%',
     },
+    hintRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.md,
+        marginBottom: 8,
+    },
     dragHint: {
         color: 'rgba(255, 255, 255, 0.45)',
         fontSize: 11,
         fontFamily: typography.fontFamily.medium,
         textAlign: 'center',
-        marginBottom: 8,
         letterSpacing: 0.5,
+    },
+    resetHint: {
+        color: 'rgba(255, 255, 255, 0.85)',
+        fontSize: 11,
+        fontFamily: typography.fontFamily.bold,
+        letterSpacing: 1,
     },
     emptyContainer: {
         flex: 1,
