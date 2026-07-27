@@ -682,7 +682,7 @@ describe('presenceWindowEnd', () => {
     it('auto-expires after the default session length when no checkout', () => {
         const inAt = new Date('2026-07-27T06:00:00Z');
         const end = presenceWindowEnd(inAt, null);
-        expect(end.toISOString()).toBe('2026-07-27T07:30:00Z');
+        expect(end.toISOString()).toBe('2026-07-27T07:30:00.000Z');
         expect(DEFAULT_SESSION_MINUTES).toBe(90);
     });
 });
