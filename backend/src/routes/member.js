@@ -88,10 +88,13 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
             : cache.getOrSet(
                 cache.keys.crowdLevel(gymId),
                 async () => {
+                    // Session length must match DEFAULT_SESSION_MINUTES in src/utils/crowd.js
                     const r = await query(
                         `SELECT
                            (SELECT COUNT(*) FROM attendances
-                            WHERE gym_id = $1 AND checked_in_at > NOW() - INTERVAL '60 minutes') AS count,
+                            WHERE gym_id = $1
+                              AND checked_in_at <= NOW()
+                              AND COALESCE(checked_out_at, checked_in_at + INTERVAL '90 minutes') > NOW()) AS count,
                            (SELECT capacity FROM gyms WHERE id = $1) AS capacity`,
                         [gymId]
                     );

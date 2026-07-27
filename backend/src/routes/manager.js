@@ -32,11 +32,14 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
 
     const totalCheckins = parseInt(checkinsResult.rows[0].count);
 
-    // Active now (last 60 mins) + gym capacity in one round trip
+    // Active now (real session window, not a fixed lookback) + gym capacity in one round trip
+    // Session length must match DEFAULT_SESSION_MINUTES in src/utils/crowd.js
     const activeResult = await query(
         `SELECT
        (SELECT COUNT(*) FROM attendances
-        WHERE gym_id = $1 AND checked_in_at > NOW() - INTERVAL '60 minutes') AS count,
+        WHERE gym_id = $1
+          AND checked_in_at <= NOW()
+          AND COALESCE(checked_out_at, checked_in_at + INTERVAL '90 minutes') > NOW()) AS count,
        (SELECT capacity FROM gyms WHERE id = $1) AS capacity`,
         [gymId]
     );
