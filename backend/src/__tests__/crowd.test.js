@@ -3,7 +3,13 @@
  * Green/yellow/red light = active members vs gym capacity.
  */
 
-const { computeCrowd, DEFAULT_CAPACITY } = require('../utils/crowd');
+const {
+    computeCrowd,
+    DEFAULT_CAPACITY,
+    presenceWindowEnd,
+    isPresent,
+    DEFAULT_SESSION_MINUTES,
+} = require('../utils/crowd');
 
 describe('computeCrowd', () => {
     it('is green (low) under 40% occupancy', () => {
@@ -42,5 +48,56 @@ describe('computeCrowd', () => {
         expect(computeCrowd(undefined, 50)).toMatchObject({ level: 'low', active_now: 0 });
         expect(computeCrowd(-3, 50)).toMatchObject({ level: 'low', active_now: 0 });
         expect(computeCrowd('12', 50)).toMatchObject({ active_now: 12 });
+    });
+});
+
+describe('presenceWindowEnd', () => {
+    it('uses the explicit checkout time when present', () => {
+        const inAt = new Date('2026-07-27T06:00:00Z');
+        const outAt = new Date('2026-07-27T07:15:00Z');
+        expect(presenceWindowEnd(inAt, outAt).toISOString()).toBe(outAt.toISOString());
+    });
+
+    it('auto-expires after the default session length when no checkout', () => {
+        const inAt = new Date('2026-07-27T06:00:00Z');
+        const end = presenceWindowEnd(inAt, null);
+        expect(end.toISOString()).toBe('2026-07-27T07:30:00.000Z');
+        expect(DEFAULT_SESSION_MINUTES).toBe(90);
+    });
+});
+
+describe('isPresent', () => {
+    const inAt = new Date('2026-07-27T06:00:00Z');
+
+    it('counts a member still inside their session window', () => {
+        const now = new Date('2026-07-27T07:00:00Z');
+        expect(isPresent({ checked_in_at: inAt, checked_out_at: null }, now)).toBe(true);
+    });
+
+    it('counts a member who arrived 80 min ago — the old 60 min rule missed this', () => {
+        const now = new Date('2026-07-27T07:20:00Z');
+        expect(isPresent({ checked_in_at: inAt, checked_out_at: null }, now)).toBe(true);
+    });
+
+    it('drops a member past the auto-expiry', () => {
+        const now = new Date('2026-07-27T08:00:00Z');
+        expect(isPresent({ checked_in_at: inAt, checked_out_at: null }, now)).toBe(false);
+    });
+
+    it('drops a member who explicitly checked out — the old rule still counted them', () => {
+        const now = new Date('2026-07-27T06:40:00Z');
+        const out = new Date('2026-07-27T06:30:00Z');
+        expect(isPresent({ checked_in_at: inAt, checked_out_at: out }, now)).toBe(false);
+    });
+
+    it('does not count a future check-in', () => {
+        const now = new Date('2026-07-27T05:00:00Z');
+        expect(isPresent({ checked_in_at: inAt, checked_out_at: null }, now)).toBe(false);
+    });
+
+    it('returns false for malformed rows instead of throwing', () => {
+        const now = new Date('2026-07-27T07:00:00Z');
+        expect(isPresent({ checked_in_at: null, checked_out_at: null }, now)).toBe(false);
+        expect(isPresent(null, now)).toBe(false);
     });
 });

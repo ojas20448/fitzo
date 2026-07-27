@@ -44,4 +44,39 @@ function computeCrowd(activeCount, capacity) {
     };
 }
 
-module.exports = { computeCrowd, DEFAULT_CAPACITY, THRESHOLDS };
+/**
+ * Median gym session. Used to auto-expire a check-in when the member never
+ * checked out — which is the common case, since checkout is optional.
+ */
+const DEFAULT_SESSION_MINUTES = 90;
+
+/**
+ * When does this member stop counting as present?
+ * Explicit checkout wins; otherwise assume a standard session length.
+ */
+function presenceWindowEnd(checkedInAt, checkedOutAt, sessionMinutes = DEFAULT_SESSION_MINUTES) {
+    if (checkedOutAt) return new Date(checkedOutAt);
+    return new Date(new Date(checkedInAt).getTime() + sessionMinutes * 60 * 1000);
+}
+
+/**
+ * Is this attendance row inside the gym right now?
+ * Present == check-in has happened AND the session window has not closed.
+ */
+function isPresent(row, now = new Date(), sessionMinutes = DEFAULT_SESSION_MINUTES) {
+    if (!row || !row.checked_in_at) return false;
+    const start = new Date(row.checked_in_at);
+    if (Number.isNaN(start.getTime())) return false;
+    const end = presenceWindowEnd(start, row.checked_out_at, sessionMinutes);
+    const t = new Date(now).getTime();
+    return start.getTime() <= t && t < end.getTime();
+}
+
+module.exports = {
+    computeCrowd,
+    presenceWindowEnd,
+    isPresent,
+    DEFAULT_CAPACITY,
+    DEFAULT_SESSION_MINUTES,
+    THRESHOLDS,
+};
