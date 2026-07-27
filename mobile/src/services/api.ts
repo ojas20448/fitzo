@@ -377,7 +377,16 @@ export const learnAPI = {
         } catch (error: any) {
             if (error.code === 'NETWORK_ERROR') {
                 const units = useOfflineStore.getState().getUnits();
-                if (units.length > 0) return { units, progress: {} };
+                // `progress: {}` was truthy, so LearnScreen's `response.progress || {default}`
+                // never applied its default — rendering "undefined/12 Lessons", "NaN%" and
+                // width: "NaN%". Always return a fully-shaped progress object.
+                if (units.length > 0) {
+                    return {
+                        units,
+                        progress: { total_xp: 0, lessons_completed: 0 },
+                        offline: true,
+                    };
+                }
             }
             throw error;
         }

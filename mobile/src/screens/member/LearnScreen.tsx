@@ -15,6 +15,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { learnAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import Skeleton, { SkeletonCard } from '../../components/Skeleton';
+import EmptyState from '../../components/EmptyState';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 
 const { width } = Dimensions.get('window');
@@ -25,6 +26,11 @@ const LearnScreen: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [totalLessons, setTotalLessons] = useState(0);
+    // Previously this screen had no error state at all: a failed request left
+    // `units` as [] and rendered a blank ScrollView, making network failure
+    // byte-identical to "you have no lessons yet".
+    const [error, setError] = useState<'offline' | 'error' | null>(null);
+    const [isStale, setIsStale] = useState(false);
 
     // Reload lessons whenever screen comes into focus (e.g. after completing a lesson)
     useFocusEffect(
@@ -42,12 +48,30 @@ const LearnScreen: React.FC = () => {
             // Count total lessons across all units
             const total = unitsData.reduce((sum: number, u: any) => sum + (u.lessons?.length || 0), 0);
             setTotalLessons(total);
-        } catch {
-            // Silently fail - offline cache handled by API layer
+            // The API layer serves cached units when offline; say so rather than
+            // presenting stale progress as live.
+            setIsStale(Boolean(response.offline));
+            setError(null);
+        } catch (e: any) {
+            const offline = e?.code === 'NETWORK_ERROR' || e?.code === 'TIMEOUT' || e?.status === 0;
+            setError(offline ? 'offline' : 'error');
         } finally {
             setLoading(false);
         }
     };
+
+    const retry = () => {
+        setLoading(true);
+        setError(null);
+        loadLessons();
+    };
+
+    // Derived once, guarded against undefined progress and a zero denominator —
+    // both of which previously produced "undefined/12 Lessons" and "NaN%".
+    const completedLessons = Number(progress?.lessons_completed) || 0;
+    const overallPct = totalLessons > 0
+        ? Math.min(100, Math.round((completedLessons / totalLessons) * 100))
+        : 0;
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -88,6 +112,45 @@ const LearnScreen: React.FC = () => {
         );
     }
 
+    // A failed load with nothing cached is the one case where the path cannot be
+    // drawn at all. Everything else falls through to the normal timeline.
+    if (error && units.length === 0) {
+        return (
+            <SafeAreaView style={styles.container} edges={['top']}>
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <Text style={styles.headerTitle}>LEARN</Text>
+                        <View style={styles.headerDot} />
+                        <Text style={styles.headerSubtitle}>PATH</Text>
+                    </View>
+                </View>
+                <EmptyState variant={error} onAction={retry} />
+            </SafeAreaView>
+        );
+    }
+
+    // Brand-new user: lessons exist as a feature but none have loaded for them yet.
+    if (!error && units.length === 0) {
+        return (
+            <SafeAreaView style={styles.container} edges={['top']}>
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <Text style={styles.headerTitle}>LEARN</Text>
+                        <View style={styles.headerDot} />
+                        <Text style={styles.headerSubtitle}>PATH</Text>
+                    </View>
+                </View>
+                <EmptyState
+                    icon="school"
+                    title="Your path starts soon"
+                    message="Lessons on nutrition, training and recovery will appear here. Check back shortly."
+                    actionLabel="Refresh"
+                    onAction={retry}
+                />
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
@@ -99,9 +162,16 @@ const LearnScreen: React.FC = () => {
                 </View>
                 <View style={styles.xpBadge}>
                     <MaterialIcons name="diamond" size={14} color={colors.primary} />
-                    <Text style={styles.xpText}>{progress.total_xp}</Text>
+                    <Text style={styles.xpText}>{progress.total_xp ?? 0}</Text>
                 </View>
             </View>
+
+            {isStale && (
+                <View style={styles.staleBanner}>
+                    <MaterialIcons name="cloud-off" size={14} color={colors.text.muted} />
+                    <Text style={styles.staleBannerText}>Offline — showing saved lessons</Text>
+                </View>
+            )}
 
             <ScrollView
                 style={styles.content}
@@ -116,15 +186,16 @@ const LearnScreen: React.FC = () => {
                     <View style={styles.overallProgress}>
                         <View style={styles.overallProgressHeader}>
                             <Text style={styles.overallProgressTitle}>
-                                {progress.lessons_completed}/{totalLessons} Lessons
+                                {completedLessons}/{totalLessons} Lessons
                             </Text>
                             <Text style={styles.overallProgressPercent}>
-                                {Math.round((progress.lessons_completed / totalLessons) * 100)}%
+                                {overallPct}%
                             </Text>
                         </View>
                         <View style={styles.overallProgressBar}>
+                            {/* Math.max floor: at 1-2% the fill renders as an invisible nub */}
                             <View style={[styles.overallProgressFill, {
-                                width: `${Math.round((progress.lessons_completed / totalLessons) * 100)}%`
+                                width: `${overallPct === 0 ? 0 : Math.max(overallPct, 3)}%`
                             }]} />
                         </View>
                     </View>
@@ -269,6 +340,22 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.lg,
         borderBottomWidth: 1,
         borderBottomColor: colors.glass.border,
+    },
+    staleBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.sm,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.xl,
+        backgroundColor: colors.glass.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.glass.border,
+    },
+    staleBannerText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
     },
     headerLeft: {
         flexDirection: 'row',

@@ -29,6 +29,7 @@ import NutritionAnalytics from '../../components/NutritionAnalytics';
 import { SkeletonHomeScreen } from '../../components/Skeleton';
 import EmptyState, { EmptyStateInline } from '../../components/EmptyState';
 import MacroPieChart from '../../components/MacroPieChart';
+import ProgressRing from '../../components/ProgressRing';
 import CustomRefreshHeader from '../../components/CustomRefreshHeader';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 
@@ -113,6 +114,11 @@ const HomeScreen: React.FC = () => {
     const [suggestionReason, setSuggestionReason] = useState<string | null>(null);
     const [settingIntent, setSettingIntent] = useState(false);
     const [dailyInsight, setDailyInsight] = useState<string | null>(null);
+    // The catch below used to swallow every failure and fall back to cache
+    // silently. With no cache that rendered a fully-populated-looking screen of
+    // zeros, which the user believes. Track the failure explicitly instead.
+    const [error, setError] = useState<'offline' | 'error' | null>(null);
+    const [isStale, setIsStale] = useState(false);
 
     useEffect(() => {
         // Show progressive loading messages for cold start
@@ -214,14 +220,30 @@ const HomeScreen: React.FC = () => {
 
             // Cache home data in offline store for staleness checking
             useOfflineStore.getState().cacheHomeData(homeRes);
+            setIsStale(false);
+            setError(null);
             syncWearableData().catch(() => {});
-        } catch {
-            // Use cached data on failure - don't block UI with Alert
+        } catch (e: any) {
+            const offline = e?.code === 'NETWORK_ERROR' || e?.code === 'TIMEOUT' || e?.status === 0;
             const cached = useOfflineStore.getState().getHomeData();
-            if (cached) setData(cached as any);
+            if (cached) {
+                // Serve the cached screen, but mark it so stale numbers are never
+                // mistaken for live ones.
+                setData(cached as any);
+                setIsStale(true);
+                setError(null);
+            } else {
+                setError(offline ? 'offline' : 'error');
+            }
         } finally {
             if (showLoader) setLoading(false);
         }
+    };
+
+    const retry = () => {
+        setLoading(true);
+        setError(null);
+        loadHomeData();
     };
 
     const onRefresh = async () => {
@@ -278,13 +300,44 @@ const HomeScreen: React.FC = () => {
         );
     }
 
+    // Nothing loaded and nothing cached — there is no honest screen to draw, so
+    // say so and offer a way out instead of rendering a shell of zeros.
+    if (error && !data) {
+        return (
+            <SafeAreaView style={styles.container} edges={['top']}>
+                <EmptyState variant={error} onAction={retry} />
+            </SafeAreaView>
+        );
+    }
+
     const firstName = data?.user?.name?.split(' ')[0] || user?.name?.split(' ')[0] || 'there';
     const hasLoggedWorkoutToday = todayWorkouts.length > 0;
     const currentIntent = data?.intent;
     const activeFriendsCount = activeCount;
-    
+
+    // `learn.progress` is a 0-100 integer from the API (Math.round(done/total*100)),
+    // but arrives as null when a unit has no lessons — division by zero there
+    // serialises NaN to null. It used to be interpolated straight into a width
+    // string. Clamp and default; build the meta line with filter(Boolean) so an
+    // empty lesson or topic cannot leave a dangling bullet.
+    const rawLearnProgress = data?.learn?.progress;
+    const learnPct = Number.isFinite(rawLearnProgress)
+        ? Math.max(0, Math.min(100, Math.round(rawLearnProgress as number)))
+        : 0;
+    const learnStarted = learnPct > 0;
+    const learnMeta = [data?.learn?.lesson, data?.learn?.topic].filter(Boolean).join(' • ');
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            {isStale && (
+                <View style={styles.staleBanner}>
+                    <MaterialIcons name="cloud-off" size={14} color={colors.text.muted} />
+                    <Text style={styles.staleBannerText}>Offline — showing saved data</Text>
+                    <Pressable onPress={retry} hitSlop={12} accessibilityRole="button" accessibilityLabel="Retry loading">
+                        <Text style={styles.staleBannerAction}>RETRY</Text>
+                    </Pressable>
+                </View>
+            )}
             <ScrollView
                 style={styles.content}
                 showsVerticalScrollIndicator={false}
@@ -515,24 +568,40 @@ const HomeScreen: React.FC = () => {
                     </View>
                 )}
 
-                {/* Quick Action Buttons */}
+                {/* Quick Action Buttons
+                    One primary only. Two identical white CTAs (plus the tab-bar FAB
+                    and the "Let's Go" pill) meant nothing was actually primary, and
+                    users resolved the tie by thumb proximity rather than intent.
+
+                    The primary is context-aware: before an intent is set the useful
+                    next step is declaring the session; once it is set, it is logging
+                    the work. Previously the label said LOG WORKOUT but routed to the
+                    planning screen, disagreeing with the FAB of the same name. */}
                 <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} style={styles.actionButtons}>
                     <TouchableOpacity
                         style={styles.primaryActionBtn}
-                        onPress={() => router.push('/workout-intent' as any)}
-                        accessibilityLabel="Log workout"
+                        onPress={() => router.push((currentIntent ? '/log/workout' : '/workout-intent') as any)}
+                        accessibilityLabel={currentIntent ? 'Log workout' : 'Start training'}
+                        accessibilityRole="button"
                     >
-                        <MaterialIcons name="add" size={20} color={colors.text.dark} />
-                        <Text style={styles.primaryActionText}>LOG WORKOUT</Text>
+                        <MaterialIcons
+                            name={currentIntent ? 'add' : 'bolt'}
+                            size={20}
+                            color={colors.text.dark}
+                        />
+                        <Text style={styles.primaryActionText}>
+                            {currentIntent ? 'LOG WORKOUT' : 'START TRAINING'}
+                        </Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={styles.primaryActionBtn}
+                        style={styles.secondaryActionBtn}
                         onPress={() => router.push('/log/calories' as any)}
                         accessibilityLabel="Log calories"
+                        accessibilityRole="button"
                     >
-                        <MaterialIcons name="add" size={20} color={colors.text.dark} />
-                        <Text style={styles.primaryActionText}>LOG CALORIES</Text>
+                        <MaterialIcons name="add" size={20} color={colors.text.primary} />
+                        <Text style={styles.secondaryActionText}>LOG CALORIES</Text>
                     </TouchableOpacity>
                 </Animated.View>
 
@@ -566,6 +635,65 @@ const HomeScreen: React.FC = () => {
                         <MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
                     </TouchableOpacity>
                 </Animated.View>
+
+                {/* Continue Learning
+                    Was buried dead-last above a 120px spacer, roughly two screens
+                    down. Also gated on `progress > 0`, which hid it from exactly
+                    the new users who needed to discover that Fitzo teaches. Now it
+                    sits above Gym Buddies and handles both states. */}
+                {data?.learn && (
+                    <Animated.View
+                        entering={FadeInDown.delay(350).duration(600).springify()}
+                        style={styles.section}
+                    >
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>
+                                {learnStarted ? 'Continue Learning' : 'Start Learning'}
+                            </Text>
+                            <TouchableOpacity
+                                onPress={() => router.push('/(tabs)/learn' as any)}
+                                hitSlop={12}
+                                accessibilityRole="button"
+                                accessibilityLabel="View all lessons"
+                            >
+                                <Text style={styles.viewAllLink}>VIEW ALL</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <Pressable
+                            style={({ pressed }) => [styles.learningCard, pressed && styles.learningCardPressed]}
+                            onPress={() => data?.learn?.id && router.push(`/lesson/${data.learn.id}` as any)}
+                            accessibilityRole="button"
+                            accessibilityLabel={
+                                learnStarted
+                                    ? `Resume ${data.learn.title}, ${learnPct}% complete`
+                                    : `Start ${data.learn.title}`
+                            }
+                        >
+                            <ProgressRing progress={learnPct} size={72} showLabel={learnStarted} />
+
+                            <View style={styles.learningContent}>
+                                <Text style={styles.learningTitle} numberOfLines={2}>
+                                    {data.learn.title}
+                                </Text>
+                                {learnMeta ? (
+                                    <Text style={styles.learningMeta} numberOfLines={1}>
+                                        {learnMeta}
+                                    </Text>
+                                ) : null}
+                                <Text style={styles.learningProgressLabel}>
+                                    {learnStarted ? `${learnPct}% complete` : 'Not started yet'}
+                                </Text>
+                            </View>
+
+                            <View style={styles.learningCta}>
+                                <Text style={styles.learningCtaText}>
+                                    {learnStarted ? 'RESUME' : 'START'}
+                                </Text>
+                            </View>
+                        </Pressable>
+                    </Animated.View>
+                )}
 
                 {/* Gym Buddies - Friend Avatars */}
                 <View style={styles.section}>
@@ -637,39 +765,6 @@ const HomeScreen: React.FC = () => {
                         </Text>
                     </TouchableOpacity>
                 </View>
-
-                {/* Continuing Learning Card */}
-                {/* Learn card only when a lesson is actually in progress — not for brand-new users */}
-                {data?.learn && data.learn.progress > 0 && (
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Continuing Learning</Text>
-                            <TouchableOpacity onPress={() => router.push('/(tabs)/learn' as any)}>
-                                <Text style={styles.viewAllLink}>VIEW ALL</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <Pressable
-                            style={styles.learningCard}
-                            onPress={() => data?.learn?.id && router.push(`/lesson/${data.learn.id}` as any)}
-                        >
-                            <View style={styles.learningThumbnail}>
-                                <View style={styles.playButton}>
-                                    <MaterialIcons name="play-arrow" size={16} color={colors.primary} />
-                                </View>
-                            </View>
-                            <View style={styles.learningContent}>
-                                <Text style={styles.learningTitle}>{data.learn.title}</Text>
-                                <Text style={styles.learningMeta}>
-                                    {data.learn.lesson} • {data.learn.topic}
-                                </Text>
-                                <View style={styles.progressBar}>
-                                    <View style={[styles.progressFill, { width: `${data.learn.progress}%` }]} />
-                                </View>
-                            </View>
-                        </Pressable>
-                    </View>
-                )}
 
                 <View style={{ height: 120 }} />
             </ScrollView>
@@ -1046,34 +1141,42 @@ const styles = StyleSheet.create({
     learningCard: {
         backgroundColor: colors.glass.surface,
         borderRadius: borderRadius.xl,
-        padding: spacing.sm,
+        // Was spacing.sm (8) while every neighbouring card uses 16, which made
+        // this card read visibly tighter and cheaper than its siblings.
+        padding: spacing.md,
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
         borderColor: colors.glass.border,
     },
-    learningThumbnail: {
-        width: 96,
-        height: 80,
-        borderRadius: borderRadius.lg,
-        backgroundColor: colors.glass.surfaceLight,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    playButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+    learningCardPressed: {
         backgroundColor: colors.glass.surfaceHover,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: colors.glass.borderLight,
+        borderColor: colors.glass.borderHover,
     },
     learningContent: {
         flex: 1,
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.sm,
+    },
+    learningProgressLabel: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.secondary,
+        marginTop: spacing.xs,
+    },
+    learningCta: {
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: colors.glass.borderLight,
+        backgroundColor: colors.glass.surfaceLight,
+    },
+    learningCtaText: {
+        fontSize: typography.sizes['2xs'],
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+        letterSpacing: 1,
     },
     learningTitle: {
         fontSize: typography.sizes.base,
@@ -1087,18 +1190,6 @@ const styles = StyleSheet.create({
         color: colors.text.muted,
         marginBottom: spacing.md,
     },
-    progressBar: {
-        height: 4,
-        backgroundColor: colors.glass.surfaceLight,
-        borderRadius: 2,
-        overflow: 'hidden',
-    },
-    progressFill: {
-        height: '100%',
-        backgroundColor: colors.primary,
-        borderRadius: 2,
-    },
-
     // Squad
     squadList: {
         gap: spacing.xl,
@@ -1251,6 +1342,28 @@ const styles = StyleSheet.create({
     },
 
     // Loading banner
+    staleBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.sm,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.xl,
+        backgroundColor: colors.glass.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.glass.border,
+    },
+    staleBannerText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+    },
+    staleBannerAction: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+        letterSpacing: 1,
+    },
     loadingBanner: {
         position: 'absolute',
         bottom: 100,
