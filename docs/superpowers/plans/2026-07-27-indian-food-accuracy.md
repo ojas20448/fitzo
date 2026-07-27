@@ -21,6 +21,11 @@
 - **The canonical food-logging endpoint is `POST /api/nutrition/log` (`backend/src/routes/nutrition.js:347`), and its field is `food_name`.** `POST /api/calories` also exists and uses `meal_name`, but the mobile app does **not** use it for food logging — `CalorieLogScreen` → `logFoodOptimistic` (`mobile/src/context/NutritionContext.tsx:103`) → `nutritionAPI.logFood` → `/nutrition/log`. All logging work in this plan targets `nutrition.js`. Do not "fix" the two routes into one as a side quest.
 - **Cooking-medium variants apply to ~1,901 of 10,388 foods (18%)** — the cooked-dish categories only. This is intended: packaged goods and drinks have fixed, label-printed nutrition. A food showing a single serving is correct behaviour, not a bug.
 - **Mobile styling uses tokens only** from `mobile/src/styles/theme.ts`. No hardcoded hex.
+- **`typography.caption`, `typography.body`, and `colors.text.tertiary` DO NOT EXIST.** This was confirmed against `theme.ts` while executing the crowd-intelligence plan. `typography` exports only `fontFamily`, `sizes`, `lineHeight`, and `letterSpacing`; `colors.text` is `primary | secondary | muted | subtle | dark`. Use these instead, matching the established pattern in `CrowdIndicator.tsx`:
+  - a caption/label → `fontSize: typography.sizes.xs, fontFamily: typography.fontFamily.medium`
+  - body text → `fontSize: typography.sizes.sm, fontFamily: typography.fontFamily.regular`
+  - `colors.text.tertiary` → `colors.text.muted`
+  `spacing.xs` (4) and `colors.text.secondary` do exist and are fine to use as written.
 - **Multiplier values in Task 1 are estimates, not measurements.** They are isolated in one exported table specifically so they can be tuned. Do not scatter them.
 
 ---
@@ -412,14 +417,15 @@ Add the style to the existing `StyleSheet.create` block:
 
 ```tsx
     servingPickerLabel: {
-        ...typography.caption,
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
         color: colors.text.secondary,
         letterSpacing: 1.2,
         marginBottom: spacing.xs,
     },
 ```
 
-If `typography.caption`, `colors.text.secondary`, or `spacing.xs` do not exist, substitute the nearest existing token from `mobile/src/styles/theme.ts`. Do not introduce hardcoded values.
+These token paths are verified to exist. Do not introduce hardcoded values.
 
 - [ ] **Step 3: Typecheck**
 
@@ -1328,7 +1334,8 @@ const ThaliPresets: React.FC<ThaliPresetsProps> = ({ onLogged }) => {
 const styles = StyleSheet.create({
     container: { marginVertical: spacing.md },
     title: {
-        ...typography.caption,
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
         color: colors.text.secondary,
         letterSpacing: 1.2,
         marginBottom: spacing.sm,
@@ -1346,8 +1353,17 @@ const styles = StyleSheet.create({
     },
     cardPressed: { backgroundColor: colors.glass.surfaceHover },
     emoji: { fontSize: 24, marginBottom: spacing.xs },
-    name: { ...typography.body, color: colors.text.primary },
-    meta: { ...typography.caption, color: colors.text.tertiary, marginTop: spacing.xs },
+    name: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.primary,
+    },
+    meta: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+        marginTop: spacing.xs,
+    },
 });
 
 export default ThaliPresets;

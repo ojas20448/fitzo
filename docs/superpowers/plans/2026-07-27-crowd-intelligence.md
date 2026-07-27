@@ -465,10 +465,21 @@ const BusyTimesStrip: React.FC<BusyTimesStripProps> = ({
                 })}
             </View>
 
+            {/*
+              Axis MUST reuse the bars' slot geometry. A `space-between` row of
+              3 labels puts the middle one at 50% of the width, but hour 12 is
+              the 8th of 19 bars — its centre is at 39.5%. That ships a "12pm"
+              label sitting over the 2pm bar. One slot per hour makes alignment
+              structural instead of coincidental.
+            */}
             <View style={styles.axis}>
-                <Text style={styles.axisLabel}>{formatHour(START_HOUR)}</Text>
-                <Text style={styles.axisLabel}>{formatHour(12)}</Text>
-                <Text style={styles.axisLabel}>{formatHour(END_HOUR)}</Text>
+                {hours.map((h) => (
+                    <View key={h} style={styles.axisSlot}>
+                        {h % 6 === 0 && (
+                            <Text style={styles.axisLabel}>{formatHour(h)}</Text>
+                        )}
+                    </View>
+                ))}
             </View>
 
             {quietest && (
@@ -510,10 +521,25 @@ const styles = StyleSheet.create({
     },
     barMed: { backgroundColor: colors.warning },
     barHigh: { backgroundColor: colors.error },
-    axis: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs },
-    axisLabel: { ...typography.caption, color: colors.text.tertiary },
-    caption: { ...typography.caption, color: colors.text.secondary, marginTop: spacing.sm },
-    empty: { ...typography.body, color: colors.text.tertiary, marginTop: spacing.sm },
+    axis: { flexDirection: 'row', marginTop: spacing.xs, gap: 2 },
+    axisSlot: { flex: 1, alignItems: 'center' },
+    axisLabel: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+    },
+    caption: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.secondary,
+        marginTop: spacing.sm,
+    },
+    empty: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        marginTop: spacing.sm,
+    },
 });
 
 export default BusyTimesStrip;
