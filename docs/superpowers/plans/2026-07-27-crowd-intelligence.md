@@ -572,7 +572,7 @@ Without this the component is dead code — exactly the orphaning failure `wirin
 - Modify: `mobile/src/screens/member/HomeScreen.tsx`
 
 **Interfaces:**
-- Consumes: `gymAPI.getBusyTimes` and `BusyTimesStrip` from Task 3; `gym_id` from the existing home payload.
+- Consumes: `gymAPI.getBusyTimes` and `BusyTimesStrip` from Task 3; `gym_id` from `user` via `useAuth()` — **not** from the home payload, which carries no id (see the note in Step 2).
 - Produces: nothing downstream.
 
 - [ ] **Step 1: Import the component and API**
