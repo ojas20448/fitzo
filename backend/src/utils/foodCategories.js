@@ -21,14 +21,20 @@ const CATEGORY_ALIASES = new Map([
 
 /**
  * Title-case a string: first letter of each whitespace-separated word
- * uppercased, remainder lowercased.
+ * uppercased, remainder left as-is.
+ *
+ * If the input already carries any uppercase letter, it is an intentional
+ * form (acronym, compound, proper noun — e.g. "QSR Indian Chains",
+ * "Non-Veg", "Indo-Chinese") and is returned untouched. Only wholly
+ * lowercase input gets lifted.
  * @param {string} s
  * @returns {string}
  */
 function titleCase(s) {
+    if (/[A-Z]/.test(s)) return s;
     return s
         .split(/\s+/)
-        .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w))
+        .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
         .join(' ');
 }
 

@@ -33,4 +33,11 @@ describe('canonicalCategory', () => {
         expect(canonicalCategory(null)).toBe('Uncategorised');
         expect(canonicalCategory(undefined)).toBe('Uncategorised');
     });
+
+    it('leaves acronyms and hyphen-compounds untouched rather than lowercasing them', () => {
+        expect(canonicalCategory('QSR Indian Chains')).toBe('QSR Indian Chains');
+        expect(canonicalCategory('Non-Veg')).toBe('Non-Veg');
+        expect(canonicalCategory('Indo-Chinese')).toBe('Indo-Chinese');
+        expect(canonicalCategory('Packaged RTE')).toBe('Packaged RTE');
+    });
 });
