@@ -9,6 +9,7 @@ const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, asyncHandler } = require('../utils/errors');
 const { invalidateContextPack } = require('../services/contextPack');
+const foodPrefs = require('../services/foodPrefs');
 
 /**
  * Calculate macro targets based on calories and goal
@@ -353,6 +354,7 @@ router.post('/log', authenticate, asyncHandler(async (req, res) => {
         carbs,
         fat,
         serving_size,
+        cooking_medium,
         meal_type = 'snack', // breakfast, lunch, dinner, snack
         visibility = 'friends'
     } = req.body;
@@ -376,6 +378,12 @@ router.post('/log', authenticate, asyncHandler(async (req, res) => {
 
     // Invalidate context pack cache for fresh AI responses
     invalidateContextPack(userId).catch(() => {});
+
+    // Fire-and-forget: a preference write must never fail a food log.
+    if (cooking_medium) {
+        foodPrefs.recordMediumChoice(userId, food_name, cooking_medium)
+            .catch(() => {});
+    }
 
     res.json({
         message: 'Food logged successfully',

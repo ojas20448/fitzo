@@ -612,6 +612,7 @@ const CalorieLogScreen: React.FC = () => {
                 serving_size: portionMode === 'grams'
                     ? `${gramAmount}g`
                     : `${servingCount} ${selectedServing.measurementDescription}`,
+                cooking_medium: (selectedServing as any).cookingMedium ?? undefined,
                 meal_type: 'snack',
                 visibility: visibility
             });

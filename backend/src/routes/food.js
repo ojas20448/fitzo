@@ -13,6 +13,7 @@ const barcodeService = require('../services/barcode');
 const geminiService = require('../services/gemini');
 const openFoodFacts = require('../services/openFoodFacts');
 const apiNinjas = require('../services/apiNinjas');
+const foodPrefs = require('../services/foodPrefs');
 const { asyncHandler } = require('../utils/errors');
 const { authenticate } = require('../middleware/auth');
 const { aiQuota } = require('../middleware/aiQuota');
@@ -259,6 +260,19 @@ router.get('/:id', authenticate, asyncHandler(async (req, res) => {
         // Check if it's an Indian food ID
         if (id.startsWith('ind_') || source === 'indian') {
             const food = indianFood.getFoodDetails(id);
+
+            // Put the member's usual choice first — CalorieLogScreen pre-selects [0].
+            if (food && Array.isArray(food.servings) && food.servings.length > 1) {
+                const preferred = await foodPrefs.getPreferredMedium(req.user.id, food.name);
+                if (preferred) {
+                    const idx = food.servings.findIndex((s) => s.id === preferred);
+                    if (idx > 0) {
+                        const [chosen] = food.servings.splice(idx, 1);
+                        food.servings.unshift(chosen);
+                    }
+                }
+            }
+
             return res.json({ ...food, source: 'indian' });
         }
 

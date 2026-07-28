@@ -750,6 +750,7 @@ export const nutritionAPI = {
         carbs: number;
         fat: number;
         serving_size: string;
+        cooking_medium?: string;
         meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
         visibility?: string;
     }) => {
