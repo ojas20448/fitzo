@@ -95,6 +95,15 @@ describe('applyCookingMedium', () => {
         expect(out.fat).toBe(0);
         expect(out.calories).toBe(136);
     });
+
+    it('keeps low-base-fat mediums distinct (regression: integer fat rounding collapsed home_ghee and restaurant)', () => {
+        const lowFat = { ...baseServing, fat: 1, calories: 198 };
+        const fats = MEDIUMS.map((m) => applyCookingMedium(lowFat, m.id).fat);
+        const calories = MEDIUMS.map((m) => applyCookingMedium(lowFat, m.id).calories);
+
+        expect(fats).toEqual([1, 1.8, 2.4, 2.8]);
+        expect(new Set(calories).size).toBe(4);
+    });
 });
 
 describe('buildServingVariants', () => {

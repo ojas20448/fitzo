@@ -60,7 +60,7 @@ function applyCookingMedium(serving, mediumId) {
     const baseFat = Number(serving.fat) || 0;
     const baseCalories = Number(serving.calories) || 0;
 
-    const newFat = Math.round(baseFat * medium.fatFactor);
+    const newFat = Math.round(baseFat * medium.fatFactor * 10) / 10;
     const newCalories = Math.round(baseCalories + KCAL_PER_GRAM_FAT * (newFat - baseFat));
 
     return {
