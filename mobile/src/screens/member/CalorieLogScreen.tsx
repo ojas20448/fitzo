@@ -1081,7 +1081,9 @@ const CalorieLogScreen: React.FC = () => {
                                         <>
                                             {/* Serving Type Picker */}
                                             {selectedFood.servings.length > 1 && (
-                                                <ScrollView
+                                                <>
+                                                    <Text style={styles.servingPickerLabel}>HOW WAS IT COOKED?</Text>
+                                                    <ScrollView
                                                     horizontal
                                                     showsHorizontalScrollIndicator={false}
                                                     style={styles.servingPicker}
@@ -1104,6 +1106,7 @@ const CalorieLogScreen: React.FC = () => {
                                                         </Pressable>
                                                     ))}
                                                 </ScrollView>
+                                                </>
                                             )}
 
                                             {/* Quantity Selector */}
@@ -1747,6 +1750,13 @@ const styles = StyleSheet.create({
     },
     servingOptionTextActive: {
         color: colors.text.dark,
+    },
+    servingPickerLabel: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.secondary,
+        letterSpacing: 1.2,
+        marginBottom: spacing.xs,
     },
     quantityRow: {
         flexDirection: 'row',
