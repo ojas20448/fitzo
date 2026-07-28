@@ -220,6 +220,11 @@ export const checkinAPI = {
         return response.data;
     },
 
+    checkout: async () => {
+        const response = await api.post('/checkin/checkout');
+        return response.data;
+    },
+
     getStatus: async () => {
         const response = await api.get('/checkin/status');
         return response.data;
