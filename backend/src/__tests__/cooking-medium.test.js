@@ -126,6 +126,13 @@ describe('buildServingVariants', () => {
         expect(variants[0].id).toBe('default');
     });
 
+    it('returns only the base serving for a zero-fat dish, even when the category is applicable', () => {
+        const zeroFat = { ...baseServing, fat: 0 };
+        const variants = buildServingVariants(zeroFat, 'Sabzi');
+        expect(variants).toHaveLength(1);
+        expect(variants[0].id).toBe('default');
+    });
+
     it('produces strictly increasing calories across mediums', () => {
         const variants = buildServingVariants(baseServing, 'Sabzi');
         const cals = variants.map((v) => v.calories);

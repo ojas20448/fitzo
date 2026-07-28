@@ -79,6 +79,13 @@ function buildServingVariants(serving, category) {
     if (!serving) return [];
     if (!isMediumApplicable(category)) return [{ ...serving }];
 
+    // A cooking medium cannot vary a dish that has no fat to vary. Without
+    // this guard, every medium collapses to the same fat/calorie figures and
+    // the picker would render four identical numbers under four different
+    // kitchen labels — implying a choice that does not exist.
+    const baseFat = Number(serving.fat);
+    if (!Number.isFinite(baseFat) || baseFat <= 0) return [{ ...serving }];
+
     return MEDIUMS.map((medium) => {
         const adjusted = applyCookingMedium(serving, medium.id);
         return {
