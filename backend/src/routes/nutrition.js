@@ -10,6 +10,8 @@ const { authenticate } = require('../middleware/auth');
 const { ValidationError, asyncHandler } = require('../utils/errors');
 const { invalidateContextPack } = require('../services/contextPack');
 const foodPrefs = require('../services/foodPrefs');
+const cache = require('../services/cache');
+const { validateComboItems } = require('../utils/mealCombo');
 
 /**
  * Calculate macro targets based on calories and goal
@@ -389,6 +391,64 @@ router.post('/log', authenticate, asyncHandler(async (req, res) => {
         message: 'Food logged successfully',
         log: result.rows[0]
     });
+}));
+
+/**
+ * POST /api/nutrition/log-bulk
+ * Log a whole meal in one action (the thali case) — 2 roti + dal + sabzi +
+ * rice + curd, in a single request instead of five search-and-tap flows.
+ * All-or-nothing: a partially logged meal is worse than a failed one, so this
+ * is one multi-row INSERT rather than a loop of single inserts.
+ */
+router.post('/log-bulk', authenticate, asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const { items, meal_type = 'snack', visibility = 'friends' } = req.body;
+
+    const { valid, error, items: cleaned } = validateComboItems(items);
+    if (!valid) throw new ValidationError(error);
+
+    const validVisibility = ['public', 'friends', 'private'];
+    if (!validVisibility.includes(visibility)) {
+        throw new ValidationError('Invalid visibility option');
+    }
+
+    // Single multi-row INSERT — one round trip, atomic by definition.
+    // Column list matches the POST /log INSERT above exactly: user_id,
+    // food_name, calories, protein, carbs, fat, serving_size, meal_type,
+    // visibility. (mealCombo items use `meal_name`, mapped to the food_name
+    // column here — the same field this app already renames once elsewhere.)
+    const values = [];
+    const placeholders = cleaned.map((it, i) => {
+        const b = i * 9;
+        values.push(
+            userId, it.meal_name, it.calories, it.protein, it.carbs, it.fat,
+            null, meal_type, visibility
+        );
+        return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}, $${b + 6}, $${b + 7}, $${b + 8}, $${b + 9})`;
+    });
+
+    await query(
+        `INSERT INTO calorie_logs (
+            user_id, food_name, calories, protein, carbs, fat, serving_size, meal_type, visibility
+        ) VALUES ${placeholders.join(', ')}`,
+        values
+    );
+
+    const totals = cleaned.reduce(
+        (acc, it) => ({
+            calories: acc.calories + it.calories,
+            protein: acc.protein + it.protein,
+            carbs: acc.carbs + it.carbs,
+            fat: acc.fat + it.fat,
+        }),
+        { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    );
+
+    // Invalidate cached nutrition totals and context pack for fresh AI responses
+    await cache.del(cache.keys.nutritionToday(userId));
+    invalidateContextPack(userId).catch(() => {});
+
+    res.status(201).json({ success: true, logged: cleaned.length, totals });
 }));
 
 /**
