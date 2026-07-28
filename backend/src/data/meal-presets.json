@@ -1,0 +1,34 @@
+[
+  {
+    "id": "north_veg_thali",
+    "name": "North Indian Veg Thali",
+    "emoji": "🍛",
+    "items": [
+      { "meal_name": "Roti", "calories": 240, "protein": 7, "carbs": 40, "fat": 6 },
+      { "meal_name": "Dal", "calories": 180, "protein": 9, "carbs": 25, "fat": 5 },
+      { "meal_name": "Sabzi", "calories": 150, "protein": 4, "carbs": 15, "fat": 8 },
+      { "meal_name": "Rice (Cooked, White)", "calories": 200, "protein": 4, "carbs": 44, "fat": 1 },
+      { "meal_name": "Curd", "calories": 60, "protein": 3, "carbs": 5, "fat": 3 }
+    ]
+  },
+  {
+    "id": "south_breakfast",
+    "name": "South Indian Breakfast",
+    "emoji": "🥞",
+    "items": [
+      { "meal_name": "Idli", "calories": 116, "protein": 4, "carbs": 24, "fat": 1 },
+      { "meal_name": "Sambar", "calories": 130, "protein": 6, "carbs": 18, "fat": 4 },
+      { "meal_name": "Coconut Chutney", "calories": 90, "protein": 2, "carbs": 4, "fat": 8 }
+    ]
+  },
+  {
+    "id": "gym_post_workout",
+    "name": "Post-Workout Plate",
+    "emoji": "💪",
+    "items": [
+      { "meal_name": "Grilled Chicken Breast", "calories": 165, "protein": 31, "carbs": 0, "fat": 4 },
+      { "meal_name": "Rice (Cooked, White)", "calories": 200, "protein": 4, "carbs": 44, "fat": 1 },
+      { "meal_name": "Curd", "calories": 60, "protein": 3, "carbs": 5, "fat": 3 }
+    ]
+  }
+]

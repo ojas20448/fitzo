@@ -24,6 +24,7 @@ import Input from '../../components/Input';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import Celebration from '../../components/Celebration';
+import ThaliPresets from '../../components/ThaliPresets';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius, shadows, shadow } from '../../styles/theme';
 import { defaultFoods } from '../../data/defaultFoods';
@@ -108,7 +109,7 @@ const CustomSlider: React.FC<SliderProps> = ({ value, min, max, onChange }) => {
 
 const CalorieLogScreen: React.FC = () => {
     const toast = useToast();
-    const { logFoodOptimistic } = useNutrition();
+    const { logFoodOptimistic, refreshToday } = useNutrition();
     
     const params = useLocalSearchParams<{
         foodName?: string;
@@ -721,6 +722,12 @@ const CalorieLogScreen: React.FC = () => {
                 </Pressable>
             </View>
 
+            <ThaliPresets
+                onLogged={(preset, kcal) => {
+                    toast.success('Logged!', `${preset.name} · ${kcal} kcal`);
+                    refreshToday();
+                }}
+            />
 
             {/* Search Bar */}
             <View style={styles.searchContainer}>

@@ -12,6 +12,7 @@ const { invalidateContextPack } = require('../services/contextPack');
 const foodPrefs = require('../services/foodPrefs');
 const cache = require('../services/cache');
 const { validateComboItems } = require('../utils/mealCombo');
+const mealPresets = require('../data/meal-presets.json');
 
 /**
  * Calculate macro targets based on calories and goal
@@ -487,6 +488,14 @@ router.post('/recalculate-all', authenticate, asyncHandler(async (req, res) => {
     }
 
     res.json({ message: `Recalculated ${updated} profiles, skipped ${skipped}` });
+}));
+
+/**
+ * GET /api/nutrition/presets
+ * Common Indian meal combos for one-tap logging.
+ */
+router.get('/presets', authenticate, asyncHandler(async (req, res) => {
+    res.json({ presets: mealPresets });
 }));
 
 module.exports = router;

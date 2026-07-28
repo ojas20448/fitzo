@@ -757,6 +757,22 @@ export const nutritionAPI = {
         const response = await api.post('/nutrition/log', data);
         return response.data;
     },
+
+    getPresets: async () => {
+        const response = await api.get('/nutrition/presets');
+        return response.data;
+    },
+
+    logBulk: async (items: Array<{
+        meal_name: string;
+        calories: number;
+        protein?: number;
+        carbs?: number;
+        fat?: number;
+    }>) => {
+        const response = await api.post('/nutrition/log-bulk', { items });
+        return response.data;
+    },
 };
 
 // ===========================================
