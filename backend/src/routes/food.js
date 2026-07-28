@@ -271,46 +271,6 @@ router.get('/:id', authenticate, asyncHandler(async (req, res) => {
     }
 }));
 
-/**
- * GET /api/food/categories/indian
- * Get Indian food categories
- */
-router.get('/categories/indian', authenticate, asyncHandler(async (req, res) => {
-    const categories = [
-        { id: 'bread', name: 'Breads', icon: '🫓' },
-        { id: 'grains', name: 'Rice & Grains', icon: '🍚' },
-        { id: 'lentils', name: 'Lentils & Dal', icon: '🥘' },
-        { id: 'vegetarian', name: 'Vegetarian', icon: '🥗' },
-        { id: 'non-veg', name: 'Non-Veg', icon: '🍗' },
-        { id: 'south indian', name: 'South Indian', icon: '🥞' },
-        { id: 'snacks', name: 'Snacks', icon: '🍘' },
-        { id: 'sweets', name: 'Sweets', icon: '🍮' },
-        { id: 'dairy', name: 'Dairy', icon: '🥛' },
-        { id: 'gym', name: 'Gym Foods', icon: '💪' },
-    ];
-
-    res.json({ categories });
-}));
-
-/**
- * GET /api/food/gym-foods
- * Get high-protein gym-friendly foods
- */
-router.get('/gym-foods', authenticate, asyncHandler(async (req, res) => {
-    const foods = indianFood.getGymFoods();
-    res.json({
-        foods: foods.map(f => ({
-            id: f.id,
-            name: f.name,
-            calories: f.calories,
-            protein: f.protein,
-            carbs: f.carbs,
-            fat: f.fat,
-            servingSize: f.servingSize,
-        }))
-    });
-}));
-
 // Legacy analyze-photo endpoint removed — using Gemini Vision above
 
 /**
