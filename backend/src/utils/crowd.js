@@ -2,7 +2,9 @@
  * Crowd Level Calculation
  *
  * Single source of truth for the green/yellow/red crowd light.
- * Occupancy = active members (checked in within last 60 min) / gym capacity.
+ * Occupancy = active members (checked in and still inside their session
+ * window — explicit checkout, or DEFAULT_SESSION_MINUTES after check-in if
+ * they never checked out) / gym capacity.
  *
  *   green  (low)    occupancy <  40%
  *   yellow (medium) occupancy 40–74%

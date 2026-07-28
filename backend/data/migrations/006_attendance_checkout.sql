@@ -5,7 +5,13 @@
 ALTER TABLE attendances
   ADD COLUMN IF NOT EXISTS checked_out_at TIMESTAMP WITH TIME ZONE;
 
--- Partial index: the occupancy query only ever scans still-open sessions.
+-- Partial index: NOT currently used by the occupancy queries. Those filter
+-- on COALESCE(checked_out_at, ...) > NOW(), a computed expression Postgres
+-- cannot map back to this index's `checked_out_at IS NULL` predicate, so the
+-- planner can't use it here. Retained for future queries that filter on open
+-- sessions directly (`WHERE checked_out_at IS NULL`), which this would serve
+-- well. Not dropped since it's already applied to the live database and
+-- removing it needs its own migration.
 CREATE INDEX IF NOT EXISTS idx_attendance_open_session
   ON attendances (gym_id, checked_in_at DESC)
   WHERE checked_out_at IS NULL;

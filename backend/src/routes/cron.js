@@ -64,6 +64,7 @@ router.post('/weekly-recaps', asyncHandler(async (req, res) => {
 router.post('/quiet-alerts', asyncHandler(async (req, res) => {
     res.status(202).json({ success: true, message: 'Quiet-hours alerts batch started' });
     quietHoursService.runQuietAlerts()
+        .then(({ sent, skipped }) => console.log(`Quiet alerts batch done: sent=${sent} skipped=${skipped}`))
         .catch(err => console.error('Quiet alerts batch failed:', err.message));
 }));
 

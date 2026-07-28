@@ -41,6 +41,23 @@ const BusyTimesStrip: React.FC<BusyTimesStripProps> = ({
     const hours = [];
     for (let h = START_HOUR; h <= END_HOUR; h++) hours.push(h);
 
+    // `quietest` (from computeBusyTimes) is the minimum-scoring cell across the
+    // WHOLE week, which can land on a different day than the one rendered
+    // below — e.g. it points at Sunday 3pm while today (Wednesday) is busy at
+    // 3pm, captioning "Quietest around 3pm" directly under a tall bar. Derive
+    // the caption from today's row instead, restricted to the rendered hour
+    // window, and skip hours scoring 0 (almost always "gym closed", not
+    // "pleasantly empty").
+    let quietestHour = null;
+    let quietestScore = Infinity;
+    for (const h of hours) {
+        const score = row[h] ?? 0;
+        if (score > 0 && score < quietestScore) {
+            quietestScore = score;
+            quietestHour = h;
+        }
+    }
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -74,9 +91,9 @@ const BusyTimesStrip: React.FC<BusyTimesStripProps> = ({
                 ))}
             </View>
 
-            {quietest && (
+            {quietestHour !== null && (
                 <Text style={styles.caption}>
-                    Quietest around {formatHour(quietest.hour)}
+                    Quietest around {formatHour(quietestHour)}
                 </Text>
             )}
         </View>

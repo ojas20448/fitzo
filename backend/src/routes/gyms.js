@@ -7,10 +7,10 @@
 
 const express = require('express');
 const router = express.Router();
-const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler, ForbiddenError, ValidationError } = require('../utils/errors');
 const { computeBusyTimes } = require('../utils/busyTimes');
+const { getArrivalBuckets } = require('../services/arrivalBuckets');
 const cache = require('../services/cache');
 
 // UUID v4 shape — reject junk before it reaches Postgres
@@ -39,18 +39,8 @@ router.get('/:id/busy-times', authenticate, asyncHandler(async (req, res) => {
     const busyTimes = await cache.getOrSet(
         cache.keys.busyTimes(gymId),
         async () => {
-            const result = await query(
-                `SELECT
-                   EXTRACT(DOW  FROM checked_in_at AT TIME ZONE 'Asia/Kolkata')::int AS dow,
-                   EXTRACT(HOUR FROM checked_in_at AT TIME ZONE 'Asia/Kolkata')::int AS hour,
-                   COUNT(*)::int AS arrivals
-                 FROM attendances
-                 WHERE gym_id = $1
-                   AND checked_in_at > NOW() - INTERVAL '8 weeks'
-                 GROUP BY 1, 2`,
-                [gymId]
-            );
-            return computeBusyTimes(result.rows);
+            const rows = await getArrivalBuckets(gymId);
+            return computeBusyTimes(rows);
         },
         cache.TTL.BUSY_TIMES
     ).catch((err) => {

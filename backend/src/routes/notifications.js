@@ -112,7 +112,8 @@ router.get('/preferences', authenticate, asyncHandler(async (req, res) => {
         friendActivity: true,
         classReminders: true,
         achievements: true,
-        marketing: false
+        marketing: false,
+        quietHours: true
     };
 
     res.json(result.rows[0]?.notification_preferences || defaults);
