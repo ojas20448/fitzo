@@ -249,7 +249,7 @@ function applyCookingMedium(serving, mediumId) {
     const baseFat = Number(serving.fat) || 0;
     const baseCalories = Number(serving.calories) || 0;
 
-    const newFat = Math.round(baseFat * medium.fatFactor);
+    const newFat = Math.round(baseFat * medium.fatFactor * 10) / 10;
     const newCalories = Math.round(baseCalories + KCAL_PER_GRAM_FAT * (newFat - baseFat));
 
     return {
@@ -267,6 +267,13 @@ function applyCookingMedium(serving, mediumId) {
 function buildServingVariants(serving, category) {
     if (!serving) return [];
     if (!isMediumApplicable(category)) return [{ ...serving }];
+
+    // A dish with no fat has nothing for a cooking medium to vary — every
+    // medium would render an identical row. 22 applicable foods in the dataset
+    // have fat: 0. Four identical figures under four kitchen labels implies a
+    // choice that does not exist, so collapse to the single base serving.
+    const baseFat = Number(serving.fat);
+    if (!Number.isFinite(baseFat) || baseFat <= 0) return [{ ...serving }];
 
     return MEDIUMS.map((medium) => {
         const adjusted = applyCookingMedium(serving, medium.id);
@@ -528,9 +535,16 @@ const CATEGORY_ALIASES = new Map([
 ]);
 
 function titleCase(s) {
+    // Only lift a category that is entirely lowercase. Anything already
+    // carrying a capital is an intentional form — an acronym (QSR, RTE), a
+    // hyphen compound (Non-Veg, Indo-Chinese), or a proper noun — and
+    // lowercasing the tail destroys it. An earlier version of this function
+    // did exactly that to 768 records across 15 categories, and the result is
+    // user-visible: getFoodDetails returns `brand: food.category`.
+    if (/[A-Z]/.test(s)) return s;
     return s
         .split(/\s+/)
-        .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w))
+        .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
         .join(' ');
 }
 
