@@ -8,6 +8,10 @@
 
 const MAX_COMBO_ITEMS = 15;
 const MAX_ITEM_CALORIES = 10000;
+// Far beyond any real food (well inside a Postgres int4 column) — protein/
+// carbs/fat that exceed this are a malformed request, not a big meal, and
+// should 400 rather than crash the INSERT with "22003 integer out of range".
+const MAX_ITEM_MACRO_GRAMS = 2000;
 
 function toNonNegativeInt(value) {
     const n = Math.round(Number(value) || 0);
@@ -43,12 +47,18 @@ function validateComboItems(items) {
         if (!Number.isFinite(calories) || calories < 0 || calories > MAX_ITEM_CALORIES) {
             return { valid: false, error: `Calories for "${name}" look wrong`, items: [] };
         }
+        const protein = toNonNegativeInt(raw.protein);
+        const carbs = toNonNegativeInt(raw.carbs);
+        const fat = toNonNegativeInt(raw.fat);
+        if (protein > MAX_ITEM_MACRO_GRAMS || carbs > MAX_ITEM_MACRO_GRAMS || fat > MAX_ITEM_MACRO_GRAMS) {
+            return { valid: false, error: `Macros for "${name}" look wrong`, items: [] };
+        }
         cleaned.push({
             meal_name: name.slice(0, 100),
             calories: Math.round(calories),
-            protein: toNonNegativeInt(raw.protein),
-            carbs: toNonNegativeInt(raw.carbs),
-            fat: toNonNegativeInt(raw.fat),
+            protein,
+            carbs,
+            fat,
             cooking_medium: typeof raw.cooking_medium === 'string' ? raw.cooking_medium : null,
         });
     }
@@ -56,4 +66,4 @@ function validateComboItems(items) {
     return { valid: true, error: null, items: cleaned };
 }
 
-module.exports = { validateComboItems, MAX_COMBO_ITEMS, MAX_ITEM_CALORIES };
+module.exports = { validateComboItems, MAX_COMBO_ITEMS, MAX_ITEM_CALORIES, MAX_ITEM_MACRO_GRAMS };

@@ -14,8 +14,13 @@
  * later without touching any call site.
  */
 
+// `home_light` (fatFactor 1.0) is the dataset's own recorded value, left
+// unmodified — a baseline, not a claim about how the dish was cooked. Many
+// records already name their medium in the dish itself (Butter Chicken,
+// Paneer Butter Masala, Dal Makhani, Ghee Dosa) and are already rich; calling
+// this variant "light oil" would misdescribe those. Hence the neutral label.
 const MEDIUMS = [
-    { id: 'home_light', label: 'Home (light oil)', fatFactor: 1.0 },
+    { id: 'home_light', label: 'As listed', fatFactor: 1.0 },
     { id: 'home_ghee', label: 'Home (ghee)', fatFactor: 1.8 },
     { id: 'restaurant', label: 'Restaurant', fatFactor: 2.4 },
     { id: 'street', label: 'Street / dhaba', fatFactor: 2.8 },
@@ -39,6 +44,8 @@ const APPLICABLE_CATEGORIES = new Set([
     'curry',
     'dal',
     'lentils',
+    'dals & lentils',
+    'non-veg curry',
 ]);
 
 const KCAL_PER_GRAM_FAT = 9;

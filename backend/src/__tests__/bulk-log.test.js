@@ -3,7 +3,7 @@
  * Nobody eats "1 roti" — they eat 2 roti + dal + sabzi + rice + curd.
  */
 
-const { validateComboItems, MAX_COMBO_ITEMS } = require('../utils/mealCombo');
+const { validateComboItems, MAX_COMBO_ITEMS, MAX_ITEM_MACRO_GRAMS } = require('../utils/mealCombo');
 
 const item = (over = {}) => ({
     meal_name: 'Roti',
@@ -48,5 +48,16 @@ describe('validateComboItems', () => {
 
     it('rejects an item with no name', () => {
         expect(validateComboItems([item({ meal_name: '' })]).valid).toBe(false);
+    });
+
+    it('rejects an absurd macro value instead of letting it hit the INTEGER column', () => {
+        const result = validateComboItems([item({ protein: 1e18 })]);
+        expect(result.valid).toBe(false);
+        expect(result.error).toMatch(/Roti/);
+    });
+
+    it('accepts a macro value right at the cap', () => {
+        const result = validateComboItems([item({ fat: MAX_ITEM_MACRO_GRAMS })]);
+        expect(result.valid).toBe(true);
     });
 });

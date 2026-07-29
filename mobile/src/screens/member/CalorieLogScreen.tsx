@@ -727,6 +727,9 @@ const CalorieLogScreen: React.FC = () => {
                     toast.success('Logged!', `${preset.name} · ${kcal} kcal`);
                     refreshToday();
                 }}
+                onError={(message) => {
+                    toast.error('Could not log meal', message);
+                }}
             />
 
             {/* Search Bar */}
@@ -1085,38 +1088,40 @@ const CalorieLogScreen: React.FC = () => {
                                         </Pressable>
                                     </View>
 
+                                    {/* Serving Type Picker — the cooking medium determines the numbers
+                                        regardless of whether portion is measured in servings or grams,
+                                        so it renders outside the portion-mode ternary below. */}
+                                    {selectedFood.servings.length > 1 && (
+                                        <>
+                                            <Text style={styles.servingPickerLabel}>HOW WAS IT COOKED?</Text>
+                                            <ScrollView
+                                                horizontal
+                                                showsHorizontalScrollIndicator={false}
+                                                style={styles.servingPicker}
+                                            >
+                                                {selectedFood.servings.map((serving) => (
+                                                    <Pressable
+                                                        key={serving.id}
+                                                        style={[
+                                                            styles.servingOption,
+                                                            selectedServing?.id === serving.id && styles.servingOptionActive
+                                                        ]}
+                                                        onPress={() => setSelectedServing(serving)}
+                                                    >
+                                                        <Text style={[
+                                                            styles.servingOptionText,
+                                                            selectedServing?.id === serving.id && styles.servingOptionTextActive
+                                                        ]}>
+                                                            {serving.description}
+                                                        </Text>
+                                                    </Pressable>
+                                                ))}
+                                            </ScrollView>
+                                        </>
+                                    )}
+
                                     {portionMode === 'serving' ? (
                                         <>
-                                            {/* Serving Type Picker */}
-                                            {selectedFood.servings.length > 1 && (
-                                                <>
-                                                    <Text style={styles.servingPickerLabel}>HOW WAS IT COOKED?</Text>
-                                                    <ScrollView
-                                                    horizontal
-                                                    showsHorizontalScrollIndicator={false}
-                                                    style={styles.servingPicker}
-                                                >
-                                                    {selectedFood.servings.map((serving) => (
-                                                        <Pressable
-                                                            key={serving.id}
-                                                            style={[
-                                                                styles.servingOption,
-                                                                selectedServing?.id === serving.id && styles.servingOptionActive
-                                                            ]}
-                                                            onPress={() => setSelectedServing(serving)}
-                                                        >
-                                                            <Text style={[
-                                                                styles.servingOptionText,
-                                                                selectedServing?.id === serving.id && styles.servingOptionTextActive
-                                                            ]}>
-                                                                {serving.description}
-                                                            </Text>
-                                                        </Pressable>
-                                                    ))}
-                                                </ScrollView>
-                                                </>
-                                            )}
-
                                             {/* Quantity Selector */}
                                             <View style={styles.quantityRow}>
                                                 <Pressable

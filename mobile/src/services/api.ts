@@ -769,8 +769,11 @@ export const nutritionAPI = {
         protein?: number;
         carbs?: number;
         fat?: number;
-    }>) => {
-        const response = await api.post('/nutrition/log-bulk', { items });
+    }>, mealType?: string) => {
+        const response = await api.post('/nutrition/log-bulk', {
+            items,
+            ...(mealType ? { meal_type: mealType } : {}),
+        });
         return response.data;
     },
 };

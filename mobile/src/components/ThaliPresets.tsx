@@ -21,9 +21,10 @@ interface Preset {
 
 interface ThaliPresetsProps {
     onLogged?: (preset: Preset, totalCalories: number) => void;
+    onError?: (message: string) => void;
 }
 
-const ThaliPresets: React.FC<ThaliPresetsProps> = ({ onLogged }) => {
+const ThaliPresets: React.FC<ThaliPresetsProps> = ({ onLogged, onError }) => {
     const [presets, setPresets] = useState<Preset[]>([]);
     const [pending, setPending] = useState<string | null>(null);
 
@@ -41,7 +42,7 @@ const ThaliPresets: React.FC<ThaliPresetsProps> = ({ onLogged }) => {
             const result = await nutritionAPI.logBulk(preset.items);
             onLogged?.(preset, result?.totals?.calories ?? 0);
         } catch {
-            // Surfaced by the caller's toast; nothing useful to do here.
+            onError?.(`Could not log ${preset.name}. Please try again.`);
         } finally {
             setPending(null);
         }

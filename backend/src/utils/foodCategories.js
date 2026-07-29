@@ -4,6 +4,8 @@
  * indian-foods.json grew in batches, leaving singular/plural splits that
  * fragment both search scoring and category browsing:
  *   Snacks (353) + Snack (284), Beverages (324) + Beverage (255)
+ *   ...and ~20 more pairs (Biscuit/Biscuits, Fruit/Fruits, Sandwich/
+ *   Sandwiches, Cooking Oil/Cooking Oils, etc.) covering ~1,000 records.
  */
 
 const CATEGORY_ALIASES = new Map([
@@ -17,6 +19,46 @@ const CATEGORY_ALIASES = new Map([
     ['breads', 'Breads'],
     ['dessert', 'Desserts'],
     ['desserts', 'Desserts'],
+    ['biscuit', 'Biscuits'],
+    ['biscuits', 'Biscuits'],
+    ['fruit', 'Fruits'],
+    ['fruits', 'Fruits'],
+    ['vegetable', 'Vegetables'],
+    ['vegetables', 'Vegetables'],
+    ['chocolate', 'Chocolates'],
+    ['chocolates', 'Chocolates'],
+    ['condiment', 'Condiments'],
+    ['condiments', 'Condiments'],
+    ['cereal', 'Cereals'],
+    ['cereals', 'Cereals'],
+    ['spread', 'Spreads'],
+    ['spreads', 'Spreads'],
+    ['supplement', 'Supplements'],
+    ['supplements', 'Supplements'],
+    ['egg', 'Eggs'],
+    ['eggs', 'Eggs'],
+    ['pickle', 'Pickles'],
+    ['pickles', 'Pickles'],
+    ['juice', 'Juices'],
+    ['juices', 'Juices'],
+    ['spice', 'Spices'],
+    ['spices', 'Spices'],
+    ['millet', 'Millets'],
+    ['millets', 'Millets'],
+    ['wrap', 'Wraps'],
+    ['wraps', 'Wraps'],
+    ['roll', 'Rolls'],
+    ['rolls', 'Rolls'],
+    ['sandwich', 'Sandwiches'],
+    ['sandwiches', 'Sandwiches'],
+    ['health food', 'Health Foods'],
+    ['health foods', 'Health Foods'],
+    ['packaged snack', 'Packaged Snacks'],
+    ['packaged snacks', 'Packaged Snacks'],
+    ['fitness meal', 'Fitness Meals'],
+    ['fitness meals', 'Fitness Meals'],
+    ['cooking oil', 'Cooking Oils'],
+    ['cooking oils', 'Cooking Oils'],
 ]);
 
 /**

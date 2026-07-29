@@ -449,6 +449,13 @@ router.post('/log-bulk', authenticate, asyncHandler(async (req, res) => {
     await cache.del(cache.keys.nutritionToday(userId));
     invalidateContextPack(userId).catch(() => {});
 
+    // Fire-and-forget: a preference write must never fail a food log.
+    cleaned.forEach((it) => {
+        if (it.cooking_medium) {
+            foodPrefs.recordMediumChoice(userId, it.meal_name, it.cooking_medium).catch(() => {});
+        }
+    });
+
     res.status(201).json({ success: true, logged: cleaned.length, totals });
 }));
 
