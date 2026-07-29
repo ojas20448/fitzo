@@ -13,6 +13,7 @@ const barcodeService = require('../services/barcode');
 const geminiService = require('../services/gemini');
 const openFoodFacts = require('../services/openFoodFacts');
 const apiNinjas = require('../services/apiNinjas');
+const foodPrefs = require('../services/foodPrefs');
 const { asyncHandler } = require('../utils/errors');
 const { authenticate } = require('../middleware/auth');
 const { aiQuota } = require('../middleware/aiQuota');
@@ -259,6 +260,19 @@ router.get('/:id', authenticate, asyncHandler(async (req, res) => {
         // Check if it's an Indian food ID
         if (id.startsWith('ind_') || source === 'indian') {
             const food = indianFood.getFoodDetails(id);
+
+            // Put the member's usual choice first — CalorieLogScreen pre-selects [0].
+            if (food && Array.isArray(food.servings) && food.servings.length > 1) {
+                const preferred = await foodPrefs.getPreferredMedium(req.user.id, food.name);
+                if (preferred) {
+                    const idx = food.servings.findIndex((s) => s.id === preferred);
+                    if (idx > 0) {
+                        const [chosen] = food.servings.splice(idx, 1);
+                        food.servings.unshift(chosen);
+                    }
+                }
+            }
+
             return res.json({ ...food, source: 'indian' });
         }
 
@@ -269,46 +283,6 @@ router.get('/:id', authenticate, asyncHandler(async (req, res) => {
         console.error('❌ Food details error:', error.message);
         return res.status(404).json({ error: 'Food not found' });
     }
-}));
-
-/**
- * GET /api/food/categories/indian
- * Get Indian food categories
- */
-router.get('/categories/indian', authenticate, asyncHandler(async (req, res) => {
-    const categories = [
-        { id: 'bread', name: 'Breads', icon: '🫓' },
-        { id: 'grains', name: 'Rice & Grains', icon: '🍚' },
-        { id: 'lentils', name: 'Lentils & Dal', icon: '🥘' },
-        { id: 'vegetarian', name: 'Vegetarian', icon: '🥗' },
-        { id: 'non-veg', name: 'Non-Veg', icon: '🍗' },
-        { id: 'south indian', name: 'South Indian', icon: '🥞' },
-        { id: 'snacks', name: 'Snacks', icon: '🍘' },
-        { id: 'sweets', name: 'Sweets', icon: '🍮' },
-        { id: 'dairy', name: 'Dairy', icon: '🥛' },
-        { id: 'gym', name: 'Gym Foods', icon: '💪' },
-    ];
-
-    res.json({ categories });
-}));
-
-/**
- * GET /api/food/gym-foods
- * Get high-protein gym-friendly foods
- */
-router.get('/gym-foods', authenticate, asyncHandler(async (req, res) => {
-    const foods = indianFood.getGymFoods();
-    res.json({
-        foods: foods.map(f => ({
-            id: f.id,
-            name: f.name,
-            calories: f.calories,
-            protein: f.protein,
-            carbs: f.carbs,
-            fat: f.fat,
-            servingSize: f.servingSize,
-        }))
-    });
 }));
 
 // Legacy analyze-photo endpoint removed — using Gemini Vision above

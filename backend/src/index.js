@@ -122,6 +122,7 @@ app.use('/api/learn', require('./routes/learn'));
 app.use('/api/classes', require('./routes/classes'));
 app.use('/api/trainer', require('./routes/trainer'));
 app.use('/api/manager', require('./routes/manager'));
+app.use('/api/gyms', require('./routes/gyms'));
 app.use('/api/workouts', require('./routes/workouts'));
 app.use('/api/calories', require('./routes/calories'));
 app.use('/api/profile', require('./routes/profile'));

@@ -15,6 +15,7 @@ const crypto = require('crypto');
 const { asyncHandler } = require('../utils/errors');
 const dailyInsightService = require('../services/dailyInsight');
 const weeklyRecapService = require('../services/weeklyRecap');
+const quietHoursService = require('../services/quietHours');
 
 // Constant-time secret comparison
 function secretMatches(provided) {
@@ -54,6 +55,17 @@ router.post('/weekly-recaps', asyncHandler(async (req, res) => {
     res.status(202).json({ success: true, message: 'Weekly recaps batch started' });
     weeklyRecapService.generateAllWeeklyRecaps()
         .catch(err => console.error('Weekly recaps batch failed:', err.message));
+}));
+
+/**
+ * POST /api/cron/quiet-alerts
+ * Push "your gym is quiet now" to members whose gym is historically unbusy.
+ */
+router.post('/quiet-alerts', asyncHandler(async (req, res) => {
+    res.status(202).json({ success: true, message: 'Quiet-hours alerts batch started' });
+    quietHoursService.runQuietAlerts()
+        .then(({ sent, skipped }) => console.log(`Quiet alerts batch done: sent=${sent} skipped=${skipped}`))
+        .catch(err => console.error('Quiet alerts batch failed:', err.message));
 }));
 
 module.exports = router;

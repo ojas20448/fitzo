@@ -73,10 +73,19 @@ interface ReceiptShareCardProps {
     /** PR receipt variant: shows trophy + these stats instead of barbell */
     prs?: { name: string; current: string; previous?: string }[];
     date?: Date;
+    /**
+     * Drop the black backing behind the paper.
+     *
+     * The stage is opaque black because the card is normally captured on its own,
+     * where that black IS the shared image's background. When the receipt is
+     * overlaid on the user's photo it must be transparent, otherwise the stage
+     * renders as a black rectangle punched over their picture.
+     */
+    transparentStage?: boolean;
 }
 
 const ReceiptShareCard = React.forwardRef<View, ReceiptShareCardProps>(
-    ({ title, headlineValue, headlineCaption, rows, total, prs, date = new Date() }, ref) => {
+    ({ title, headlineValue, headlineCaption, rows, total, prs, date = new Date(), transparentStage = false }, ref) => {
         const d = date;
         const dateStr = `${String(d.getDate()).padStart(2, '0')} ${d
             .toLocaleString('en', { month: 'short' })
@@ -98,7 +107,11 @@ const ReceiptShareCard = React.forwardRef<View, ReceiptShareCardProps>(
         }
 
         return (
-            <View ref={ref} style={styles.stage} collapsable={false}>
+            <View
+                ref={ref}
+                style={[styles.stage, transparentStage && styles.stageTransparent]}
+                collapsable={false}
+            >
                 <View style={styles.paper}>
                     {/* Header: wordmark + timestamp */}
                     <View style={styles.headerRow}>
@@ -181,6 +194,14 @@ const styles = StyleSheet.create({
         paddingVertical: 36,
         paddingHorizontal: 24,
         alignItems: 'center',
+    },
+    stageTransparent: {
+        backgroundColor: 'transparent',
+        // Drop the padding too: it only existed to give the black backing a
+        // margin. Kept as zero so the paper's own drop shadow is the only thing
+        // extending past its edge when composited over a photo.
+        paddingVertical: 0,
+        paddingHorizontal: 0,
     },
     paper: {
         width: CARD_W,

@@ -24,6 +24,7 @@ import Input from '../../components/Input';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import Celebration from '../../components/Celebration';
+import ThaliPresets from '../../components/ThaliPresets';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius, shadows, shadow } from '../../styles/theme';
 import { defaultFoods } from '../../data/defaultFoods';
@@ -108,7 +109,7 @@ const CustomSlider: React.FC<SliderProps> = ({ value, min, max, onChange }) => {
 
 const CalorieLogScreen: React.FC = () => {
     const toast = useToast();
-    const { logFoodOptimistic } = useNutrition();
+    const { logFoodOptimistic, refreshToday } = useNutrition();
     
     const params = useLocalSearchParams<{
         foodName?: string;
@@ -612,6 +613,7 @@ const CalorieLogScreen: React.FC = () => {
                 serving_size: portionMode === 'grams'
                     ? `${gramAmount}g`
                     : `${servingCount} ${selectedServing.measurementDescription}`,
+                cooking_medium: (selectedServing as any).cookingMedium ?? undefined,
                 meal_type: 'snack',
                 visibility: visibility
             });
@@ -720,6 +722,15 @@ const CalorieLogScreen: React.FC = () => {
                 </Pressable>
             </View>
 
+            <ThaliPresets
+                onLogged={(preset, kcal) => {
+                    toast.success('Logged!', `${preset.name} · ${kcal} kcal`);
+                    refreshToday();
+                }}
+                onError={(message) => {
+                    toast.error('Could not log meal', message);
+                }}
+            />
 
             {/* Search Bar */}
             <View style={styles.searchContainer}>
@@ -1077,35 +1088,40 @@ const CalorieLogScreen: React.FC = () => {
                                         </Pressable>
                                     </View>
 
+                                    {/* Serving Type Picker — the cooking medium determines the numbers
+                                        regardless of whether portion is measured in servings or grams,
+                                        so it renders outside the portion-mode ternary below. */}
+                                    {selectedFood.servings.length > 1 && (
+                                        <>
+                                            <Text style={styles.servingPickerLabel}>HOW WAS IT COOKED?</Text>
+                                            <ScrollView
+                                                horizontal
+                                                showsHorizontalScrollIndicator={false}
+                                                style={styles.servingPicker}
+                                            >
+                                                {selectedFood.servings.map((serving) => (
+                                                    <Pressable
+                                                        key={serving.id}
+                                                        style={[
+                                                            styles.servingOption,
+                                                            selectedServing?.id === serving.id && styles.servingOptionActive
+                                                        ]}
+                                                        onPress={() => setSelectedServing(serving)}
+                                                    >
+                                                        <Text style={[
+                                                            styles.servingOptionText,
+                                                            selectedServing?.id === serving.id && styles.servingOptionTextActive
+                                                        ]}>
+                                                            {serving.description}
+                                                        </Text>
+                                                    </Pressable>
+                                                ))}
+                                            </ScrollView>
+                                        </>
+                                    )}
+
                                     {portionMode === 'serving' ? (
                                         <>
-                                            {/* Serving Type Picker */}
-                                            {selectedFood.servings.length > 1 && (
-                                                <ScrollView
-                                                    horizontal
-                                                    showsHorizontalScrollIndicator={false}
-                                                    style={styles.servingPicker}
-                                                >
-                                                    {selectedFood.servings.map((serving) => (
-                                                        <Pressable
-                                                            key={serving.id}
-                                                            style={[
-                                                                styles.servingOption,
-                                                                selectedServing?.id === serving.id && styles.servingOptionActive
-                                                            ]}
-                                                            onPress={() => setSelectedServing(serving)}
-                                                        >
-                                                            <Text style={[
-                                                                styles.servingOptionText,
-                                                                selectedServing?.id === serving.id && styles.servingOptionTextActive
-                                                            ]}>
-                                                                {serving.description}
-                                                            </Text>
-                                                        </Pressable>
-                                                    ))}
-                                                </ScrollView>
-                                            )}
-
                                             {/* Quantity Selector */}
                                             <View style={styles.quantityRow}>
                                                 <Pressable
@@ -1747,6 +1763,13 @@ const styles = StyleSheet.create({
     },
     servingOptionTextActive: {
         color: colors.text.dark,
+    },
+    servingPickerLabel: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.secondary,
+        letterSpacing: 1.2,
+        marginBottom: spacing.xs,
     },
     quantityRow: {
         flexDirection: 'row',

@@ -192,12 +192,36 @@ export const memberAPI = {
 };
 
 // ===========================================
+// GYM ENDPOINTS
+// ===========================================
+
+export interface BusyTimes {
+    grid: number[][] | null;
+    peak: { dow: number; hour: number; score: number } | null;
+    quietest: { dow: number; hour: number; score: number } | null;
+    totalSamples: number;
+    confidence: 'none' | 'low' | 'good';
+}
+
+export const gymAPI = {
+    getBusyTimes: async (gymId: string): Promise<{ success: boolean; busy_times: BusyTimes }> => {
+        const response = await api.get(`/gyms/${gymId}/busy-times`);
+        return response.data;
+    },
+};
+
+// ===========================================
 // CHECK-IN ENDPOINTS
 // ===========================================
 
 export const checkinAPI = {
     checkin: async (gymId: string) => {
         const response = await api.post('/checkin', { gym_id: gymId });
+        return response.data;
+    },
+
+    checkout: async () => {
+        const response = await api.post('/checkin/checkout');
         return response.data;
     },
 
@@ -726,10 +750,30 @@ export const nutritionAPI = {
         carbs: number;
         fat: number;
         serving_size: string;
+        cooking_medium?: string;
         meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
         visibility?: string;
     }) => {
         const response = await api.post('/nutrition/log', data);
+        return response.data;
+    },
+
+    getPresets: async () => {
+        const response = await api.get('/nutrition/presets');
+        return response.data;
+    },
+
+    logBulk: async (items: Array<{
+        meal_name: string;
+        calories: number;
+        protein?: number;
+        carbs?: number;
+        fat?: number;
+    }>, mealType?: string) => {
+        const response = await api.post('/nutrition/log-bulk', {
+            items,
+            ...(mealType ? { meal_type: mealType } : {}),
+        });
         return response.data;
     },
 };

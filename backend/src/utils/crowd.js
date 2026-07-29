@@ -2,7 +2,9 @@
  * Crowd Level Calculation
  *
  * Single source of truth for the green/yellow/red crowd light.
- * Occupancy = active members (checked in within last 60 min) / gym capacity.
+ * Occupancy = active members (checked in and still inside their session
+ * window — explicit checkout, or DEFAULT_SESSION_MINUTES after check-in if
+ * they never checked out) / gym capacity.
  *
  *   green  (low)    occupancy <  40%
  *   yellow (medium) occupancy 40–74%
@@ -44,4 +46,44 @@ function computeCrowd(activeCount, capacity) {
     };
 }
 
-module.exports = { computeCrowd, DEFAULT_CAPACITY, THRESHOLDS };
+/**
+ * Median gym session. Used to auto-expire a check-in when the member never
+ * checked out — which is the common case, since checkout is optional.
+ */
+const DEFAULT_SESSION_MINUTES = 90;
+
+/**
+ * When does this member stop counting as present?
+ * Explicit checkout wins; otherwise assume a standard session length.
+ */
+function presenceWindowEnd(checkedInAt, checkedOutAt, sessionMinutes = DEFAULT_SESSION_MINUTES) {
+    if (checkedOutAt) {
+        const checkoutDate = new Date(checkedOutAt);
+        if (!Number.isNaN(checkoutDate.getTime())) {
+            return checkoutDate;
+        }
+    }
+    return new Date(new Date(checkedInAt).getTime() + sessionMinutes * 60 * 1000);
+}
+
+/**
+ * Is this attendance row inside the gym right now?
+ * Present == check-in has happened AND the session window has not closed.
+ */
+function isPresent(row, now = new Date(), sessionMinutes = DEFAULT_SESSION_MINUTES) {
+    if (!row || !row.checked_in_at) return false;
+    const start = new Date(row.checked_in_at);
+    if (Number.isNaN(start.getTime())) return false;
+    const end = presenceWindowEnd(start, row.checked_out_at, sessionMinutes);
+    const t = new Date(now).getTime();
+    return start.getTime() <= t && t < end.getTime();
+}
+
+module.exports = {
+    computeCrowd,
+    presenceWindowEnd,
+    isPresent,
+    DEFAULT_CAPACITY,
+    DEFAULT_SESSION_MINUTES,
+    THRESHOLDS,
+};

@@ -31,7 +31,12 @@ export const WORKOUT_TYPES = ['legs', 'chest', 'back', 'shoulders', 'arms', 'car
 export const REST_PRESETS = [60, 90, 120, 180] as const;
 export const WEIGHT_MIN = 0;
 export const WEIGHT_MAX = 300;
-export const WEIGHT_STEP = 0.5;
+// 2.5kg is the standard plate jump. At 0.5 the wheel held 601 items and 100kg
+// sat 200 scroll-steps in, which made loading a normal working weight painful.
+// At 2.5 it is 121 items and 40 steps. Off-grid values (e.g. an older 91kg
+// entry, or anything typed by hand) are still accepted — the wheel snaps to the
+// nearest item rather than resetting, and typed values are stored verbatim.
+export const WEIGHT_STEP = 2.5;
 export const REPS_MIN = 0;
 export const REPS_MAX = 100;
 

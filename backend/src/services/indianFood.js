@@ -5,6 +5,7 @@
  */
 
 const indianFoods = require('../data/indian-foods.json');
+const { buildServingVariants } = require('../utils/cookingMedium');
 
 // Build lookup map for fast ID-based access
 const foodById = new Map();
@@ -91,27 +92,29 @@ function getFoodDetails(foodId) {
         throw new Error('Food not found');
     }
 
+    const baseServing = {
+        id: 'default',
+        description: food.servingSize,
+        measurementDescription: food.servingSize,
+        calories: food.calories,
+        protein: food.protein,
+        carbs: food.carbs,
+        fat: food.fat,
+        fiber: food.fiber || 0,
+        sugar: 0,
+        sodium: 0,
+        saturatedFat: 0,
+        cholesterol: 0,
+    };
+
     return {
         id: food.id,
         name: food.name,
         brand: food.category,
         type: 'Indian',
-        servings: [
-            {
-                id: 'default',
-                description: food.servingSize,
-                measurementDescription: food.servingSize,
-                calories: food.calories,
-                protein: food.protein,
-                carbs: food.carbs,
-                fat: food.fat,
-                fiber: food.fiber || 0,
-                sugar: 0,
-                sodium: 0,
-                saturatedFat: 0,
-                cholesterol: 0,
-            }
-        ],
+        // For cooked dishes this expands to one entry per cooking medium.
+        // CalorieLogScreen renders servings[] directly and pre-selects [0].
+        servings: buildServingVariants(baseServing, food.category),
     };
 }
 

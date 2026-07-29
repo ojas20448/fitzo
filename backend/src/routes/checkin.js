@@ -151,4 +151,42 @@ router.get('/history', authenticate, asyncHandler(async (req, res) => {
     });
 }));
 
+/**
+ * POST /api/checkin/checkout
+ * Closes today's open session. Idempotent — checking out twice is not an error,
+ * it just returns the existing checkout time.
+ */
+router.post('/checkout', authenticate, asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    const result = await query(
+        `UPDATE attendances
+            SET checked_out_at = NOW()
+          WHERE user_id = $1
+            AND checked_out_at IS NULL
+            AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+      RETURNING checked_out_at, gym_id`,
+        [userId]
+    );
+
+    if (result.rows.length === 0) {
+        const existing = await query(
+            `SELECT checked_out_at FROM attendances
+              WHERE user_id = $1
+                AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+              LIMIT 1`,
+            [userId]
+        );
+        if (existing.rows.length === 0) {
+            throw new NotFoundError("You haven't checked in today");
+        }
+        return res.json({ success: true, checked_out_at: existing.rows[0].checked_out_at });
+    }
+
+    // Occupancy just changed — drop the cached crowd light
+    await cache.del(cache.keys.crowdLevel(result.rows[0].gym_id));
+
+    res.json({ success: true, checked_out_at: result.rows[0].checked_out_at });
+}));
+
 module.exports = router;

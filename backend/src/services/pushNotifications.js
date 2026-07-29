@@ -19,7 +19,8 @@ const NotificationType = {
     FRIEND_ACTIVITY: 'friend_activity',
     CLASS_REMINDER: 'class_reminder',
     ACHIEVEMENT: 'achievement',
-    GENERAL: 'general'
+    GENERAL: 'general',
+    QUIET_HOURS: 'quiet_hours'
 };
 
 /**
@@ -32,6 +33,7 @@ const TYPE_TO_PREFERENCE = {
     [NotificationType.FRIEND_ACTIVITY]: 'friendActivity',
     [NotificationType.CLASS_REMINDER]: 'classReminders',
     [NotificationType.ACHIEVEMENT]: 'achievements',
+    [NotificationType.QUIET_HOURS]: 'quietHours',
 };
 
 /**

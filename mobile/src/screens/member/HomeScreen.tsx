@@ -13,15 +13,17 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 
 import { useAuth } from '../../context/AuthContext';
 import { useNutrition } from '../../context/NutritionContext';
 import { useOfflineStore } from '../../stores/offlineStore';
-import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI, intentAPI, aiAPI, healthAPI } from '../../services/api';
+import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI, intentAPI, aiAPI, healthAPI, checkinAPI } from '../../services/api';
 import { isHealthAvailable, getTodaysSummary } from '../../services/healthService';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import Badge from '../../components/Badge';
+import { useToast } from '../../components/Toast';
 import CrowdIndicator from '../../components/CrowdIndicator';
 import AnimatedFire from '../../components/AnimatedFire';
 import WeeklyProgress from '../../components/WeeklyProgress';
@@ -31,6 +33,8 @@ import EmptyState, { EmptyStateInline } from '../../components/EmptyState';
 import MacroPieChart from '../../components/MacroPieChart';
 import ProgressRing from '../../components/ProgressRing';
 import CustomRefreshHeader from '../../components/CustomRefreshHeader';
+import BusyTimesStrip from '../../components/BusyTimesStrip';
+import { gymAPI, BusyTimes } from '../../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 
 interface HomeData {
@@ -96,6 +100,7 @@ interface TodayWorkout {
 const HomeScreen: React.FC = () => {
     const { user } = useAuth();
     const { todayMacros, calorieGoal, macroTargets, refreshToday } = useNutrition();
+    const toast = useToast();
     const [data, setData] = useState<HomeData | null>(null);
     const [todayWorkouts, setTodayWorkouts] = useState<TodayWorkout[]>([]);
     const [friends, setFriends] = useState<Friend[]>([]);
@@ -119,6 +124,8 @@ const HomeScreen: React.FC = () => {
     // zeros, which the user believes. Track the failure explicitly instead.
     const [error, setError] = useState<'offline' | 'error' | null>(null);
     const [isStale, setIsStale] = useState(false);
+    const [busyTimes, setBusyTimes] = useState<BusyTimes | null>(null);
+    const [checkingOut, setCheckingOut] = useState(false);
 
     useEffect(() => {
         // Show progressive loading messages for cold start
@@ -154,6 +161,13 @@ const HomeScreen: React.FC = () => {
         };
         fetchActive();
     }, []);
+
+    useEffect(() => {
+        if (!user?.gym_id) return;
+        gymAPI.getBusyTimes(user.gym_id)
+            .then((r) => setBusyTimes(r.busy_times))
+            .catch(() => setBusyTimes(null));
+    }, [user?.gym_id]);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -284,6 +298,21 @@ const HomeScreen: React.FC = () => {
         }
     };
 
+    const handleCheckout = async () => {
+        if (checkingOut) return;
+        setCheckingOut(true);
+        try {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            await checkinAPI.checkout();
+            toast.success('Checked out', 'See you next time.');
+            loadHomeData(false);
+        } catch (error: any) {
+            toast.error('Error', error.message || 'Could not check out');
+        } finally {
+            setCheckingOut(false);
+        }
+    };
+
     // Time-based greeting
     const greeting = 'Consistency matters.';
 
@@ -388,14 +417,31 @@ const HomeScreen: React.FC = () => {
                             <MaterialIcons name="auto-awesome" size={20} color={colors.text.primary} />
                         </TouchableOpacity>
 
-                        {/* QR Check-in Button */}
-                        <TouchableOpacity
-                            style={styles.checkinBadge}
-                            onPress={() => router.push('/qr-checkin' as any)}
-                            accessibilityLabel="QR Check-in"
-                        >
-                            <MaterialIcons name="qr-code-2" size={20} color={colors.text.primary} />
-                        </TouchableOpacity>
+                        {/* QR Check-in / Check-out */}
+                        {data?.checkin.status === 'checked_in' ? (
+                            <TouchableOpacity
+                                style={styles.checkinBadge}
+                                onPress={handleCheckout}
+                                disabled={checkingOut}
+                                accessibilityLabel="Check out of gym"
+                                accessibilityRole="button"
+                            >
+                                <MaterialIcons
+                                    name="logout"
+                                    size={20}
+                                    color={checkingOut ? colors.text.muted : colors.text.primary}
+                                />
+                            </TouchableOpacity>
+                        ) : (
+                            <TouchableOpacity
+                                style={styles.checkinBadge}
+                                onPress={() => router.push('/qr-checkin' as any)}
+                                accessibilityLabel="QR Check-in"
+                                accessibilityRole="button"
+                            >
+                                <MaterialIcons name="qr-code-2" size={20} color={colors.text.primary} />
+                            </TouchableOpacity>
+                        )}
 
                         {/* Streak Badge */}
                         <View style={styles.streakBadge}>
@@ -546,6 +592,16 @@ const HomeScreen: React.FC = () => {
                         </GlassCard>
                     ) : null}
                 </Animated.View>
+
+                {busyTimes && (
+                    <View style={{ marginTop: spacing.md }}>
+                        <BusyTimesStrip
+                            grid={busyTimes.grid}
+                            quietest={busyTimes.quietest}
+                            confidence={busyTimes.confidence}
+                        />
+                    </View>
+                )}
 
                 {/* Completed Workout Card - Show when workout is logged today */}
                 {hasLoggedWorkoutToday && (
