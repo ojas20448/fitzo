@@ -19,7 +19,7 @@ Neither should be forced on people who don't want them. Unilateral is off unless
 |---|---|---|
 | Unilateral rep semantics | Reps entered are **per side**; volume doubles | Matches how lifters speak ("10 each arm") and how Strong/Hevy behave |
 | Flag scope | **Per logged exercise**, default off | Same movement can be done either way; no catalog migration needed |
-| RIR storage | **New `rir` column**, stores what the user typed | No inversion logic anywhere; leaves `rpe` free for a future RPE mode |
+| RIR storage | **New `rir` column**, stores what the user typed, *and* keep writing the existing `rpe` conversion | No inversion logic on read; keeps anything already consuming `rpe` working |
 | RIR scale | **0–5** | Standard. Values outside are rejected. |
 | First run | **One-time sheet with the RIR switch inline** | One screen, one decision; also changeable in Settings |
 | Pill wording | **`1 SIDE`** | Readable at a glance in a set row; "unilateral" is jargon |
@@ -49,9 +49,9 @@ ALTER TABLE users
 This is the part that can corrupt existing stats, and it carries a lesson from the crowd-intelligence work: that plan expressed one rule as a JS constant *and* two hand-synced SQL literals, and the final review flagged the drift risk. This design does not repeat that.
 
 **Verified against the codebase:**
-- Volume is computed in exactly **four** places, all in `backend/src/routes/progress.js`: lines 38, 70, 71, 114.
-- There is **no JS-side volume math** anywhere — not in `backend/src/services/`, not in mobile.
+- SQL volume is computed in exactly **four** places, all in `backend/src/routes/progress.js`: lines 38, 70, 71, 114.
 - All three query blocks **already** `JOIN exercise_logs el` (lines 42, 74, 118), so no new joins are required.
+- There **is** one JS-side volume computation: `WorkoutLogScreen.tsx:517` sums `totalVolume += w * r` to build the post-workout recap. This is a **fifth site** and it must use the same rule, or the recap will disagree with the stats screen for the same session. This is precisely why the shared `setVolume` helper exists rather than being defensive scaffolding.
 
 Create `backend/src/utils/volume.js` as the single source:
 
@@ -77,16 +77,21 @@ All four `progress.js` sites use `VOLUME_SQL`. If the rule ever changes, it chan
 
 ### API
 
-**Path prefixes verified against `backend/src/index.js`.** `routes/workout-sessions.js` mounts at `/api/workout-sessions` (line 131), *not* `/api/workouts` (line 126, a different router). Mobile already calls `/workout-sessions/sessions/...` (`api.ts:557`). Getting this wrong would produce endpoints nothing can reach.
+**⚠️ Two routers handle workouts. The Log Workout screen uses the one you would not guess.**
+
+`backend/src/index.js` mounts `routes/workouts.js` at `/api/workouts` (line 126) and `routes/workout-sessions.js` at `/api/workout-sessions` (line 131). **`WorkoutLogScreen` submits to the former** — `workoutsAPI.log()` at `api.ts:551` posts to `/workouts`, called from `WorkoutLogScreen.tsx:507`. `workout-sessions.js` serves the separate live/active-session flow.
+
+`POST /api/workouts` receives the whole session at once: `exercises` arrives as a **JSON string** of the `UserExercise[]` array, and `workouts.js` parses it, creates one `exercise_logs` row per exercise (~line 91), then one `set_logs` row per set (~line 123).
+
+**RIR already flows end-to-end.** `workouts.js:121-122` reads `sets[s].rir` and converts it — `rpe = clamp(10 - rir, 1, 10)`. The client type already carries `rir?`. The only missing pieces are the UI to enter it and the decision to store it directly.
 
 | Endpoint | Change |
 |---|---|
-| `POST /api/workout-sessions/sessions/:sessionId/exercises` | Accepts `is_unilateral` (boolean, default false) |
-| `PATCH /api/workout-sessions/exercises/:exerciseLogId` | **New.** Toggles `is_unilateral` on an existing logged exercise |
-| `POST /api/workout-sessions/exercises/:exerciseLogId/sets` | Accepts `rir` (0–5, nullable) |
-| `PUT /api/workout-sessions/sets/:id` | Accepts `rir` (0–5, nullable) |
+| `POST /api/workouts` | Reads `is_unilateral` per exercise from the JSON blob → `exercise_logs.is_unilateral`. Writes `rir` to the new column **in addition to** the existing `rpe` conversion, so nothing downstream of `rpe` breaks. |
 | `GET /api/settings/workout` | **New.** Returns `log_rir_enabled`, `workout_prefs_seen` |
 | `PATCH /api/settings/workout` | **New.** Updates either field |
+
+No `PATCH` for toggling unilateral on a saved exercise is needed — the flag is chosen during logging and submitted with the session. The active-session router (`workout-sessions.js`) is **out of scope**; it is a separate flow and adding the flag there is a follow-up.
 
 The settings pair follows the existing `GET`/`PATCH /api/settings/sharing` pattern exactly (direct columns on `users`, not a JSONB blob).
 
