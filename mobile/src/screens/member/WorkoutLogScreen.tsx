@@ -30,6 +30,7 @@ import {
     ScrollWheelPicker,
     RestTimerPill,
     ExerciseCard,
+    WorkoutPrefsSheet,
     PICKER_HEIGHT,
     WEIGHT_VALUES,
     REPS_VALUES,
@@ -134,11 +135,15 @@ const WorkoutLogScreen: React.FC = () => {
 
     // Optional RIR logging — opt-in via Settings
     const [showRir, setShowRir] = useState(false);
+    const [showPrefsSheet, setShowPrefsSheet] = useState(false);
 
     useEffect(() => {
         loadSharingPreference();
         settingsAPI.getWorkoutPreferences()
-            .then((p) => setShowRir(!!p.log_rir_enabled))
+            .then((p) => {
+                setShowRir(!!p.log_rir_enabled);
+                if (!p.workout_prefs_seen) setShowPrefsSheet(true);
+            })
             .catch(() => setShowRir(false));
     }, []);
 
@@ -1038,6 +1043,19 @@ const WorkoutLogScreen: React.FC = () => {
                     </Animated.View>
                 </View>
             )}
+
+            <WorkoutPrefsSheet
+                visible={showPrefsSheet}
+                rirEnabled={showRir}
+                onChangeRir={(enabled) => {
+                    setShowRir(enabled);
+                    settingsAPI.updateWorkoutPreferences({ log_rir_enabled: enabled }).catch(() => {});
+                }}
+                onDismiss={() => {
+                    setShowPrefsSheet(false);
+                    settingsAPI.updateWorkoutPreferences({ workout_prefs_seen: true }).catch(() => {});
+                }}
+            />
         </SafeAreaView>
     );
 };

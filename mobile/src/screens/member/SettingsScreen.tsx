@@ -30,6 +30,7 @@ const SettingsScreen = () => {
     const [units, setUnits] = useState<'metric' | 'imperial'>('metric');
     const [notifications, setNotifications] = useState(true);
     const [shareLogs, setShareLogs] = useState(true);
+    const [logRir, setLogRir] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
     // Load persisted settings on mount
@@ -58,6 +59,14 @@ const SettingsScreen = () => {
                 setNotifications(status.enabled);
             } catch (e) {
                 // default to true
+            }
+
+            // Load workout preferences
+            try {
+                const prefs = await settingsAPI.getWorkoutPreferences();
+                setLogRir(!!prefs.log_rir_enabled);
+            } catch (e) {
+                setLogRir(false);
             }
         };
         loadSettings();
@@ -98,6 +107,16 @@ const SettingsScreen = () => {
         } catch (e) {
             setShareLogs(!newValue);
             toast.error('Error', 'Failed to update sharing preferences');
+        }
+    };
+
+    const handleLogRirToggle = async (val: boolean) => {
+        setLogRir(val);
+        try {
+            await settingsAPI.updateWorkoutPreferences({ log_rir_enabled: val });
+        } catch (e: any) {
+            setLogRir(!val);
+            toast.error('Could not save', e.message || 'Please try again');
         }
     };
 
@@ -295,6 +314,8 @@ const SettingsScreen = () => {
                 <Text style={styles.sectionHeader}>PREFERENCES</Text>
                 <GlassCard style={StyleSheet.flatten([styles.card, { padding: 0 }])}>
                     {renderToggle('Push Notifications', notifications, handleNotificationsToggle)}
+                    <View style={styles.divider} />
+                    {renderToggle('Track RIR', logRir, handleLogRirToggle)}
                     <View style={styles.divider} />
                     <SettingItem
                         icon="straighten"
