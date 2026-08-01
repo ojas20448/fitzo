@@ -165,4 +165,71 @@ router.patch('/sharing', asyncHandler(async (req, res) => {
     });
 }));
 
+/**
+ * GET /api/settings/workout
+ * Workout logging preferences (RIR opt-in, first-run sheet state).
+ */
+router.get('/workout', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    const result = await query(
+        `SELECT log_rir_enabled, workout_prefs_seen
+         FROM users
+         WHERE id = $1`,
+        [userId]
+    );
+
+    if (result.rows.length === 0) {
+        throw new ValidationError('User not found');
+    }
+
+    res.json({
+        log_rir_enabled: result.rows[0].log_rir_enabled,
+        workout_prefs_seen: result.rows[0].workout_prefs_seen,
+    });
+}));
+
+/**
+ * PATCH /api/settings/workout
+ * Update either preference. Both fields are optional; at least one required.
+ */
+router.patch('/workout', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const { log_rir_enabled, workout_prefs_seen } = req.body;
+
+    const hasRir = log_rir_enabled !== undefined;
+    const hasSeen = workout_prefs_seen !== undefined;
+
+    if (!hasRir && !hasSeen) {
+        throw new ValidationError('Provide log_rir_enabled or workout_prefs_seen');
+    }
+    if (hasRir && typeof log_rir_enabled !== 'boolean') {
+        throw new ValidationError('log_rir_enabled must be a boolean');
+    }
+    if (hasSeen && typeof workout_prefs_seen !== 'boolean') {
+        throw new ValidationError('workout_prefs_seen must be a boolean');
+    }
+
+    // COALESCE keeps the untouched field at its current value, so a partial
+    // PATCH cannot silently reset the other preference.
+    const result = await query(
+        `UPDATE users
+            SET log_rir_enabled    = COALESCE($1, log_rir_enabled),
+                workout_prefs_seen = COALESCE($2, workout_prefs_seen)
+          WHERE id = $3
+      RETURNING log_rir_enabled, workout_prefs_seen`,
+        [hasRir ? log_rir_enabled : null, hasSeen ? workout_prefs_seen : null, userId]
+    );
+
+    if (result.rows.length === 0) {
+        throw new ValidationError('User not found');
+    }
+
+    res.json({
+        success: true,
+        log_rir_enabled: result.rows[0].log_rir_enabled,
+        workout_prefs_seen: result.rows[0].workout_prefs_seen,
+    });
+}));
+
 module.exports = router;
