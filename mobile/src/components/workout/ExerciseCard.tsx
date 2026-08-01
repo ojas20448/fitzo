@@ -15,21 +15,26 @@ import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 interface ExerciseCardProps {
     exercise: UserExercise;
     exerciseIndex: number;
+    /** When false the RIR column is hidden entirely — it is opt-in. */
+    showRir: boolean;
     onUpdateSet: (eIdx: number, sIdx: number, field: keyof ExerciseSet, value: any) => void;
     onAddSet: (eIdx: number) => void;
     onRemoveExercise: (eIdx: number) => void;
     onRemoveSet: (eIdx: number, sIdx: number) => void;
-    onOpenPicker: (eIdx: number, sIdx: number, type: 'weight' | 'reps') => void;
+    onToggleUnilateral: (eIdx: number) => void;
+    onOpenPicker: (eIdx: number, sIdx: number, type: 'weight' | 'reps' | 'rir') => void;
 }
 
 const ExerciseCard = React.memo<ExerciseCardProps>(
     ({
         exercise,
         exerciseIndex,
+        showRir,
         onUpdateSet,
         onAddSet,
         onRemoveExercise,
         onRemoveSet,
+        onToggleUnilateral,
         onOpenPicker,
     }) => {
         const handleToggleComplete = useCallback(
@@ -64,6 +69,30 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                                     <Text style={styles.targetTagText}>{exercise.target}</Text>
                                 </View>
                             ) : null}
+                            <TouchableOpacity
+                                onPress={() => onToggleUnilateral(exerciseIndex)}
+                                hitSlop={8}
+                                style={[
+                                    styles.unilateralPill,
+                                    exercise.is_unilateral && styles.unilateralPillActive,
+                                ]}
+                                accessibilityRole="button"
+                                accessibilityState={{ selected: !!exercise.is_unilateral }}
+                                accessibilityLabel={
+                                    exercise.is_unilateral
+                                        ? 'Logged one side at a time. Tap to switch to both sides.'
+                                        : 'Logged both sides. Tap if you do one side at a time.'
+                                }
+                            >
+                                <Text
+                                    style={[
+                                        styles.unilateralPillText,
+                                        exercise.is_unilateral && styles.unilateralPillTextActive,
+                                    ]}
+                                >
+                                    1 SIDE
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                     <TouchableOpacity
@@ -80,6 +109,7 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                     <Text style={[styles.colLabel, { width: 32 }]}>SET</Text>
                     <Text style={[styles.colLabel, { flex: 1, textAlign: 'center' }]}>KG</Text>
                     <Text style={[styles.colLabel, { flex: 1, textAlign: 'center' }]}>REPS</Text>
+                    {showRir && <Text style={[styles.colLabel, { width: 44 }]}>RIR</Text>}
                     <View style={{ width: 40 }} />
                 </View>
 
@@ -126,6 +156,24 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                                 {set.reps ? `${set.reps}` : '-'}
                             </Text>
                         </TouchableOpacity>
+
+                        {/* RIR cell */}
+                        {showRir && (
+                            <TouchableOpacity
+                                style={[styles.valueCell, { width: 44 }]}
+                                onPress={() => onOpenPicker(exerciseIndex, setIndex, 'rir')}
+                                accessibilityLabel={`RIR for set ${setIndex + 1}`}
+                            >
+                                <Text
+                                    style={[
+                                        styles.valueCellText,
+                                        (set.rir === undefined || set.rir === '') && styles.valueCellPlaceholder,
+                                    ]}
+                                >
+                                    {set.rir === undefined || set.rir === '' ? '-' : `${set.rir}`}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
 
                         {/* Checkmark */}
                         <TouchableOpacity
@@ -212,6 +260,27 @@ const styles = StyleSheet.create({
     },
     removeBtn: {
         padding: spacing.xs,
+    },
+    unilateralPill: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        borderRadius: borderRadius.sm,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        marginLeft: spacing.xs,
+    },
+    unilateralPillActive: {
+        borderColor: colors.primary,
+        backgroundColor: colors.glass.surfaceLight,
+    },
+    unilateralPillText: {
+        fontSize: typography.sizes['2xs'],
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.text.muted,
+        letterSpacing: 0.8,
+    },
+    unilateralPillTextActive: {
+        color: colors.text.primary,
     },
     tableHeader: {
         flexDirection: 'row',

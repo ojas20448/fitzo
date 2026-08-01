@@ -23,7 +23,7 @@ export interface UserExercise {
 
 export interface PickerConfig {
     visible: boolean;
-    type: 'weight' | 'reps';
+    type: 'weight' | 'reps' | 'rir';
     exerciseIndex: number;
     setIndex: number;
     currentValue: number;
