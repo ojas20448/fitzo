@@ -16,6 +16,8 @@ export interface UserExercise {
     name: string;
     gifUrl?: string;
     target?: string;
+    /** Entered per side — volume counts both. See backend/src/utils/volume.js */
+    is_unilateral?: boolean;
     sets: ExerciseSet[];
 }
 
@@ -46,3 +48,6 @@ export const WEIGHT_VALUES = Array.from(
     (_, i) => WEIGHT_MIN + i * WEIGHT_STEP,
 );
 export const REPS_VALUES = Array.from({ length: REPS_MAX - REPS_MIN + 1 }, (_, i) => REPS_MIN + i);
+export const RIR_MIN = 0;
+export const RIR_MAX = 5;
+export const RIR_VALUES = Array.from({ length: RIR_MAX - RIR_MIN + 1 }, (_, i) => RIR_MIN + i);

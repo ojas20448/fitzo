@@ -383,6 +383,19 @@ export const settingsAPI = {
         const response = await api.delete('/settings/gym');
         return response.data;
     },
+
+    getWorkoutPreferences: async (): Promise<{ log_rir_enabled: boolean; workout_prefs_seen: boolean }> => {
+        const response = await api.get('/settings/workout');
+        return response.data;
+    },
+
+    updateWorkoutPreferences: async (prefs: {
+        log_rir_enabled?: boolean;
+        workout_prefs_seen?: boolean;
+    }) => {
+        const response = await api.patch('/settings/workout', prefs);
+        return response.data;
+    },
 };
 
 // ===========================================
