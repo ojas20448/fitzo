@@ -30,9 +30,11 @@ import {
     ScrollWheelPicker,
     RestTimerPill,
     ExerciseCard,
+    WorkoutPrefsSheet,
     PICKER_HEIGHT,
     WEIGHT_VALUES,
     REPS_VALUES,
+    RIR_VALUES,
     REST_PRESETS,
 } from '../../components/workout';
 import type { ExerciseSet, UserExercise, PickerConfig } from '../../components/workout';
@@ -131,8 +133,18 @@ const WorkoutLogScreen: React.FC = () => {
     const [visibility, setVisibility] = useState<'friends' | 'private'>('friends');
     const [shareLogs, setShareLogs] = useState(true);
 
+    // Optional RIR logging — opt-in via Settings
+    const [showRir, setShowRir] = useState(false);
+    const [showPrefsSheet, setShowPrefsSheet] = useState(false);
+
     useEffect(() => {
         loadSharingPreference();
+        settingsAPI.getWorkoutPreferences()
+            .then((p) => {
+                setShowRir(!!p.log_rir_enabled);
+                if (!p.workout_prefs_seen) setShowPrefsSheet(true);
+            })
+            .catch(() => setShowRir(false));
     }, []);
 
     const loadSharingPreference = async () => {
@@ -392,6 +404,12 @@ const WorkoutLogScreen: React.FC = () => {
         [startRestTimer],
     );
 
+    const handleToggleUnilateral = useCallback((eIdx: number) => {
+        setUserExercises((prev) =>
+            prev.map((ex, i) => (i === eIdx ? { ...ex, is_unilateral: !ex.is_unilateral } : ex)),
+        );
+    }, []);
+
     const removeExercise = useCallback((index: number) => {
         Alert.alert('Remove Exercise', 'Are you sure you want to remove this exercise?', [
             { text: 'Cancel', style: 'cancel' },
@@ -416,11 +434,11 @@ const WorkoutLogScreen: React.FC = () => {
     // -----------------------------------------------------------------------
 
     const openPicker = useCallback(
-        (exerciseIndex: number, setIndex: number, type: 'weight' | 'reps') => {
+        (exerciseIndex: number, setIndex: number, type: 'weight' | 'reps' | 'rir') => {
             const set = userExercises[exerciseIndex]?.sets[setIndex];
             if (!set) return;
 
-            const raw = type === 'weight' ? set.weight_kg : set.reps;
+            const raw = type === 'weight' ? set.weight_kg : type === 'rir' ? set.rir : set.reps;
             const numVal = parseFloat(String(raw || 0)) || 0;
 
             setTypingValue(null); // always open on the wheel
@@ -479,7 +497,8 @@ const WorkoutLogScreen: React.FC = () => {
 
     const handlePickerConfirm = useCallback(
         (value: number) => {
-            const field = pickerConfig.type === 'weight' ? 'weight_kg' : 'reps';
+            const field =
+                pickerConfig.type === 'weight' ? 'weight_kg' : pickerConfig.type === 'rir' ? 'rir' : 'reps';
             updateSet(pickerConfig.exerciseIndex, pickerConfig.setIndex, field, value);
             closePicker();
         },
@@ -520,7 +539,9 @@ const WorkoutLogScreen: React.FC = () => {
                     const w = parseFloat(String(s.weight_kg || 0));
                     const r = parseFloat(String(s.reps || 0));
                     if (w > 0 && r > 0) {
-                        totalVolume += w * r;
+                        // Same rule as backend/src/utils/volume.js — unilateral
+                        // reps are per side, so both sides count.
+                        totalVolume += w * r * (ex.is_unilateral ? 2 : 1);
                         totalSets++;
                     }
                 }
@@ -563,14 +584,16 @@ const WorkoutLogScreen: React.FC = () => {
             <ExerciseCard
                 exercise={item}
                 exerciseIndex={index}
+                showRir={showRir}
                 onUpdateSet={updateSet}
                 onAddSet={addSet}
                 onRemoveExercise={removeExercise}
                 onRemoveSet={removeSet}
+                onToggleUnilateral={handleToggleUnilateral}
                 onOpenPicker={openPicker}
             />
         ),
-        [updateSet, addSet, removeExercise, removeSet, openPicker],
+        [showRir, updateSet, addSet, removeExercise, removeSet, handleToggleUnilateral, openPicker],
     );
 
     // Header component for FlatList
@@ -933,7 +956,11 @@ const WorkoutLogScreen: React.FC = () => {
                                 <Text style={styles.pickerCancelText}>Cancel</Text>
                             </TouchableOpacity>
                             <Text style={styles.pickerTitle}>
-                                {pickerConfig.type === 'weight' ? 'Weight (kg)' : 'Reps'}
+                                {pickerConfig.type === 'weight'
+                                    ? 'Weight (kg)'
+                                    : pickerConfig.type === 'rir'
+                                        ? 'RIR'
+                                        : 'Reps'}
                             </Text>
                             <TouchableOpacity
                                 onPress={() => handlePickerConfirm(typingValue !== null
@@ -981,12 +1008,22 @@ const WorkoutLogScreen: React.FC = () => {
                                     }
                                 />
                                 <Text style={styles.pickerTypeUnit}>
-                                    {pickerConfig.type === 'weight' ? 'kg' : 'reps'}
+                                    {pickerConfig.type === 'weight'
+                                        ? 'kg'
+                                        : pickerConfig.type === 'rir'
+                                            ? 'rir'
+                                            : 'reps'}
                                 </Text>
                             </View>
                         ) : (
                             <ScrollWheelPicker
-                                values={pickerConfig.type === 'weight' ? WEIGHT_VALUES : REPS_VALUES}
+                                values={
+                                    pickerConfig.type === 'weight'
+                                        ? WEIGHT_VALUES
+                                        : pickerConfig.type === 'rir'
+                                            ? RIR_VALUES
+                                            : REPS_VALUES
+                                }
                                 selectedValue={pickerConfig.currentValue}
                                 onValueChange={(v) =>
                                     setPickerConfig((prev) => ({ ...prev, currentValue: v }))
@@ -1006,6 +1043,19 @@ const WorkoutLogScreen: React.FC = () => {
                     </Animated.View>
                 </View>
             )}
+
+            <WorkoutPrefsSheet
+                visible={showPrefsSheet}
+                rirEnabled={showRir}
+                onChangeRir={(enabled) => {
+                    setShowRir(enabled);
+                    settingsAPI.updateWorkoutPreferences({ log_rir_enabled: enabled }).catch(() => {});
+                }}
+                onDismiss={() => {
+                    setShowPrefsSheet(false);
+                    settingsAPI.updateWorkoutPreferences({ workout_prefs_seen: true }).catch(() => {});
+                }}
+            />
         </SafeAreaView>
     );
 };

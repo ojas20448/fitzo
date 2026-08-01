@@ -12,6 +12,7 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler } = require('../utils/errors');
+const { VOLUME_SQL } = require('../utils/volume');
 
 router.use(authenticate);
 
@@ -35,7 +36,7 @@ router.get('/prs', asyncHandler(async (req, res) => {
                AND sl2.weight_kg = MAX(sl.weight_kg)
              ORDER BY ws2.completed_at DESC LIMIT 1
             ) as reps_at_max,
-            MAX(sl.weight_kg * sl.reps) as max_volume_single_set,
+            MAX(${VOLUME_SQL}) as max_volume_single_set,
             COUNT(DISTINCT ws.id) as times_performed,
             MAX(ws.completed_at) as last_performed
          FROM set_logs sl
@@ -67,8 +68,8 @@ router.get('/prs/:exerciseId', asyncHandler(async (req, res) => {
             ws.completed_at as date,
             MAX(sl.weight_kg) as best_weight,
             MAX(sl.reps) as best_reps,
-            MAX(sl.weight_kg * sl.reps) as best_volume_set,
-            SUM(sl.weight_kg * sl.reps) as total_volume,
+            MAX(${VOLUME_SQL}) as best_volume_set,
+            SUM(${VOLUME_SQL}) as total_volume,
             COUNT(sl.id) as total_sets
          FROM set_logs sl
          JOIN exercise_logs el ON sl.exercise_log_id = el.id
@@ -111,7 +112,7 @@ router.get('/volume', asyncHandler(async (req, res) => {
         SELECT
             date_trunc('week', ws.completed_at)::date as week_start,
             COALESCE(e.muscle_groups[1], el.muscle_group, 'other') as muscle_group,
-            SUM(sl.weight_kg * sl.reps) as total_volume,
+            SUM(${VOLUME_SQL}) as total_volume,
             COUNT(DISTINCT ws.id) as sessions,
             COUNT(sl.id) as total_sets
         FROM set_logs sl

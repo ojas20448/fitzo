@@ -5,6 +5,7 @@ const { authenticate } = require('../middleware/auth');
 const { asyncHandler, ValidationError, NotFoundError } = require('../utils/errors');
 const xpService = require('../services/xpService');
 const { invalidateContextPack } = require('../services/contextPack');
+const { parseRir } = require('../utils/rir');
 
 // All routes require authentication
 router.use(authenticate);
@@ -88,11 +89,14 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
         // attribution works even without a catalog match.
         const muscle = normalizeMuscle(ex.target) || normalizeMuscle(workoutType);
 
+        // Unilateral reps are entered per side; volume doubles. See utils/volume.js.
+        const isUnilateral = ex.is_unilateral === true;
+
         const logResult = await query(
-            `INSERT INTO exercise_logs (session_id, exercise_id, custom_exercise_name, order_index, muscle_group)
-             VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO exercise_logs (session_id, exercise_id, custom_exercise_name, order_index, muscle_group, is_unilateral)
+             VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING id`,
-            [sessionId, exerciseId, exerciseId ? null : name.slice(0, 100), i, muscle]
+            [sessionId, exerciseId, exerciseId ? null : name.slice(0, 100), i, muscle, isUnilateral]
         );
         const exerciseLogId = logResult.rows[0].id;
 
@@ -118,13 +122,15 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
             const reps = parseInt(sets[s].reps, 10) || 0;
             const weight = parseFloat(sets[s].weight_kg) || 0;
             if (reps <= 0 && weight <= 0) continue;
-            // RIR → RPE (rpe = 10 - rir), clamped to a sane 1–10
-            const rir = parseInt(sets[s].rir, 10);
-            const rpe = Number.isFinite(rir) ? Math.min(10, Math.max(1, 10 - rir)) : null;
+            // Store RIR as entered. The rpe derivation stays so anything
+            // already reading rpe keeps working.
+            const parsed = parseRir(sets[s].rir);
+            const rirValue = parsed.valid ? parsed.rir : null;
+            const rpe = rirValue !== null ? Math.min(10, Math.max(1, 10 - rirValue)) : null;
             await query(
-                `INSERT INTO set_logs (exercise_log_id, set_number, reps, weight_kg, is_warmup, rpe)
-                 VALUES ($1, $2, $3, $4, false, $5)`,
-                [exerciseLogId, s + 1, reps, weight, rpe]
+                `INSERT INTO set_logs (exercise_log_id, set_number, reps, weight_kg, is_warmup, rpe, rir)
+                 VALUES ($1, $2, $3, $4, false, $5, $6)`,
+                [exerciseLogId, s + 1, reps, weight, rpe, rirValue]
             );
             if (weight > 0 && (!bestSet || weight > bestSet.weight)) {
                 bestSet = { weight, reps };
