@@ -49,6 +49,29 @@ function computeCrowd(activeCount, capacity) {
 /**
  * Median gym session. Used to auto-expire a check-in when the member never
  * checked out — which is the common case, since checkout is optional.
+ *
+ * ─────────────────────────────────────────────────────────────────────────
+ * STATUS: this constant is the reference value; the two functions below are
+ * NOT called from production code.
+ *
+ * The occupancy rule actually runs as SQL, in three places that each repeat
+ * the 90-minute literal by hand because Postgres cannot cleanly parameterise
+ * an INTERVAL:
+ *   - src/routes/member.js   (member crowd light)
+ *   - src/routes/manager.js  (manager dashboard)
+ *   - src/db/schema.sql      get_crowd_level()  [no JS caller]
+ *
+ * presenceWindowEnd/isPresent below are the same rule expressed in JS, kept
+ * because they are unit-tested and therefore serve as the executable
+ * specification those three SQL sites are checked against. They are NOT dead
+ * code to be deleted on sight — but they are also not load-bearing, so do not
+ * assume changing them changes behaviour. Change the SQL too.
+ *
+ * Contrast src/utils/volume.js, which solves this better: it exports the rule
+ * as a SQL fragment string that every query interpolates, so there is exactly
+ * one definition. Migrating this rule to that pattern is worthwhile but was
+ * out of scope when the checkout feature landed.
+ * ─────────────────────────────────────────────────────────────────────────
  */
 const DEFAULT_SESSION_MINUTES = 90;
 

@@ -94,8 +94,13 @@ async function runQuietAlerts() {
 
                 try {
                     const result = await pushNotifications.sendToUser(m.id, {
-                        title: 'Your gym is quiet right now',
-                        body: 'Good window for a session — fewer people than usual.',
+                        // "usually", not "right now": currentScore is a historical
+                        // hour-of-week average, and this batch never consults live
+                        // occupancy. Claiming a live fact we did not check is the
+                        // kind of small dishonesty that costs trust in every other
+                        // number the app shows.
+                        title: 'Your gym is usually quiet now',
+                        body: 'Good window for a session — normally fewer people at this hour.',
                         // Top level: sendToUser reads notification.type to check the
                         // user's mute toggle. Nested in `data` it would be invisible.
                         type: pushNotifications.NotificationType.QUIET_HOURS,

@@ -284,10 +284,15 @@ DECLARE
   gym_capacity INTEGER;
   occupancy NUMERIC;
 BEGIN
+  -- Session length must match DEFAULT_SESSION_MINUTES in src/utils/crowd.js.
+  -- NOTE: this function has no caller in the JS codebase; it is kept in
+  -- step with routes/member.js and routes/manager.js so it cannot report a
+  -- third, contradictory occupancy number if anything ever calls it.
   SELECT COUNT(*) INTO checkin_count
   FROM attendances
   WHERE gym_id = p_gym_id
-  AND checked_in_at > NOW() - INTERVAL '60 minutes';
+  AND checked_in_at <= NOW()
+  AND COALESCE(checked_out_at, checked_in_at + INTERVAL '90 minutes') > NOW();
 
   SELECT COALESCE(capacity, 50) INTO gym_capacity FROM gyms WHERE id = p_gym_id;
   IF gym_capacity IS NULL OR gym_capacity <= 0 THEN

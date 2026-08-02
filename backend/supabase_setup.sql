@@ -285,10 +285,15 @@ RETURNS TABLE(level VARCHAR, count INTEGER) AS $$
 DECLARE
   checkin_count INTEGER;
 BEGIN
+  -- Session length must match DEFAULT_SESSION_MINUTES in src/utils/crowd.js.
+  -- NOTE: this function has no caller in the JS codebase; it is kept in
+  -- step with routes/member.js and routes/manager.js so it cannot report a
+  -- third, contradictory occupancy number if anything ever calls it.
   SELECT COUNT(*) INTO checkin_count
   FROM attendances
   WHERE gym_id = p_gym_id
-  AND checked_in_at > NOW() - INTERVAL '60 minutes';
+  AND checked_in_at <= NOW()
+  AND COALESCE(checked_out_at, checked_in_at + INTERVAL '90 minutes') > NOW();
   
   IF checkin_count < 20 THEN
     RETURN QUERY SELECT 'low'::VARCHAR, checkin_count;

@@ -480,7 +480,10 @@ const WorkoutLogScreen: React.FC = () => {
                 return null;
             }
             const v = pickerConfig.currentValue;
-            return v ? String(v % 1 === 0 ? v : Number(v.toFixed(2))) : '';
+            // Number.isFinite, not truthiness: 0 is a real value. For RIR it
+            // means "went to failure", so blanking it here would read back as
+            // "not recorded" — a different thing entirely.
+            return Number.isFinite(v) ? String(v % 1 === 0 ? v : Number(v.toFixed(2))) : '';
         });
     }, [pickerConfig.currentValue]);
 
