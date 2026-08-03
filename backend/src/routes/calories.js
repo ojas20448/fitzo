@@ -5,7 +5,8 @@ const { authenticate } = require('../middleware/auth');
 const { asyncHandler, ValidationError, NotFoundError } = require('../utils/errors');
 const cache = require('../services/cache');
 const xpService = require('../services/xpService');
-const { IST_TODAY_SQL } = require('../utils/dayBoundary');
+const { IST_TODAY_SQL, isValidDateString } = require('../utils/dayBoundary');
+const { validateEntryPatch } = require('../utils/entryEdit');
 
 // All routes require authentication
 router.use(authenticate);
@@ -97,6 +98,50 @@ router.get('/today', asyncHandler(async (req, res) => {
     });
 }));
 
+/**
+ * GET /api/calories/day/:date
+ * Entries for one day, 'YYYY-MM-DD'. Same shape as /today.
+ */
+router.get('/day/:date', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const { date } = req.params;
+
+    if (!isValidDateString(date)) {
+        throw new ValidationError('Date must be YYYY-MM-DD');
+    }
+
+    const entries = await query(
+        `SELECT * FROM calorie_logs
+          WHERE user_id = $1 AND logged_date = $2::date
+          ORDER BY created_at DESC`,
+        [userId, date]
+    );
+
+    const totals = await query(
+        `SELECT
+            COALESCE(SUM(calories), 0) as total_calories,
+            COALESCE(SUM(protein), 0) as total_protein,
+            COALESCE(SUM(carbs), 0) as total_carbs,
+            COALESCE(SUM(fat), 0) as total_fat,
+            COUNT(*) as entry_count
+         FROM calorie_logs
+         WHERE user_id = $1 AND logged_date = $2::date`,
+        [userId, date]
+    );
+
+    res.json({
+        date,
+        entries: entries.rows,
+        totals: {
+            calories: parseInt(totals.rows[0].total_calories),
+            protein: parseInt(totals.rows[0].total_protein),
+            carbs: parseInt(totals.rows[0].total_carbs),
+            fat: parseInt(totals.rows[0].total_fat),
+            entry_count: parseInt(totals.rows[0].entry_count),
+        },
+    });
+}));
+
 // ============================================
 // GET CALORIE HISTORY
 // ============================================
@@ -154,6 +199,47 @@ router.get('/feed', asyncHandler(async (req, res) => {
     );
 
     res.json({ feed: result.rows });
+}));
+
+// ============================================
+// EDIT A CALORIE ENTRY
+// ============================================
+
+/**
+ * PATCH /api/calories/:id
+ * Correct a logged entry. Only the fields sent are changed — omitted columns
+ * keep their current value, so fixing calories cannot blank the macros.
+ */
+router.patch('/:id', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const entryId = req.params.id;
+
+    const { valid, error, fields } = validateEntryPatch(req.body);
+    if (!valid) throw new ValidationError(error);
+
+    // Build a partial UPDATE from exactly the keys that were sent. COALESCE is
+    // not needed because absent keys never appear in the SET list at all.
+    const keys = Object.keys(fields);
+    const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+    const values = keys.map((k) => fields[k]);
+
+    const result = await query(
+        `UPDATE calorie_logs
+            SET ${setClause}
+          WHERE id = $${keys.length + 1} AND user_id = $${keys.length + 2}
+      RETURNING *`,
+        [...values, entryId, userId]
+    );
+
+    if (result.rows.length === 0) {
+        // 404 rather than 403: 403 would confirm the row exists but belongs to
+        // someone else. Matches the DELETE handler below.
+        throw new NotFoundError('Entry not found');
+    }
+
+    await cache.del(cache.keys.nutritionToday(userId));
+
+    res.json({ success: true, entry: result.rows[0] });
 }));
 
 // ============================================
