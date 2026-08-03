@@ -5,6 +5,7 @@ const { authenticate } = require('../middleware/auth');
 const { asyncHandler, ValidationError, NotFoundError } = require('../utils/errors');
 const cache = require('../services/cache');
 const xpService = require('../services/xpService');
+const { IST_TODAY_SQL } = require('../utils/dayBoundary');
 
 // All routes require authentication
 router.use(authenticate);
@@ -43,7 +44,7 @@ router.post('/', asyncHandler(async (req, res) => {
     // Auto-mark attendance for streak tracking
     await query(
         `INSERT INTO attendances (user_id, gym_id, check_date)
-         VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), CURRENT_DATE)
+         VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), ${IST_TODAY_SQL})
          ON CONFLICT (user_id, check_date) DO NOTHING`,
         [userId]
     );
@@ -65,22 +66,22 @@ router.get('/today', asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
     const entries = await query(
-        `SELECT * FROM calorie_logs 
-         WHERE user_id = $1 AND logged_date = CURRENT_DATE
+        `SELECT * FROM calorie_logs
+         WHERE user_id = $1 AND logged_date = ${IST_TODAY_SQL}
          ORDER BY created_at DESC`,
         [userId]
     );
 
     // Get daily totals
     const totals = await query(
-        `SELECT 
+        `SELECT
             COALESCE(SUM(calories), 0) as total_calories,
             COALESCE(SUM(protein), 0) as total_protein,
             COALESCE(SUM(carbs), 0) as total_carbs,
             COALESCE(SUM(fat), 0) as total_fat,
             COUNT(*) as entry_count
-         FROM calorie_logs 
-         WHERE user_id = $1 AND logged_date = CURRENT_DATE`,
+         FROM calorie_logs
+         WHERE user_id = $1 AND logged_date = ${IST_TODAY_SQL}`,
         [userId]
     );
 
@@ -134,7 +135,7 @@ router.get('/feed', asyncHandler(async (req, res) => {
                 SUM(c.calories) as total_calories
          FROM calorie_logs c
          JOIN users u ON c.user_id = u.id
-         WHERE c.logged_date >= CURRENT_DATE - INTERVAL '7 days'
+         WHERE c.logged_date >= ${IST_TODAY_SQL} - INTERVAL '7 days'
          AND (
              c.visibility = 'public'
              OR 
