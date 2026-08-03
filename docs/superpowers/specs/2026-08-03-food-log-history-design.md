@@ -96,7 +96,7 @@ Reads use the stored `logged_date` column rather than deriving from `created_at`
 |---|---|
 | `GET /api/calories/today` | Compare against IST rather than `CURRENT_DATE`. Response shape unchanged. |
 | `GET /api/calories/day/:date` | **New.** Entries for one `YYYY-MM-DD`, scoped to the caller. Same shape as `/today`. |
-| `PATCH /api/calories/:id` | **New.** Edit `food_name`, `calories`, `protein`, `carbs`, `fat`, `serving_size`, `meal_type`. Scoped to the caller's own row — another user's id returns 403, not 404, and never leaks whether it exists. |
+| `PATCH /api/calories/:id` | **New.** Edit `food_name`, `calories`, `protein`, `carbs`, `fat`, `serving_size`, `meal_type`. Scoped to the caller's own row via `WHERE id = $1 AND user_id = $2`, returning **404** when nothing matches — the same pattern `DELETE /:id` already uses (`calories.js:161-175`). |
 | `POST /api/nutrition/log`, `/log-bulk` | Stamp `logged_date` in IST |
 
 Validation for `PATCH` is a pure function so it is unit-testable without a database, reusing the bounds already established in `utils/mealCombo.js` (`MAX_ITEM_CALORIES`, `MAX_ITEM_MACRO_GRAMS`) rather than inventing a second set.
@@ -110,7 +110,7 @@ Validation for `PATCH` is a pure function so it is unit-testable without a datab
 
 ## Error handling
 
-- `PATCH` on someone else's entry → 403, without revealing existence.
+- `PATCH` on someone else's entry → **404**, matching the existing `DELETE`. This is deliberate and it is the non-leaking choice: 403 would confirm the row exists but belongs to someone else, which 404 does not. An earlier draft of this spec said "403, and never leaks whether it exists" — those two clauses contradict each other, and the existing code was already right.
 - `PATCH` with out-of-range macros → 400 naming the field, same bounds as bulk logging.
 - Invalid `:date` (not `YYYY-MM-DD`) → 400 before any query runs.
 - A failed edit leaves the sheet open with the values the member typed — never silently discard their input.
