@@ -11,9 +11,15 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 interface WorkoutCalendarProps {
     history: string[]; // Workout dates 'YYYY-MM-DD'
     foodHistory?: string[]; // Food dates 'YYYY-MM-DD'
+    /**
+     * Tapping a day opens that day's detail. Omit to keep days inert — this
+     * component is used in places that only want the at-a-glance dots, and
+     * their behaviour must not change.
+     */
+    onDayPress?: (date: string) => void;
 }
 
-const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history = [], foodHistory = [] }) => {
+const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history = [], foodHistory = [], onDayPress }) => {
     const [expanded, setExpanded] = useState(false);
     const today = new Date();
     const currentMonth = today.getMonth();
@@ -82,7 +88,17 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history = [], foodHis
                         const isPast = new Date(d.dateStr) < new Date(today.toDateString());
 
                         return (
-                            <View key={d.day} style={styles.dayContainer}>
+                            // A child Pressable receives the touch before the
+                            // parent, so tapping a day opens that day while
+                            // tapping the surrounding card still expands.
+                            <Pressable
+                                key={d.day}
+                                style={styles.dayContainer}
+                                onPress={onDayPress ? () => onDayPress(d.dateStr) : undefined}
+                                disabled={!onDayPress}
+                                accessibilityRole={onDayPress ? 'button' : undefined}
+                                accessibilityLabel={onDayPress ? `View food logged on ${d.dateStr}` : undefined}
+                            >
                                 <View style={[
                                     styles.dot,
                                     status === 'both' && styles.dotBoth,
@@ -98,7 +114,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history = [], foodHis
                                         {d.day}
                                     </Text>
                                 </View>
-                            </View>
+                            </Pressable>
                         );
                     })}
                 </View>

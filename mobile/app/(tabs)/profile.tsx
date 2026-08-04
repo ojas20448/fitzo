@@ -7,6 +7,7 @@ import {
     ScrollView,
     RefreshControl,
     Modal,
+    Pressable,
     TextInput,
     Linking,
     ActivityIndicator,
@@ -15,7 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
-import { memberAPI, caloriesAPI, nutritionAPI, measurementsAPI, settingsAPI } from '../../src/services/api';
+import { memberAPI, caloriesAPI, nutritionAPI, measurementsAPI, settingsAPI, CalorieEntry } from '../../src/services/api';
+import FoodEntrySheet from '../../src/components/FoodEntrySheet';
 import Avatar from '../../src/components/Avatar';
 import GlassCard from '../../src/components/GlassCard';
 import Button from '../../src/components/Button';
@@ -37,6 +39,16 @@ export default function ProfileScreen() {
         profile: null as any,
         latestMeasurement: null as any
     });
+    const [dayView, setDayView] = useState<{ date: string; entries: CalorieEntry[] } | null>(null);
+    const [openEntry, setOpenEntry] = useState<CalorieEntry | null>(null);
+
+    // Tapping a calendar dot opens that day's food. Failures show an empty day
+    // rather than nothing at all, so a tap always produces a visible response.
+    const openDay = useCallback((date: string) => {
+        caloriesAPI.getDay(date)
+            .then((r) => setDayView({ date, entries: r.entries || [] }))
+            .catch(() => setDayView({ date, entries: [] }));
+    }, []);
 
     // Edit State
     const [isEditing, setIsEditing] = useState(false);
@@ -237,7 +249,11 @@ export default function ProfileScreen() {
                 {/* Monthly Progress */}
                 <View style={styles.section}>
                     <Text style={styles.sectionLabel}>Activity History</Text>
-                    <WorkoutCalendar history={stats.history} foodHistory={stats.foodHistory} />
+                    <WorkoutCalendar
+                        history={stats.history}
+                        foodHistory={stats.foodHistory}
+                        onDayPress={openDay}
+                    />
                 </View>
 
                 {/* Biometrics & Health Section */}
@@ -476,11 +492,96 @@ export default function ProfileScreen() {
                     </View>
                 </SafeAreaView>
             </Modal>
+
+            {/* Day's food log — opened by tapping a calendar dot.
+                This and FoodEntrySheet are SIBLINGS on purpose: FoodEntrySheet
+                renders its own Modal, and nesting Modals is unreliable on
+                Android. */}
+            <Modal
+                visible={dayView !== null}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setDayView(null)}
+            >
+                <Pressable style={styles.dayBackdrop} onPress={() => setDayView(null)}>
+                    <Pressable style={styles.daySheet} onPress={(e) => e.stopPropagation()}>
+                        <Text style={styles.dayTitle}>{dayView?.date}</Text>
+
+                        {dayView?.entries.length === 0 ? (
+                            <Text style={styles.dayEmpty}>Nothing logged this day</Text>
+                        ) : (
+                            <ScrollView>
+                                {dayView?.entries.map((e) => (
+                                    <Pressable
+                                        key={e.id}
+                                        style={styles.dayRow}
+                                        onPress={() => setOpenEntry(e)}
+                                        accessibilityRole="button"
+                                        accessibilityLabel={`${e.food_name || 'Entry'}, ${e.calories} calories. Tap to edit or delete.`}
+                                    >
+                                        <Text style={styles.dayRowName} numberOfLines={1}>
+                                            {e.food_name || 'Entry'}
+                                        </Text>
+                                        <Text style={styles.dayRowKcal}>{e.calories} kcal</Text>
+                                    </Pressable>
+                                ))}
+                            </ScrollView>
+                        )}
+                    </Pressable>
+                </Pressable>
+            </Modal>
+
+            <FoodEntrySheet
+                entry={openEntry}
+                onClose={() => setOpenEntry(null)}
+                onChanged={() => { if (dayView) openDay(dayView.date); }}
+            />
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+    dayBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' },
+    daySheet: {
+        backgroundColor: colors.surface,
+        borderTopLeftRadius: borderRadius.xl,
+        borderTopRightRadius: borderRadius.xl,
+        padding: spacing.xl,
+        borderTopWidth: 1,
+        borderColor: colors.glass.border,
+        maxHeight: '70%',
+    },
+    dayTitle: {
+        fontSize: typography.sizes.lg,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.text.primary,
+        marginBottom: spacing.md,
+    },
+    dayEmpty: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        paddingVertical: spacing.lg,
+    },
+    dayRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.glass.border,
+    },
+    dayRowName: {
+        flex: 1,
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.primary,
+    },
+    dayRowKcal: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.text.primary,
+    },
     container: {
         flex: 1,
         backgroundColor: colors.background,
