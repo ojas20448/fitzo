@@ -5,6 +5,8 @@ const { authenticate } = require('../middleware/auth');
 const { asyncHandler, ValidationError, NotFoundError } = require('../utils/errors');
 const cache = require('../services/cache');
 const xpService = require('../services/xpService');
+const { IST_TODAY_SQL, isValidDateString } = require('../utils/dayBoundary');
+const { validateEntryPatch } = require('../utils/entryEdit');
 
 // All routes require authentication
 router.use(authenticate);
@@ -31,8 +33,8 @@ router.post('/', asyncHandler(async (req, res) => {
     }
 
     const result = await query(
-        `INSERT INTO calorie_logs (user_id, calories, protein, carbs, fat, food_name, visibility)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO calorie_logs (user_id, calories, protein, carbs, fat, food_name, visibility, logged_date)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, ${IST_TODAY_SQL})
          RETURNING *`,
         [userId, calories, protein, carbs, fat, meal_name || null, visibility]
     );
@@ -40,7 +42,16 @@ router.post('/', asyncHandler(async (req, res) => {
     // Award XP for logging
     await xpService.awardXP(userId, 2, 'nutrition', result.rows[0].id);
 
-    // Auto-mark attendance for streak tracking
+    // Auto-mark attendance for streak tracking.
+    //
+    // NOTE: CURRENT_DATE (UTC) on purpose, NOT the IST boundary used above.
+    // `attendances` is read by get_user_streak() (db/schema.sql), which
+    // initialises check_date := CURRENT_DATE and walks backwards in UTC, and by
+    // four other writers that all use CURRENT_DATE. Stamping IST here alone
+    // would put this row a day ahead of everything that reads it, so between
+    // 00:00 and 05:30 IST the day would read as missed and the streak would
+    // drop until UTC caught up. Moving attendances to IST is a separate change
+    // that has to move the streak function and all five writers together.
     await query(
         `INSERT INTO attendances (user_id, gym_id, check_date)
          VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), CURRENT_DATE)
@@ -65,22 +76,22 @@ router.get('/today', asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
     const entries = await query(
-        `SELECT * FROM calorie_logs 
-         WHERE user_id = $1 AND logged_date = CURRENT_DATE
+        `SELECT * FROM calorie_logs
+         WHERE user_id = $1 AND logged_date = ${IST_TODAY_SQL}
          ORDER BY created_at DESC`,
         [userId]
     );
 
     // Get daily totals
     const totals = await query(
-        `SELECT 
+        `SELECT
             COALESCE(SUM(calories), 0) as total_calories,
             COALESCE(SUM(protein), 0) as total_protein,
             COALESCE(SUM(carbs), 0) as total_carbs,
             COALESCE(SUM(fat), 0) as total_fat,
             COUNT(*) as entry_count
-         FROM calorie_logs 
-         WHERE user_id = $1 AND logged_date = CURRENT_DATE`,
+         FROM calorie_logs
+         WHERE user_id = $1 AND logged_date = ${IST_TODAY_SQL}`,
         [userId]
     );
 
@@ -93,6 +104,50 @@ router.get('/today', asyncHandler(async (req, res) => {
             fat: parseInt(totals.rows[0].total_fat),
             entry_count: parseInt(totals.rows[0].entry_count)
         }
+    });
+}));
+
+/**
+ * GET /api/calories/day/:date
+ * Entries for one day, 'YYYY-MM-DD'. Same shape as /today.
+ */
+router.get('/day/:date', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const { date } = req.params;
+
+    if (!isValidDateString(date)) {
+        throw new ValidationError('Date must be YYYY-MM-DD');
+    }
+
+    const entries = await query(
+        `SELECT * FROM calorie_logs
+          WHERE user_id = $1 AND logged_date = $2::date
+          ORDER BY created_at DESC`,
+        [userId, date]
+    );
+
+    const totals = await query(
+        `SELECT
+            COALESCE(SUM(calories), 0) as total_calories,
+            COALESCE(SUM(protein), 0) as total_protein,
+            COALESCE(SUM(carbs), 0) as total_carbs,
+            COALESCE(SUM(fat), 0) as total_fat,
+            COUNT(*) as entry_count
+         FROM calorie_logs
+         WHERE user_id = $1 AND logged_date = $2::date`,
+        [userId, date]
+    );
+
+    res.json({
+        date,
+        entries: entries.rows,
+        totals: {
+            calories: parseInt(totals.rows[0].total_calories),
+            protein: parseInt(totals.rows[0].total_protein),
+            carbs: parseInt(totals.rows[0].total_carbs),
+            fat: parseInt(totals.rows[0].total_fat),
+            entry_count: parseInt(totals.rows[0].entry_count),
+        },
     });
 }));
 
@@ -134,7 +189,7 @@ router.get('/feed', asyncHandler(async (req, res) => {
                 SUM(c.calories) as total_calories
          FROM calorie_logs c
          JOIN users u ON c.user_id = u.id
-         WHERE c.logged_date >= CURRENT_DATE - INTERVAL '7 days'
+         WHERE c.logged_date >= ${IST_TODAY_SQL} - INTERVAL '7 days'
          AND (
              c.visibility = 'public'
              OR 
@@ -153,6 +208,47 @@ router.get('/feed', asyncHandler(async (req, res) => {
     );
 
     res.json({ feed: result.rows });
+}));
+
+// ============================================
+// EDIT A CALORIE ENTRY
+// ============================================
+
+/**
+ * PATCH /api/calories/:id
+ * Correct a logged entry. Only the fields sent are changed — omitted columns
+ * keep their current value, so fixing calories cannot blank the macros.
+ */
+router.patch('/:id', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const entryId = req.params.id;
+
+    const { valid, error, fields } = validateEntryPatch(req.body);
+    if (!valid) throw new ValidationError(error);
+
+    // Build a partial UPDATE from exactly the keys that were sent. COALESCE is
+    // not needed because absent keys never appear in the SET list at all.
+    const keys = Object.keys(fields);
+    const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+    const values = keys.map((k) => fields[k]);
+
+    const result = await query(
+        `UPDATE calorie_logs
+            SET ${setClause}
+          WHERE id = $${keys.length + 1} AND user_id = $${keys.length + 2}
+      RETURNING *`,
+        [...values, entryId, userId]
+    );
+
+    if (result.rows.length === 0) {
+        // 404 rather than 403: 403 would confirm the row exists but belongs to
+        // someone else. Matches the DELETE handler below.
+        throw new NotFoundError('Entry not found');
+    }
+
+    await cache.del(cache.keys.nutritionToday(userId));
+
+    res.json({ success: true, entry: result.rows[0] });
 }));
 
 // ============================================

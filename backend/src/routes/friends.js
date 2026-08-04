@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { IST_TODAY_SQL } = require('../utils/dayBoundary');
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, ConflictError, NotFoundError, asyncHandler } = require('../utils/errors');
@@ -38,7 +39,7 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
        )) as worked_out_today,
        EXISTS(
          SELECT 1 FROM calorie_logs cl
-         WHERE cl.user_id = u.id AND cl.logged_date = CURRENT_DATE
+         WHERE cl.user_id = u.id AND cl.logged_date = ${IST_TODAY_SQL}
        ) as logged_food_today
      FROM friendships f
      JOIN users u ON f.friend_id = u.id

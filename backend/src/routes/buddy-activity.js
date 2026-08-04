@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { IST_TODAY_SQL } = require('../utils/dayBoundary');
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { NotFoundError, asyncHandler } = require('../utils/errors');
@@ -80,7 +81,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
         `SELECT id, food_name, calories, protein, carbs, fat, visibility, created_at
          FROM calorie_logs
          WHERE user_id = $1
-           AND logged_date = CURRENT_DATE
+           AND logged_date = ${IST_TODAY_SQL}
            AND (
              visibility = 'public'
              OR (visibility = 'friends' AND ($2 = true))
@@ -100,7 +101,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
            COUNT(*) as meal_count
          FROM calorie_logs
          WHERE user_id = $1
-           AND logged_date = CURRENT_DATE
+           AND logged_date = ${IST_TODAY_SQL}
            AND (
              visibility = 'public'
              OR (visibility = 'friends' AND ($2 = true))

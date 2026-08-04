@@ -664,6 +664,31 @@ export const workoutsAPI = {
 // CALORIES ENDPOINTS
 // ===========================================
 
+export interface CalorieEntry {
+    id: string;
+    food_name: string | null;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    serving_size: string | null;
+    meal_type: string | null;
+    logged_date: string;
+    created_at: string;
+}
+
+export interface CalorieDay {
+    date?: string;
+    entries: CalorieEntry[];
+    totals: {
+        calories: number;
+        protein: number;
+        carbs: number;
+        fat: number;
+        entry_count: number;
+    };
+}
+
 export const caloriesAPI = {
     log: async (data: { calories: number; protein?: number; carbs?: number; fat?: number; meal_name?: string; visibility?: string }) => {
         const response = await api.post('/calories', data);
@@ -675,6 +700,11 @@ export const caloriesAPI = {
         return response.data;
     },
 
+    getDay: async (date: string): Promise<CalorieDay> => {
+        const response = await api.get(`/calories/day/${date}`);
+        return response.data;
+    },
+
     getHistory: async (limit = 30) => {
         const response = await api.get(`/calories/history?limit=${limit}`);
         return response.data;
@@ -682,6 +712,19 @@ export const caloriesAPI = {
 
     getFeed: async () => {
         const response = await api.get('/calories/feed');
+        return response.data;
+    },
+
+    update: async (entryId: string, patch: {
+        food_name?: string;
+        calories?: number;
+        protein?: number;
+        carbs?: number;
+        fat?: number;
+        serving_size?: string;
+        meal_type?: string;
+    }) => {
+        const response = await api.patch(`/calories/${entryId}`, patch);
         return response.data;
     },
 

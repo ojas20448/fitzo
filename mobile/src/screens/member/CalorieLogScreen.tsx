@@ -19,12 +19,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { foodAPI, caloriesAPI, nutritionAPI, settingsAPI, aiAPI } from '../../services/api';
+import { foodAPI, caloriesAPI, nutritionAPI, settingsAPI, aiAPI, CalorieEntry } from '../../services/api';
 import Input from '../../components/Input';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import Celebration from '../../components/Celebration';
 import ThaliPresets from '../../components/ThaliPresets';
+import FoodEntrySheet from '../../components/FoodEntrySheet';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius, shadows, shadow } from '../../styles/theme';
 import { defaultFoods } from '../../data/defaultFoods';
@@ -124,6 +125,16 @@ const CalorieLogScreen: React.FC = () => {
     const [recording, setRecording] = useState<Audio.Recording | null>(null);
     const [isRecording, setIsRecording] = useState(false);
     const [transcribing, setTranscribing] = useState(false);
+    const [todayEntries, setTodayEntries] = useState<CalorieEntry[]>([]);
+    const [openEntry, setOpenEntry] = useState<CalorieEntry | null>(null);
+
+    const loadTodayEntries = useCallback(() => {
+        caloriesAPI.getToday()
+            .then((r) => setTodayEntries(r.entries || []))
+            .catch(() => setTodayEntries([]));
+    }, []);
+
+    useEffect(() => { loadTodayEntries(); }, [loadTodayEntries]);
 
     useEffect(() => {
         if (params.foodName && params.calories) {
@@ -620,6 +631,7 @@ const CalorieLogScreen: React.FC = () => {
 
             // 2. Success Feedback
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            loadTodayEntries();
             if (isGoalHit) {
                 toast.success('GOAL REACHED!', `You've hit your daily targets!`);
                 goBack();
@@ -726,6 +738,7 @@ const CalorieLogScreen: React.FC = () => {
                 onLogged={(preset, kcal) => {
                     toast.success('Logged!', `${preset.name} · ${kcal} kcal`);
                     refreshToday();
+                    loadTodayEntries();
                 }}
                 onError={(message) => {
                     toast.error('Could not log meal', message);
@@ -966,6 +979,39 @@ const CalorieLogScreen: React.FC = () => {
                     </View>
                 )
             }
+
+            {todayEntries.length > 0 && (
+                <View style={styles.todayBlock}>
+                    <Text style={styles.servingPickerLabel}>TODAY'S LOG</Text>
+                    {/* Bounded and scrollable: this block is a sibling in a
+                        flex column, so an unbounded list pushes later entries
+                        off-screen where they cannot be tapped — and tapping is
+                        the whole point of the list. */}
+                    <ScrollView style={styles.todayList} nestedScrollEnabled>
+                    {todayEntries.map((e) => (
+                        <Pressable
+                            key={e.id}
+                            onPress={() => setOpenEntry(e)}
+                            style={styles.todayRow}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${e.food_name || 'Entry'}, ${e.calories} calories. Tap to edit or delete.`}
+                        >
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.todayName} numberOfLines={1}>{e.food_name || 'Entry'}</Text>
+                                {!!e.serving_size && <Text style={styles.todayServing} numberOfLines={1}>{e.serving_size}</Text>}
+                            </View>
+                            <Text style={styles.todayKcal}>{e.calories} kcal</Text>
+                        </Pressable>
+                    ))}
+                    </ScrollView>
+                </View>
+            )}
+
+            <FoodEntrySheet
+                entry={openEntry}
+                onClose={() => setOpenEntry(null)}
+                onChanged={loadTodayEntries}
+            />
 
             {/* Food Detail Modal */}
             <Modal
@@ -2098,6 +2144,38 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
+    },
+    todayBlock: {
+        marginTop: spacing.lg,
+        // Bounds the block so it cannot consume the whole column. Roughly five
+        // rows visible; the rest scroll.
+        maxHeight: 280,
+    },
+    todayList: {
+        flexGrow: 0,
+    },
+    todayRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.glass.border,
+    },
+    todayName: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.primary,
+    },
+    todayServing: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        marginTop: 2,
+    },
+    todayKcal: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.text.primary,
     },
 });
 
