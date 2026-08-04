@@ -16,8 +16,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
-import { memberAPI, caloriesAPI, nutritionAPI, measurementsAPI, settingsAPI, CalorieEntry } from '../../src/services/api';
+import { memberAPI, caloriesAPI, nutritionAPI, measurementsAPI, settingsAPI, CalorieEntry, WeekSummary } from '../../src/services/api';
 import FoodEntrySheet from '../../src/components/FoodEntrySheet';
+import WeeklyNutritionCard from '../../src/components/WeeklyNutritionCard';
 import Avatar from '../../src/components/Avatar';
 import GlassCard from '../../src/components/GlassCard';
 import Button from '../../src/components/Button';
@@ -39,6 +40,7 @@ export default function ProfileScreen() {
         profile: null as any,
         latestMeasurement: null as any
     });
+    const [weekSummary, setWeekSummary] = useState<WeekSummary | null>(null);
     const [dayView, setDayView] = useState<{ date: string; entries: CalorieEntry[] } | null>(null);
     const [openEntry, setOpenEntry] = useState<CalorieEntry | null>(null);
 
@@ -81,13 +83,18 @@ export default function ProfileScreen() {
 
     const loadData = async () => {
         try {
-            const [homeRes, caloriesRes, profileRes, measurementsRes, calHistoryRes] = await Promise.all([
+            const [homeRes, caloriesRes, profileRes, measurementsRes, calHistoryRes, weeklyRes] = await Promise.all([
                 memberAPI.getHome(),
                 caloriesAPI.getToday().catch(() => ({ totals: { calories: 0, entry_count: 0 } })),
                 nutritionAPI.getProfile().catch(() => ({ profile: null })),
                 measurementsAPI.getLatest().catch(() => ({ measurement: null })),
-                caloriesAPI.getHistory(30).catch(() => ({ history: [] }))
+                caloriesAPI.getHistory(30).catch(() => ({ history: [] })),
+                nutritionAPI.getWeekly().catch(() => ({ history: [], summary: null }))
             ]);
+
+            // ?? null because the .catch path yields null, but a malformed
+            // success response could omit `summary` entirely.
+            setWeekSummary(weeklyRes.summary ?? null);
 
             // Extract unique dates from calorie entries.
             //
@@ -263,6 +270,11 @@ export default function ProfileScreen() {
                 {/* Monthly Progress */}
                 <View style={styles.section}>
                     <Text style={styles.sectionLabel}>Activity History</Text>
+                    <WeeklyNutritionCard
+                        summary={weekSummary}
+                        onPress={() => router.push('/member/nutrition-insights' as any)}
+                    />
+
                     <WorkoutCalendar
                         history={stats.history}
                         foodHistory={stats.foodHistory}

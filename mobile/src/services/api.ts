@@ -774,9 +774,27 @@ export const foodAPI = {
 // NUTRITION PROFILE ENDPOINTS
 // ===========================================
 
+export interface WeekSummary {
+    daysLogged: number;
+    /** Averaged over days LOGGED, not over 7 — see backend/src/utils/weekSummary.js */
+    avgCalories: number;
+    avgProtein: number;
+    /** Days within +/-10% of the calorie target — a band, not a ceiling. */
+    calorieTargetDays: number;
+    /** Days at or above the protein target — a floor. */
+    proteinTargetDays: number;
+    targetCalories: number;
+    targetProtein: number;
+}
+
 export const nutritionAPI = {
     getProfile: async () => {
         const response = await api.get('/nutrition/profile');
+        return response.data;
+    },
+
+    getWeekly: async (): Promise<{ history: any[]; summary: WeekSummary }> => {
+        const response = await api.get('/nutrition/weekly');
         return response.data;
     },
 
