@@ -5,6 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
+const { summariseWeek } = require('../utils/weekSummary');
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, asyncHandler } = require('../utils/errors');
@@ -327,22 +328,36 @@ router.get('/today', authenticate, asyncHandler(async (req, res) => {
 router.get('/weekly', authenticate, asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
-    const result = await query(
-        `SELECT
-            logged_date as date,
-            SUM(calories) as calories,
-            SUM(protein) as protein,
-            SUM(carbs) as carbs,
-            SUM(fat) as fat
-         FROM calorie_logs
-         WHERE user_id = $1
-           AND logged_date > ${IST_TODAY_SQL} - INTERVAL '7 days'
-         GROUP BY logged_date
-         ORDER BY date ASC`,
-        [userId]
-    );
+    // Independent queries — run them together rather than in sequence.
+    const [result, profileResult] = await Promise.all([
+        query(
+            `SELECT
+                logged_date as date,
+                SUM(calories) as calories,
+                SUM(protein) as protein,
+                SUM(carbs) as carbs,
+                SUM(fat) as fat
+             FROM calorie_logs
+             WHERE user_id = $1
+               AND logged_date > ${IST_TODAY_SQL} - INTERVAL '7 days'
+             GROUP BY logged_date
+             ORDER BY date ASC`,
+            [userId]
+        ),
+        query(
+            `SELECT target_calories, target_protein
+             FROM nutrition_profiles WHERE user_id = $1`,
+            [userId]
+        ),
+    ]);
 
-    res.json({ history: result.rows });
+    // `history` keeps its existing shape and meaning — StatsScreen consumes it.
+    // `summary` is additive. summariseWeek applies its own target defaults when
+    // the member has no nutrition_profiles row.
+    res.json({
+        history: result.rows,
+        summary: summariseWeek(result.rows, profileResult.rows[0]),
+    });
 }));
 
 /**
