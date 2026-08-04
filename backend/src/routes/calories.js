@@ -33,8 +33,8 @@ router.post('/', asyncHandler(async (req, res) => {
     }
 
     const result = await query(
-        `INSERT INTO calorie_logs (user_id, calories, protein, carbs, fat, food_name, visibility)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO calorie_logs (user_id, calories, protein, carbs, fat, food_name, visibility, logged_date)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, ${IST_TODAY_SQL})
          RETURNING *`,
         [userId, calories, protein, carbs, fat, meal_name || null, visibility]
     );
@@ -42,10 +42,19 @@ router.post('/', asyncHandler(async (req, res) => {
     // Award XP for logging
     await xpService.awardXP(userId, 2, 'nutrition', result.rows[0].id);
 
-    // Auto-mark attendance for streak tracking
+    // Auto-mark attendance for streak tracking.
+    //
+    // NOTE: CURRENT_DATE (UTC) on purpose, NOT the IST boundary used above.
+    // `attendances` is read by get_user_streak() (db/schema.sql), which
+    // initialises check_date := CURRENT_DATE and walks backwards in UTC, and by
+    // four other writers that all use CURRENT_DATE. Stamping IST here alone
+    // would put this row a day ahead of everything that reads it, so between
+    // 00:00 and 05:30 IST the day would read as missed and the streak would
+    // drop until UTC caught up. Moving attendances to IST is a separate change
+    // that has to move the streak function and all five writers together.
     await query(
         `INSERT INTO attendances (user_id, gym_id, check_date)
-         VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), ${IST_TODAY_SQL})
+         VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), CURRENT_DATE)
          ON CONFLICT (user_id, check_date) DO NOTHING`,
         [userId]
     );

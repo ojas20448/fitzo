@@ -89,11 +89,25 @@ export default function ProfileScreen() {
                 caloriesAPI.getHistory(30).catch(() => ({ history: [] }))
             ]);
 
-            // Extract unique dates from calorie entries
+            // Extract unique dates from calorie entries.
+            //
+            // logged_date is already a 'YYYY-MM-DD' day, stamped server-side in
+            // IST. Take its leading 10 characters rather than round-tripping it
+            // through `new Date(...).toISOString()`: that parses the date at the
+            // device's local midnight and re-serialises in UTC, which shifts the
+            // day by one for any device east of UTC — including IST, the very
+            // timezone this feature standardises on. The dot would then point at
+            // the wrong day and open an empty sheet.
             const foodDates = calHistoryRes.history
                 ? [...new Set(calHistoryRes.history.map((entry: any) => {
-                    const date = entry.logged_date || entry.created_at;
-                    return date ? new Date(date).toISOString().split('T')[0] : null;
+                    if (typeof entry.logged_date === 'string') {
+                        return entry.logged_date.slice(0, 10);
+                    }
+                    // Fallback only: created_at is a timestamp, so it genuinely
+                    // needs converting, and there is no better source here.
+                    return entry.created_at
+                        ? new Date(entry.created_at).toISOString().slice(0, 10)
+                        : null;
                 }).filter(Boolean))] as string[]
                 : [];
 

@@ -981,8 +981,13 @@ const CalorieLogScreen: React.FC = () => {
             }
 
             {todayEntries.length > 0 && (
-                <View style={{ marginTop: spacing.lg }}>
+                <View style={styles.todayBlock}>
                     <Text style={styles.servingPickerLabel}>TODAY'S LOG</Text>
+                    {/* Bounded and scrollable: this block is a sibling in a
+                        flex column, so an unbounded list pushes later entries
+                        off-screen where they cannot be tapped — and tapping is
+                        the whole point of the list. */}
+                    <ScrollView style={styles.todayList} nestedScrollEnabled>
                     {todayEntries.map((e) => (
                         <Pressable
                             key={e.id}
@@ -998,6 +1003,7 @@ const CalorieLogScreen: React.FC = () => {
                             <Text style={styles.todayKcal}>{e.calories} kcal</Text>
                         </Pressable>
                     ))}
+                    </ScrollView>
                 </View>
             )}
 
@@ -2138,6 +2144,15 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
+    },
+    todayBlock: {
+        marginTop: spacing.lg,
+        // Bounds the block so it cannot consume the whole column. Roughly five
+        // rows visible; the rest scroll.
+        maxHeight: 280,
+    },
+    todayList: {
+        flexGrow: 0,
     },
     todayRow: {
         flexDirection: 'row',

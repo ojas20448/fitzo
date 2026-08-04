@@ -110,7 +110,12 @@ const FoodEntrySheet: React.FC<FoodEntrySheetProps> = ({ entry, onClose, onChang
                                     />
                                 ) : (
                                     <Text style={styles.macroValue}>
-                                        {entry[m.key]} {m.unit}
+                                        {/* protein/carbs/fat are nullable in the
+                                            DB. Without `?? 0` a null renders as
+                                            an empty string here while edit mode
+                                            shows 0 — the same entry appearing to
+                                            hold two different values. */}
+                                        {entry[m.key] ?? 0} {m.unit}
                                     </Text>
                                 )}
                             </View>
