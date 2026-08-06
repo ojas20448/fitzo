@@ -1,7 +1,7 @@
 # Learn: Library, Not a Locked Path — Design
 
 **Date:** 2026-08-06
-**Status:** Approved
+**Status:** Approved (amended 2026-08-06 — see "Correction" under API)
 
 ## Problem
 
@@ -110,11 +110,27 @@ Tags are matched by lesson `title`, which is `VARCHAR(100)` and currently unique
 |---|---|
 | `GET /api/learn/lessons` | Returns `topics`, `read_seconds`, and a **real** `question_count` via `jsonb_array_length(l.questions)`. Drops `is_next` in favour of `suggested_next` (see below). |
 | `GET /api/learn/lessons/:id` | Unchanged shape; still strips `correct` |
-| `POST /api/learn/attempt` | **Also returns `explanations[]`** alongside `correct_answers` |
+| `POST /api/learn/attempt` | Returns `explanations[]` alongside `correct_answers` — **plumbing only, see below** |
 | `GET /api/settings/learn` | **New.** `{ start_here_dismissed: boolean }` |
 | `PATCH /api/settings/learn` | **New.** Sets it |
 
 `suggested_next` replaces `is_next`: same computation (first incomplete lesson by `unit, order_index`), but the name stops implying that anything else is unavailable. Only the "Start here" strip reads it.
+
+### Correction: the "discarded explanations" P0 was a false finding
+
+An earlier draft of this spec carried a P0 stating that every seeded question holds an `explanation` string which the API strips and throws away, fixable in two backend lines. **That was verified against the live database and the seed file and is false.**
+
+- Question shape is exactly `{ question, options, correct }` — no `explanation` key.
+- `grep -c explanation backend/src/db/migrate_learn_content.sql` returns **0**.
+- **0 of 22 lessons** have any question carrying the field.
+
+The example strings quoted in that draft do not exist anywhere in the repository. The design-review assessor fabricated them, and the claim was propagated into this spec without being checked against the data.
+
+**The underlying observation survives:** after a wrong answer the quiz tells you the correct letter and nothing else, which is the weakest moment in a learning product. But the fix is to *write* 88 explanation strings (22 lessons × 4 questions) — authorship, belonging to the content deliverable, not a backend change.
+
+**What this scope does instead:** build the plumbing so the content drops in without touching code again. `/attempt` maps `questions[i].explanation ?? null` into an `explanations[]` array; the result screen renders one only when non-null. Today every entry is null and nothing renders. The moment explanations are authored they appear with no further work.
+
+This is recorded rather than quietly deleted because the false claim reached the user as a headline finding, and the record of *how* it got through is worth more than a clean-looking document.
 
 The dismissal flag is stored as **`users.learn_start_here_dismissed BOOLEAN NOT NULL DEFAULT false`**, added by the same migration as the `learn_lessons` columns. This follows the existing `users.share_logs_default` pattern — a direct boolean column exposed via `GET`/`PATCH /api/settings/<topic>` — matching `/api/settings/workout` shipped earlier. The `PATCH` must use the `COALESCE($1, column)` shape from that endpoint so a partial body cannot reset an unrelated field.
 
@@ -136,7 +152,7 @@ Replaces the timeline entirely. Top to bottom:
 | Fix | Severity |
 |---|---|
 | Hoist the lesson header out of the success branch so the close-X always exists; add an error state with retry. Currently `if (loading \|\| !lesson)` leaves a failed fetch on a **permanent skeleton with no exit**. | P0 |
-| Return `explanations[]` from `/attempt` and render under every answer, right or wrong | P0 |
+| **Explanation plumbing only** — `/attempt` returns `explanations[]` (an array of `question.explanation ?? null`), the result screen renders one under an answer *when non-null*. **This renders nothing today** — see the correction note below. | P2 |
 | `finishQuiz` retries from the immutable `finalAnswers` local, never re-appending to `answers` — kills the duplicate-append permanent soft-lock | P0 |
 | Real `question_count` — the list currently falls through `lesson.questions?.length \|\| 5` to the literal **5 on all 22 cards**, contradicting the reader one tap later | P1 |
 | `accessibilityRole` / `accessibilityLabel` / `accessibilityState` on every card, quiz radio, and progress bar. Currently **zero** across 1,285 lines. | P1 |
