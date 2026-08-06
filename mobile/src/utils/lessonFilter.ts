@@ -12,7 +12,6 @@ export interface FilterableLesson {
     title?: string | null;
     description?: string | null;
     topics?: string[] | null;
-    [key: string]: unknown;
 }
 
 export interface FilterLessonsOptions {
