@@ -396,31 +396,63 @@ export const settingsAPI = {
         const response = await api.patch('/settings/workout', prefs);
         return response.data;
     },
+
+    getLearnPreferences: async (): Promise<{ start_here_dismissed: boolean }> => {
+        const response = await api.get('/settings/learn');
+        return response.data;
+    },
+
+    updateLearnPreferences: async (prefs: { start_here_dismissed: boolean }) => {
+        const response = await api.patch('/settings/learn', prefs);
+        return response.data;
+    },
 };
 
 // ===========================================
 // LEARN ENDPOINTS
 // ===========================================
 
+export interface Lesson {
+    id: string;
+    title: string;
+    description: string | null;
+    unit: number;
+    unit_title: string;
+    order_index: number;
+    topics: string[];
+    connects_to: string | null;
+    read_seconds: number | null;
+    question_count: number;
+    completed: boolean;
+    last_score: number | null;
+    xp_reward: number;
+}
+
+export interface LearnLibrary {
+    lessons: Lesson[];
+    progress: { total_xp: number; lessons_completed: number; total_lessons: number };
+    suggested_next_id: string | null;
+    offline?: boolean;
+}
+
 export const learnAPI = {
-    getLessons: async () => {
+    getLessons: async (): Promise<LearnLibrary> => {
         try {
             const response = await api.get('/learn/lessons');
-            // Cache units for offline use
-            if (response.data?.units) {
-                useOfflineStore.getState().cacheUnits(response.data.units);
+            if (response.data?.lessons) {
+                useOfflineStore.getState().cacheLessons(response.data.lessons);
             }
             return response.data;
         } catch (error: any) {
             if (error.code === 'NETWORK_ERROR') {
-                const units = useOfflineStore.getState().getUnits();
-                // `progress: {}` was truthy, so LearnScreen's `response.progress || {default}`
-                // never applied its default — rendering "undefined/12 Lessons", "NaN%" and
-                // width: "NaN%". Always return a fully-shaped progress object.
-                if (units.length > 0) {
+                const lessons = useOfflineStore.getState().getLessons();
+                if (lessons.length > 0) {
+                    // Always a fully-shaped progress object: a truthy `{}` used to
+                    // defeat the screen's `|| {default}` and render "NaN%".
                     return {
-                        units,
-                        progress: { total_xp: 0, lessons_completed: 0 },
+                        lessons,
+                        progress: { total_xp: 0, lessons_completed: 0, total_lessons: lessons.length },
+                        suggested_next_id: lessons.find((l) => !l.completed)?.id ?? null,
                         offline: true,
                     };
                 }
