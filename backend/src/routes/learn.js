@@ -171,9 +171,15 @@ router.post('/attempt', authenticate, asyncHandler(async (req, res) => {
     // Calculate score
     let correct = 0;
     const correctAnswers = [];
+    const explanations = [];
 
     for (let i = 0; i < questions.length; i++) {
         correctAnswers.push(questions[i].correct);
+        // Plumbing only. NO seeded question currently carries an explanation
+        // (verified: 0 of 22). This stays null until content is authored, at
+        // which point it appears with no further code change. Do not invent
+        // explanation text here.
+        explanations.push(questions[i].explanation ?? null);
         if (answers[i] === questions[i].correct) {
             correct++;
         }
@@ -198,6 +204,7 @@ router.post('/attempt', authenticate, asyncHandler(async (req, res) => {
         correct_count: correct,
         total_questions: questions.length,
         correct_answers: correctAnswers,
+        explanations,
         passed,
         xp_earned: xpEarned,
         message: passed ? "Great job! 🎉" : "Keep practicing! 💪"
