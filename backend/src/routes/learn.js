@@ -7,7 +7,8 @@ const xpService = require('../services/xpService');
 
 /**
  * GET /api/learn/lessons
- * Get all lessons grouped by unit
+ * Get the flat lesson library with per-lesson completion status.
+ * Every lesson is reachable; suggested_next_id is a suggestion, not a gate.
  */
 router.get('/lessons', authenticate, asyncHandler(async (req, res) => {
     try {
@@ -16,59 +17,60 @@ router.get('/lessons', authenticate, asyncHandler(async (req, res) => {
 
         // Get all lessons with completion status
         const lessonsResult = await query(
-            `SELECT 
-       l.id,
-       l.title,
-       l.unit,
-       l.unit_title,
-       l.order_index,
-       l.description,
-       l.xp_reward,
-       CASE WHEN la.completed THEN true ELSE false END as completed,
-       la.score as last_score
-     FROM learn_lessons l
-     LEFT JOIN (
-       SELECT DISTINCT ON (lesson_id) lesson_id, completed, score
-       FROM learn_attempts
-       WHERE user_id = $1
-       ORDER BY lesson_id, attempted_at DESC
-     ) la ON l.id = la.lesson_id
-     ORDER BY l.unit, l.order_index`,
+            `SELECT
+                l.id,
+                l.title,
+                l.unit,
+                l.unit_title,
+                l.order_index,
+                l.description,
+                l.xp_reward,
+                l.topics,
+                l.connects_to,
+                l.read_seconds,
+                -- Real count. The client previously fell through
+                -- lesson.questions?.length || 5 to the literal 5 on every
+                -- card, contradicting the reader one tap later.
+                jsonb_array_length(l.questions)::int AS question_count,
+                CASE WHEN la.completed THEN true ELSE false END as completed,
+                la.score as last_score
+             FROM learn_lessons l
+             LEFT JOIN (
+               SELECT DISTINCT ON (lesson_id) lesson_id, completed, score
+               FROM learn_attempts
+               WHERE user_id = $1
+               ORDER BY lesson_id, attempted_at DESC
+             ) la ON l.id = la.lesson_id
+             ORDER BY l.unit, l.order_index`,
             [userId]
         );
 
         if (process.env.NODE_ENV !== 'production') console.log('Lessons query successful, row count:', lessonsResult.rows.length);
 
-        // Group by unit
-        const unitsMap = new Map();
-        let foundNext = false;
+        // Flat list: every lesson is reachable. Ordering is preserved so the
+        // optional "Start here" strip can suggest a sequence without gating.
+        const lessons = lessonsResult.rows.map((l) => ({
+            id: l.id,
+            title: l.title,
+            description: l.description,
+            unit: l.unit,
+            unit_title: l.unit_title,
+            order_index: l.order_index,
+            topics: l.topics || [],
+            connects_to: l.connects_to,
+            read_seconds: l.read_seconds,
+            question_count: l.question_count,
+            completed: l.completed,
+            last_score: l.last_score,
+            xp_reward: l.xp_reward,
+        }));
 
-        for (const lesson of lessonsResult.rows) {
-            if (!unitsMap.has(lesson.unit)) {
-                unitsMap.set(lesson.unit, {
-                    number: lesson.unit,
-                    title: lesson.unit_title,
-                    lessons: []
-                });
-            }
-
-            const isNext = !foundNext && !lesson.completed;
-            if (isNext) foundNext = true;
-
-            unitsMap.get(lesson.unit).lessons.push({
-                id: lesson.id,
-                title: lesson.title,
-                description: lesson.description,
-                completed: lesson.completed,
-                last_score: lesson.last_score,
-                xp_reward: lesson.xp_reward,
-                is_next: isNext
-            });
-        }
+        // Suggestion, not a gate. Named to stop implying the rest are locked.
+        const suggested = lessons.find((l) => !l.completed) || null;
 
         // Get user progress
         const progressResult = await query(
-            `SELECT 
+            `SELECT
        (SELECT xp_points FROM users WHERE id = $1) as total_xp,
        COUNT(*) FILTER (WHERE la.completed) as lessons_completed
      FROM learn_attempts la
@@ -81,12 +83,13 @@ router.get('/lessons', authenticate, asyncHandler(async (req, res) => {
         const progress = progressResult.rows[0];
 
         res.json({
-            units: Array.from(unitsMap.values()),
+            lessons,
             progress: {
-                total_xp: progress.total_xp || 0,
+                total_xp: parseInt(progress.total_xp) || 0,
                 lessons_completed: parseInt(progress.lessons_completed) || 0,
-                current_streak: 0 // Could track learning streak separately
-            }
+                total_lessons: lessons.length,
+            },
+            suggested_next_id: suggested ? suggested.id : null,
         });
     } catch (error) {
         console.error('CRITICAL ERROR in GET /lessons:', error);
