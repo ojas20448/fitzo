@@ -39,7 +39,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.fitzo.app",
-      "versionCode": 6,
+      "versionCode": 7,
       "minSdkVersion": 26,
       "permissions": [
         "android.permission.CAMERA",
