@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
@@ -262,7 +263,7 @@ router.post('/google', asyncHandler(async (req, res) => {
         throw new AuthError('Google authentication not configured on server');
     }
 
-    let email, name, picture, googleId;
+    let email, name, picture, googleId, emailVerified;
 
     try {
         // First try: Verify as ID token
@@ -272,7 +273,7 @@ router.post('/google', asyncHandler(async (req, res) => {
         });
 
         const payload = ticket.getPayload();
-        ({ email, name, picture, sub: googleId } = payload); // Destructure directly
+        ({ email, name, picture, sub: googleId, email_verified: emailVerified } = payload);
 
         console.log('✅ Google Token Verified for:', email);
     } catch (idTokenError) {
@@ -299,6 +300,9 @@ router.post('/google', asyncHandler(async (req, res) => {
             name = userInfo.name;
             picture = userInfo.picture;
             googleId = userInfo.sub;
+            // userinfo returns this as the string "true"/"false" in some
+            // responses and a boolean in others, so normalise both.
+            emailVerified = userInfo.email_verified === true || userInfo.email_verified === 'true';
 
             if (!email) {
                 throw new Error('Could not get email from Google token');
@@ -307,6 +311,16 @@ router.post('/google', asyncHandler(async (req, res) => {
             console.error('❌ Google token verification failed:', idTokenError.message, '|', accessTokenError.message);
             throw new AuthError('Google login failed: Invalid authentication token');
         }
+    }
+
+    // Accounts are matched to an existing user BY EMAIL below. That is only
+    // safe if Google actually vouches for the address — otherwise anyone able
+    // to set an arbitrary unverified email on a Google account (possible on
+    // Workspace domains) could sign in as an existing password user.
+    // Gmail addresses are always verified; this guards the rest.
+    if (emailVerified !== true) {
+        console.warn('⚠️  Google login rejected: email not verified —', email);
+        throw new AuthError('Your Google email address is not verified');
     }
 
     try {
@@ -320,26 +334,46 @@ router.post('/google', asyncHandler(async (req, res) => {
         let user = userResult.rows[0];
 
         if (!user) {
-            // Create new user from Google
-            // Generate unique username from email with collision-safe retry
-            let username = email.split('@')[0];
-            for (let attempt = 0; attempt < 5; attempt++) {
-                const existingUsername = await query('SELECT id FROM users WHERE username = $1', [username]);
-                if (existingUsername.rows.length === 0) break;
-                username = email.split('@')[0] + Math.floor(Math.random() * 100000);
-            }
-
-            // Generate random password since they use Google
-            const randomPassword = Math.random().toString(36).slice(-8);
+            // This account signs in with Google and never uses this password,
+            // but the hash still guards the email+password route. Math.random()
+            // is not cryptographically secure and its internal state can be
+            // recovered from prior outputs, so a predictable value here would
+            // let someone log in as a Google user through password auth.
+            const randomPassword = crypto.randomBytes(32).toString('hex');
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(randomPassword, salt);
 
-            const newUser = await query(
-                `INSERT INTO users (email, password_hash, name, username, avatar_url, role)
-                 VALUES ($1, $2, $3, $4, $5, 'member')
-                 RETURNING id, email, name, username, role, avatar_url, xp_points`,
-                [email, hashedPassword, name, username, picture]
-            );
+            // username is UNIQUE (users_username_key). Checking availability
+            // and then inserting is a race — two concurrent signups can both
+            // pass the check and one still fails. Retry against the constraint
+            // instead, which is the only authority, adding entropy each round.
+            const base = email.split('@')[0].slice(0, 24) || 'user';
+            let newUser = null;
+
+            for (let attempt = 0; attempt < 6 && !newUser; attempt++) {
+                const username = attempt === 0
+                    ? base
+                    : `${base}${crypto.randomInt(10 ** Math.min(attempt + 2, 9))}`;
+                try {
+                    newUser = await query(
+                        `INSERT INTO users (email, password_hash, name, username, avatar_url, role)
+                         VALUES ($1, $2, $3, $4, $5, 'member')
+                         RETURNING id, email, name, username, role, avatar_url, xp_points`,
+                        [email, hashedPassword, name, username, picture]
+                    );
+                } catch (err) {
+                    // 23505 = unique_violation. Retry only when the username
+                    // clashed. An email clash means a concurrent signup for the
+                    // same person won the race, and retrying would loop forever
+                    // on a name that was never the problem.
+                    if (err.code === '23505' && err.constraint === 'users_username_key') continue;
+                    throw err;
+                }
+            }
+
+            if (!newUser) {
+                throw new AuthError('Could not create your account, please try again');
+            }
             user = newUser.rows[0];
 
             // Create fitness profile
