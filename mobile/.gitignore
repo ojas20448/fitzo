@@ -17,3 +17,14 @@ expo-env.d.ts
 
 # Pre-fix icon originals + mask verification renders (not bundled)
 .icon-backup/
+
+# Signing and submission secrets — never commit these.
+# google-services-key.json is a Google Cloud service account PRIVATE KEY with
+# permission to publish to the Play Store. eas.json points at it by path, so
+# it is expected to sit here in the working directory.
+google-services-key.json
+*.keystore
+*.jks
+*.p8
+*.p12
+*.mobileprovision

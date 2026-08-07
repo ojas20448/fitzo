@@ -45,11 +45,7 @@
         "production": {
             "android": {
                 "serviceAccountKeyPath": "./google-services-key.json",
-                "track": "production"
-            },
-            "ios": {
-                "appleId": "your-apple-id@email.com",
-                "ascAppId": "your-app-store-connect-app-id"
+                "track": "internal"
             }
         }
     }
