@@ -39,7 +39,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.fitzo.app",
-      "versionCode": 5,
+      "versionCode": 6,
       "minSdkVersion": 26,
       "permissions": [
         "android.permission.CAMERA",
@@ -104,6 +104,12 @@
           "android": {
             "minSdkVersion": 26
           }
+        }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.1030039443378-k15ujl968cs24u1t6ln06oaapudt03e2"
         }
       ]
     ],
