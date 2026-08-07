@@ -232,4 +232,49 @@ router.patch('/workout', asyncHandler(async (req, res) => {
     });
 }));
 
+/**
+ * GET /api/settings/learn
+ * Learn surface preferences.
+ */
+router.get('/learn', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    const result = await query(
+        `SELECT learn_start_here_dismissed FROM users WHERE id = $1`,
+        [userId]
+    );
+
+    if (result.rows.length === 0) {
+        throw new ValidationError('User not found');
+    }
+
+    res.json({ start_here_dismissed: result.rows[0].learn_start_here_dismissed });
+}));
+
+/**
+ * PATCH /api/settings/learn
+ */
+router.patch('/learn', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const { start_here_dismissed } = req.body;
+
+    if (typeof start_here_dismissed !== 'boolean') {
+        throw new ValidationError('start_here_dismissed must be a boolean');
+    }
+
+    const result = await query(
+        `UPDATE users
+            SET learn_start_here_dismissed = $1
+          WHERE id = $2
+      RETURNING learn_start_here_dismissed`,
+        [start_here_dismissed, userId]
+    );
+
+    if (result.rows.length === 0) {
+        throw new ValidationError('User not found');
+    }
+
+    res.json({ success: true, start_here_dismissed: result.rows[0].learn_start_here_dismissed });
+}));
+
 module.exports = router;

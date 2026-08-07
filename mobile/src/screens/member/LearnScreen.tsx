@@ -1,36 +1,42 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
-    TouchableOpacity,
+    Pressable,
+    TextInput,
     RefreshControl,
-    Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { learnAPI } from '../../services/api';
-import GlassCard from '../../components/GlassCard';
+import { learnAPI, settingsAPI, Lesson } from '../../services/api';
+import { filterLessons, collectTopics } from '../../utils/lessonFilter';
 import Skeleton, { SkeletonCard } from '../../components/Skeleton';
 import EmptyState from '../../components/EmptyState';
-import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
-
-const { width } = Dimensions.get('window');
+import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 
 const LearnScreen: React.FC = () => {
-    const [units, setUnits] = useState<any[]>([]);
-    const [progress, setProgress] = useState<any>({ total_xp: 0, lessons_completed: 0 });
+    const [lessons, setLessons] = useState<Lesson[]>([]);
+    const [progress, setProgress] = useState<{ total_xp: number; lessons_completed: number; total_lessons: number }>({
+        total_xp: 0,
+        lessons_completed: 0,
+        total_lessons: 0,
+    });
+    const [suggestedNextId, setSuggestedNextId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [totalLessons, setTotalLessons] = useState(0);
     // Previously this screen had no error state at all: a failed request left
     // `units` as [] and rendered a blank ScrollView, making network failure
     // byte-identical to "you have no lessons yet".
     const [error, setError] = useState<'offline' | 'error' | null>(null);
     const [isStale, setIsStale] = useState(false);
+
+    const [query, setQuery] = useState('');
+    const [topic, setTopic] = useState<string | null>(null);
+    const [startHereDismissed, setStartHereDismissed] = useState(true); // assume dismissed until known, so it cannot flash
 
     // Reload lessons whenever screen comes into focus (e.g. after completing a lesson)
     useFocusEffect(
@@ -42,13 +48,10 @@ const LearnScreen: React.FC = () => {
     const loadLessons = async () => {
         try {
             const response = await learnAPI.getLessons();
-            const unitsData = response.units || [];
-            setUnits(unitsData);
-            setProgress(response.progress || { total_xp: 0, lessons_completed: 0 });
-            // Count total lessons across all units
-            const total = unitsData.reduce((sum: number, u: any) => sum + (u.lessons?.length || 0), 0);
-            setTotalLessons(total);
-            // The API layer serves cached units when offline; say so rather than
+            setLessons(response.lessons || []);
+            setProgress(response.progress || { total_xp: 0, lessons_completed: 0, total_lessons: 0 });
+            setSuggestedNextId(response.suggested_next_id ?? null);
+            // The API layer serves cached lessons when offline; say so rather than
             // presenting stale progress as live.
             setIsStale(Boolean(response.offline));
             setError(null);
@@ -58,6 +61,11 @@ const LearnScreen: React.FC = () => {
         } finally {
             setLoading(false);
         }
+
+        // Loaded alongside the lessons fetch rather than a second effect.
+        settingsAPI.getLearnPreferences()
+            .then((p) => setStartHereDismissed(!!p.start_here_dismissed))
+            .catch(() => setStartHereDismissed(true)); // fail closed — never flash a strip we cannot persist
     };
 
     const retry = () => {
@@ -66,24 +74,25 @@ const LearnScreen: React.FC = () => {
         loadLessons();
     };
 
-    // Derived once, guarded against undefined progress and a zero denominator —
-    // both of which previously produced "undefined/12 Lessons" and "NaN%".
-    const completedLessons = Number(progress?.lessons_completed) || 0;
-    const overallPct = totalLessons > 0
-        ? Math.min(100, Math.round((completedLessons / totalLessons) * 100))
-        : 0;
-
     const onRefresh = async () => {
         setRefreshing(true);
         await loadLessons();
         setRefreshing(false);
     };
 
-    const handleLessonPress = (lessonId: string, canAccess: boolean) => {
-        if (canAccess) {
-            router.push(`/lesson/${lessonId}` as any);
-        }
-    };
+    const topics = useMemo(() => collectTopics(lessons), [lessons]);
+    const visible = useMemo(() => filterLessons(lessons, { query, topic }), [lessons, query, topic]);
+    const suggested = useMemo(
+        () => lessons.find((l) => l.id === suggestedNextId) ?? null,
+        [lessons, suggestedNextId],
+    );
+
+    const dismissStartHere = useCallback(() => {
+        setStartHereDismissed(true);
+        // Fire-and-forget: a failed preference write must never block browsing.
+        // Worst case the strip returns next launch.
+        settingsAPI.updateLearnPreferences({ start_here_dismissed: true }).catch(() => {});
+    }, []);
 
     if (loading) {
         return (
@@ -97,24 +106,24 @@ const LearnScreen: React.FC = () => {
                     <Skeleton width={80} height={28} borderRadius={14} />
                 </View>
                 <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-                    {[1, 2, 3, 4].map((_, idx) => (
-                        <View key={idx} style={styles.timelineItem}>
-                            <View style={styles.timelineLeft}>
-                                <Skeleton width={32} height={32} borderRadius={16} />
-                            </View>
-                            <View style={styles.timelineRight}>
-                                <SkeletonCard />
-                            </View>
-                        </View>
+                    <Skeleton width={160} height={16} style={{ marginBottom: spacing.lg }} />
+                    <Skeleton width="100%" height={44} borderRadius={borderRadius.lg} style={{ marginBottom: spacing.lg }} />
+                    <View style={styles.skeletonChipRow}>
+                        <Skeleton width={70} height={30} borderRadius={borderRadius.full} />
+                        <Skeleton width={90} height={30} borderRadius={borderRadius.full} />
+                        <Skeleton width={60} height={30} borderRadius={borderRadius.full} />
+                    </View>
+                    {[1, 2, 3, 4, 5].map((_, idx) => (
+                        <SkeletonCard key={idx} style={{ marginBottom: spacing.md }} />
                     ))}
                 </ScrollView>
             </SafeAreaView>
         );
     }
 
-    // A failed load with nothing cached is the one case where the path cannot be
-    // drawn at all. Everything else falls through to the normal timeline.
-    if (error && units.length === 0) {
+    // A failed load with nothing cached is the one case where the library
+    // cannot be drawn at all. Everything else falls through to the normal list.
+    if (error && lessons.length === 0) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
                 <View style={styles.header}>
@@ -130,7 +139,7 @@ const LearnScreen: React.FC = () => {
     }
 
     // Brand-new user: lessons exist as a feature but none have loaded for them yet.
-    if (!error && units.length === 0) {
+    if (!error && lessons.length === 0) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
                 <View style={styles.header}>
@@ -181,145 +190,99 @@ const LearnScreen: React.FC = () => {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
                 }
             >
-                {/* Overall Progress Card */}
-                {totalLessons > 0 && (
-                    <View style={styles.overallProgress}>
-                        <View style={styles.overallProgressHeader}>
-                            <Text style={styles.overallProgressTitle}>
-                                {completedLessons}/{totalLessons} Lessons
-                            </Text>
-                            <Text style={styles.overallProgressPercent}>
-                                {overallPct}%
-                            </Text>
-                        </View>
-                        <View style={styles.overallProgressBar}>
-                            {/* Math.max floor: at 1-2% the fill renders as an invisible nub */}
-                            <View style={[styles.overallProgressFill, {
-                                width: `${overallPct === 0 ? 0 : Math.max(overallPct, 3)}%`
-                            }]} />
-                        </View>
+                {/* Progress line — never opens with a deficit. */}
+                <Text style={styles.progressLine}>
+                    {progress.lessons_completed === 0
+                        ? `${progress.total_lessons} lessons · ${topics.length} topics`
+                        : `${progress.lessons_completed} of ${progress.total_lessons} done`}
+                </Text>
+
+                <TextInput
+                    style={styles.search}
+                    value={query}
+                    onChangeText={setQuery}
+                    placeholder="Search lessons"
+                    placeholderTextColor={colors.text.muted}
+                    accessibilityLabel="Search lessons"
+                    returnKeyType="search"
+                    autoCorrect={false}
+                />
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
+                    {topics.map((t) => (
+                        <Pressable
+                            key={t}
+                            onPress={() => setTopic(topic === t ? null : t)}
+                            style={[styles.chip, topic === t && styles.chipActive]}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: topic === t }}
+                            accessibilityLabel={`Filter by ${t}`}
+                        >
+                            <Text style={[styles.chipText, topic === t && styles.chipTextActive]}>{t}</Text>
+                        </Pressable>
+                    ))}
+                </ScrollView>
+
+                {!startHereDismissed && suggested && progress.lessons_completed < progress.total_lessons && (
+                    <View style={styles.startHere}>
+                        <Pressable
+                            style={styles.startHereMain}
+                            onPress={() => router.push(`/lesson/${suggested.id}` as any)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Start here: ${suggested.title}`}
+                        >
+                            <Text style={styles.startHereLabel}>START HERE</Text>
+                            <Text style={styles.startHereTitle} numberOfLines={1}>{suggested.title}</Text>
+                        </Pressable>
+                        <Pressable
+                            onPress={dismissStartHere}
+                            hitSlop={12}
+                            accessibilityRole="button"
+                            accessibilityLabel="Dismiss start here suggestion"
+                        >
+                            <MaterialIcons name="close" size={18} color={colors.text.muted} />
+                        </Pressable>
                     </View>
                 )}
 
-                {units.map((unit, unitIndex) => (
-                    <View key={unit.number} style={styles.unitSection}>
-                        {/* Unit Title */}
-                        <View style={styles.unitHeader}>
-                            <View style={styles.unitBadge}>
-                                <Text style={styles.unitBadgeText}>UNIT {unit.number}</Text>
-                            </View>
-                            <Text style={styles.unitTitle}>{unit.title}</Text>
-                        </View>
-
-                        {/* Timeline Lessons */}
-                        <View style={styles.timeline}>
-                            {unit.lessons.map((lesson: any, index: number) => {
-                                const isLocked = !lesson.completed && !lesson.is_next;
-                                const isActive = lesson.is_next;
-                                const isCompleted = lesson.completed;
-                                const isLast = index === unit.lessons.length - 1;
-                                // Completed and active lessons are accessible
-                                const canAccess = isCompleted || isActive;
-
-                                return (
-                                    <View key={lesson.id} style={styles.timelineItem}>
-                                        {/* Left side - indicator & line */}
-                                        <View style={styles.timelineLeft}>
-                                            <View style={[
-                                                styles.timelineIndicator,
-                                                isCompleted && styles.indicatorCompleted,
-                                                isActive && styles.indicatorActive,
-                                                isLocked && styles.indicatorLocked,
-                                            ]}>
-                                                {isCompleted ? (
-                                                    <MaterialIcons name="check" size={16} color={colors.background} />
-                                                ) : isActive ? (
-                                                    <MaterialIcons name="play-arrow" size={16} color={colors.background} />
-                                                ) : (
-                                                    <MaterialIcons name="lock" size={12} color={colors.text.subtle} />
-                                                )}
-                                            </View>
-                                            {!isLast && (
-                                                <View style={[
-                                                    styles.timelineLine,
-                                                    isCompleted && styles.lineCompleted,
-                                                    isLocked && styles.lineLocked,
-                                                ]} />
-                                            )}
-                                        </View>
-
-                                        {/* Right side - lesson card */}
-                                        <TouchableOpacity
-                                            activeOpacity={0.8}
-                                            onPress={() => handleLessonPress(lesson.id, canAccess)}
-                                            disabled={!canAccess}
-                                            style={styles.timelineRight}
-                                        >
-                                            <GlassCard
-                                                variant={isActive ? 'light' : 'default'}
-                                                padding="lg"
-                                                style={[
-                                                    styles.lessonCard,
-                                                    isActive && styles.lessonCardActive,
-                                                    isCompleted && styles.lessonCardCompleted,
-                                                    isLocked && styles.lessonCardLocked,
-                                                ]}>
-                                                <View style={styles.lessonHeader}>
-                                                    <Text style={[
-                                                        styles.lessonTitle,
-                                                        isActive && styles.lessonTitleActive,
-                                                        isLocked && styles.lessonTitleLocked,
-                                                    ]}>
-                                                        {lesson.title}
-                                                    </Text>
-                                                    {isActive && (
-                                                        <View style={styles.currentBadge}>
-                                                            <Text style={styles.currentBadgeText}>CURRENT</Text>
-                                                        </View>
-                                                    )}
-                                                </View>
-
-                                                {lesson.description && (
-                                                    <Text style={[
-                                                        styles.lessonDescription,
-                                                        isLocked && styles.lessonDescriptionLocked,
-                                                    ]}>
-                                                        {lesson.description}
-                                                    </Text>
-                                                )}
-
-                                                <View style={styles.lessonMeta}>
-                                                    <View style={styles.xpIndicator}>
-                                                        <MaterialIcons
-                                                            name="menu-book"
-                                                            size={12}
-                                                            color={isLocked ? colors.text.subtle : colors.primary}
-                                                        />
-                                                        <Text style={[
-                                                            styles.xpAmount,
-                                                            isLocked && styles.xpAmountLocked,
-                                                        ]}>
-                                                            {lesson.questions?.length || 5} questions
-                                                        </Text>
-                                                    </View>
-                                                    {isCompleted && lesson.last_score != null && (
-                                                        <View style={styles.scoreContainer}>
-                                                            <MaterialIcons name="check-circle" size={14} color={colors.success} />
-                                                            <Text style={styles.scoreText}>{lesson.last_score}%</Text>
-                                                        </View>
-                                                    )}
-                                                    {isCompleted && !lesson.last_score && (
-                                                        <Text style={styles.completedText}>Completed</Text>
-                                                    )}
-                                                </View>
-                                            </GlassCard>
-                                        </TouchableOpacity>
-                                    </View>
-                                );
-                            })}
-                        </View>
+                {/* Every row below is tappable — no disabled state, no lock icon, no dimming. */}
+                {visible.length === 0 && lessons.length > 0 ? (
+                    <View style={styles.noMatch}>
+                        <Text style={styles.noMatchText}>No lessons match "{query}"</Text>
+                        <Pressable
+                            onPress={() => { setQuery(''); setTopic(null); }}
+                            accessibilityRole="button"
+                            accessibilityLabel="Clear search and filters"
+                        >
+                            <Text style={styles.noMatchClear}>CLEAR</Text>
+                        </Pressable>
                     </View>
-                ))}
+                ) : (
+                    visible.map((l) => (
+                        <Pressable
+                            key={l.id}
+                            style={styles.lessonRow}
+                            onPress={() => router.push(`/lesson/${l.id}` as any)}
+                            accessibilityRole="button"
+                            accessibilityLabel={
+                                `${l.title}. ${l.question_count} questions. ` +
+                                `${Math.max(1, Math.round((l.read_seconds ?? 60) / 60))} minute read.` +
+                                (l.completed ? ' Completed.' : '')
+                            }
+                        >
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.lessonTitle} numberOfLines={1}>{l.title}</Text>
+                                {!!l.description && (
+                                    <Text style={styles.lessonDesc} numberOfLines={1}>{l.description}</Text>
+                                )}
+                                <Text style={styles.lessonMeta}>
+                                    {l.question_count} questions · {Math.max(1, Math.round((l.read_seconds ?? 60) / 60))} min
+                                </Text>
+                            </View>
+                            {l.completed && <MaterialIcons name="check" size={18} color={colors.success} />}
+                        </Pressable>
+                    ))
+                )}
 
                 <View style={{ height: 100 }} />
             </ScrollView>
@@ -404,214 +367,138 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.xl,
         paddingBottom: spacing['3xl'],
     },
-    unitSection: {
-        marginBottom: spacing['3xl'],
-    },
-    unitHeader: {
+    skeletonChipRow: {
+        flexDirection: 'row',
+        gap: spacing.sm,
         marginBottom: spacing.xl,
     },
-    unitBadge: {
-        alignSelf: 'flex-start',
-        backgroundColor: colors.glass.surface,
-        paddingVertical: 4,
-        paddingHorizontal: 10,
-        borderRadius: borderRadius.full,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
-        marginBottom: spacing.sm,
-    },
-    unitBadgeText: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
-        letterSpacing: 1.5,
-    },
-    unitTitle: {
-        fontSize: typography.sizes['2xl'],
-        fontFamily: typography.fontFamily.semiBold,
-        color: colors.text.primary,
-        letterSpacing: 0.5,
-    },
-    timeline: {
-        paddingLeft: spacing.sm,
-    },
-    timelineItem: {
-        flexDirection: 'row',
-        minHeight: 100,
-    },
-    timelineLeft: {
-        width: 40,
-        alignItems: 'center',
-    },
-    timelineIndicator: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: colors.glass.surface,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: colors.glass.border,
-        zIndex: 2,
-    },
-    indicatorCompleted: {
-        backgroundColor: colors.primary,
-        borderColor: colors.primary,
-    },
-    indicatorActive: {
-        backgroundColor: colors.primary,
-        borderColor: colors.primary,
-        ...shadows.glow,
-    },
-    indicatorLocked: {
-        backgroundColor: 'transparent',
-        borderStyle: 'dashed',
-    },
-    timelineLine: {
-        flex: 1,
-        width: 2,
-        backgroundColor: colors.glass.border,
-        marginVertical: 4,
-    },
-    lineCompleted: {
-        backgroundColor: colors.primary,
-    },
-    lineLocked: {
-        opacity: 0.5,
-    },
-    timelineRight: {
-        flex: 1,
-        paddingLeft: spacing.md,
-        paddingBottom: spacing.lg,
-    },
-    lessonCard: {
-        // Background and border handled by GlassCard
-    },
-    lessonCardActive: {
-        // Background handled by variant="light"
-        ...shadows.glowCard,
-    },
-    lessonCardCompleted: {
-        // Variant handled by logic
-    },
-    lessonCardLocked: {
-        backgroundColor: 'transparent',
-        borderStyle: 'dashed',
-        borderWidth: 1, // Need to reinstate border for locked since it overrides glass
-        borderColor: colors.glass.border,
-        opacity: 0.6,
-    },
-    lessonHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: spacing.xs,
-    },
-    lessonTitle: {
-        flex: 1,
-        fontSize: typography.sizes.base,
-        fontFamily: typography.fontFamily.semiBold,
-        color: colors.text.primary,
-        letterSpacing: 0.5,
-    },
-    lessonTitleActive: {
-        color: colors.text.primary,
-    },
-    lessonTitleLocked: {
-        color: colors.text.muted,
-    },
-    currentBadge: {
-        backgroundColor: colors.primary,
-        paddingVertical: 2,
-        paddingHorizontal: 8,
-        borderRadius: borderRadius.full,
-        marginLeft: spacing.sm,
-    },
-    currentBadgeText: {
-        fontSize: 9,
-        fontFamily: typography.fontFamily.bold,
-        color: colors.background,
-        letterSpacing: 1,
-    },
-    lessonDescription: {
+
+    // Progress line
+    progressLine: {
         fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.regular,
-        color: colors.text.muted,
-        marginBottom: spacing.md,
-        lineHeight: 20,
-    },
-    lessonDescriptionLocked: {
-        color: colors.text.subtle,
-    },
-    lessonMeta: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    xpIndicator: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    xpAmount: {
-        fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.medium,
-        color: colors.primary,
-        letterSpacing: 0.5,
+        color: colors.text.secondary,
+        marginBottom: spacing.lg,
     },
-    xpAmountLocked: {
-        color: colors.text.subtle,
-    },
-    completedText: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.success,
-        letterSpacing: 0.5,
-    },
-    scoreContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    scoreText: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.bold,
-        color: colors.success,
-    },
-    overallProgress: {
+
+    // Search
+    search: {
         backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius.xl,
-        padding: spacing.lg,
-        marginBottom: spacing['2xl'],
         borderWidth: 1,
         borderColor: colors.glass.border,
+        borderRadius: borderRadius.lg,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.primary,
+        marginBottom: spacing.lg,
     },
-    overallProgressHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: spacing.sm,
+
+    // Topic chips
+    chipRow: {
+        marginBottom: spacing.xl,
     },
-    overallProgressTitle: {
+    chip: {
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.full,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.lg,
+        marginRight: spacing.sm,
+    },
+    chipActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    chipText: {
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.secondary,
     },
-    overallProgressPercent: {
+    chipTextActive: {
+        color: colors.text.dark,
+    },
+
+    // Start here strip
+    startHere: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: colors.glass.surfaceLight,
+        borderWidth: 1,
+        borderColor: colors.glass.borderLight,
+        borderRadius: borderRadius.lg,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+        marginBottom: spacing.xl,
+    },
+    startHereMain: {
+        flex: 1,
+        marginRight: spacing.md,
+    },
+    startHereLabel: {
+        fontSize: typography.sizes['2xs'],
+        fontFamily: typography.fontFamily.bold,
+        color: colors.primary,
+        letterSpacing: 1.5,
+        marginBottom: 2,
+    },
+    startHereTitle: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.text.primary,
+    },
+
+    // Empty-search state
+    noMatch: {
+        alignItems: 'center',
+        paddingVertical: spacing['3xl'],
+        gap: spacing.md,
+    },
+    noMatchText: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.secondary,
+        textAlign: 'center',
+    },
+    noMatchClear: {
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.bold,
         color: colors.primary,
+        letterSpacing: 1,
     },
-    overallProgressBar: {
-        height: 6,
-        backgroundColor: colors.glass.border,
-        borderRadius: 3,
-        overflow: 'hidden',
+
+    // Lesson rows — every row is tappable, none are locked or dimmed.
+    lessonRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
+        marginBottom: spacing.md,
     },
-    overallProgressFill: {
-        height: '100%',
-        backgroundColor: colors.primary,
-        borderRadius: 3,
+    lessonTitle: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.text.primary,
+        letterSpacing: 0.5,
+        marginBottom: 2,
+    },
+    lessonDesc: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        marginBottom: spacing.xs,
+    },
+    lessonMeta: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.subtle,
+        letterSpacing: 0.5,
     },
 });
 

@@ -11,6 +11,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { Lesson } from '../services/api';
 
 interface CachedHomeData {
     user: any;
@@ -49,6 +50,12 @@ interface OfflineStore {
     homeData: CachedHomeData | null;
     lessons: Record<string, CachedLesson>;
     units: any[];
+    // NEW: the flat lesson library (Task 5). Deliberately a separate key from
+    // `units` above — `units` holds the OLD unit-grouped shape and members
+    // have that on disk right now. Repurposing it would feed stale old-shape
+    // data into the new library renderer as garbage. `units`/`cacheUnits`/
+    // `getUnits` are left untouched and simply age out unused.
+    lessonLibrary: Lesson[];
     exercises: any[];
     recipes: any[];
 
@@ -86,6 +93,9 @@ interface OfflineStore {
     cacheHomeData: (data: any) => void;
     cacheLesson: (lesson: CachedLesson) => void;
     cacheUnits: (units: any[]) => void;
+    // NEW: caches the flat lesson library. Reuses `lastLessonsUpdate` so
+    // `isLessonsStale()` keeps working for the new key.
+    cacheLessons: (lessons: Lesson[]) => void;
     cacheExercises: (exercises: any[]) => void;
     cacheRecipes: (recipes: any[]) => void;
 
@@ -93,6 +103,7 @@ interface OfflineStore {
     getHomeData: () => CachedHomeData | null;
     getLesson: (id: string) => CachedLesson | undefined;
     getUnits: () => any[];
+    getLessons: () => Lesson[];
     getExercises: () => any[];
     getRecipes: () => any[];
 
@@ -121,6 +132,7 @@ export const useOfflineStore = create<OfflineStore>()(
             homeData: null,
             lessons: {},
             units: [],
+            lessonLibrary: [],
             exercises: [],
             recipes: [],
             lastHomeUpdate: 0,
@@ -207,6 +219,13 @@ export const useOfflineStore = create<OfflineStore>()(
                 lastLessonsUpdate: Date.now(),
             }),
 
+            // Reuses `lastLessonsUpdate` — the same timestamp `cacheUnits` used —
+            // so `isLessonsStale()` keeps working without a new staleness key.
+            cacheLessons: (lessons) => set({
+                lessonLibrary: lessons,
+                lastLessonsUpdate: Date.now(),
+            }),
+
             cacheExercises: (exercises) => set({
                 exercises,
                 lastExercisesUpdate: Date.now(),
@@ -221,6 +240,7 @@ export const useOfflineStore = create<OfflineStore>()(
             getHomeData: () => get().homeData,
             getLesson: (id) => get().lessons[id],
             getUnits: () => get().units,
+            getLessons: () => get().lessonLibrary,
             getExercises: () => get().exercises,
             getRecipes: () => get().recipes,
 
@@ -250,6 +270,7 @@ export const useOfflineStore = create<OfflineStore>()(
                 homeData: null,
                 lessons: {},
                 units: [],
+                lessonLibrary: [],
                 exercises: [],
                 recipes: [],
                 lastHomeUpdate: 0,
@@ -265,6 +286,7 @@ export const useOfflineStore = create<OfflineStore>()(
                 homeData: state.homeData,
                 lessons: state.lessons,
                 units: state.units,
+                lessonLibrary: state.lessonLibrary,
                 exercises: state.exercises,
                 recipes: state.recipes,
                 lastHomeUpdate: state.lastHomeUpdate,

@@ -726,7 +726,12 @@ const HomeScreen: React.FC = () => {
                                     : `Start ${data.learn.title}`
                             }
                         >
-                            <ProgressRing progress={learnPct} size={72} showLabel={learnStarted} />
+                            <ProgressRing
+                                progress={learnPct}
+                                size={72}
+                                showLabel={learnStarted}
+                                emptyIcon="menu-book"
+                            />
 
                             <View style={styles.learningContent}>
                                 <Text style={styles.learningTitle} numberOfLines={2}>
@@ -738,7 +743,14 @@ const HomeScreen: React.FC = () => {
                                     </Text>
                                 ) : null}
                                 <Text style={styles.learningProgressLabel}>
-                                    {learnStarted ? `${learnPct}% complete` : 'Not started yet'}
+                                    {/* Names what the percentage measures. The
+                                        card headline IS the unit and the figure
+                                        is unit progress, but a bare "50%
+                                        complete" sitting beside a lesson name
+                                        read as if it described the lesson. */}
+                                    {learnStarted
+                                        ? `${learnPct}% of ${data.learn.title}`
+                                        : 'Not started yet'}
                                 </Text>
                             </View>
 

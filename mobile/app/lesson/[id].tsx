@@ -5,9 +5,7 @@ import {
     StyleSheet,
     ScrollView,
     TouchableOpacity,
-    Modal,
     ActivityIndicator,
-    Dimensions,
     Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,8 +34,7 @@ import { colors, typography, spacing, borderRadius, shadows } from '../../src/st
 import Button from '../../src/components/Button';
 import Celebration from '../../src/components/Celebration';
 import { SkeletonLesson } from '../../src/components/Skeleton';
-
-const { width, height } = Dimensions.get('window');
+import EmptyState from '../../src/components/EmptyState';
 
 interface QuizResult {
     score: number;
@@ -59,13 +56,21 @@ const LessonScreen = () => {
     const [answers, setAnswers] = useState<number[]>([]);
     const [selectedOption, setSelectedOption] = useState<number | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);
-    const [quizCompleted, setQuizCompleted] = useState(false);
-    const [xpEarned, setXpEarned] = useState(0);
     const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    /** Fetch failure. Without this the screen showed a skeleton forever. */
+    const [error, setError] = useState<string | null>(null);
+    /** Submit failure. Keeps the member on the quiz with answers intact. */
+    const [submitError, setSubmitError] = useState(false);
+    /**
+     * The exact answer array that was submitted, so a retry replays the SAME
+     * payload. Reading it back off component state let a second Finish press
+     * append an extra entry, making answers.length !== questions.length, which
+     * the backend rejects forever — a permanent soft-lock on the last question.
+     */
+    const lastAnswersRef = useRef<number[]>([]);
 
     // Animation refs
-    const questionAnim = useRef(new Animated.Value(1)).current;
     const fadeAnim = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
@@ -73,14 +78,24 @@ const LessonScreen = () => {
     }, [id]);
 
     const loadLesson = async (lessonId: string) => {
+        setError(null);
         try {
             const data = await learnAPI.getLesson(lessonId);
             setLesson(data.lesson);
-        } catch (error) {
-            console.error('Failed to load lesson:', error);
+        } catch (e: any) {
+            // Was console.error only. The render guard is `loading || !lesson`,
+            // so a failed fetch left `lesson` null with `loading` false and the
+            // guard still true — a permanent skeleton. Members are on Indian
+            // mobile networks inside gym buildings; this is not an edge case.
+            setError(e?.message || 'Could not load this lesson');
         } finally {
             setLoading(false);
         }
+    };
+
+    const retryLoad = () => {
+        setLoading(true);
+        loadLesson(id as string);
     };
 
     const handleStartQuiz = () => {
@@ -128,16 +143,17 @@ const LessonScreen = () => {
 
     const finishQuiz = async (finalAnswers: number[]) => {
         if (!lesson) return;
+        // Remember the exact payload so a retry replays it rather than
+        // rebuilding from state and appending a duplicate answer.
+        lastAnswersRef.current = finalAnswers;
         setSubmitting(true);
+        setSubmitError(false);
         try {
-            // Submit to API
             const result = await learnAPI.submitAttempt(lesson.id, finalAnswers);
             setQuizResult(result);
 
             if (result.passed) {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                setQuizCompleted(true);
-
                 setTimeout(() => {
                     setShowCelebration(true);
                 }, 500);
@@ -146,8 +162,10 @@ const LessonScreen = () => {
                 // Show result screen for review
                 setMode('result');
             }
-        } catch (error) {
-            console.error(error);
+        } catch {
+            // Stay on the quiz with the answers intact and say so. Silently
+            // swallowing this discarded a completed quiz with no message.
+            setSubmitError(true);
         } finally {
             setSubmitting(false);
         }
@@ -155,8 +173,34 @@ const LessonScreen = () => {
 
     if (loading || !lesson) {
         return (
-            <SafeAreaView style={styles.container}>
-                <SkeletonLesson />
+            <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+                {/* The close-X lived only inside the success return, so a failed
+                    fetch rendered a skeleton with NO way out. It exists in every
+                    state now. */}
+                <View style={styles.header}>
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        style={styles.backBtn}
+                        hitSlop={12}
+                        accessibilityRole="button"
+                        accessibilityLabel="Close lesson"
+                    >
+                        <MaterialIcons name="close" size={24} color={colors.text.primary} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>LEARN</Text>
+                    <View style={{ width: 40 }} />
+                </View>
+
+                {loading ? (
+                    <SkeletonLesson />
+                ) : (
+                    <EmptyState
+                        variant="error"
+                        message={error || 'Could not load this lesson'}
+                        actionLabel="Retry"
+                        onAction={retryLoad}
+                    />
+                )}
             </SafeAreaView>
         );
     }
@@ -177,10 +221,20 @@ const LessonScreen = () => {
 
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    style={styles.backBtn}
+                    // 24px icon + 4px padding = a 32x32 tap area, under the
+                    // 44pt minimum — and this is the only exit from the screen.
+                    hitSlop={12}
+                    accessibilityRole="button"
+                    accessibilityLabel="Close lesson"
+                >
                     <MaterialIcons name="close" size={24} color={colors.text.primary} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{mode === 'reading' ? 'LEARN' : 'QUIZ'}</Text>
+                <Text style={styles.headerTitle} numberOfLines={1}>
+                    {mode === 'reading' ? 'LEARN' : 'QUIZ'}
+                </Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -206,19 +260,24 @@ const LessonScreen = () => {
                         <View style={{ height: 120 }} />
                     </ScrollView>
 
-                    <View style={styles.quizFooter}>
-                        <View style={styles.quizFooterInfo}>
-                            <MaterialIcons name="quiz" size={20} color={colors.primary} />
-                            <Text style={styles.quizFooterHint}>
-                                {lesson.questions.length} questions · Need 70% to pass
-                            </Text>
+                    {/* No footer at all when there is nothing to be quizzed on.
+                        Quiz mode indexes questions[0] with no length check, so a
+                        lesson with an empty array crashed at render. */}
+                    {lesson.questions.length > 0 && (
+                        <View style={styles.quizFooter}>
+                            <View style={styles.quizFooterInfo}>
+                                <MaterialIcons name="quiz" size={20} color={colors.primary} />
+                                <Text style={styles.quizFooterHint}>
+                                    {lesson.questions.length} questions · Need 70% to pass
+                                </Text>
+                            </View>
+                            <Button
+                                title="Take Quiz →"
+                                onPress={handleStartQuiz}
+                                fullWidth
+                            />
                         </View>
-                        <Button
-                            title="Take Quiz →"
-                            onPress={handleStartQuiz}
-                            fullWidth
-                        />
-                    </View>
+                    )}
                 </View>
             ) : mode === 'quiz' ? (
                 // --- QUIZ MODE ---
@@ -231,7 +290,24 @@ const LessonScreen = () => {
                         </View>
                     ) : (
                         <>
-                            <View style={styles.progressBar}>
+                            {submitError && (
+                                <View style={styles.submitErrorBar}>
+                                    <Text style={styles.submitErrorText}>Couldn't submit your answers</Text>
+                                    <TouchableOpacity
+                                        onPress={() => finishQuiz(lastAnswersRef.current)}
+                                        hitSlop={8}
+                                        accessibilityRole="button"
+                                        accessibilityLabel="Retry submitting your answers"
+                                    >
+                                        <Text style={styles.submitErrorRetry}>RETRY</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                            <View
+                                style={styles.progressBar}
+                                accessibilityRole="progressbar"
+                                accessibilityValue={{ now: currentQ + 1, min: 1, max: lesson.questions.length }}
+                            >
                                 <View style={[styles.progressFill, { width: `${((currentQ + 1) / lesson.questions.length) * 100}%` }]} />
                             </View>
 
@@ -239,8 +315,8 @@ const LessonScreen = () => {
                                 <Text style={styles.questionCount}>QUESTION {currentQ + 1} OF {lesson.questions.length}</Text>
                                 <Text style={styles.questionText}>{lesson.questions[currentQ].question}</Text>
 
-                                <View style={styles.optionsContainer}>
-                                    {lesson.questions[currentQ].options.map((opt, idx) => (
+                                <View style={styles.optionsContainer} accessibilityRole="radiogroup">
+                                    {(lesson.questions[currentQ]?.options ?? []).map((opt, idx) => (
                                         <TouchableOpacity
                                             key={idx}
                                             style={[
@@ -249,6 +325,13 @@ const LessonScreen = () => {
                                             ]}
                                             onPress={() => handleOptionSelect(idx)}
                                             activeOpacity={0.7}
+                                            // Custom radios: without a role and
+                                            // checked state, selecting an option
+                                            // produced no confirmation at all
+                                            // for a screen reader.
+                                            accessibilityRole="radio"
+                                            accessibilityState={{ checked: selectedOption === idx }}
+                                            accessibilityLabel={opt}
                                         >
                                             <View style={[
                                                 styles.optionRadio,
@@ -347,13 +430,11 @@ const LessonScreen = () => {
                     <View style={styles.resultFooter}>
                         {quizResult?.passed ? (
                             <>
-                                <Button
-                                    title="View Answers"
-                                    onPress={() => {/* already showing */}}
-                                    variant="outline"
-                                    fullWidth
-                                    style={{ marginBottom: 12 }}
-                                />
+                                {/* A full-width "View Answers" button used to sit
+                                    here with `onPress={() => {}}` — a focusable
+                                    48pt control that did nothing, immediately
+                                    after the best moment in the feature. The
+                                    answers are already rendered above it. */}
                                 <Button
                                     title="Done"
                                     onPress={() => router.back()}
@@ -455,6 +536,29 @@ const styles = StyleSheet.create({
     },
 
     // Quiz Styles
+    submitErrorBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: colors.error,
+        marginBottom: spacing.md,
+    },
+    submitErrorText: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.error,
+        flex: 1,
+    },
+    submitErrorRetry: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.error,
+        letterSpacing: 1,
+    },
     quizContainer: {
         flex: 1,
         padding: spacing.xl,

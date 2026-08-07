@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { MaterialIcons } from '@expo/vector-icons';
 import { colors, typography } from '../styles/theme';
 
 interface ProgressRingProps {
@@ -16,6 +17,16 @@ interface ProgressRingProps {
     /** Hide the centre label when the ring is used purely as an indicator. */
     showLabel?: boolean;
     label?: string;
+    /**
+     * Rendered instead of the ring when there is no progress to show.
+     *
+     * At 0% with `showLabel` false the SVG draws a fully-offset arc and an
+     * empty centre — a hollow circle containing nothing, which on a black
+     * background reads as dead space. That state hits precisely the new
+     * members this card exists to reach, so it shows an invitation instead of
+     * an empty meter.
+     */
+    emptyIcon?: keyof typeof MaterialIcons.glyphMap;
 }
 
 /**
@@ -24,7 +35,11 @@ interface ProgressRingProps {
  * Replaces the empty 96x80 "thumbnail" that the Continue Learning card used to
  * render — a 5%-white box holding an 8%-white circle, which on a pure-black
  * background read as a grey smudge and carried no information. Same footprint,
- * but it now shows how far along the lesson is.
+ * but it now shows how far along the unit is.
+ *
+ * Its own zero state was the same mistake in a different shape: at 0% with no
+ * label it drew a hollow circle containing nothing. Pass `emptyIcon` to render
+ * a solid tile there instead — an invitation rather than an empty meter.
  */
 const ProgressRing: React.FC<ProgressRingProps> = ({
     progress,
@@ -32,10 +47,21 @@ const ProgressRing: React.FC<ProgressRingProps> = ({
     strokeWidth = 4,
     showLabel = true,
     label,
+    emptyIcon,
 }) => {
     const pct = Number.isFinite(progress)
         ? Math.max(0, Math.min(100, Math.round(progress)))
         : 0;
+
+    // Nothing to draw and nothing to label: render the icon instead of a
+    // container that holds nothing.
+    if (pct === 0 && !showLabel && emptyIcon) {
+        return (
+            <View style={[styles.emptyTile, { width: size, height: size, borderRadius: size / 2 }]}>
+                <MaterialIcons name={emptyIcon} size={size * 0.42} color={colors.primary} />
+            </View>
+        );
+    }
 
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
@@ -78,6 +104,13 @@ const ProgressRing: React.FC<ProgressRingProps> = ({
 };
 
 const styles = StyleSheet.create({
+    emptyTile: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.glass.surfaceLight,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
     labelWrap: {
         ...StyleSheet.absoluteFillObject,
         alignItems: 'center',

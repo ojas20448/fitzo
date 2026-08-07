@@ -109,14 +109,14 @@ const c=new Client({connectionString:process.env.DATABASE_URL});
   console.log('\\ntopic distribution:');
   t.forEach(r=>console.log('  '+r.t.padEnd(12), r.n));
   const conn=(await c.query('SELECT COUNT(*) c FROM learn_lessons WHERE connects_to IS NOT NULL')).rows[0].c;
-  console.log('\\nlessons with connects_to:', conn, '(expect 8)');
+  console.log('\\nlessons with connects_to:', conn, '(expect 9)');
   const rs=(await c.query('SELECT MIN(read_seconds) lo, MAX(read_seconds) hi, COUNT(*) FILTER (WHERE read_seconds IS NULL) nulls FROM learn_lessons')).rows[0];
   console.log('read_seconds:', rs.lo, '-', rs.hi, '| nulls:', rs.nulls);
   await c.end();
 })();
 "
 ```
-Expected: **0 untagged**, 7 distinct topics, 8 lessons with `connects_to`, no null `read_seconds`.
+Expected: **0 untagged**, 7 distinct topics, **9** lessons with `connects_to`, no null `read_seconds`.
 
 **If any lesson is untagged, a title in the map does not match the database.** Report BLOCKED with the untagged titles rather than guessing at a correction.
 
