@@ -41,6 +41,10 @@ interface QuizResult {
     correct_count: number;
     total_questions: number;
     correct_answers: number[];
+    // Parallel to correct_answers. Null per question until content carries an
+    // explanation, so this stays optional — an older server that predates the
+    // field must not crash the results screen.
+    explanations?: (string | null)[];
     passed: boolean;
     xp_earned: number;
 }
@@ -396,6 +400,7 @@ const LessonScreen = () => {
                         const userAnswer = answers[idx];
                         const correctAnswer = quizResult?.correct_answers?.[idx];
                         const wasCorrect = userAnswer === correctAnswer;
+                        const explanation = quizResult?.explanations?.[idx];
                         
                         return (
                             <View key={idx} style={styles.reviewCard}>
@@ -422,6 +427,14 @@ const LessonScreen = () => {
                                             Correct: <Text style={{ color: colors.success }}>{q.options[correctAnswer!]}</Text>
                                         </Text>
                                     </View>
+                                )}
+
+                                {/* Shown whether or not they got it right. Being
+                                    told you were correct without knowing why
+                                    teaches nothing, and a right answer for the
+                                    wrong reason is worth catching. */}
+                                {!!explanation && (
+                                    <Text style={styles.reviewExplanation}>{explanation}</Text>
                                 )}
                             </View>
                         );
@@ -734,6 +747,17 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.secondary,
+    },
+    reviewExplanation: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.secondary,
+        lineHeight: 20,
+        marginTop: spacing.sm,
+        marginLeft: 32,
+        paddingLeft: spacing.sm,
+        borderLeftWidth: 2,
+        borderLeftColor: colors.glass.border,
     },
     resultFooter: {
         marginTop: spacing.xl,
