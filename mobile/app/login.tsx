@@ -19,11 +19,19 @@ import Button from '../src/components/Button';
 import GlassCard from '../src/components/GlassCard';
 import { useToast } from '../src/components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../src/styles/theme';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
+import {
+    GoogleSignin,
+    isSuccessResponse,
+    isErrorWithCode,
+    statusCodes,
+} from '@react-native-google-signin/google-signin';
 
-WebBrowser.maybeCompleteAuthSession();
-
+// Configure Google Sign-In once
+GoogleSignin.configure({
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    offlineAccess: false,
+});
 
 export default function LoginScreen() {
     const { login, googleSignIn } = useAuth();
@@ -34,39 +42,42 @@ export default function LoginScreen() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // Google Auth — use native sign-in (no auth proxy needed)
-    const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-        clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    });
-
-    React.useEffect(() => {
-        if (response?.type === 'success') {
-            const idToken = response.params?.id_token || response.authentication?.idToken;
-            if (idToken) {
-                handleGoogleLogin(idToken);
-            } else {
-                toast.error('Google Login Failed', 'Could not get authentication token');
-            }
-        } else if (response?.type === 'error') {
-            console.error('Google Auth Error:', response.error);
-            toast.error('Google Login Failed', response.error?.message || 'Authentication was cancelled or failed');
-        }
-    }, [response]);
-
-    const handleGoogleLogin = async (token: string) => {
+    const handleGooglePress = async () => {
         setLoading(true);
         try {
-            await googleSignIn(token);
-            router.replace('/');
+            await GoogleSignin.hasPlayServices();
+            const response = await GoogleSignin.signIn();
+            if (isSuccessResponse(response)) {
+                const idToken = response.data?.idToken;
+                if (idToken) {
+                    await googleSignIn(idToken);
+                    router.replace('/');
+                } else {
+                    toast.error('Google Login Failed', 'Could not get authentication token');
+                }
+            }
         } catch (error: any) {
-            toast.error('Google Login Failed', error.message);
+            if (isErrorWithCode(error)) {
+                switch (error.code) {
+                    case statusCodes.SIGN_IN_CANCELLED:
+                        // User cancelled — do nothing
+                        break;
+                    case statusCodes.IN_PROGRESS:
+                        toast.warning('Please wait', 'Sign-in already in progress');
+                        break;
+                    case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+                        toast.error('Google Login Failed', 'Google Play Services not available');
+                        break;
+                    default:
+                        toast.error('Google Login Failed', error.message || 'Something went wrong');
+                }
+            } else {
+                toast.error('Google Login Failed', error.message || 'Something went wrong');
+            }
         } finally {
             setLoading(false);
         }
-    }
+    };
 
 
 
@@ -174,8 +185,8 @@ export default function LoginScreen() {
 
                         <TouchableOpacity
                             style={styles.googleBtn}
-                            onPress={() => promptAsync()}
-                            disabled={!request || loading}
+                            onPress={handleGooglePress}
+                            disabled={loading}
                         >
                             <MaterialIcons name="g-translate" size={24} color={colors.text.primary} />
                             <Text style={styles.googleBtnText}>Google</Text>
