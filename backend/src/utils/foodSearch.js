@@ -157,6 +157,48 @@ function hasAdjacentRun(queryTokens, nameTokens) {
 }
 
 /**
+ * Derive a food's search fields once, so a query does not re-tokenize all
+ * ~10k names on every keystroke. Purely a cache of what scoreFood would have
+ * computed inline — it changes cost, never ranking.
+ */
+function prepareFood(food) {
+    return {
+        food,
+        name: normalize(food.name),
+        category: normalize(food.category || ''),
+        region: normalize(food.region || ''),
+        nameTokens: tokenize(food.name),
+        brandTokens: tokenize(`${food.region || ''} ${food.category || ''}`),
+        nSquash: squash(food.name),
+        nameLen: (food.name || '').length,
+    };
+}
+
+function prepareFoods(foods) {
+    return foods.map(prepareFood);
+}
+
+/** Derive the query's fields once per search rather than once per food. */
+function prepareQuery(query) {
+    const qNorm = normalize(query);
+    const allQueryTokens = tokenize(query);
+    // Keep stop words out of coverage, but never let filtering empty the query.
+    const qTokens = allQueryTokens.filter(t => !STOP_WORDS.has(t));
+    const queryTokens = qTokens.length ? qTokens : allQueryTokens;
+    // Phrase signals are tested against the stop-word-stripped form too, so
+    // "chicken with rice" still earns the phrase bonus on "Chicken Rice Bowl" —
+    // a filler word must not cost the user points.
+    const qCore = queryTokens.join(' ');
+    return {
+        qNorm,
+        queryTokens,
+        qCore,
+        qSquash: squash(query),
+        qCoreSquash: squash(qCore),
+    };
+}
+
+/**
  * Relevance of one food to one query. 0 means "do not show".
  *
  * @param {string} query
@@ -164,27 +206,15 @@ function hasAdjacentRun(queryTokens, nameTokens) {
  * @returns {number}
  */
 function scoreFood(query, food) {
-    const qNorm = normalize(query);
+    return scorePrepared(prepareQuery(query), prepareFood(food));
+}
+
+function scorePrepared(q, p) {
+    const { qNorm, queryTokens, qCore, qSquash, qCoreSquash } = q;
     if (!qNorm) return 0;
 
-    const name = normalize(food.name);
+    const { name, category, region, nameTokens, brandTokens, nSquash } = p;
     if (!name) return 0;
-    const category = normalize(food.category || '');
-    const region = normalize(food.region || '');
-
-    const nameTokens = tokenize(food.name);
-    const brandTokens = tokenize(`${food.region || ''} ${food.category || ''}`);
-
-    const allQueryTokens = tokenize(query);
-    // Keep stop words out of coverage, but never let filtering empty the query.
-    const qTokens = allQueryTokens.filter(t => !STOP_WORDS.has(t));
-    const queryTokens = qTokens.length ? qTokens : allQueryTokens;
-
-    // The query with stop words removed. Phrase signals are tested against
-    // this as well as the raw query, so "chicken with rice" still earns the
-    // phrase bonus on "Chicken Rice Bowl" — the filler word should cost the
-    // user nothing.
-    const qCore = queryTokens.join(' ');
 
     let score = 0;
 
@@ -199,15 +229,10 @@ function scoreFood(query, food) {
     score += Math.max(phrase(qNorm), phrase(qCore));
 
     // Join/split: "smashburger" should find "Smash Burger" and vice versa.
-    // Tested against the stop-word-stripped form too, for the same reason the
-    // phrase check is: a filler word must not cost the user points.
-    const nSquash = squash(food.name);
-    const qSquash = squash(query);
-    const qCoreSquash = squash(qCore);
-    const squashScore = (q) => {
-        if (!q || q.length < 5) return 0;
-        if (nSquash === q) return 110;
-        if (nSquash.includes(q)) return 40;
+    const squashScore = (s) => {
+        if (!s || s.length < 5) return 0;
+        if (nSquash === s) return 110;
+        if (nSquash.includes(s)) return 40;
         return 0;
     };
     score += Math.max(squashScore(qSquash), squashScore(qCoreSquash));
@@ -253,19 +278,32 @@ function scoreFood(query, food) {
 
 /**
  * Rank foods for a query.
+ *
+ * `foods` may be raw food objects or the output of prepareFoods(). Passing
+ * prepared entries is what makes this affordable at ~10k rows on every
+ * keystroke — without it, each query re-tokenizes every name and re-normalizes
+ * the query once per food.
+ *
  * @returns {Array<{food:object, score:number}>} sorted, best first
  */
 function rankFoods(query, foods, limit = 25) {
+    const q = prepareQuery(query);
+    if (!q.qNorm) return [];
+
     const out = [];
-    for (const food of foods) {
-        const score = scoreFood(query, food);
-        if (score > 0) out.push({ food, score });
+    for (const entry of foods) {
+        const p = entry.nameTokens ? entry : prepareFood(entry);
+        const score = scorePrepared(q, p);
+        if (score > 0) out.push({ food: p.food, score, len: p.nameLen });
     }
-    out.sort((a, b) => (b.score - a.score) || a.food.name.length - b.food.name.length);
-    return out.slice(0, limit);
+    out.sort((a, b) => (b.score - a.score) || (a.len - b.len));
+    return out.slice(0, limit).map(({ food, score }) => ({ food, score }));
 }
 
 module.exports = {
+    prepareFood,
+    prepareFoods,
+    prepareQuery,
     normalize,
     squash,
     tokenize,

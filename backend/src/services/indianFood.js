@@ -6,7 +6,12 @@
 
 const indianFoods = require('../data/indian-foods.json');
 const { buildServingVariants } = require('../utils/cookingMedium');
-const { rankFoods } = require('../utils/foodSearch');
+const { rankFoods, prepareFoods } = require('../utils/foodSearch');
+
+// Normalized/tokenized once at startup rather than on every keystroke. With
+// ~10k rows this is the difference between a search costing ~100ms and ~10ms;
+// it is a cache of derived fields, so ranking is bit-identical either way.
+const preparedFoods = prepareFoods(indianFoods);
 
 // Build lookup map for fast ID-based access
 const foodById = new Map();
@@ -29,7 +34,7 @@ function searchFoods(query, limit = 25) {
     // tests. The scorer it replaced counted matched words at a flat rate, so
     // "smash burger" surfaced "English Oven Burger Bun" (one word of two) and
     // any typo — "chiken", "burgar" — returned nothing at all.
-    const scored = rankFoods(query, indianFoods, limit);
+    const scored = rankFoods(query, preparedFoods, limit);
 
     return {
         foods: scored.map(({ food }) => ({
