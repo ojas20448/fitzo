@@ -12,7 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { friendsAPI, leaderboardAPI } from '../../services/api';
+import { friendsAPI, leaderboardAPI, settingsAPI } from '../../services/api';
+import FriendsIntroSheet from '../../components/FriendsIntroSheet';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import EmptyState from '../../components/EmptyState';
@@ -56,6 +57,29 @@ const GymBuddiesScreen: React.FC = () => {
     const [celebrationVisible, setCelebrationVisible] = useState(false);
     const [celebrationTitle, setCelebrationTitle] = useState('');
     const [celebrationSubtitle, setCelebrationSubtitle] = useState('');
+
+    // One-time disclosure of what buddies can see. Checked once on mount, not
+    // in useFocusEffect — a privacy notice that reappears every time the tab
+    // regains focus reads as a bug and gets dismissed unread.
+    const [showIntro, setShowIntro] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        settingsAPI.getSharingPreference()
+            .then((r) => { if (!cancelled && r?.friends_intro_seen === false) setShowIntro(true); })
+            // Never block the screen on this. If the call fails we simply do
+            // not show the sheet this time; it is account-scoped, so the next
+            // successful load still catches them.
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, []);
+
+    const dismissIntro = () => {
+        setShowIntro(false);
+        // Fire-and-forget: the member has already read it, so a failed write
+        // should not trap them behind the sheet. Worst case it shows once more.
+        settingsAPI.markFriendsIntroSeen().catch(() => {});
+    };
 
     useEffect(() => {
         loadData();
@@ -504,6 +528,15 @@ const GymBuddiesScreen: React.FC = () => {
                 title={celebrationTitle}
                 subtitle={celebrationSubtitle}
                 onComplete={() => setCelebrationVisible(false)}
+            />
+
+            <FriendsIntroSheet
+                visible={showIntro}
+                onDismiss={dismissIntro}
+                onOpenSharingSettings={() => {
+                    dismissIntro();
+                    router.push('/member/settings');
+                }}
             />
         </SafeAreaView>
     );

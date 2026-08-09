@@ -364,6 +364,13 @@ export const settingsAPI = {
         const response = await api.patch('/settings/sharing', { share_logs_default: shareLogsDefault });
         return response.data;
     },
+    // Sent alone, without share_logs_default — the endpoint treats the
+    // acknowledgement as its own update so dismissing the Friends disclosure
+    // cannot overwrite the member's sharing preference.
+    markFriendsIntroSeen: async () => {
+        const response = await api.patch('/settings/sharing', { friends_intro_seen: true });
+        return response.data;
+    },
     deleteAccount: async () => {
         const response = await api.delete('/auth/account');
         return response.data;

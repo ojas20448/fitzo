@@ -112,7 +112,7 @@ router.get('/sharing', asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
     const result = await query(
-        `SELECT share_logs_default, share_logs_updated_at
+        `SELECT share_logs_default, share_logs_updated_at, friends_intro_seen
          FROM users
          WHERE id = $1`,
         [userId]
@@ -124,7 +124,11 @@ router.get('/sharing', asyncHandler(async (req, res) => {
 
     res.json({
         share_logs_default: result.rows[0].share_logs_default,
-        updated_at: result.rows[0].share_logs_updated_at
+        updated_at: result.rows[0].share_logs_updated_at,
+        // Drives the one-time "what your buddies can see" disclosure on the
+        // Friends tab. Account-scoped, not device-scoped, so it does not
+        // reappear on a new phone.
+        friends_intro_seen: result.rows[0].friends_intro_seen
     });
 }));
 
@@ -134,7 +138,26 @@ router.get('/sharing', asyncHandler(async (req, res) => {
  */
 router.patch('/sharing', asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const { share_logs_default } = req.body;
+    const { share_logs_default, friends_intro_seen } = req.body;
+
+    // Acknowledging the disclosure is its own PATCH and must not require
+    // sending a sharing preference — otherwise dismissing the popup would
+    // silently rewrite share_logs_default to whatever the client happened to
+    // have in state.
+    if (friends_intro_seen !== undefined) {
+        if (typeof friends_intro_seen !== 'boolean') {
+            throw new ValidationError('friends_intro_seen must be a boolean');
+        }
+        const ack = await query(
+            `UPDATE users SET friends_intro_seen = $1 WHERE id = $2
+             RETURNING friends_intro_seen`,
+            [friends_intro_seen, userId]
+        );
+        if (ack.rows.length === 0) throw new ValidationError('User not found');
+        if (share_logs_default === undefined) {
+            return res.json({ success: true, friends_intro_seen: ack.rows[0].friends_intro_seen });
+        }
+    }
 
     // Validate input
     if (typeof share_logs_default !== 'boolean') {
