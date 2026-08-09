@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { IST_TODAY_SQL } = require('../utils/dayBoundary');
-const { query } = require('../config/database');
+const { query, getClient } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, ConflictError, NotFoundError, asyncHandler } = require('../utils/errors');
 const pushNotifications = require('../services/pushNotifications');
@@ -180,19 +180,31 @@ router.post('/request', authenticate, asyncHandler(async (req, res) => {
         throw new NotFoundError("User not found");
     }
 
-    // Check if already friends or pending
+    // A block must stop a request from EITHER side, so this reads both
+    // directions. The previous version looked only at (me -> them), which meant
+    // being blocked by someone did not prevent you from requesting them again —
+    // the block row is (them -> me), and it was never consulted.
     const existingResult = await query(
-        `SELECT status FROM friendships 
-     WHERE user_id = $1 AND friend_id = $2`,
+        `SELECT user_id, status FROM friendships
+         WHERE (user_id = $1 AND friend_id = $2)
+            OR (user_id = $2 AND friend_id = $1)`,
         [userId, friend_id]
     );
 
-    if (existingResult.rows.length > 0) {
-        const status = existingResult.rows[0].status;
-        if (status === 'accepted') {
+    const blocked = existingResult.rows.find(r => r.status === 'blocked');
+    if (blocked) {
+        // Deliberately the same message whichever way the block runs. Telling
+        // someone "this person blocked you" hands them information the blocker
+        // did not choose to share.
+        throw new ConflictError("You can't send a request to this user");
+    }
+
+    const mine = existingResult.rows.find(r => r.user_id === userId);
+    if (mine) {
+        if (mine.status === 'accepted') {
             throw new ConflictError("You're already gym buddies!");
         }
-        if (status === 'pending') {
+        if (mine.status === 'pending') {
             throw new ConflictError("Friend request already sent");
         }
     }
@@ -228,7 +240,8 @@ router.post('/request', authenticate, asyncHandler(async (req, res) => {
     // Create pending request
     await query(
         `INSERT INTO friendships (user_id, friend_id, status) 
-     VALUES ($1, $2, 'pending')`,
+     VALUES ($1, $2, 'pending')
+     ON CONFLICT (user_id, friend_id) DO UPDATE SET status = 'pending', updated_at = NOW()`,
         [userId, friend_id]
     );
 
@@ -394,21 +407,38 @@ router.post('/:id/block', authenticate, asyncHandler(async (req, res) => {
         throw new ValidationError("You can't block yourself");
     }
 
-    // Remove any existing friendship records
-    await query(
-        `DELETE FROM friendships
-         WHERE (user_id = $1 AND friend_id = $2)
-            OR (user_id = $2 AND friend_id = $1)`,
-        [userId, targetId]
-    );
+    // These two statements MUST be atomic. They used to be separate pool.query
+    // calls, and because 'blocked' was not a value of friendship_status until
+    // migration 010, the INSERT threw 22P02 *after* the DELETE had committed:
+    // pressing Block silently un-friended the pair, returned a 500, and left
+    // the blocked user free to send a fresh request. Blocking had never once
+    // worked in production. A transaction makes the failure mode "nothing
+    // happened" instead of "your friendship was deleted".
+    const client = await getClient();
+    try {
+        await client.query('BEGIN');
 
-    // Create a blocked record
-    await query(
-        `INSERT INTO friendships (user_id, friend_id, status)
-         VALUES ($1, $2, 'blocked')
-         ON CONFLICT (user_id, friend_id) DO UPDATE SET status = 'blocked', updated_at = NOW()`,
-        [userId, targetId]
-    );
+        await client.query(
+            `DELETE FROM friendships
+             WHERE (user_id = $1 AND friend_id = $2)
+                OR (user_id = $2 AND friend_id = $1)`,
+            [userId, targetId]
+        );
+
+        await client.query(
+            `INSERT INTO friendships (user_id, friend_id, status)
+             VALUES ($1, $2, 'blocked')
+             ON CONFLICT (user_id, friend_id) DO UPDATE SET status = 'blocked', updated_at = NOW()`,
+            [userId, targetId]
+        );
+
+        await client.query('COMMIT');
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw err;
+    } finally {
+        client.release();
+    }
 
     res.json({ message: 'User blocked' });
 }));
