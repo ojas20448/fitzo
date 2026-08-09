@@ -43,6 +43,7 @@ const GymBuddiesScreen: React.FC = () => {
     const [friends, setFriends] = useState<Friend[]>([]);
     const [pendingRequests, setPendingRequests] = useState<any[]>([]);
     const [sentRequests, setSentRequests] = useState<any[]>([]);
+    const [loadFailed, setLoadFailed] = useState(false);
     const [suggested, setSuggested] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -83,10 +84,10 @@ const GymBuddiesScreen: React.FC = () => {
         settingsAPI.markFriendsIntroSeen().catch(() => {});
     };
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
+    // useFocusEffect ALSO fires on first render, so pairing it with a mount
+    // useEffect ran every request on this screen twice — three network calls
+    // duplicated on the slowest entry in the app. The focus effect alone
+    // covers both the first paint and every return to the tab.
     useFocusEffect(
         useCallback(() => {
             loadData();
@@ -95,11 +96,19 @@ const GymBuddiesScreen: React.FC = () => {
 
     const loadData = async () => {
         try {
+            // getFriends is NOT caught here any more. It used to fall back to
+            // an empty payload, which meant a cold-start or a 502 rendered
+            // "No Gym Buddies Yet" — the app telling a member with eight
+            // buddies that they had none, with no error and no explanation.
+            // "The request failed" and "the server says zero" must not look
+            // identical. getSuggested keeps its fallback: it is decoration,
+            // and losing it should not take the screen down.
             const [friendsRes, suggestedRes] = await Promise.all([
-                friendsAPI.getFriends().catch(() => ({ friends: [], pending_requests: [], sent_requests: [] })),
+                friendsAPI.getFriends(),
                 friendsAPI.getSuggested(5).catch(() => ({ suggested: [] })),
             ]);
 
+            setLoadFailed(false);
             setFriends(friendsRes.friends || []);
             setPendingRequests(friendsRes.pending_requests || []);
             // GET /api/friends has always returned sent_requests; the screen
@@ -110,7 +119,8 @@ const GymBuddiesScreen: React.FC = () => {
 
             await loadLeaderboard();
         } catch (error: any) {
-            toast.error('Error', error.message || 'Something went wrong');
+            setLoadFailed(true);
+            toast.error('Could not load buddies', error.message || 'Something went wrong');
         } finally {
             setLoading(false);
         }
@@ -331,17 +341,41 @@ const GymBuddiesScreen: React.FC = () => {
 
                     {searchResults.length > 0 && (
                         <View style={styles.searchResults}>
-                            {searchResults.map((user) => (
-                                <TouchableOpacity
-                                    key={user.id}
-                                    style={styles.searchResultItem}
-                                    onPress={() => handleSendRequest(user.id)}
-                                >
-                                    <Avatar uri={user.avatar_url} name={user.name} size="sm" />
-                                    <Text style={styles.searchResultName}>{user.name}</Text>
-                                    <MaterialIcons name="person-add" size={20} color={colors.primary} />
-                                </TouchableOpacity>
-                            ))}
+                            {searchResults.map((user) => {
+                                // The search endpoint has always returned
+                                // friendship_status and the row discarded it, so
+                                // an existing buddy and someone you had already
+                                // asked both rendered as an identical "add"
+                                // affordance — tapping it just produced a
+                                // conflict error from the server.
+                                const status = user.friendship_status;
+                                const label =
+                                    status === 'friend' ? 'Buddy'
+                                        : status === 'pending_sent' ? 'Requested'
+                                            : status === 'pending_received' ? 'Wants to add you'
+                                                : status === 'blocked' ? 'Blocked'
+                                                    : null;
+                                const actionable = !label;
+
+                                return (
+                                    <TouchableOpacity
+                                        key={user.id}
+                                        style={styles.searchResultItem}
+                                        onPress={actionable ? () => handleSendRequest(user.id) : undefined}
+                                        disabled={!actionable}
+                                        accessibilityRole="button"
+                                        accessibilityLabel={
+                                            actionable ? `Send friend request to ${user.name}` : `${user.name} — ${label}`
+                                        }
+                                    >
+                                        <Avatar uri={user.avatar_url} name={user.name} size="sm" />
+                                        <Text style={styles.searchResultName}>{user.name}</Text>
+                                        {actionable
+                                            ? <MaterialIcons name="person-add" size={20} color={colors.primary} />
+                                            : <Text style={styles.searchResultStatus}>{label}</Text>}
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
                     )}
                 </View>
@@ -452,7 +486,18 @@ const GymBuddiesScreen: React.FC = () => {
                         )}
 
                         {/* Friends List */}
-                        {friends.length === 0 ? (
+                        {friends.length === 0 && loadFailed ? (
+                            // A failed load is NOT an empty list. Telling someone
+                            // with buddies that they have none is worse than
+                            // telling them the request failed.
+                            <EmptyState
+                                variant="error"
+                                title="Couldn't load your buddies"
+                                message="Pull down to try again."
+                                actionLabel="Retry"
+                                onAction={loadData}
+                            />
+                        ) : friends.length === 0 ? (
                             <EmptyState
                                 variant="no-friends"
                                 title="No Gym Buddies Yet"
@@ -560,9 +605,14 @@ const GymBuddiesScreen: React.FC = () => {
                                         <View style={styles.kudosAction}>
                                             <TouchableOpacity
                                                 onPress={() => handleSendKudos(item.id, item.name)}
-                                                disabled={item.has_kudoed || sendingKudosId === item.id}
+                                                // The leaderboard includes the requester, so this row
+                                                // can be you. Fist-bumping yourself offered a tappable
+                                                // button that could only ever return an error from the
+                                                // server, which reads as the feature being broken.
+                                                disabled={item.id === user?.id || item.has_kudoed || sendingKudosId === item.id}
                                                 style={[
                                                     styles.kudosBtn,
+                                                    item.id === user?.id && styles.kudosBtnSelf,
                                                     item.has_kudoed && styles.kudosBtnKudoed
                                                 ]}
                                             >
@@ -781,6 +831,14 @@ const styles = StyleSheet.create({
     // Deliberately quieter than accept: same hit area so it is not fiddly to
     // press, but outlined rather than filled so the affirmative action stays
     // the obvious one.
+    // Your own row: the count still reads, the button just stops pretending
+    // to be pressable.
+    kudosBtnSelf: { opacity: 0.35 },
+    searchResultStatus: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+    },
     sentTag: {
         fontSize: typography.sizes['2xs'],
         fontFamily: typography.fontFamily.medium,

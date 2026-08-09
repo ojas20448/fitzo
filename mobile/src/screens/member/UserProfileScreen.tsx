@@ -67,6 +67,7 @@ export default function UserProfileScreen() {
     const userAvatar = params.userAvatar || null;
 
     const [status, setStatus] = useState<FriendshipStatus>('none');
+    const [statusFailed, setStatusFailed] = useState(false);
     const [buddyData, setBuddyData] = useState<BuddyData | null>(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
@@ -75,15 +76,21 @@ export default function UserProfileScreen() {
     const loadData = useCallback(async () => {
         if (!userId) return;
         try {
+            // The status fetch is NOT caught into a default any more. Falling
+            // back to 'none' rendered a confident "Add Friend" button for
+            // someone who is already a buddy — or who blocked you — so a
+            // transient error produced a wrong screen rather than a visibly
+            // failed one, and tapping it just returned a conflict.
             const [statusRes, activityRes] = await Promise.all([
-                friendsAPI.getFriendshipStatus(userId).catch(() => ({ status: 'none' })),
+                friendsAPI.getFriendshipStatus(userId),
                 buddyActivityAPI.getActivity(userId).catch(() => null),
             ]);
 
+            setStatusFailed(false);
             setStatus(statusRes.status as FriendshipStatus);
             if (activityRes) setBuddyData(activityRes);
         } catch {
-            // ignore
+            setStatusFailed(true);
         } finally {
             setLoading(false);
         }
@@ -261,7 +268,15 @@ export default function UserProfileScreen() {
 
                 {/* Action Buttons */}
                 <View style={styles.actionsRow}>
-                    {status === 'none' && (
+                    {statusFailed && (
+                        // We do not know the relationship, so we do not guess it.
+                        // Offering "Add Friend" here would be a confident lie.
+                        <TouchableOpacity style={styles.primaryBtn} onPress={loadData}>
+                            <MaterialIcons name="refresh" size={18} color={colors.text.dark} />
+                            <Text style={styles.primaryBtnText}>Retry</Text>
+                        </TouchableOpacity>
+                    )}
+                    {!statusFailed && status === 'none' && (
                         <TouchableOpacity
                             style={styles.primaryBtn}
                             onPress={handleAddFriend}
