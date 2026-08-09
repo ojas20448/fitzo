@@ -19,12 +19,21 @@ router.get('/:id', asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const friendId = req.params.id;
 
-    // Check if they are accepted friends
+    // Check if they are accepted friends.
+    //
+    // The direction test MUST stay wrapped in its own parentheses. Without
+    // them, SQL binds AND tighter than OR and the predicate becomes
+    //   (user_id=$1 AND friend_id=$2) OR ((user_id=$2 AND friend_id=$1) AND status='accepted')
+    // which leaves the first direction completely unfiltered by status. Since
+    // POST /api/friends/request inserts (requester, target, 'pending'), merely
+    // SENDING a request — or having one rejected — was enough to read the
+    // target's private activity. Verified against the production database:
+    // the unparenthesised form returns true for 'pending' and 'rejected'.
     const friendshipResult = await query(
         `SELECT status FROM friendships
-         WHERE (user_id = $1 AND friend_id = $2)
-            OR (user_id = $2 AND friend_id = $1)
-         AND status = 'accepted'`,
+         WHERE ((user_id = $1 AND friend_id = $2)
+             OR (user_id = $2 AND friend_id = $1))
+           AND status = 'accepted'`,
         [userId, friendId]
     );
 
