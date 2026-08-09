@@ -7,7 +7,6 @@ const { query } = require('../config/database');
 const { generateToken } = require('../middleware/auth');
 const { ValidationError, AuthError, NotFoundError, asyncHandler } = require('../utils/errors');
 const { OAuth2Client } = require('google-auth-library');
-const axios = require('axios');
 const { Resend } = require('resend');
 const { validate } = require('../middleware/validate');
 const { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } = require('../schemas');
@@ -277,40 +276,40 @@ router.post('/google', asyncHandler(async (req, res) => {
 
         console.log('✅ Google Token Verified for:', email);
     } catch (idTokenError) {
-        if (process.env.NODE_ENV !== 'production') {
-            console.log('⚠️  ID token verification failed, trying access token...', idTokenError.message);
+        // There used to be an access-token fallback here: if ID-token
+        // verification failed, the route called Google's userinfo endpoint with
+        // the value as a bearer token and trusted whatever email came back.
+        //
+        // That is an account-takeover primitive. userinfo accepts an access
+        // token minted by ANY OAuth client, so a token obtained by an unrelated
+        // app — one the victim signed into once — authenticated as that victim
+        // here, and the route issued them a Fitzo JWT. No password, no
+        // interaction with our own Google client.
+        //
+        // It also hid the real failure: a wrong-audience ID token fell through
+        // to the fallback, failed there too, and surfaced as the same opaque
+        // "Invalid authentication token", which is why audience problems were
+        // undiagnosable from a phone.
+        //
+        // The shipped client only ever sends an ID token, so nothing legitimate
+        // depended on it. Do not reintroduce it.
 
-            // Attempt to decode the token to log its audience if verification fails
-            try {
-                const decodedToken = JSON.parse(Buffer.from(finalToken.split('.')[1], 'base64').toString());
-                console.log('⚠️  Decoded token audience (aud):', decodedToken.aud);
-            } catch (decodeError) {
-                console.log('⚠️  Could not decode token for audience check:', decodeError.message);
-            }
-        }
-
+        // Log the audience the token actually carried — this is the single most
+        // useful line for diagnosing a client/server client-ID mismatch, and it
+        // is NOT gated to non-production, because production is where the
+        // mismatch happens. The aud claim is not a secret.
+        let aud = 'unparseable';
         try {
-            // Fallback: Treat as access_token and fetch user info from Google
-            const userInfoResponse = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: { Authorization: `Bearer ${finalToken}` }
-            });
+            aud = JSON.parse(Buffer.from(finalToken.split('.')[1], 'base64').toString()).aud;
+        } catch { /* not a JWT at all */ }
 
-            const userInfo = userInfoResponse.data;
-            email = userInfo.email;
-            name = userInfo.name;
-            picture = userInfo.picture;
-            googleId = userInfo.sub;
-            // userinfo returns this as the string "true"/"false" in some
-            // responses and a boolean in others, so normalise both.
-            emailVerified = userInfo.email_verified === true || userInfo.email_verified === 'true';
+        console.error(
+            '❌ Google ID token rejected:', idTokenError.message,
+            '| token aud:', aud,
+            '| accepted audiences:', configuredAudiences
+        );
 
-            if (!email) {
-                throw new Error('Could not get email from Google token');
-            }
-        } catch (accessTokenError) {
-            console.error('❌ Google token verification failed:', idTokenError.message, '|', accessTokenError.message);
-            throw new AuthError('Google login failed: Invalid authentication token');
-        }
+        throw new AuthError('Google login failed: Invalid authentication token');
     }
 
     // Accounts are matched to an existing user BY EMAIL below. That is only
