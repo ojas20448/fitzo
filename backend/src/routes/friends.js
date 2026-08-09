@@ -29,13 +29,20 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
        get_user_streak(u.id) as streak,
        lw.last_workout_date,
        lw.last_workout_type,
+       -- IST_TODAY_SQL, not CURRENT_DATE. The database runs UTC, so between
+       -- 00:00 and 05:30 IST a bare CURRENT_DATE is still yesterday. The second
+       -- branch was the worst of it: it converted the timestamp to IST and then
+       -- compared that against a UTC date, so a session finished at 01:00 IST
+       -- had date 08-10 tested against CURRENT_DATE 08-09 and simply vanished
+       -- from "worked out today". Verified on the live DB — 19:00-23:59 UTC
+       -- disagree, exactly the 00:00-05:30 IST window.
        (EXISTS(
          SELECT 1 FROM workout_logs wl
-         WHERE wl.user_id = u.id AND wl.logged_date = CURRENT_DATE
+         WHERE wl.user_id = u.id AND wl.logged_date = ${IST_TODAY_SQL}
        ) OR EXISTS(
          SELECT 1 FROM workout_sessions ws
          WHERE ws.user_id = u.id AND ws.completed_at IS NOT NULL
-         AND DATE(ws.completed_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+         AND DATE(ws.completed_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
        )) as worked_out_today,
        EXISTS(
          SELECT 1 FROM calorie_logs cl
@@ -50,7 +57,7 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
      )
      LEFT JOIN attendances a ON (
        u.id = a.user_id
-       AND DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+       AND DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
      )
      LEFT JOIN LATERAL (
        SELECT logged_date as last_workout_date, workout_type as last_workout_type
@@ -529,8 +536,8 @@ router.get('/suggested', authenticate, asyncHandler(async (req, res) => {
              OR (f.friend_id = $1 AND f.user_id = u.id)
          )
          LEFT JOIN attendances a ON (
-             u.id = a.user_id 
-             AND DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+             u.id = a.user_id
+             AND DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
          )
          WHERE u.gym_id = $2 
            AND u.id != $1
