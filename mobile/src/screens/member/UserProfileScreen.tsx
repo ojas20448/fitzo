@@ -154,6 +154,17 @@ export default function UserProfileScreen() {
         );
     };
 
+    // A "more options" icon that fires a destructive confirmation on the first
+    // tap is a trap: the affordance promises a menu and delivers a block
+    // dialog. Blocking stays one tap away, but behind something that actually
+    // looks like what it is.
+    const handleMoreOptions = () => {
+        Alert.alert(userName, undefined, [
+            { text: `Block ${userName}`, style: 'destructive', onPress: handleBlock },
+            { text: 'Cancel', style: 'cancel' },
+        ]);
+    };
+
     const handleBlock = async () => {
         Alert.alert(
             'Block User',
@@ -213,7 +224,13 @@ export default function UserProfileScreen() {
                     <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{userName}</Text>
-                <TouchableOpacity onPress={handleBlock} style={styles.backBtn} disabled={status === 'blocked'}>
+                <TouchableOpacity
+                    onPress={handleMoreOptions}
+                    style={styles.backBtn}
+                    disabled={status === 'blocked'}
+                    accessibilityRole="button"
+                    accessibilityLabel={`More options for ${userName}`}
+                >
                     <MaterialIcons name="more-vert" size={24} color={colors.text.muted} />
                 </TouchableOpacity>
             </View>

@@ -8,6 +8,7 @@ import {
     RefreshControl,
     TextInput,
     ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -41,6 +42,7 @@ const GymBuddiesScreen: React.FC = () => {
     const toast = useToast();
     const [friends, setFriends] = useState<Friend[]>([]);
     const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+    const [sentRequests, setSentRequests] = useState<any[]>([]);
     const [suggested, setSuggested] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -100,6 +102,10 @@ const GymBuddiesScreen: React.FC = () => {
 
             setFriends(friendsRes.friends || []);
             setPendingRequests(friendsRes.pending_requests || []);
+            // GET /api/friends has always returned sent_requests; the screen
+            // fetched it and threw it away, so a member had no way to see that
+            // they had already asked someone. The usual result is asking again.
+            setSentRequests(friendsRes.sent_requests || []);
             setSuggested(suggestedRes.suggested || []);
 
             await loadLeaderboard();
@@ -159,6 +165,37 @@ const GymBuddiesScreen: React.FC = () => {
         } catch (error: any) {
             toast.error('Failed to accept request', error.message);
         }
+    };
+
+    // The backend has exposed POST /friends/reject and the client has wrapped it
+    // all along, but nothing ever called it — the request card rendered an
+    // accept button and nothing else, so an unwanted request could only be
+    // accepted or left sitting there forever.
+    //
+    // Confirmed rather than silent: declining is not reversible from this
+    // screen, and the sender is not told, so the member should know which of
+    // those they are choosing.
+    const handleRejectRequest = (friendId: string, name: string) => {
+        Alert.alert(
+            `Decline ${name}?`,
+            "They won't be told, and the request will disappear from your list.",
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Decline',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await friendsAPI.rejectRequest(friendId);
+                            toast.success('Request declined', `${name}'s request was removed`);
+                            await loadData();
+                        } catch (error: any) {
+                            toast.error('Could not decline request', error.message);
+                        }
+                    },
+                },
+            ],
+        );
     };
 
     const handleSearch = async (query: string) => {
@@ -300,7 +337,7 @@ const GymBuddiesScreen: React.FC = () => {
                                     style={styles.searchResultItem}
                                     onPress={() => handleSendRequest(user.id)}
                                 >
-                                    <Avatar uri={user.avatar_url} size="sm" />
+                                    <Avatar uri={user.avatar_url} name={user.name} size="sm" />
                                     <Text style={styles.searchResultName}>{user.name}</Text>
                                     <MaterialIcons name="person-add" size={20} color={colors.primary} />
                                 </TouchableOpacity>
@@ -342,7 +379,7 @@ const GymBuddiesScreen: React.FC = () => {
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestedList}>
                                     {suggested.map((user) => (
                                         <GlassCard key={user.id} style={styles.suggestedCard}>
-                                            <Avatar uri={user.avatar_url} size="md" />
+                                            <Avatar uri={user.avatar_url} name={user.name} size="md" />
                                             <Text style={styles.suggestedName} numberOfLines={1}>{user.name}</Text>
                                             {user.last_checkin && (
                                                 <Text style={styles.suggestedSubtext}>Recently at gym</Text>
@@ -367,7 +404,7 @@ const GymBuddiesScreen: React.FC = () => {
                                 {pendingRequests.map((request) => (
                                     <GlassCard key={request.id} style={styles.requestCard}>
                                         <View style={styles.requestInfo}>
-                                            <Avatar uri={request.avatar_url} size="md" />
+                                            <Avatar uri={request.avatar_url} name={request.name} size="md" />
                                             <View style={styles.requestText}>
                                                 <Text style={styles.requestName}>{request.name}</Text>
                                                 <Text style={styles.requestTime}>Wants to be your gym buddy</Text>
@@ -375,12 +412,40 @@ const GymBuddiesScreen: React.FC = () => {
                                         </View>
                                         <View style={styles.requestActions}>
                                             <TouchableOpacity
+                                                style={styles.declineBtn}
+                                                onPress={() => handleRejectRequest(request.id, request.name)}
+                                                accessibilityRole="button"
+                                                accessibilityLabel={`Decline request from ${request.name}`}
+                                            >
+                                                <MaterialIcons name="close" size={20} color={colors.text.secondary} />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
                                                 style={styles.acceptBtn}
                                                 onPress={() => handleAcceptRequest(request.id)}
+                                                accessibilityRole="button"
+                                                accessibilityLabel={`Accept request from ${request.name}`}
                                             >
                                                 <MaterialIcons name="check" size={20} color={colors.background} />
                                             </TouchableOpacity>
                                         </View>
+                                    </GlassCard>
+                                ))}
+                            </View>
+                        )}
+
+                        {sentRequests.length > 0 && (
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Sent</Text>
+                                {sentRequests.map((request) => (
+                                    <GlassCard key={request.id} style={styles.requestCard}>
+                                        <View style={styles.requestInfo}>
+                                            <Avatar uri={request.avatar_url} name={request.name} size="md" />
+                                            <View style={styles.requestText}>
+                                                <Text style={styles.requestName}>{request.name}</Text>
+                                                <Text style={styles.requestTime}>Waiting for them to accept</Text>
+                                            </View>
+                                        </View>
+                                        <Text style={styles.sentTag}>PENDING</Text>
                                     </GlassCard>
                                 ))}
                             </View>
@@ -487,7 +552,7 @@ const GymBuddiesScreen: React.FC = () => {
                                         <View style={styles.rankContainer}>
                                             <Text style={styles.rankText}>{rankIcon}</Text>
                                         </View>
-                                        <Avatar uri={item.avatar_url} size="md" />
+                                        <Avatar uri={item.avatar_url} name={item.name} size="md" />
                                         <View style={styles.leaderboardInfo}>
                                             <Text style={styles.leaderboardName} numberOfLines={1}>{item.name}</Text>
                                             <Text style={styles.leaderboardXp}>{item.weekly_xp || 0} XP</Text>
@@ -712,6 +777,31 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    // Deliberately quieter than accept: same hit area so it is not fiddly to
+    // press, but outlined rather than filled so the affirmative action stays
+    // the obvious one.
+    sentTag: {
+        fontSize: typography.sizes['2xs'],
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+        letterSpacing: 0.8,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.sm,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+    },
+    declineBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        backgroundColor: colors.glass.surface,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.sm,
     },
     friendCard: {
         flexDirection: 'row',
