@@ -1,52 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { nutritionAPI } from '../services/api';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
-
-interface PresetItem {
-    meal_name: string;
-    calories: number;
-    protein?: number;
-    carbs?: number;
-    fat?: number;
-}
-
-interface Preset {
-    id: string;
-    name: string;
-    emoji: string;
-    items: PresetItem[];
-}
+import MealBuilderSheet, { Preset } from './MealBuilderSheet';
 
 interface ThaliPresetsProps {
     onLogged?: (preset: Preset, totalCalories: number) => void;
     onError?: (message: string) => void;
 }
 
+/**
+ * Presets are a STARTING POINT, not a shortcut.
+ *
+ * These used to log their whole item list on one tap. That only works if every
+ * dal-chawal is the same dal-chawal, and it isn't — the roti count changes, the
+ * rice gets skipped, the sabzi is different. Tapping now opens the meal builder
+ * so the member adjusts quantities and drops items before anything is written.
+ */
 const ThaliPresets: React.FC<ThaliPresetsProps> = ({ onLogged, onError }) => {
     const [presets, setPresets] = useState<Preset[]>([]);
-    const [pending, setPending] = useState<string | null>(null);
+    const [open, setOpen] = useState<Preset | null>(null);
 
     useEffect(() => {
         nutritionAPI.getPresets()
             .then((r) => setPresets(r.presets ?? []))
             .catch(() => setPresets([]));
     }, []);
-
-    const logPreset = async (preset: Preset) => {
-        if (pending) return;
-        setPending(preset.id);
-        try {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            const result = await nutritionAPI.logBulk(preset.items);
-            onLogged?.(preset, result?.totals?.calories ?? 0);
-        } catch {
-            onError?.(`Could not log ${preset.name}. Please try again.`);
-        } finally {
-            setPending(null);
-        }
-    };
 
     if (presets.length === 0) return null;
 
@@ -59,25 +39,29 @@ const ThaliPresets: React.FC<ThaliPresetsProps> = ({ onLogged, onError }) => {
                     return (
                         <Pressable
                             key={preset.id}
-                            onPress={() => logPreset(preset)}
-                            disabled={pending !== null}
+                            onPress={() => {
+                                Haptics.selectionAsync();
+                                setOpen(preset);
+                            }}
                             style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
                             accessibilityRole="button"
-                            accessibilityLabel={`Log ${preset.name}, ${kcal} calories`}
+                            // "Open", not "Log" — tapping no longer writes anything.
+                            accessibilityLabel={`Open ${preset.name}, about ${kcal} calories, ${preset.items.length} items to adjust`}
                         >
-                            {pending === preset.id ? (
-                                <ActivityIndicator color={colors.text.primary} />
-                            ) : (
-                                <>
-                                    <Text style={styles.emoji}>{preset.emoji}</Text>
-                                    <Text style={styles.name} numberOfLines={2}>{preset.name}</Text>
-                                    <Text style={styles.meta}>{kcal} kcal · {preset.items.length} items</Text>
-                                </>
-                            )}
+                            <Text style={styles.emoji}>{preset.emoji}</Text>
+                            <Text style={styles.name} numberOfLines={2}>{preset.name}</Text>
+                            <Text style={styles.meta}>~{kcal} kcal · {preset.items.length} items</Text>
                         </Pressable>
                     );
                 })}
             </ScrollView>
+
+            <MealBuilderSheet
+                preset={open}
+                onClose={() => setOpen(null)}
+                onLogged={(p, total) => onLogged?.(p, total)}
+                onError={(m) => onError?.(m)}
+            />
         </View>
     );
 };
