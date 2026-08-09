@@ -1,0 +1,3257 @@
+[
+  {
+    "name": "Haldiram's Paneer Tikka Wrap",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Paneer Tikka Wrap",
+    "kcal": 420
+  },
+  {
+    "name": "Taco Bell Rasgulla (Canned)",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Rasgulla (Canned)",
+    "kcal": 192
+  },
+  {
+    "name": "KFC Cream & Onion Chips",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Cream & Onion Chips",
+    "kcal": 174
+  },
+  {
+    "name": "Nandini Chicken Biryani (Medium)",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Chicken Biryani (Medium)",
+    "kcal": 478
+  },
+  {
+    "name": "Bikanervala Frappuccino",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Frappuccino",
+    "kcal": 358
+  },
+  {
+    "name": "Burger King Dal Makhani (Ready-to-Eat)",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Dal Makhani (Ready-to-Eat)",
+    "kcal": 273
+  },
+  {
+    "name": "Pizza Hut Greek Yogurt",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Greek Yogurt",
+    "kcal": 97
+  },
+  {
+    "name": "Faasos Butter Panner Meal",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Butter Panner Meal",
+    "kcal": 576
+  },
+  {
+    "name": "Nestle Veggie Burger",
+    "brand": "Nestle",
+    "domain": "PACKAGED",
+    "dish": "Veggie Burger",
+    "kcal": 268
+  },
+  {
+    "name": "Barbeque Nation Peanut Butter (2 tbsp)",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Peanut Butter (2 tbsp)",
+    "kcal": 188
+  },
+  {
+    "name": "ITC Cheese Burger",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Cheese Burger",
+    "kcal": 313
+  },
+  {
+    "name": "Chai Point Digestive Biscuits (2 pcs)",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 149
+  },
+  {
+    "name": "Nandini Frappuccino",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Frappuccino",
+    "kcal": 405
+  },
+  {
+    "name": "Mother Dairy Cola (Regular)",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Cola (Regular)",
+    "kcal": 119
+  },
+  {
+    "name": "McDonald's Masala Oats",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Masala Oats",
+    "kcal": 156
+  },
+  {
+    "name": "Haldiram's Tandoori Chicken Pizza",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Tandoori Chicken Pizza",
+    "kcal": 825
+  },
+  {
+    "name": "Lays Cheese Burger",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cheese Burger",
+    "kcal": 319
+  },
+  {
+    "name": "MTR Farmhouse Veg Pizza",
+    "brand": "MTR",
+    "domain": "PACKAGED",
+    "dish": "Farmhouse Veg Pizza",
+    "kcal": 929
+  },
+  {
+    "name": "Starbucks Chicken Biryani (Medium)",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Chicken Biryani (Medium)",
+    "kcal": 487
+  },
+  {
+    "name": "KFC Peanut Butter (2 tbsp)",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Peanut Butter (2 tbsp)",
+    "kcal": 201
+  },
+  {
+    "name": "Subway Plain Yogurt (1 cup)",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 139
+  },
+  {
+    "name": "Britannia Tandoori Chicken Pizza",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Tandoori Chicken Pizza",
+    "kcal": 947
+  },
+  {
+    "name": "Pizza Hut Butter (1 tbsp)",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Butter (1 tbsp)",
+    "kcal": 105
+  },
+  {
+    "name": "Barbeque Nation Chocolate Chip Cookies (2 pcs)",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 184
+  },
+  {
+    "name": "Kurkure Cola (Regular)",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cola (Regular)",
+    "kcal": 131
+  },
+  {
+    "name": "Chai Point Potato Chips",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Potato Chips",
+    "kcal": 179
+  },
+  {
+    "name": "Nestle Greek Yogurt",
+    "brand": "Nestle",
+    "domain": "PACKAGED",
+    "dish": "Greek Yogurt",
+    "kcal": 96
+  },
+  {
+    "name": "Faasos Digestive Biscuits (2 pcs)",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 130
+  },
+  {
+    "name": "MTR Digestive Biscuits (2 pcs)",
+    "brand": "MTR",
+    "domain": "PACKAGED",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 140
+  },
+  {
+    "name": "Lays Protein Bar",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Protein Bar",
+    "kcal": 214
+  },
+  {
+    "name": "Amul Veggie Burger",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Veggie Burger",
+    "kcal": 280
+  },
+  {
+    "name": "Faasos Cheese Noodles",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Cheese Noodles",
+    "kcal": 425
+  },
+  {
+    "name": "KFC Roasted Cashews",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Roasted Cashews",
+    "kcal": 156
+  },
+  {
+    "name": "Lays Peanut Butter (2 tbsp)",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Peanut Butter (2 tbsp)",
+    "kcal": 207
+  },
+  {
+    "name": "Faasos Cream & Onion Chips",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Cream & Onion Chips",
+    "kcal": 169
+  },
+  {
+    "name": "Mother Dairy Chicken Nuggets (6 pcs)",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Chicken Nuggets (6 pcs)",
+    "kcal": 296
+  },
+  {
+    "name": "Mother Dairy Chicken Biryani (Medium)",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Chicken Biryani (Medium)",
+    "kcal": 503
+  },
+  {
+    "name": "Subway Digestive Biscuits (2 pcs)",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 145
+  },
+  {
+    "name": "Kurkure Tandoori Chicken Pizza",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Tandoori Chicken Pizza",
+    "kcal": 1022
+  },
+  {
+    "name": "Starbucks Cheese Burger",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Cheese Burger",
+    "kcal": 360
+  },
+  {
+    "name": "Haldiram's Protein Bar",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Protein Bar",
+    "kcal": 184
+  },
+  {
+    "name": "KFC Protein Bar",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Protein Bar",
+    "kcal": 194
+  },
+  {
+    "name": "Bikano Crispy Chicken Wrap",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Crispy Chicken Wrap",
+    "kcal": 391
+  },
+  {
+    "name": "Bikano Veggie Burger",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Veggie Burger",
+    "kcal": 293
+  },
+  {
+    "name": "Kurkure Chicken Nuggets (6 pcs)",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chicken Nuggets (6 pcs)",
+    "kcal": 315
+  },
+  {
+    "name": "Barbeque Nation Greek Yogurt",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Greek Yogurt",
+    "kcal": 94
+  },
+  {
+    "name": "McDonald's Plain Yogurt (1 cup)",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 140
+  },
+  {
+    "name": "Kurkure Vanilla Ice Cream (1 Scoop)",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Vanilla Ice Cream (1 Scoop)",
+    "kcal": 157
+  },
+  {
+    "name": "Pizza Hut Roasted Cashews",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Roasted Cashews",
+    "kcal": 170
+  },
+  {
+    "name": "Kurkure Instant Noodles",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Instant Noodles",
+    "kcal": 385
+  },
+  {
+    "name": "Maggi Cheese Burger",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Cheese Burger",
+    "kcal": 348
+  },
+  {
+    "name": "Parle Pepperoni Pizza (Regular)",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Pepperoni Pizza (Regular)",
+    "kcal": 1058
+  },
+  {
+    "name": "Parle Butter Panner Meal",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Butter Panner Meal",
+    "kcal": 674
+  },
+  {
+    "name": "KFC Digestive Biscuits (2 pcs)",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 148
+  },
+  {
+    "name": "Starbucks Aloo Bhujia",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Aloo Bhujia",
+    "kcal": 192
+  },
+  {
+    "name": "Pizza Hut Butter Panner Meal",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Butter Panner Meal",
+    "kcal": 742
+  },
+  {
+    "name": "Chai Point Tandoori Chicken Pizza",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Tandoori Chicken Pizza",
+    "kcal": 906
+  },
+  {
+    "name": "Britannia Veggie Burger",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Veggie Burger",
+    "kcal": 306
+  },
+  {
+    "name": "Bikanervala Tandoori Chicken Pizza",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Tandoori Chicken Pizza",
+    "kcal": 1026
+  },
+  {
+    "name": "Lays Crispy Chicken Wrap",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Crispy Chicken Wrap",
+    "kcal": 442
+  },
+  {
+    "name": "Starbucks Chicken Nuggets (6 pcs)",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Chicken Nuggets (6 pcs)",
+    "kcal": 275
+  },
+  {
+    "name": "Chai Point French Fries (Medium)",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "French Fries (Medium)",
+    "kcal": 341
+  },
+  {
+    "name": "Amul Roasted Cashews",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Roasted Cashews",
+    "kcal": 172
+  },
+  {
+    "name": "Haldiram's Cold Coffee",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cold Coffee",
+    "kcal": 277
+  },
+  {
+    "name": "Parle Dal Makhani (Ready-to-Eat)",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Dal Makhani (Ready-to-Eat)",
+    "kcal": 287
+  },
+  {
+    "name": "Parle Protein Bar",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Protein Bar",
+    "kcal": 228
+  },
+  {
+    "name": "Haldiram's Diet Soda",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "Burger King Fruit Juice (1 cup)",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Fruit Juice (1 cup)",
+    "kcal": 114
+  },
+  {
+    "name": "Kurkure Butter Panner Meal",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Butter Panner Meal",
+    "kcal": 663
+  },
+  {
+    "name": "Lays Chocolate Ice Cream (1 Scoop)",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chocolate Ice Cream (1 Scoop)",
+    "kcal": 162
+  },
+  {
+    "name": "Maggi Plain Yogurt (1 cup)",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 169
+  },
+  {
+    "name": "ITC Potato Chips",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Potato Chips",
+    "kcal": 163
+  },
+  {
+    "name": "Mother Dairy Cream & Onion Chips",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Cream & Onion Chips",
+    "kcal": 179
+  },
+  {
+    "name": "Faasos Frappuccino",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Frappuccino",
+    "kcal": 408
+  },
+  {
+    "name": "Britannia Cola (Regular)",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Cola (Regular)",
+    "kcal": 138
+  },
+  {
+    "name": "Taco Bell Paneer Butter Masala (Ready-to-Eat)",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Paneer Butter Masala (Ready-to-Eat)",
+    "kcal": 374
+  },
+  {
+    "name": "Haldiram's Granola Bar",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Granola Bar",
+    "kcal": 145
+  },
+  {
+    "name": "Maggi Tandoori Chicken Pizza",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Tandoori Chicken Pizza",
+    "kcal": 869
+  },
+  {
+    "name": "Barbeque Nation Aloo Bhujia",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Aloo Bhujia",
+    "kcal": 159
+  },
+  {
+    "name": "KFC Chocolate Chip Cookies (2 pcs)",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 191
+  },
+  {
+    "name": "Barbeque Nation Butter (1 tbsp)",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Butter (1 tbsp)",
+    "kcal": 99
+  },
+  {
+    "name": "Haldiram's Farmhouse Veg Pizza",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Farmhouse Veg Pizza",
+    "kcal": 756
+  },
+  {
+    "name": "Maggi Classic Burger",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Classic Burger",
+    "kcal": 310
+  },
+  {
+    "name": "Parle Plain Yogurt (1 cup)",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 147
+  },
+  {
+    "name": "Barbeque Nation Paneer Butter Masala (Ready-to-Eat)",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Paneer Butter Masala (Ready-to-Eat)",
+    "kcal": 343
+  },
+  {
+    "name": "Amul Veg Biryani",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Veg Biryani",
+    "kcal": 502
+  },
+  {
+    "name": "Starbucks Protein Bar",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Protein Bar",
+    "kcal": 212
+  },
+  {
+    "name": "Pizza Hut Protein Bar",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Protein Bar",
+    "kcal": 197
+  },
+  {
+    "name": "Faasos Dal Makhani (Ready-to-Eat)",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Dal Makhani (Ready-to-Eat)",
+    "kcal": 300
+  },
+  {
+    "name": "Subway Rasgulla (Canned)",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Rasgulla (Canned)",
+    "kcal": 219
+  },
+  {
+    "name": "Amul Diet Soda",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "Chai Point Margherita Pizza (Regular)",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Margherita Pizza (Regular)",
+    "kcal": 748
+  },
+  {
+    "name": "Bikano Dark Chocolate Bar",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Dark Chocolate Bar",
+    "kcal": 553
+  },
+  {
+    "name": "Maggi Pepperoni Pizza (Regular)",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Pepperoni Pizza (Regular)",
+    "kcal": 980
+  },
+  {
+    "name": "Chai Point Moong Dal Snack",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Moong Dal Snack",
+    "kcal": 129
+  },
+  {
+    "name": "Starbucks Diet Soda",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "Nandini Crispy Chicken Wrap",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Crispy Chicken Wrap",
+    "kcal": 490
+  },
+  {
+    "name": "Taco Bell Butter Panner Meal",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Butter Panner Meal",
+    "kcal": 558
+  },
+  {
+    "name": "Mother Dairy Peri Peri Fries",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Peri Peri Fries",
+    "kcal": 436
+  },
+  {
+    "name": "McDonald's Cheese Slices (2)",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Cheese Slices (2)",
+    "kcal": 129
+  },
+  {
+    "name": "Barbeque Nation Potato Chips",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Potato Chips",
+    "kcal": 172
+  },
+  {
+    "name": "Faasos Cola (Regular)",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Cola (Regular)",
+    "kcal": 152
+  },
+  {
+    "name": "Haldiram's Milk Chocolate Bar",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Milk Chocolate Bar",
+    "kcal": 584
+  },
+  {
+    "name": "ITC Butter (1 tbsp)",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Butter (1 tbsp)",
+    "kcal": 108
+  },
+  {
+    "name": "Kurkure Peri Peri Fries",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Peri Peri Fries",
+    "kcal": 356
+  },
+  {
+    "name": "ITC Chocolate Chip Cookies (2 pcs)",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 169
+  },
+  {
+    "name": "Parle Greek Yogurt",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Greek Yogurt",
+    "kcal": 97
+  },
+  {
+    "name": "Pizza Hut Frappuccino",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Frappuccino",
+    "kcal": 375
+  },
+  {
+    "name": "McDonald's Butter (1 tbsp)",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Butter (1 tbsp)",
+    "kcal": 87
+  },
+  {
+    "name": "Faasos Paneer Butter Masala (Ready-to-Eat)",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Paneer Butter Masala (Ready-to-Eat)",
+    "kcal": 383
+  },
+  {
+    "name": "Chai Point Butter Panner Meal",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Butter Panner Meal",
+    "kcal": 597
+  },
+  {
+    "name": "McDonald's Aloo Bhujia",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Aloo Bhujia",
+    "kcal": 193
+  },
+  {
+    "name": "Faasos Moong Dal Snack",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Moong Dal Snack",
+    "kcal": 139
+  },
+  {
+    "name": "Britannia Paneer Butter Masala (Ready-to-Eat)",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Paneer Butter Masala (Ready-to-Eat)",
+    "kcal": 401
+  },
+  {
+    "name": "Haldiram's Peri Peri Fries",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Peri Peri Fries",
+    "kcal": 376
+  },
+  {
+    "name": "Taco Bell Protein Bar",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Protein Bar",
+    "kcal": 181
+  },
+  {
+    "name": "Maggi Cream & Onion Chips",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Cream & Onion Chips",
+    "kcal": 163
+  },
+  {
+    "name": "Faasos Aloo Bhujia",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Aloo Bhujia",
+    "kcal": 193
+  },
+  {
+    "name": "Barbeque Nation Moong Dal Snack",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Moong Dal Snack",
+    "kcal": 159
+  },
+  {
+    "name": "Subway Gulab Jamun (Canned)",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Gulab Jamun (Canned)",
+    "kcal": 283
+  },
+  {
+    "name": "Parle Cream & Onion Chips",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Cream & Onion Chips",
+    "kcal": 158
+  },
+  {
+    "name": "Taco Bell Moong Dal Snack",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Moong Dal Snack",
+    "kcal": 134
+  },
+  {
+    "name": "Nandini Moong Dal Snack",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Moong Dal Snack",
+    "kcal": 160
+  },
+  {
+    "name": "Starbucks Milk Chocolate Bar",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Milk Chocolate Bar",
+    "kcal": 454
+  },
+  {
+    "name": "MTR Butter Panner Meal",
+    "brand": "MTR",
+    "domain": "PACKAGED",
+    "dish": "Butter Panner Meal",
+    "kcal": 640
+  },
+  {
+    "name": "McDonald's Fruit Juice (1 cup)",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Fruit Juice (1 cup)",
+    "kcal": 114
+  },
+  {
+    "name": "Pizza Hut Potato Chips",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Potato Chips",
+    "kcal": 137
+  },
+  {
+    "name": "ITC Pepperoni Pizza (Regular)",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Pepperoni Pizza (Regular)",
+    "kcal": 989
+  },
+  {
+    "name": "Subway Butter Panner Meal",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Butter Panner Meal",
+    "kcal": 676
+  },
+  {
+    "name": "Barbeque Nation Butter Panner Meal",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Butter Panner Meal",
+    "kcal": 611
+  },
+  {
+    "name": "ITC Cheese Slices (2)",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Cheese Slices (2)",
+    "kcal": 131
+  },
+  {
+    "name": "Britannia Masala Oats",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Masala Oats",
+    "kcal": 171
+  },
+  {
+    "name": "Barbeque Nation Granola Bar",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Granola Bar",
+    "kcal": 128
+  },
+  {
+    "name": "ITC Cola (Regular)",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Cola (Regular)",
+    "kcal": 137
+  },
+  {
+    "name": "Subway Cold Coffee",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Cold Coffee",
+    "kcal": 262
+  },
+  {
+    "name": "Britannia Plain Yogurt (1 cup)",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 168
+  },
+  {
+    "name": "Bikanervala Cold Coffee",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cold Coffee",
+    "kcal": 280
+  },
+  {
+    "name": "Mother Dairy Moong Dal Snack",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Moong Dal Snack",
+    "kcal": 168
+  },
+  {
+    "name": "Pizza Hut Milk Chocolate Bar",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Milk Chocolate Bar",
+    "kcal": 489
+  },
+  {
+    "name": "Barbeque Nation Rasgulla (Canned)",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Rasgulla (Canned)",
+    "kcal": 228
+  },
+  {
+    "name": "KFC Paneer Butter Masala (Ready-to-Eat)",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Paneer Butter Masala (Ready-to-Eat)",
+    "kcal": 394
+  },
+  {
+    "name": "Starbucks Butter Panner Meal",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Butter Panner Meal",
+    "kcal": 725
+  },
+  {
+    "name": "Burger King Cream & Onion Chips",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Cream & Onion Chips",
+    "kcal": 146
+  },
+  {
+    "name": "Starbucks Plain Yogurt (1 cup)",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 172
+  },
+  {
+    "name": "Starbucks Moong Dal Snack",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Moong Dal Snack",
+    "kcal": 162
+  },
+  {
+    "name": "Taco Bell Dark Chocolate Bar",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Dark Chocolate Bar",
+    "kcal": 609
+  },
+  {
+    "name": "Haldiram's Chocolate Chip Cookies (2 pcs)",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 179
+  },
+  {
+    "name": "Haldiram's Butter Panner Meal",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Butter Panner Meal",
+    "kcal": 611
+  },
+  {
+    "name": "Lays Veg Biryani",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Veg Biryani",
+    "kcal": 521
+  },
+  {
+    "name": "Britannia Rasgulla (Canned)",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Rasgulla (Canned)",
+    "kcal": 241
+  },
+  {
+    "name": "Chai Point Classic Burger",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Classic Burger",
+    "kcal": 261
+  },
+  {
+    "name": "Bikanervala Chicken Biryani (Medium)",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chicken Biryani (Medium)",
+    "kcal": 470
+  },
+  {
+    "name": "Subway Dark Chocolate Bar",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Dark Chocolate Bar",
+    "kcal": 557
+  },
+  {
+    "name": "Starbucks Greek Yogurt",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Greek Yogurt",
+    "kcal": 99
+  },
+  {
+    "name": "Haldiram's Peanut Butter (2 tbsp)",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Peanut Butter (2 tbsp)",
+    "kcal": 193
+  },
+  {
+    "name": "Subway Paneer Butter Masala (Ready-to-Eat)",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Paneer Butter Masala (Ready-to-Eat)",
+    "kcal": 401
+  },
+  {
+    "name": "Maggi Potato Chips",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Potato Chips",
+    "kcal": 138
+  },
+  {
+    "name": "ITC Margherita Pizza (Regular)",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Margherita Pizza (Regular)",
+    "kcal": 813
+  },
+  {
+    "name": "Bikano Margherita Pizza (Regular)",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Margherita Pizza (Regular)",
+    "kcal": 714
+  },
+  {
+    "name": "Burger King Roasted Almonds",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Roasted Almonds",
+    "kcal": 183
+  },
+  {
+    "name": "Starbucks Gulab Jamun (Canned)",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Gulab Jamun (Canned)",
+    "kcal": 311
+  },
+  {
+    "name": "Kurkure Plain Yogurt (1 cup)",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 153
+  },
+  {
+    "name": "ITC Greek Yogurt",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Greek Yogurt",
+    "kcal": 101
+  },
+  {
+    "name": "Nestle Classic Burger",
+    "brand": "Nestle",
+    "domain": "PACKAGED",
+    "dish": "Classic Burger",
+    "kcal": 295
+  },
+  {
+    "name": "Burger King Granola Bar",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Granola Bar",
+    "kcal": 137
+  },
+  {
+    "name": "Britannia Cold Coffee",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Cold Coffee",
+    "kcal": 234
+  },
+  {
+    "name": "Chai Point Cheese Noodles",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Cheese Noodles",
+    "kcal": 411
+  },
+  {
+    "name": "McDonald's Potato Chips",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Potato Chips",
+    "kcal": 167
+  },
+  {
+    "name": "Bikanervala Plain Yogurt (1 cup)",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 161
+  },
+  {
+    "name": "Barbeque Nation Cream & Onion Chips",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Cream & Onion Chips",
+    "kcal": 151
+  },
+  {
+    "name": "Nestle Cheese Burger",
+    "brand": "Nestle",
+    "domain": "PACKAGED",
+    "dish": "Cheese Burger",
+    "kcal": 341
+  },
+  {
+    "name": "Kurkure Frappuccino",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Frappuccino",
+    "kcal": 392
+  },
+  {
+    "name": "Nandini Roasted Cashews",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Roasted Cashews",
+    "kcal": 143
+  },
+  {
+    "name": "Haldiram's Digestive Biscuits (2 pcs)",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 156
+  },
+  {
+    "name": "Amul Chocolate Chip Cookies (2 pcs)",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 190
+  },
+  {
+    "name": "Nandini Margherita Pizza (Regular)",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Margherita Pizza (Regular)",
+    "kcal": 779
+  },
+  {
+    "name": "Subway Potato Chips",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Potato Chips",
+    "kcal": 147
+  },
+  {
+    "name": "Subway Chocolate Chip Cookies (2 pcs)",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 199
+  },
+  {
+    "name": "Nandini Dal Makhani (Ready-to-Eat)",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Dal Makhani (Ready-to-Eat)",
+    "kcal": 305
+  },
+  {
+    "name": "McDonald's Diet Soda",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "Chai Point Diet Soda",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "Barbeque Nation Instant Noodles",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Instant Noodles",
+    "kcal": 402
+  },
+  {
+    "name": "Barbeque Nation Digestive Biscuits (2 pcs)",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 153
+  },
+  {
+    "name": "Mother Dairy Paneer Tikka Wrap",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Paneer Tikka Wrap",
+    "kcal": 409
+  },
+  {
+    "name": "Haldiram's Chicken Biryani (Medium)",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chicken Biryani (Medium)",
+    "kcal": 525
+  },
+  {
+    "name": "Bikano Tandoori Chicken Pizza",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Tandoori Chicken Pizza",
+    "kcal": 1016
+  },
+  {
+    "name": "Mother Dairy Pepperoni Pizza (Regular)",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Pepperoni Pizza (Regular)",
+    "kcal": 1022
+  },
+  {
+    "name": "Britannia Crispy Chicken Wrap",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Crispy Chicken Wrap",
+    "kcal": 513
+  },
+  {
+    "name": "Amul Cheese Burger",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Cheese Burger",
+    "kcal": 329
+  },
+  {
+    "name": "Nandini Paneer Butter Masala (Ready-to-Eat)",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Paneer Butter Masala (Ready-to-Eat)",
+    "kcal": 340
+  },
+  {
+    "name": "McDonald's Instant Noodles",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Instant Noodles",
+    "kcal": 329
+  },
+  {
+    "name": "McDonald's Chocolate Chip Cookies (2 pcs)",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 161
+  },
+  {
+    "name": "Nandini Chocolate Chip Cookies (2 pcs)",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 183
+  },
+  {
+    "name": "Bikanervala Chocolate Ice Cream (1 Scoop)",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chocolate Ice Cream (1 Scoop)",
+    "kcal": 140
+  },
+  {
+    "name": "Parle Cheese Noodles",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Cheese Noodles",
+    "kcal": 364
+  },
+  {
+    "name": "Bikanervala Protein Bar",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Protein Bar",
+    "kcal": 195
+  },
+  {
+    "name": "Barbeque Nation Diet Soda",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "Nestle Peri Peri Fries",
+    "brand": "Nestle",
+    "domain": "PACKAGED",
+    "dish": "Peri Peri Fries",
+    "kcal": 360
+  },
+  {
+    "name": "MTR Frappuccino",
+    "brand": "MTR",
+    "domain": "PACKAGED",
+    "dish": "Frappuccino",
+    "kcal": 403
+  },
+  {
+    "name": "Faasos Protein Bar",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Protein Bar",
+    "kcal": 190
+  },
+  {
+    "name": "Lays Butter Panner Meal",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Butter Panner Meal",
+    "kcal": 707
+  },
+  {
+    "name": "Chai Point Paneer Butter Masala (Ready-to-Eat)",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Paneer Butter Masala (Ready-to-Eat)",
+    "kcal": 299
+  },
+  {
+    "name": "Chai Point Butter (1 tbsp)",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Butter (1 tbsp)",
+    "kcal": 94
+  },
+  {
+    "name": "McDonald's Peanut Butter (2 tbsp)",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Peanut Butter (2 tbsp)",
+    "kcal": 167
+  },
+  {
+    "name": "Amul Cream & Onion Chips",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Cream & Onion Chips",
+    "kcal": 173
+  },
+  {
+    "name": "Barbeque Nation Milk Chocolate Bar",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Milk Chocolate Bar",
+    "kcal": 467
+  },
+  {
+    "name": "Barbeque Nation Cheese Noodles",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Cheese Noodles",
+    "kcal": 372
+  },
+  {
+    "name": "Chai Point Pepperoni Pizza (Regular)",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Pepperoni Pizza (Regular)",
+    "kcal": 869
+  },
+  {
+    "name": "Subway Diet Soda",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "Bikano Protein Bar",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Protein Bar",
+    "kcal": 188
+  },
+  {
+    "name": "Kurkure French Fries (Medium)",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "French Fries (Medium)",
+    "kcal": 361
+  },
+  {
+    "name": "Kurkure Peanut Butter (2 tbsp)",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Peanut Butter (2 tbsp)",
+    "kcal": 191
+  },
+  {
+    "name": "Parle Moong Dal Snack",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Moong Dal Snack",
+    "kcal": 170
+  },
+  {
+    "name": "McDonald's Frappuccino",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Frappuccino",
+    "kcal": 397
+  },
+  {
+    "name": "Parle Farmhouse Veg Pizza",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Farmhouse Veg Pizza",
+    "kcal": 834
+  },
+  {
+    "name": "Faasos Diet Soda",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "Pizza Hut Digestive Biscuits (2 pcs)",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 155
+  },
+  {
+    "name": "Chai Point Peanut Butter (2 tbsp)",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Peanut Butter (2 tbsp)",
+    "kcal": 211
+  },
+  {
+    "name": "Amul Pepperoni Pizza (Regular)",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Pepperoni Pizza (Regular)",
+    "kcal": 948
+  },
+  {
+    "name": "Faasos Peanut Butter (2 tbsp)",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Peanut Butter (2 tbsp)",
+    "kcal": 209
+  },
+  {
+    "name": "Nandini Pepperoni Pizza (Regular)",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Pepperoni Pizza (Regular)",
+    "kcal": 965
+  },
+  {
+    "name": "Nestle Moong Dal Snack",
+    "brand": "Nestle",
+    "domain": "PACKAGED",
+    "dish": "Moong Dal Snack",
+    "kcal": 167
+  },
+  {
+    "name": "Kurkure Chicken Biryani (Medium)",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chicken Biryani (Medium)",
+    "kcal": 527
+  },
+  {
+    "name": "Burger King Roasted Cashews",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Roasted Cashews",
+    "kcal": 166
+  },
+  {
+    "name": "ITC Moong Dal Snack",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Moong Dal Snack",
+    "kcal": 170
+  },
+  {
+    "name": "Taco Bell Instant Noodles",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Instant Noodles",
+    "kcal": 313
+  },
+  {
+    "name": "Lays Cheese Slices (2)",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cheese Slices (2)",
+    "kcal": 135
+  },
+  {
+    "name": "Burger King Butter Panner Meal",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Butter Panner Meal",
+    "kcal": 702
+  },
+  {
+    "name": "Faasos Gulab Jamun (Canned)",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Gulab Jamun (Canned)",
+    "kcal": 330
+  },
+  {
+    "name": "Maggi Digestive Biscuits (2 pcs)",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 151
+  },
+  {
+    "name": "Nestle Butter Panner Meal",
+    "brand": "Nestle",
+    "domain": "PACKAGED",
+    "dish": "Butter Panner Meal",
+    "kcal": 611
+  },
+  {
+    "name": "Chai Point Aloo Bhujia",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Aloo Bhujia",
+    "kcal": 171
+  },
+  {
+    "name": "MTR Pepperoni Pizza (Regular)",
+    "brand": "MTR",
+    "domain": "PACKAGED",
+    "dish": "Pepperoni Pizza (Regular)",
+    "kcal": 995
+  },
+  {
+    "name": "Pizza Hut Dark Chocolate Bar",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Dark Chocolate Bar",
+    "kcal": 613
+  },
+  {
+    "name": "Nandini Potato Chips",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Potato Chips",
+    "kcal": 144
+  },
+  {
+    "name": "Nestle Diet Soda",
+    "brand": "Nestle",
+    "domain": "PACKAGED",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "Maggi Chicken Biryani (Medium)",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Chicken Biryani (Medium)",
+    "kcal": 472
+  },
+  {
+    "name": "Nestle Chocolate Chip Cookies (2 pcs)",
+    "brand": "Nestle",
+    "domain": "PACKAGED",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 169
+  },
+  {
+    "name": "Pizza Hut Cheese Noodles",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Cheese Noodles",
+    "kcal": 441
+  },
+  {
+    "name": "Nandini Peri Peri Fries",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Peri Peri Fries",
+    "kcal": 389
+  },
+  {
+    "name": "Kurkure Veggie Burger",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Veggie Burger",
+    "kcal": 282
+  },
+  {
+    "name": "Lays Chicken Nuggets (6 pcs)",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chicken Nuggets (6 pcs)",
+    "kcal": 320
+  },
+  {
+    "name": "Britannia Protein Bar",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Protein Bar",
+    "kcal": 220
+  },
+  {
+    "name": "Parle Butter (1 tbsp)",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Butter (1 tbsp)",
+    "kcal": 113
+  },
+  {
+    "name": "Amul Potato Chips",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Potato Chips",
+    "kcal": 146
+  },
+  {
+    "name": "Amul Dal Makhani (Ready-to-Eat)",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Dal Makhani (Ready-to-Eat)",
+    "kcal": 269
+  },
+  {
+    "name": "Kurkure Paneer Tikka Wrap",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Paneer Tikka Wrap",
+    "kcal": 388
+  },
+  {
+    "name": "Chai Point Dark Chocolate Bar",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Dark Chocolate Bar",
+    "kcal": 585
+  },
+  {
+    "name": "Britannia Cream & Onion Chips",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Cream & Onion Chips",
+    "kcal": 160
+  },
+  {
+    "name": "MTR Cola (Regular)",
+    "brand": "MTR",
+    "domain": "PACKAGED",
+    "dish": "Cola (Regular)",
+    "kcal": 149
+  },
+  {
+    "name": "Subway Masala Oats",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Masala Oats",
+    "kcal": 131
+  },
+  {
+    "name": "Maggi Cold Coffee",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Cold Coffee",
+    "kcal": 267
+  },
+  {
+    "name": "Barbeque Nation Cola (Regular)",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Cola (Regular)",
+    "kcal": 148
+  },
+  {
+    "name": "Subway Aloo Bhujia",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Aloo Bhujia",
+    "kcal": 165
+  },
+  {
+    "name": "Britannia Butter Panner Meal",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Butter Panner Meal",
+    "kcal": 657
+  },
+  {
+    "name": "KFC Rasgulla (Canned)",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Rasgulla (Canned)",
+    "kcal": 234
+  },
+  {
+    "name": "Subway Peanut Butter (2 tbsp)",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Peanut Butter (2 tbsp)",
+    "kcal": 207
+  },
+  {
+    "name": "Chai Point Instant Noodles",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Instant Noodles",
+    "kcal": 354
+  },
+  {
+    "name": "ITC Chicken Biryani (Medium)",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Chicken Biryani (Medium)",
+    "kcal": 477
+  },
+  {
+    "name": "Parle Chicken Biryani (Medium)",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Chicken Biryani (Medium)",
+    "kcal": 613
+  },
+  {
+    "name": "Lays French Fries (Medium)",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "French Fries (Medium)",
+    "kcal": 326
+  },
+  {
+    "name": "Subway Cola (Regular)",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Cola (Regular)",
+    "kcal": 141
+  },
+  {
+    "name": "Amul French Fries (Medium)",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "French Fries (Medium)",
+    "kcal": 424
+  },
+  {
+    "name": "Barbeque Nation Dal Makhani (Ready-to-Eat)",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Dal Makhani (Ready-to-Eat)",
+    "kcal": 318
+  },
+  {
+    "name": "Kurkure Chocolate Ice Cream (1 Scoop)",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chocolate Ice Cream (1 Scoop)",
+    "kcal": 129
+  },
+  {
+    "name": "ITC Crispy Chicken Wrap",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Crispy Chicken Wrap",
+    "kcal": 420
+  },
+  {
+    "name": "Bikano Cheese Noodles",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cheese Noodles",
+    "kcal": 410
+  },
+  {
+    "name": "Parle Potato Chips",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Potato Chips",
+    "kcal": 139
+  },
+  {
+    "name": "Chai Point Cola (Regular)",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Cola (Regular)",
+    "kcal": 141
+  },
+  {
+    "name": "Lays Chocolate Chip Cookies (2 pcs)",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 172
+  },
+  {
+    "name": "Bikano Frappuccino",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Frappuccino",
+    "kcal": 398
+  },
+  {
+    "name": "McDonald's Gulab Jamun (Canned)",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Gulab Jamun (Canned)",
+    "kcal": 298
+  },
+  {
+    "name": "Taco Bell Fruit Juice (1 cup)",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Fruit Juice (1 cup)",
+    "kcal": 105
+  },
+  {
+    "name": "Britannia Chicken Biryani (Medium)",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Chicken Biryani (Medium)",
+    "kcal": 501
+  },
+  {
+    "name": "Haldiram's Cheese Slices (2)",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cheese Slices (2)",
+    "kcal": 131
+  },
+  {
+    "name": "Burger King Chocolate Chip Cookies (2 pcs)",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 205
+  },
+  {
+    "name": "Bikano Dal Makhani (Ready-to-Eat)",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Dal Makhani (Ready-to-Eat)",
+    "kcal": 282
+  },
+  {
+    "name": "Amul Aloo Bhujia",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Aloo Bhujia",
+    "kcal": 190
+  },
+  {
+    "name": "KFC Diet Soda",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "Taco Bell Milk Chocolate Bar",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Milk Chocolate Bar",
+    "kcal": 526
+  },
+  {
+    "name": "MTR Vanilla Ice Cream (1 Scoop)",
+    "brand": "MTR",
+    "domain": "PACKAGED",
+    "dish": "Vanilla Ice Cream (1 Scoop)",
+    "kcal": 146
+  },
+  {
+    "name": "Amul Chicken Nuggets (6 pcs)",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Chicken Nuggets (6 pcs)",
+    "kcal": 313
+  },
+  {
+    "name": "Pizza Hut Granola Bar",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Granola Bar",
+    "kcal": 124
+  },
+  {
+    "name": "Starbucks Peri Peri Fries",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Peri Peri Fries",
+    "kcal": 343
+  },
+  {
+    "name": "Parle Crispy Chicken Wrap",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Crispy Chicken Wrap",
+    "kcal": 463
+  },
+  {
+    "name": "Lays Vanilla Ice Cream (1 Scoop)",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Vanilla Ice Cream (1 Scoop)",
+    "kcal": 159
+  },
+  {
+    "name": "Starbucks Granola Bar",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Granola Bar",
+    "kcal": 143
+  },
+  {
+    "name": "Bikanervala Cheese Burger",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cheese Burger",
+    "kcal": 347
+  },
+  {
+    "name": "Pizza Hut Rasgulla (Canned)",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Rasgulla (Canned)",
+    "kcal": 234
+  },
+  {
+    "name": "Parle Margherita Pizza (Regular)",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Margherita Pizza (Regular)",
+    "kcal": 709
+  },
+  {
+    "name": "Faasos Potato Chips",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Potato Chips",
+    "kcal": 180
+  },
+  {
+    "name": "Kurkure Chocolate Chip Cookies (2 pcs)",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 198
+  },
+  {
+    "name": "Taco Bell Dal Makhani (Ready-to-Eat)",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Dal Makhani (Ready-to-Eat)",
+    "kcal": 314
+  },
+  {
+    "name": "Nandini Cola (Regular)",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Cola (Regular)",
+    "kcal": 133
+  },
+  {
+    "name": "Mother Dairy Roasted Almonds",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Roasted Almonds",
+    "kcal": 154
+  },
+  {
+    "name": "ITC Frappuccino",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Frappuccino",
+    "kcal": 346
+  },
+  {
+    "name": "Bikanervala Crispy Chicken Wrap",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Crispy Chicken Wrap",
+    "kcal": 393
+  },
+  {
+    "name": "Haldiram's Paneer Butter Masala (Ready-to-Eat)",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Paneer Butter Masala (Ready-to-Eat)",
+    "kcal": 354
+  },
+  {
+    "name": "Burger King Butter (1 tbsp)",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Butter (1 tbsp)",
+    "kcal": 97
+  },
+  {
+    "name": "Bikano Farmhouse Veg Pizza",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Farmhouse Veg Pizza",
+    "kcal": 858
+  },
+  {
+    "name": "KFC Greek Yogurt",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Greek Yogurt",
+    "kcal": 111
+  },
+  {
+    "name": "Bikano Butter (1 tbsp)",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Butter (1 tbsp)",
+    "kcal": 108
+  },
+  {
+    "name": "Britannia Roasted Almonds",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Roasted Almonds",
+    "kcal": 161
+  },
+  {
+    "name": "Burger King Paneer Butter Masala (Ready-to-Eat)",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Paneer Butter Masala (Ready-to-Eat)",
+    "kcal": 312
+  },
+  {
+    "name": "Starbucks Cola (Regular)",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Cola (Regular)",
+    "kcal": 126
+  },
+  {
+    "name": "MTR Plain Yogurt (1 cup)",
+    "brand": "MTR",
+    "domain": "PACKAGED",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 151
+  },
+  {
+    "name": "Maggi Moong Dal Snack",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Moong Dal Snack",
+    "kcal": 149
+  },
+  {
+    "name": "Amul Farmhouse Veg Pizza",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Farmhouse Veg Pizza",
+    "kcal": 835
+  },
+  {
+    "name": "Kurkure Granola Bar",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Granola Bar",
+    "kcal": 136
+  },
+  {
+    "name": "Lays Frappuccino",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Frappuccino",
+    "kcal": 452
+  },
+  {
+    "name": "Kurkure Cheese Slices (2)",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cheese Slices (2)",
+    "kcal": 153
+  },
+  {
+    "name": "MTR Moong Dal Snack",
+    "brand": "MTR",
+    "domain": "PACKAGED",
+    "dish": "Moong Dal Snack",
+    "kcal": 148
+  },
+  {
+    "name": "Lays Paneer Butter Masala (Ready-to-Eat)",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Paneer Butter Masala (Ready-to-Eat)",
+    "kcal": 306
+  },
+  {
+    "name": "Subway Roasted Cashews",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Roasted Cashews",
+    "kcal": 160
+  },
+  {
+    "name": "KFC Dal Makhani (Ready-to-Eat)",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Dal Makhani (Ready-to-Eat)",
+    "kcal": 317
+  },
+  {
+    "name": "Chai Point Dal Makhani (Ready-to-Eat)",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Dal Makhani (Ready-to-Eat)",
+    "kcal": 257
+  },
+  {
+    "name": "Parle Roasted Almonds",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Roasted Almonds",
+    "kcal": 168
+  },
+  {
+    "name": "Nestle Vanilla Ice Cream (1 Scoop)",
+    "brand": "Nestle",
+    "domain": "PACKAGED",
+    "dish": "Vanilla Ice Cream (1 Scoop)",
+    "kcal": 155
+  },
+  {
+    "name": "Lays Digestive Biscuits (2 pcs)",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 153
+  },
+  {
+    "name": "McDonald's Rasgulla (Canned)",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Rasgulla (Canned)",
+    "kcal": 199
+  },
+  {
+    "name": "Burger King Masala Oats",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Masala Oats",
+    "kcal": 153
+  },
+  {
+    "name": "McDonald's Roasted Almonds",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Roasted Almonds",
+    "kcal": 151
+  },
+  {
+    "name": "Bikanervala Peri Peri Fries",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Peri Peri Fries",
+    "kcal": 358
+  },
+  {
+    "name": "ITC Classic Burger",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Classic Burger",
+    "kcal": 345
+  },
+  {
+    "name": "Starbucks Dal Makhani (Ready-to-Eat)",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Dal Makhani (Ready-to-Eat)",
+    "kcal": 301
+  },
+  {
+    "name": "Nandini Chicken Nuggets (6 pcs)",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Chicken Nuggets (6 pcs)",
+    "kcal": 266
+  },
+  {
+    "name": "Barbeque Nation Roasted Cashews",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Roasted Cashews",
+    "kcal": 165
+  },
+  {
+    "name": "Subway Cheese Slices (2)",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Cheese Slices (2)",
+    "kcal": 137
+  },
+  {
+    "name": "Britannia Gulab Jamun (Canned)",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Gulab Jamun (Canned)",
+    "kcal": 344
+  },
+  {
+    "name": "Faasos Butter (1 tbsp)",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Butter (1 tbsp)",
+    "kcal": 98
+  },
+  {
+    "name": "Britannia Frappuccino",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Frappuccino",
+    "kcal": 424
+  },
+  {
+    "name": "Bikanervala Classic Burger",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Classic Burger",
+    "kcal": 269
+  },
+  {
+    "name": "Nestle Frappuccino",
+    "brand": "Nestle",
+    "domain": "PACKAGED",
+    "dish": "Frappuccino",
+    "kcal": 432
+  },
+  {
+    "name": "Lays Cheese Noodles",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cheese Noodles",
+    "kcal": 373
+  },
+  {
+    "name": "Chai Point Paneer Tikka Wrap",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Paneer Tikka Wrap",
+    "kcal": 471
+  },
+  {
+    "name": "Parle Cheese Burger",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Cheese Burger",
+    "kcal": 399
+  },
+  {
+    "name": "Bikanervala Peanut Butter (2 tbsp)",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Peanut Butter (2 tbsp)",
+    "kcal": 177
+  },
+  {
+    "name": "Britannia Margherita Pizza (Regular)",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Margherita Pizza (Regular)",
+    "kcal": 886
+  },
+  {
+    "name": "Taco Bell Digestive Biscuits (2 pcs)",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 155
+  },
+  {
+    "name": "ITC Diet Soda",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "Lays Veggie Burger",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Veggie Burger",
+    "kcal": 269
+  },
+  {
+    "name": "Parle Fruit Juice (1 cup)",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Fruit Juice (1 cup)",
+    "kcal": 113
+  },
+  {
+    "name": "MTR Cheese Slices (2)",
+    "brand": "MTR",
+    "domain": "PACKAGED",
+    "dish": "Cheese Slices (2)",
+    "kcal": 137
+  },
+  {
+    "name": "Subway Dal Makhani (Ready-to-Eat)",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Dal Makhani (Ready-to-Eat)",
+    "kcal": 313
+  },
+  {
+    "name": "Starbucks Dark Chocolate Bar",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Dark Chocolate Bar",
+    "kcal": 673
+  },
+  {
+    "name": "Nestle Farmhouse Veg Pizza",
+    "brand": "Nestle",
+    "domain": "PACKAGED",
+    "dish": "Farmhouse Veg Pizza",
+    "kcal": 925
+  },
+  {
+    "name": "Lays Dark Chocolate Bar",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Dark Chocolate Bar",
+    "kcal": 562
+  },
+  {
+    "name": "Haldiram's Vanilla Ice Cream (1 Scoop)",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Vanilla Ice Cream (1 Scoop)",
+    "kcal": 151
+  },
+  {
+    "name": "Parle Chocolate Ice Cream (1 Scoop)",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Chocolate Ice Cream (1 Scoop)",
+    "kcal": 152
+  },
+  {
+    "name": "Britannia Veg Biryani",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Veg Biryani",
+    "kcal": 546
+  },
+  {
+    "name": "Bikanervala Cheese Noodles",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cheese Noodles",
+    "kcal": 375
+  },
+  {
+    "name": "Chai Point Rasgulla (Canned)",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Rasgulla (Canned)",
+    "kcal": 206
+  },
+  {
+    "name": "Mother Dairy Protein Bar",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Protein Bar",
+    "kcal": 227
+  },
+  {
+    "name": "Taco Bell Cola (Regular)",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Cola (Regular)",
+    "kcal": 147
+  },
+  {
+    "name": "Maggi Diet Soda",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "Parle Chocolate Shake",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Chocolate Shake",
+    "kcal": 388
+  },
+  {
+    "name": "Maggi Chocolate Ice Cream (1 Scoop)",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Chocolate Ice Cream (1 Scoop)",
+    "kcal": 133
+  },
+  {
+    "name": "Maggi Peri Peri Fries",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Peri Peri Fries",
+    "kcal": 359
+  },
+  {
+    "name": "KFC Butter (1 tbsp)",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Butter (1 tbsp)",
+    "kcal": 99
+  },
+  {
+    "name": "Nandini Aloo Bhujia",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Aloo Bhujia",
+    "kcal": 169
+  },
+  {
+    "name": "Barbeque Nation Cold Coffee",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Cold Coffee",
+    "kcal": 252
+  },
+  {
+    "name": "Parle Instant Noodles",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Instant Noodles",
+    "kcal": 323
+  },
+  {
+    "name": "Parle Chicken Nuggets (6 pcs)",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Chicken Nuggets (6 pcs)",
+    "kcal": 299
+  },
+  {
+    "name": "Parle Rasgulla (Canned)",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Rasgulla (Canned)",
+    "kcal": 213
+  },
+  {
+    "name": "Faasos Greek Yogurt",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Greek Yogurt",
+    "kcal": 88
+  },
+  {
+    "name": "Taco Bell Chocolate Chip Cookies (2 pcs)",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 202
+  },
+  {
+    "name": "Lays Paneer Tikka Wrap",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Paneer Tikka Wrap",
+    "kcal": 477
+  },
+  {
+    "name": "Burger King Instant Noodles",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Instant Noodles",
+    "kcal": 333
+  },
+  {
+    "name": "Bikano Peri Peri Fries",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Peri Peri Fries",
+    "kcal": 361
+  },
+  {
+    "name": "Nestle Plain Yogurt (1 cup)",
+    "brand": "Nestle",
+    "domain": "PACKAGED",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 152
+  },
+  {
+    "name": "Subway Protein Bar",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Protein Bar",
+    "kcal": 196
+  },
+  {
+    "name": "Pizza Hut Diet Soda",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "Haldiram's Margherita Pizza (Regular)",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Margherita Pizza (Regular)",
+    "kcal": 817
+  },
+  {
+    "name": "Bikano Cola (Regular)",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cola (Regular)",
+    "kcal": 132
+  },
+  {
+    "name": "Bikano Chocolate Ice Cream (1 Scoop)",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chocolate Ice Cream (1 Scoop)",
+    "kcal": 136
+  },
+  {
+    "name": "Britannia Aloo Bhujia",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Aloo Bhujia",
+    "kcal": 173
+  },
+  {
+    "name": "Maggi Margherita Pizza (Regular)",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Margherita Pizza (Regular)",
+    "kcal": 725
+  },
+  {
+    "name": "Bikanervala Fruit Juice (1 cup)",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Fruit Juice (1 cup)",
+    "kcal": 120
+  },
+  {
+    "name": "Chai Point Plain Yogurt (1 cup)",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 148
+  },
+  {
+    "name": "ITC Peri Peri Fries",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Peri Peri Fries",
+    "kcal": 360
+  },
+  {
+    "name": "Taco Bell Masala Oats",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Masala Oats",
+    "kcal": 136
+  },
+  {
+    "name": "Barbeque Nation Plain Yogurt (1 cup)",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 168
+  },
+  {
+    "name": "Mother Dairy Potato Chips",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Potato Chips",
+    "kcal": 151
+  },
+  {
+    "name": "Bikano Cheese Burger",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cheese Burger",
+    "kcal": 343
+  },
+  {
+    "name": "ITC Digestive Biscuits (2 pcs)",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 142
+  },
+  {
+    "name": "Bikanervala Digestive Biscuits (2 pcs)",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 122
+  },
+  {
+    "name": "ITC Cream & Onion Chips",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Cream & Onion Chips",
+    "kcal": 183
+  },
+  {
+    "name": "McDonald's Dal Makhani (Ready-to-Eat)",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Dal Makhani (Ready-to-Eat)",
+    "kcal": 296
+  },
+  {
+    "name": "Parle Aloo Bhujia",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Aloo Bhujia",
+    "kcal": 180
+  },
+  {
+    "name": "Barbeque Nation Masala Oats",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Masala Oats",
+    "kcal": 159
+  },
+  {
+    "name": "Maggi Frappuccino",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Frappuccino",
+    "kcal": 411
+  },
+  {
+    "name": "Kurkure Greek Yogurt",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Greek Yogurt",
+    "kcal": 109
+  },
+  {
+    "name": "Mother Dairy Chocolate Chip Cookies (2 pcs)",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 199
+  },
+  {
+    "name": "KFC Frappuccino",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Frappuccino",
+    "kcal": 400
+  },
+  {
+    "name": "Parle Cheese Slices (2)",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Cheese Slices (2)",
+    "kcal": 132
+  },
+  {
+    "name": "Haldiram's Greek Yogurt",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Greek Yogurt",
+    "kcal": 109
+  },
+  {
+    "name": "Faasos Cold Coffee",
+    "brand": "Faasos",
+    "domain": "QSR",
+    "dish": "Cold Coffee",
+    "kcal": 241
+  },
+  {
+    "name": "Nandini Farmhouse Veg Pizza",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Farmhouse Veg Pizza",
+    "kcal": 744
+  },
+  {
+    "name": "Maggi Butter Panner Meal",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Butter Panner Meal",
+    "kcal": 718
+  },
+  {
+    "name": "KFC Cold Coffee",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Cold Coffee",
+    "kcal": 262
+  },
+  {
+    "name": "KFC Cola (Regular)",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Cola (Regular)",
+    "kcal": 137
+  },
+  {
+    "name": "Starbucks Veg Biryani",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Veg Biryani",
+    "kcal": 540
+  },
+  {
+    "name": "Burger King Cold Coffee",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Cold Coffee",
+    "kcal": 263
+  },
+  {
+    "name": "Subway Moong Dal Snack",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Moong Dal Snack",
+    "kcal": 143
+  },
+  {
+    "name": "KFC Butter Panner Meal",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Butter Panner Meal",
+    "kcal": 739
+  },
+  {
+    "name": "KFC Plain Yogurt (1 cup)",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 143
+  },
+  {
+    "name": "Haldiram's Chocolate Ice Cream (1 Scoop)",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chocolate Ice Cream (1 Scoop)",
+    "kcal": 132
+  },
+  {
+    "name": "Burger King Peanut Butter (2 tbsp)",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Peanut Butter (2 tbsp)",
+    "kcal": 216
+  },
+  {
+    "name": "KFC Masala Oats",
+    "brand": "KFC",
+    "domain": "QSR",
+    "dish": "Masala Oats",
+    "kcal": 139
+  },
+  {
+    "name": "Bikano French Fries (Medium)",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "French Fries (Medium)",
+    "kcal": 332
+  },
+  {
+    "name": "ITC Paneer Tikka Wrap",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Paneer Tikka Wrap",
+    "kcal": 472
+  },
+  {
+    "name": "Subway Cheese Noodles",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Cheese Noodles",
+    "kcal": 430
+  },
+  {
+    "name": "Burger King Dark Chocolate Bar",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Dark Chocolate Bar",
+    "kcal": 539
+  },
+  {
+    "name": "Pizza Hut Aloo Bhujia",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Aloo Bhujia",
+    "kcal": 198
+  },
+  {
+    "name": "Lays Plain Yogurt (1 cup)",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 158
+  },
+  {
+    "name": "Kurkure Crispy Chicken Wrap",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Crispy Chicken Wrap",
+    "kcal": 406
+  },
+  {
+    "name": "Mother Dairy Cheese Burger",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Cheese Burger",
+    "kcal": 326
+  },
+  {
+    "name": "Mother Dairy Dal Makhani (Ready-to-Eat)",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Dal Makhani (Ready-to-Eat)",
+    "kcal": 278
+  },
+  {
+    "name": "Chai Point Chocolate Chip Cookies (2 pcs)",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 196
+  },
+  {
+    "name": "Nandini Diet Soda",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "Starbucks Butter (1 tbsp)",
+    "brand": "Starbucks",
+    "domain": "CAFE",
+    "dish": "Butter (1 tbsp)",
+    "kcal": 114
+  },
+  {
+    "name": "Lays Chocolate Shake",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chocolate Shake",
+    "kcal": 422
+  },
+  {
+    "name": "Mother Dairy Digestive Biscuits (2 pcs)",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 135
+  },
+  {
+    "name": "Bikanervala Chocolate Shake",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chocolate Shake",
+    "kcal": 363
+  },
+  {
+    "name": "Bikanervala Masala Oats",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Masala Oats",
+    "kcal": 151
+  },
+  {
+    "name": "Mother Dairy Diet Soda",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "Diet Soda",
+    "kcal": 0
+  },
+  {
+    "name": "MTR French Fries (Medium)",
+    "brand": "MTR",
+    "domain": "PACKAGED",
+    "dish": "French Fries (Medium)",
+    "kcal": 346
+  },
+  {
+    "name": "Pizza Hut Moong Dal Snack",
+    "brand": "Pizza Hut",
+    "domain": "QSR",
+    "dish": "Moong Dal Snack",
+    "kcal": 131
+  },
+  {
+    "name": "Mother Dairy French Fries (Medium)",
+    "brand": "Mother Dairy",
+    "domain": "DAIRY",
+    "dish": "French Fries (Medium)",
+    "kcal": 409
+  },
+  {
+    "name": "Nestle Cream & Onion Chips",
+    "brand": "Nestle",
+    "domain": "PACKAGED",
+    "dish": "Cream & Onion Chips",
+    "kcal": 161
+  },
+  {
+    "name": "Nandini Paneer Tikka Wrap",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Paneer Tikka Wrap",
+    "kcal": 422
+  },
+  {
+    "name": "Chai Point Fruit Juice (1 cup)",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Fruit Juice (1 cup)",
+    "kcal": 121
+  },
+  {
+    "name": "Bikanervala Paneer Butter Masala (Ready-to-Eat)",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Paneer Butter Masala (Ready-to-Eat)",
+    "kcal": 399
+  },
+  {
+    "name": "Haldiram's Pepperoni Pizza (Regular)",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Pepperoni Pizza (Regular)",
+    "kcal": 1046
+  },
+  {
+    "name": "Bikano Fruit Juice (1 cup)",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Fruit Juice (1 cup)",
+    "kcal": 94
+  },
+  {
+    "name": "Kurkure Protein Bar",
+    "brand": "Kurkure",
+    "domain": "CHIPS_SNACK",
+    "dish": "Protein Bar",
+    "kcal": 202
+  },
+  {
+    "name": "Burger King Cheese Slices (2)",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Cheese Slices (2)",
+    "kcal": 153
+  },
+  {
+    "name": "ITC Vanilla Ice Cream (1 Scoop)",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Vanilla Ice Cream (1 Scoop)",
+    "kcal": 138
+  },
+  {
+    "name": "Chai Point Gulab Jamun (Canned)",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Gulab Jamun (Canned)",
+    "kcal": 318
+  },
+  {
+    "name": "Chai Point Roasted Almonds",
+    "brand": "Chai Point",
+    "domain": "CAFE",
+    "dish": "Roasted Almonds",
+    "kcal": 151
+  },
+  {
+    "name": "Haldiram's Masala Oats",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Masala Oats",
+    "kcal": 137
+  },
+  {
+    "name": "ITC Aloo Bhujia",
+    "brand": "ITC",
+    "domain": "PACKAGED",
+    "dish": "Aloo Bhujia",
+    "kcal": 153
+  },
+  {
+    "name": "Nandini Masala Oats",
+    "brand": "Nandini",
+    "domain": "DAIRY",
+    "dish": "Masala Oats",
+    "kcal": 163
+  },
+  {
+    "name": "Maggi Paneer Tikka Wrap",
+    "brand": "Maggi",
+    "domain": "PACKAGED",
+    "dish": "Paneer Tikka Wrap",
+    "kcal": 452
+  },
+  {
+    "name": "Bikano Cold Coffee",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cold Coffee",
+    "kcal": 216
+  },
+  {
+    "name": "Barbeque Nation Roasted Almonds",
+    "brand": "Barbeque Nation",
+    "domain": "QSR",
+    "dish": "Roasted Almonds",
+    "kcal": 178
+  },
+  {
+    "name": "Bikanervala Chocolate Chip Cookies (2 pcs)",
+    "brand": "Bikanervala",
+    "domain": "CHIPS_SNACK",
+    "dish": "Chocolate Chip Cookies (2 pcs)",
+    "kcal": 186
+  },
+  {
+    "name": "Lays Peri Peri Fries",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Peri Peri Fries",
+    "kcal": 419
+  },
+  {
+    "name": "Burger King Digestive Biscuits (2 pcs)",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Digestive Biscuits (2 pcs)",
+    "kcal": 146
+  },
+  {
+    "name": "Bikano Butter Panner Meal",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Butter Panner Meal",
+    "kcal": 639
+  },
+  {
+    "name": "Parle Roasted Cashews",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Roasted Cashews",
+    "kcal": 183
+  },
+  {
+    "name": "Subway Roasted Almonds",
+    "brand": "Subway",
+    "domain": "QSR",
+    "dish": "Roasted Almonds",
+    "kcal": 148
+  },
+  {
+    "name": "Taco Bell Granola Bar",
+    "brand": "Taco Bell",
+    "domain": "QSR",
+    "dish": "Granola Bar",
+    "kcal": 150
+  },
+  {
+    "name": "Amul Protein Bar",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Protein Bar",
+    "kcal": 171
+  },
+  {
+    "name": "Parle Vanilla Ice Cream (1 Scoop)",
+    "brand": "Parle",
+    "domain": "BAKERY",
+    "dish": "Vanilla Ice Cream (1 Scoop)",
+    "kcal": 154
+  },
+  {
+    "name": "Britannia Cheese Slices (2)",
+    "brand": "Britannia",
+    "domain": "BAKERY",
+    "dish": "Cheese Slices (2)",
+    "kcal": 152
+  },
+  {
+    "name": "McDonald's Roasted Cashews",
+    "brand": "McDonald's",
+    "domain": "QSR",
+    "dish": "Roasted Cashews",
+    "kcal": 161
+  },
+  {
+    "name": "Burger King Aloo Bhujia",
+    "brand": "Burger King",
+    "domain": "QSR",
+    "dish": "Aloo Bhujia",
+    "kcal": 207
+  },
+  {
+    "name": "Lays Cold Coffee",
+    "brand": "Lays",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cold Coffee",
+    "kcal": 262
+  },
+  {
+    "name": "Amul Chicken Biryani (Medium)",
+    "brand": "Amul",
+    "domain": "DAIRY",
+    "dish": "Chicken Biryani (Medium)",
+    "kcal": 573
+  },
+  {
+    "name": "Haldiram's Cheese Burger",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cheese Burger",
+    "kcal": 355
+  },
+  {
+    "name": "Haldiram's Cola (Regular)",
+    "brand": "Haldiram's",
+    "domain": "CHIPS_SNACK",
+    "dish": "Cola (Regular)",
+    "kcal": 130
+  },
+  {
+    "name": "Bikano Milk Chocolate Bar",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Milk Chocolate Bar",
+    "kcal": 471
+  },
+  {
+    "name": "Bikano Paneer Butter Masala (Ready-to-Eat)",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Paneer Butter Masala (Ready-to-Eat)",
+    "kcal": 389
+  },
+  {
+    "name": "Bikano Plain Yogurt (1 cup)",
+    "brand": "Bikano",
+    "domain": "CHIPS_SNACK",
+    "dish": "Plain Yogurt (1 cup)",
+    "kcal": 154
+  }
+]

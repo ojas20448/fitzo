@@ -55632,18 +55632,6 @@
     "region": "North India"
   },
   {
-    "id": "ind_4637",
-    "name": "Haldiram's Paneer Tikka Wrap",
-    "category": "QSR Indian Chains",
-    "servingSize": "1 wrap (200g)",
-    "calories": 420,
-    "protein": 16,
-    "carbs": 44,
-    "fat": 20,
-    "fiber": 3,
-    "region": "North India"
-  },
-  {
     "id": "ind_4638",
     "name": "Haldiram's Dal Makhani with Rice",
     "category": "QSR Indian Chains",
@@ -61908,114 +61896,6 @@
     "region": "McDonald's"
   },
   {
-    "id": "ind_5160",
-    "name": "Taco Bell Rasgulla (Canned)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 192,
-    "protein": 5.2,
-    "carbs": 39.2,
-    "fat": 1.7,
-    "fiber": 2,
-    "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5161",
-    "name": "KFC Cream & Onion Chips",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 174,
-    "protein": 2.2,
-    "carbs": 16.3,
-    "fat": 10.9,
-    "fiber": 0.8,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5162",
-    "name": "Nandini Chicken Biryani (Medium)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 478,
-    "protein": 21.7,
-    "carbs": 60.9,
-    "fat": 15.6,
-    "fiber": 3,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5163",
-    "name": "Bikanervala Frappuccino",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 358,
-    "protein": 7.2,
-    "carbs": 49.3,
-    "fat": 14.3,
-    "fiber": 2.5,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5164",
-    "name": "Burger King Dal Makhani (Ready-to-Eat)",
-    "category": "Burgers",
-    "servingSize": "1 serving",
-    "calories": 273,
-    "protein": 13.7,
-    "carbs": 29.3,
-    "fat": 11.7,
-    "fiber": 1.5,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5165",
-    "name": "Pizza Hut Greek Yogurt",
-    "category": "Pizza",
-    "servingSize": "1 serving",
-    "calories": 97,
-    "protein": 14.6,
-    "carbs": 5.8,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Pizza Hut"
-  },
-  {
-    "id": "ind_5166",
-    "name": "Faasos Butter Panner Meal",
-    "category": "Wraps",
-    "servingSize": "1 serving",
-    "calories": 576,
-    "protein": 17.7,
-    "carbs": 53.2,
-    "fat": 31,
-    "fiber": 2.7,
-    "region": "Faasos"
-  },
-  {
-    "id": "ind_5167",
-    "name": "Nestle Veggie Burger",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 268,
-    "protein": 9.6,
-    "carbs": 38.3,
-    "fat": 9.6,
-    "fiber": 1.9,
-    "region": "Nestle"
-  },
-  {
-    "id": "ind_5168",
-    "name": "Barbeque Nation Peanut Butter (2 tbsp)",
-    "category": "Buffet",
-    "servingSize": "1 serving",
-    "calories": 188,
-    "protein": 7.9,
-    "carbs": 5.9,
-    "fat": 15.8,
-    "fiber": 0,
-    "region": "Barbeque Nation"
-  },
-  {
     "id": "ind_5169",
     "name": "Subway Vanilla Ice Cream (1 Scoop)",
     "category": "Fast Food",
@@ -62040,30 +61920,6 @@
     "region": "Nestle"
   },
   {
-    "id": "ind_5171",
-    "name": "ITC Cheese Burger",
-    "category": "Packaged Goods",
-    "servingSize": "1 serving",
-    "calories": 313,
-    "protein": 16.1,
-    "carbs": 31.3,
-    "fat": 14.3,
-    "fiber": 1.6,
-    "region": "ITC"
-  },
-  {
-    "id": "ind_5172",
-    "name": "Chai Point Digestive Biscuits (2 pcs)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 149,
-    "protein": 3.2,
-    "carbs": 21.3,
-    "fat": 6.4,
-    "fiber": 1.1,
-    "region": "Chai Point"
-  },
-  {
     "id": "ind_5173",
     "name": "Nestle Fruit Juice (1 cup)",
     "category": "Noodles",
@@ -62074,78 +61930,6 @@
     "fat": 0,
     "fiber": 1.3,
     "region": "Nestle"
-  },
-  {
-    "id": "ind_5174",
-    "name": "Nandini Frappuccino",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 405,
-    "protein": 8.1,
-    "carbs": 55.7,
-    "fat": 16.2,
-    "fiber": 2.8,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5175",
-    "name": "Mother Dairy Cola (Regular)",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 119,
-    "protein": 0,
-    "carbs": 33.2,
-    "fat": 0,
-    "fiber": 1.7,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5176",
-    "name": "McDonald's Masala Oats",
-    "category": "Burgers",
-    "servingSize": "1 serving",
-    "calories": 156,
-    "protein": 4.2,
-    "carbs": 26,
-    "fat": 3.1,
-    "fiber": 1.3,
-    "region": "McDonald's"
-  },
-  {
-    "id": "ind_5177",
-    "name": "Haldiram's Tandoori Chicken Pizza",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 825,
-    "protein": 40.4,
-    "carbs": 89.7,
-    "fat": 31.4,
-    "fiber": 4.5,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5178",
-    "name": "Lays Cheese Burger",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 319,
-    "protein": 16.4,
-    "carbs": 31.9,
-    "fat": 14.6,
-    "fiber": 1.6,
-    "region": "Lays"
-  },
-  {
-    "id": "ind_5179",
-    "name": "MTR Farmhouse Veg Pizza",
-    "category": "Breakfast",
-    "servingSize": "1 serving",
-    "calories": 929,
-    "protein": 35,
-    "carbs": 120.2,
-    "fat": 32.8,
-    "fiber": 6,
-    "region": "MTR"
   },
   {
     "id": "ind_5180",
@@ -62160,18 +61944,6 @@
     "region": "Pizza Hut"
   },
   {
-    "id": "ind_5181",
-    "name": "Starbucks Chicken Biryani (Medium)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 487,
-    "protein": 22.1,
-    "carbs": 62,
-    "fat": 15.9,
-    "fiber": 3.1,
-    "region": "Starbucks"
-  },
-  {
     "id": "ind_5182",
     "name": "Pizza Hut Chocolate Ice Cream (1 Scoop)",
     "category": "Pizza",
@@ -62182,42 +61954,6 @@
     "fat": 6.4,
     "fiber": 1,
     "region": "Pizza Hut"
-  },
-  {
-    "id": "ind_5183",
-    "name": "KFC Peanut Butter (2 tbsp)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 201,
-    "protein": 8.5,
-    "carbs": 6.3,
-    "fat": 16.9,
-    "fiber": 0,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5184",
-    "name": "Subway Plain Yogurt (1 cup)",
-    "category": "Sandwiches",
-    "servingSize": "1 serving",
-    "calories": 139,
-    "protein": 7.4,
-    "carbs": 11.1,
-    "fat": 7.4,
-    "fiber": 0.6,
-    "region": "Subway"
-  },
-  {
-    "id": "ind_5185",
-    "name": "Britannia Tandoori Chicken Pizza",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 947,
-    "protein": 46.3,
-    "carbs": 102.9,
-    "fat": 36,
-    "fiber": 5.1,
-    "region": "Britannia"
   },
   {
     "id": "ind_5186",
@@ -62244,54 +61980,6 @@
     "region": "Maggi"
   },
   {
-    "id": "ind_5188",
-    "name": "Pizza Hut Butter (1 tbsp)",
-    "category": "Pizza",
-    "servingSize": "1 serving",
-    "calories": 105,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 11.6,
-    "fiber": 0,
-    "region": "Pizza Hut"
-  },
-  {
-    "id": "ind_5189",
-    "name": "Barbeque Nation Chocolate Chip Cookies (2 pcs)",
-    "category": "Buffet",
-    "servingSize": "1 serving",
-    "calories": 184,
-    "protein": 2,
-    "carbs": 24.6,
-    "fat": 9.2,
-    "fiber": 1.2,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5190",
-    "name": "Kurkure Cola (Regular)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 131,
-    "protein": 0,
-    "carbs": 36.4,
-    "fat": 0,
-    "fiber": 1.8,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5191",
-    "name": "Chai Point Potato Chips",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 179,
-    "protein": 2.2,
-    "carbs": 16.8,
-    "fat": 11.2,
-    "fiber": 0.8,
-    "region": "Chai Point"
-  },
-  {
     "id": "ind_5192",
     "name": "Lays Potato Chips",
     "category": "Snacks",
@@ -62301,54 +61989,6 @@
     "carbs": 14.6,
     "fat": 9.7,
     "fiber": 0.7,
-    "region": "Lays"
-  },
-  {
-    "id": "ind_5193",
-    "name": "Nestle Greek Yogurt",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 96,
-    "protein": 14.4,
-    "carbs": 5.7,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Nestle"
-  },
-  {
-    "id": "ind_5194",
-    "name": "Faasos Digestive Biscuits (2 pcs)",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 130,
-    "protein": 2.8,
-    "carbs": 18.6,
-    "fat": 5.6,
-    "fiber": 0.9,
-    "region": "Faasos"
-  },
-  {
-    "id": "ind_5195",
-    "name": "MTR Digestive Biscuits (2 pcs)",
-    "category": "Ready to Eat",
-    "servingSize": "1 serving",
-    "calories": 140,
-    "protein": 3,
-    "carbs": 19.9,
-    "fat": 6,
-    "fiber": 1,
-    "region": "MTR"
-  },
-  {
-    "id": "ind_5196",
-    "name": "Lays Protein Bar",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 214,
-    "protein": 21.4,
-    "carbs": 23.5,
-    "fat": 6.4,
-    "fiber": 1.2,
     "region": "Lays"
   },
   {
@@ -62362,54 +62002,6 @@
     "fat": 13.4,
     "fiber": 2.2,
     "region": "Amul"
-  },
-  {
-    "id": "ind_5198",
-    "name": "Amul Veggie Burger",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 280,
-    "protein": 10,
-    "carbs": 40,
-    "fat": 10,
-    "fiber": 2,
-    "region": "Amul"
-  },
-  {
-    "id": "ind_5199",
-    "name": "Faasos Cheese Noodles",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 425,
-    "protein": 10.1,
-    "carbs": 52.7,
-    "fat": 18.2,
-    "fiber": 2.6,
-    "region": "Faasos"
-  },
-  {
-    "id": "ind_5200",
-    "name": "KFC Roasted Cashews",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 156,
-    "protein": 4.9,
-    "carbs": 8.8,
-    "fat": 11.7,
-    "fiber": 0,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5201",
-    "name": "Lays Peanut Butter (2 tbsp)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 207,
-    "protein": 8.7,
-    "carbs": 6.5,
-    "fat": 17.5,
-    "fiber": 0,
-    "region": "Lays"
   },
   {
     "id": "ind_5202",
@@ -62448,30 +62040,6 @@
     "region": "Maggi"
   },
   {
-    "id": "ind_5205",
-    "name": "Faasos Cream & Onion Chips",
-    "category": "Wraps",
-    "servingSize": "1 serving",
-    "calories": 169,
-    "protein": 2.1,
-    "carbs": 15.8,
-    "fat": 10.6,
-    "fiber": 0.8,
-    "region": "Faasos"
-  },
-  {
-    "id": "ind_5206",
-    "name": "Mother Dairy Chicken Nuggets (6 pcs)",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 296,
-    "protein": 15.9,
-    "carbs": 19.1,
-    "fat": 19.1,
-    "fiber": 1,
-    "region": "Mother Dairy"
-  },
-  {
     "id": "ind_5207",
     "name": "Nandini Gulab Jamun (Canned)",
     "category": "Sweets",
@@ -62482,66 +62050,6 @@
     "fat": 12.6,
     "fiber": 2.6,
     "region": "Nandini"
-  },
-  {
-    "id": "ind_5208",
-    "name": "Mother Dairy Chicken Biryani (Medium)",
-    "category": "Ice Cream",
-    "servingSize": "1 serving",
-    "calories": 503,
-    "protein": 22.9,
-    "carbs": 64,
-    "fat": 16.5,
-    "fiber": 3.2,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5209",
-    "name": "Subway Digestive Biscuits (2 pcs)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 145,
-    "protein": 3.1,
-    "carbs": 20.7,
-    "fat": 6.2,
-    "fiber": 1,
-    "region": "Subway"
-  },
-  {
-    "id": "ind_5210",
-    "name": "Kurkure Tandoori Chicken Pizza",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 1022,
-    "protein": 50,
-    "carbs": 111,
-    "fat": 38.9,
-    "fiber": 5.6,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5211",
-    "name": "Starbucks Cheese Burger",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 360,
-    "protein": 18.5,
-    "carbs": 36,
-    "fat": 16.5,
-    "fiber": 1.8,
-    "region": "Starbucks"
-  },
-  {
-    "id": "ind_5212",
-    "name": "Haldiram's Protein Bar",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 184,
-    "protein": 18.4,
-    "carbs": 20.2,
-    "fat": 5.5,
-    "fiber": 1,
-    "region": "Haldiram's"
   },
   {
     "id": "ind_5213",
@@ -62592,30 +62100,6 @@
     "region": "Chai Point"
   },
   {
-    "id": "ind_5217",
-    "name": "KFC Protein Bar",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 194,
-    "protein": 19.4,
-    "carbs": 21.4,
-    "fat": 5.8,
-    "fiber": 1.1,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5218",
-    "name": "Bikano Crispy Chicken Wrap",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 391,
-    "protein": 19.1,
-    "carbs": 39.1,
-    "fat": 17.4,
-    "fiber": 2,
-    "region": "Bikano"
-  },
-  {
     "id": "ind_5219",
     "name": "Bikano Roasted Cashews",
     "category": "Snacks",
@@ -62626,42 +62110,6 @@
     "fat": 10.7,
     "fiber": 0,
     "region": "Bikano"
-  },
-  {
-    "id": "ind_5220",
-    "name": "Bikano Veggie Burger",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 293,
-    "protein": 10.5,
-    "carbs": 41.8,
-    "fat": 10.5,
-    "fiber": 2.1,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5221",
-    "name": "Kurkure Chicken Nuggets (6 pcs)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 315,
-    "protein": 16.9,
-    "carbs": 20.3,
-    "fat": 20.3,
-    "fiber": 1,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5222",
-    "name": "Barbeque Nation Greek Yogurt",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 94,
-    "protein": 14,
-    "carbs": 5.6,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Barbeque Nation"
   },
   {
     "id": "ind_5223",
@@ -62676,54 +62124,6 @@
     "region": "Burger King"
   },
   {
-    "id": "ind_5224",
-    "name": "McDonald's Plain Yogurt (1 cup)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 140,
-    "protein": 7.5,
-    "carbs": 11.2,
-    "fat": 7.5,
-    "fiber": 0.6,
-    "region": "McDonald's"
-  },
-  {
-    "id": "ind_5225",
-    "name": "Kurkure Vanilla Ice Cream (1 Scoop)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 157,
-    "protein": 3.4,
-    "carbs": 22.4,
-    "fat": 7.8,
-    "fiber": 1.1,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5226",
-    "name": "Pizza Hut Roasted Cashews",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 170,
-    "protein": 5.3,
-    "carbs": 9.6,
-    "fat": 12.8,
-    "fiber": 0,
-    "region": "Pizza Hut"
-  },
-  {
-    "id": "ind_5227",
-    "name": "Kurkure Instant Noodles",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 385,
-    "protein": 8.8,
-    "carbs": 55,
-    "fat": 15.4,
-    "fiber": 2.8,
-    "region": "Kurkure"
-  },
-  {
     "id": "ind_5228",
     "name": "Maggi Fruit Juice (1 cup)",
     "category": "Snacks",
@@ -62733,18 +62133,6 @@
     "carbs": 27.4,
     "fat": 0,
     "fiber": 1.4,
-    "region": "Maggi"
-  },
-  {
-    "id": "ind_5229",
-    "name": "Maggi Cheese Burger",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 348,
-    "protein": 17.9,
-    "carbs": 34.8,
-    "fat": 15.9,
-    "fiber": 1.7,
     "region": "Maggi"
   },
   {
@@ -62760,234 +62148,6 @@
     "region": "Burger King"
   },
   {
-    "id": "ind_5231",
-    "name": "Parle Pepperoni Pizza (Regular)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 1058,
-    "protein": 46.8,
-    "carbs": 111.4,
-    "fat": 44.5,
-    "fiber": 5.6,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5232",
-    "name": "Parle Butter Panner Meal",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 674,
-    "protein": 20.7,
-    "carbs": 62.2,
-    "fat": 36.3,
-    "fiber": 3.1,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5233",
-    "name": "KFC Digestive Biscuits (2 pcs)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 148,
-    "protein": 3.2,
-    "carbs": 21.2,
-    "fat": 6.4,
-    "fiber": 1.1,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5234",
-    "name": "Starbucks Aloo Bhujia",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 192,
-    "protein": 4.3,
-    "carbs": 12.8,
-    "fat": 14.9,
-    "fiber": 0.6,
-    "region": "Starbucks"
-  },
-  {
-    "id": "ind_5235",
-    "name": "Pizza Hut Butter Panner Meal",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 742,
-    "protein": 22.8,
-    "carbs": 68.5,
-    "fat": 40,
-    "fiber": 3.4,
-    "region": "Pizza Hut"
-  },
-  {
-    "id": "ind_5236",
-    "name": "Chai Point Tandoori Chicken Pizza",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 906,
-    "protein": 44.3,
-    "carbs": 98.5,
-    "fat": 34.5,
-    "fiber": 4.9,
-    "region": "Chai Point"
-  },
-  {
-    "id": "ind_5237",
-    "name": "Britannia Veggie Burger",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 306,
-    "protein": 10.9,
-    "carbs": 43.8,
-    "fat": 10.9,
-    "fiber": 2.2,
-    "region": "Britannia"
-  },
-  {
-    "id": "ind_5238",
-    "name": "Bikanervala Tandoori Chicken Pizza",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 1026,
-    "protein": 50.2,
-    "carbs": 111.5,
-    "fat": 39,
-    "fiber": 5.6,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5239",
-    "name": "Lays Crispy Chicken Wrap",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 442,
-    "protein": 21.6,
-    "carbs": 44.2,
-    "fat": 19.7,
-    "fiber": 2.2,
-    "region": "Lays"
-  },
-  {
-    "id": "ind_5240",
-    "name": "Starbucks Chicken Nuggets (6 pcs)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 275,
-    "protein": 14.8,
-    "carbs": 17.7,
-    "fat": 17.7,
-    "fiber": 0.9,
-    "region": "Starbucks"
-  },
-  {
-    "id": "ind_5241",
-    "name": "Chai Point French Fries (Medium)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 341,
-    "protein": 3.6,
-    "carbs": 43.1,
-    "fat": 16.2,
-    "fiber": 2.2,
-    "region": "Chai Point"
-  },
-  {
-    "id": "ind_5242",
-    "name": "Amul Roasted Cashews",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 172,
-    "protein": 5.4,
-    "carbs": 9.7,
-    "fat": 12.9,
-    "fiber": 0,
-    "region": "Amul"
-  },
-  {
-    "id": "ind_5243",
-    "name": "Haldiram's Cold Coffee",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 277,
-    "protein": 8.9,
-    "carbs": 38.8,
-    "fat": 8.9,
-    "fiber": 1.9,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5244",
-    "name": "Parle Dal Makhani (Ready-to-Eat)",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 287,
-    "protein": 14.4,
-    "carbs": 30.8,
-    "fat": 12.3,
-    "fiber": 1.5,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5245",
-    "name": "Parle Protein Bar",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 228,
-    "protein": 22.8,
-    "carbs": 25.1,
-    "fat": 6.8,
-    "fiber": 1.3,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5246",
-    "name": "Haldiram's Diet Soda",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5247",
-    "name": "Burger King Fruit Juice (1 cup)",
-    "category": "Burgers",
-    "servingSize": "1 serving",
-    "calories": 114,
-    "protein": 0,
-    "carbs": 29,
-    "fat": 0,
-    "fiber": 1.5,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5248",
-    "name": "Kurkure Butter Panner Meal",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 663,
-    "protein": 20.4,
-    "carbs": 61.2,
-    "fat": 35.7,
-    "fiber": 3.1,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5249",
-    "name": "Lays Chocolate Ice Cream (1 Scoop)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 162,
-    "protein": 3.2,
-    "carbs": 23.8,
-    "fat": 7.6,
-    "fiber": 1.2,
-    "region": "Lays"
-  },
-  {
     "id": "ind_5250",
     "name": "Nestle Paneer Butter Masala (Ready-to-Eat)",
     "category": "Noodles",
@@ -62998,18 +62158,6 @@
     "fat": 27.4,
     "fiber": 0.7,
     "region": "Nestle"
-  },
-  {
-    "id": "ind_5251",
-    "name": "Maggi Plain Yogurt (1 cup)",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 169,
-    "protein": 9,
-    "carbs": 13.5,
-    "fat": 9,
-    "fiber": 0.7,
-    "region": "Maggi"
   },
   {
     "id": "ind_5252",
@@ -63036,18 +62184,6 @@
     "region": "Subway"
   },
   {
-    "id": "ind_5254",
-    "name": "ITC Potato Chips",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 163,
-    "protein": 2,
-    "carbs": 15.3,
-    "fat": 10.2,
-    "fiber": 0.8,
-    "region": "ITC"
-  },
-  {
     "id": "ind_5255",
     "name": "Faasos Peri Peri Fries",
     "category": "Vegetarian",
@@ -63058,42 +62194,6 @@
     "fat": 21.3,
     "fiber": 2.6,
     "region": "Faasos"
-  },
-  {
-    "id": "ind_5256",
-    "name": "Mother Dairy Cream & Onion Chips",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 179,
-    "protein": 2.2,
-    "carbs": 16.7,
-    "fat": 11.2,
-    "fiber": 0.8,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5257",
-    "name": "Faasos Frappuccino",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 408,
-    "protein": 8.2,
-    "carbs": 56.1,
-    "fat": 16.3,
-    "fiber": 2.8,
-    "region": "Faasos"
-  },
-  {
-    "id": "ind_5258",
-    "name": "Britannia Cola (Regular)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 138,
-    "protein": 0,
-    "carbs": 38.6,
-    "fat": 0,
-    "fiber": 1.9,
-    "region": "Britannia"
   },
   {
     "id": "ind_5259",
@@ -63108,18 +62208,6 @@
     "region": "Burger King"
   },
   {
-    "id": "ind_5260",
-    "name": "Taco Bell Paneer Butter Masala (Ready-to-Eat)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 374,
-    "protein": 12.8,
-    "carbs": 16,
-    "fat": 30,
-    "fiber": 0.8,
-    "region": "Taco Bell"
-  },
-  {
     "id": "ind_5261",
     "name": "Lays Gulab Jamun (Canned)",
     "category": "Snacks",
@@ -63130,18 +62218,6 @@
     "fat": 12.5,
     "fiber": 2.6,
     "region": "Lays"
-  },
-  {
-    "id": "ind_5262",
-    "name": "Haldiram's Granola Bar",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 145,
-    "protein": 3.1,
-    "carbs": 20.7,
-    "fat": 5.2,
-    "fiber": 1,
-    "region": "Haldiram's"
   },
   {
     "id": "ind_5263",
@@ -63156,30 +62232,6 @@
     "region": "Starbucks"
   },
   {
-    "id": "ind_5264",
-    "name": "Maggi Tandoori Chicken Pizza",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 869,
-    "protein": 42.5,
-    "carbs": 94.5,
-    "fat": 33.1,
-    "fiber": 4.7,
-    "region": "Maggi"
-  },
-  {
-    "id": "ind_5265",
-    "name": "Barbeque Nation Aloo Bhujia",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 159,
-    "protein": 3.5,
-    "carbs": 10.6,
-    "fat": 12.4,
-    "fiber": 0.5,
-    "region": "Barbeque Nation"
-  },
-  {
     "id": "ind_5266",
     "name": "Nandini Cold Coffee",
     "category": "Sweets",
@@ -63190,90 +62242,6 @@
     "fat": 6.9,
     "fiber": 1.5,
     "region": "Nandini"
-  },
-  {
-    "id": "ind_5267",
-    "name": "KFC Chocolate Chip Cookies (2 pcs)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 191,
-    "protein": 2.1,
-    "carbs": 25.5,
-    "fat": 9.6,
-    "fiber": 1.3,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5268",
-    "name": "Barbeque Nation Butter (1 tbsp)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 99,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 10.9,
-    "fiber": 0,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5269",
-    "name": "Haldiram's Farmhouse Veg Pizza",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 756,
-    "protein": 28.4,
-    "carbs": 97.8,
-    "fat": 26.7,
-    "fiber": 4.9,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5270",
-    "name": "Maggi Classic Burger",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 310,
-    "protein": 15.5,
-    "carbs": 36.2,
-    "fat": 12.4,
-    "fiber": 1.8,
-    "region": "Maggi"
-  },
-  {
-    "id": "ind_5271",
-    "name": "Parle Plain Yogurt (1 cup)",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 147,
-    "protein": 7.8,
-    "carbs": 11.7,
-    "fat": 7.8,
-    "fiber": 0.6,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5272",
-    "name": "Barbeque Nation Paneer Butter Masala (Ready-to-Eat)",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 343,
-    "protein": 11.7,
-    "carbs": 14.7,
-    "fat": 27.4,
-    "fiber": 0.7,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5273",
-    "name": "Amul Veg Biryani",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 502,
-    "protein": 12.5,
-    "carbs": 78.4,
-    "fat": 14.6,
-    "fiber": 3.9,
-    "region": "Amul"
   },
   {
     "id": "ind_5274",
@@ -63312,42 +62280,6 @@
     "region": "Amul"
   },
   {
-    "id": "ind_5277",
-    "name": "Starbucks Protein Bar",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 212,
-    "protein": 21.2,
-    "carbs": 23.3,
-    "fat": 6.3,
-    "fiber": 1.2,
-    "region": "Starbucks"
-  },
-  {
-    "id": "ind_5278",
-    "name": "Pizza Hut Protein Bar",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 197,
-    "protein": 19.7,
-    "carbs": 21.7,
-    "fat": 5.9,
-    "fiber": 1.1,
-    "region": "Pizza Hut"
-  },
-  {
-    "id": "ind_5279",
-    "name": "Faasos Dal Makhani (Ready-to-Eat)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 300,
-    "protein": 15,
-    "carbs": 32.2,
-    "fat": 12.9,
-    "fiber": 1.6,
-    "region": "Faasos"
-  },
-  {
     "id": "ind_5280",
     "name": "Taco Bell Crispy Chicken Wrap",
     "category": "Mexican",
@@ -63358,18 +62290,6 @@
     "fat": 22.6,
     "fiber": 2.5,
     "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5281",
-    "name": "Subway Rasgulla (Canned)",
-    "category": "Healthy",
-    "servingSize": "1 serving",
-    "calories": 219,
-    "protein": 6,
-    "carbs": 44.9,
-    "fat": 2,
-    "fiber": 2.2,
-    "region": "Subway"
   },
   {
     "id": "ind_5282",
@@ -63384,30 +62304,6 @@
     "region": "Nandini"
   },
   {
-    "id": "ind_5283",
-    "name": "Amul Diet Soda",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Amul"
-  },
-  {
-    "id": "ind_5284",
-    "name": "Chai Point Margherita Pizza (Regular)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 748,
-    "protein": 32.7,
-    "carbs": 93.5,
-    "fat": 26.2,
-    "fiber": 4.7,
-    "region": "Chai Point"
-  },
-  {
     "id": "ind_5285",
     "name": "Faasos French Fries (Medium)",
     "category": "Wraps",
@@ -63418,30 +62314,6 @@
     "fat": 17.1,
     "fiber": 2.3,
     "region": "Faasos"
-  },
-  {
-    "id": "ind_5286",
-    "name": "Bikano Dark Chocolate Bar",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 553,
-    "protein": 9.2,
-    "carbs": 41.5,
-    "fat": 38.7,
-    "fiber": 2.1,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5287",
-    "name": "Maggi Pepperoni Pizza (Regular)",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 980,
-    "protein": 43.3,
-    "carbs": 103.2,
-    "fat": 41.3,
-    "fiber": 5.2,
-    "region": "Maggi"
   },
   {
     "id": "ind_5288",
@@ -63456,18 +62328,6 @@
     "region": "Amul"
   },
   {
-    "id": "ind_5289",
-    "name": "Chai Point Moong Dal Snack",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 129,
-    "protein": 6.9,
-    "carbs": 12.9,
-    "fat": 5.2,
-    "fiber": 0.6,
-    "region": "Chai Point"
-  },
-  {
     "id": "ind_5290",
     "name": "Burger King Farmhouse Veg Pizza",
     "category": "Burgers",
@@ -63478,18 +62338,6 @@
     "fat": 33.7,
     "fiber": 6.2,
     "region": "Burger King"
-  },
-  {
-    "id": "ind_5291",
-    "name": "Starbucks Diet Soda",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Starbucks"
   },
   {
     "id": "ind_5292",
@@ -63516,18 +62364,6 @@
     "region": "Faasos"
   },
   {
-    "id": "ind_5294",
-    "name": "Nandini Crispy Chicken Wrap",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 490,
-    "protein": 23.9,
-    "carbs": 49,
-    "fat": 21.8,
-    "fiber": 2.5,
-    "region": "Nandini"
-  },
-  {
     "id": "ind_5295",
     "name": "Amul Fruit Juice (1 cup)",
     "category": "Sweets",
@@ -63552,126 +62388,6 @@
     "region": "McDonald's"
   },
   {
-    "id": "ind_5297",
-    "name": "Taco Bell Butter Panner Meal",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 558,
-    "protein": 17.2,
-    "carbs": 51.5,
-    "fat": 30,
-    "fiber": 2.6,
-    "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5298",
-    "name": "Mother Dairy Peri Peri Fries",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 436,
-    "protein": 4.4,
-    "carbs": 52.4,
-    "fat": 21.8,
-    "fiber": 2.6,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5299",
-    "name": "McDonald's Cheese Slices (2)",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 129,
-    "protein": 9.2,
-    "carbs": 1.8,
-    "fat": 9.2,
-    "fiber": 0,
-    "region": "McDonald's"
-  },
-  {
-    "id": "ind_5300",
-    "name": "Barbeque Nation Potato Chips",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 172,
-    "protein": 2.1,
-    "carbs": 16.1,
-    "fat": 10.7,
-    "fiber": 0.8,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5301",
-    "name": "Faasos Cola (Regular)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 152,
-    "protein": 0,
-    "carbs": 42.2,
-    "fat": 0,
-    "fiber": 2.1,
-    "region": "Faasos"
-  },
-  {
-    "id": "ind_5302",
-    "name": "Haldiram's Milk Chocolate Bar",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 584,
-    "protein": 8.8,
-    "carbs": 66.2,
-    "fat": 33.1,
-    "fiber": 3.3,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5303",
-    "name": "ITC Butter (1 tbsp)",
-    "category": "Packaged Goods",
-    "servingSize": "1 serving",
-    "calories": 108,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 11.9,
-    "fiber": 0,
-    "region": "ITC"
-  },
-  {
-    "id": "ind_5304",
-    "name": "Kurkure Peri Peri Fries",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 356,
-    "protein": 3.6,
-    "carbs": 42.8,
-    "fat": 17.8,
-    "fiber": 2.1,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5305",
-    "name": "ITC Chocolate Chip Cookies (2 pcs)",
-    "category": "Packaged Goods",
-    "servingSize": "1 serving",
-    "calories": 169,
-    "protein": 1.9,
-    "carbs": 22.6,
-    "fat": 8.5,
-    "fiber": 1.1,
-    "region": "ITC"
-  },
-  {
-    "id": "ind_5306",
-    "name": "Parle Greek Yogurt",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 97,
-    "protein": 14.5,
-    "carbs": 5.8,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Parle"
-  },
-  {
     "id": "ind_5307",
     "name": "Faasos Veggie Burger",
     "category": "Wraps",
@@ -63682,54 +62398,6 @@
     "fat": 9.2,
     "fiber": 1.9,
     "region": "Faasos"
-  },
-  {
-    "id": "ind_5308",
-    "name": "Pizza Hut Frappuccino",
-    "category": "Pizza",
-    "servingSize": "1 serving",
-    "calories": 375,
-    "protein": 7.5,
-    "carbs": 51.6,
-    "fat": 15,
-    "fiber": 2.6,
-    "region": "Pizza Hut"
-  },
-  {
-    "id": "ind_5309",
-    "name": "McDonald's Butter (1 tbsp)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 87,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 9.6,
-    "fiber": 0,
-    "region": "McDonald's"
-  },
-  {
-    "id": "ind_5310",
-    "name": "Faasos Paneer Butter Masala (Ready-to-Eat)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 383,
-    "protein": 13.1,
-    "carbs": 16.4,
-    "fat": 30.7,
-    "fiber": 0.8,
-    "region": "Faasos"
-  },
-  {
-    "id": "ind_5311",
-    "name": "Chai Point Butter Panner Meal",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 597,
-    "protein": 18.4,
-    "carbs": 55.1,
-    "fat": 32.1,
-    "fiber": 2.8,
-    "region": "Chai Point"
   },
   {
     "id": "ind_5312",
@@ -63744,30 +62412,6 @@
     "region": "Maggi"
   },
   {
-    "id": "ind_5313",
-    "name": "McDonald's Aloo Bhujia",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 193,
-    "protein": 4.3,
-    "carbs": 12.9,
-    "fat": 15,
-    "fiber": 0.6,
-    "region": "McDonald's"
-  },
-  {
-    "id": "ind_5314",
-    "name": "Faasos Moong Dal Snack",
-    "category": "Wraps",
-    "servingSize": "1 serving",
-    "calories": 139,
-    "protein": 7.4,
-    "carbs": 13.9,
-    "fat": 5.6,
-    "fiber": 0.7,
-    "region": "Faasos"
-  },
-  {
     "id": "ind_5315",
     "name": "Barbeque Nation Tandoori Chicken Pizza",
     "category": "Vegetarian",
@@ -63778,18 +62422,6 @@
     "fat": 37.6,
     "fiber": 5.4,
     "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5316",
-    "name": "Britannia Paneer Butter Masala (Ready-to-Eat)",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 401,
-    "protein": 13.7,
-    "carbs": 17.2,
-    "fat": 32.1,
-    "fiber": 0.9,
-    "region": "Britannia"
   },
   {
     "id": "ind_5317",
@@ -63816,30 +62448,6 @@
     "region": "Domino's Pizza"
   },
   {
-    "id": "ind_5319",
-    "name": "Haldiram's Peri Peri Fries",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 376,
-    "protein": 3.8,
-    "carbs": 45.1,
-    "fat": 18.8,
-    "fiber": 2.3,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5320",
-    "name": "Taco Bell Protein Bar",
-    "category": "Mexican",
-    "servingSize": "1 serving",
-    "calories": 181,
-    "protein": 18.1,
-    "carbs": 19.9,
-    "fat": 5.4,
-    "fiber": 1,
-    "region": "Taco Bell"
-  },
-  {
     "id": "ind_5321",
     "name": "Nandini Greek Yogurt",
     "category": "Sweets",
@@ -63850,42 +62458,6 @@
     "fat": 0,
     "fiber": 0,
     "region": "Nandini"
-  },
-  {
-    "id": "ind_5322",
-    "name": "Maggi Cream & Onion Chips",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 163,
-    "protein": 2,
-    "carbs": 15.3,
-    "fat": 10.2,
-    "fiber": 0.8,
-    "region": "Maggi"
-  },
-  {
-    "id": "ind_5323",
-    "name": "Faasos Aloo Bhujia",
-    "category": "Wraps",
-    "servingSize": "1 serving",
-    "calories": 193,
-    "protein": 4.3,
-    "carbs": 12.8,
-    "fat": 15,
-    "fiber": 0.6,
-    "region": "Faasos"
-  },
-  {
-    "id": "ind_5324",
-    "name": "Barbeque Nation Moong Dal Snack",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 159,
-    "protein": 8.5,
-    "carbs": 15.9,
-    "fat": 6.4,
-    "fiber": 0.8,
-    "region": "Barbeque Nation"
   },
   {
     "id": "ind_5325",
@@ -63912,18 +62484,6 @@
     "region": "Barbeque Nation"
   },
   {
-    "id": "ind_5327",
-    "name": "Subway Gulab Jamun (Canned)",
-    "category": "Healthy",
-    "servingSize": "1 serving",
-    "calories": 283,
-    "protein": 3.8,
-    "carbs": 47.2,
-    "fat": 11.3,
-    "fiber": 2.4,
-    "region": "Subway"
-  },
-  {
     "id": "ind_5328",
     "name": "Bikano Rasgulla (Canned)",
     "category": "Sweets",
@@ -63934,114 +62494,6 @@
     "fat": 2.1,
     "fiber": 2.3,
     "region": "Bikano"
-  },
-  {
-    "id": "ind_5329",
-    "name": "Parle Cream & Onion Chips",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 158,
-    "protein": 2,
-    "carbs": 14.8,
-    "fat": 9.9,
-    "fiber": 0.7,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5330",
-    "name": "Taco Bell Moong Dal Snack",
-    "category": "Mexican",
-    "servingSize": "1 serving",
-    "calories": 134,
-    "protein": 7.1,
-    "carbs": 13.4,
-    "fat": 5.4,
-    "fiber": 0.7,
-    "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5331",
-    "name": "Nandini Moong Dal Snack",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 160,
-    "protein": 8.5,
-    "carbs": 16,
-    "fat": 6.4,
-    "fiber": 0.8,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5332",
-    "name": "Starbucks Milk Chocolate Bar",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 454,
-    "protein": 6.9,
-    "carbs": 51.4,
-    "fat": 25.7,
-    "fiber": 2.6,
-    "region": "Starbucks"
-  },
-  {
-    "id": "ind_5333",
-    "name": "MTR Butter Panner Meal",
-    "category": "Ready to Eat",
-    "servingSize": "1 serving",
-    "calories": 640,
-    "protein": 19.7,
-    "carbs": 59.1,
-    "fat": 34.4,
-    "fiber": 3,
-    "region": "MTR"
-  },
-  {
-    "id": "ind_5334",
-    "name": "McDonald's Fruit Juice (1 cup)",
-    "category": "Burgers",
-    "servingSize": "1 serving",
-    "calories": 114,
-    "protein": 0,
-    "carbs": 29.1,
-    "fat": 0,
-    "fiber": 1.5,
-    "region": "McDonald's"
-  },
-  {
-    "id": "ind_5335",
-    "name": "Pizza Hut Potato Chips",
-    "category": "Pizza",
-    "servingSize": "1 serving",
-    "calories": 137,
-    "protein": 1.7,
-    "carbs": 12.9,
-    "fat": 8.6,
-    "fiber": 0.6,
-    "region": "Pizza Hut"
-  },
-  {
-    "id": "ind_5336",
-    "name": "ITC Pepperoni Pizza (Regular)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 989,
-    "protein": 43.7,
-    "carbs": 104.1,
-    "fat": 41.6,
-    "fiber": 5.2,
-    "region": "ITC"
-  },
-  {
-    "id": "ind_5337",
-    "name": "Subway Butter Panner Meal",
-    "category": "Sandwiches",
-    "servingSize": "1 serving",
-    "calories": 676,
-    "protein": 20.8,
-    "carbs": 62.4,
-    "fat": 36.4,
-    "fiber": 3.1,
-    "region": "Subway"
   },
   {
     "id": "ind_5338",
@@ -64056,30 +62508,6 @@
     "region": "Domino's Pizza"
   },
   {
-    "id": "ind_5339",
-    "name": "Barbeque Nation Butter Panner Meal",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 611,
-    "protein": 18.8,
-    "carbs": 56.4,
-    "fat": 32.9,
-    "fiber": 2.8,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5340",
-    "name": "ITC Cheese Slices (2)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 131,
-    "protein": 9.4,
-    "carbs": 1.9,
-    "fat": 9.4,
-    "fiber": 0,
-    "region": "ITC"
-  },
-  {
     "id": "ind_5341",
     "name": "Subway Crispy Chicken Wrap",
     "category": "Sandwiches",
@@ -64092,18 +62520,6 @@
     "region": "Subway"
   },
   {
-    "id": "ind_5342",
-    "name": "Britannia Masala Oats",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 171,
-    "protein": 4.6,
-    "carbs": 28.5,
-    "fat": 3.4,
-    "fiber": 1.4,
-    "region": "Britannia"
-  },
-  {
     "id": "ind_5343",
     "name": "Taco Bell Farmhouse Veg Pizza",
     "category": "Mexican",
@@ -64114,30 +62530,6 @@
     "fat": 27.6,
     "fiber": 5.1,
     "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5344",
-    "name": "Barbeque Nation Granola Bar",
-    "category": "Buffet",
-    "servingSize": "1 serving",
-    "calories": 128,
-    "protein": 2.8,
-    "carbs": 18.4,
-    "fat": 4.6,
-    "fiber": 0.9,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5345",
-    "name": "ITC Cola (Regular)",
-    "category": "Packaged Goods",
-    "servingSize": "1 serving",
-    "calories": 137,
-    "protein": 0,
-    "carbs": 38.2,
-    "fat": 0,
-    "fiber": 1.9,
-    "region": "ITC"
   },
   {
     "id": "ind_5346",
@@ -64176,30 +62568,6 @@
     "region": "Nestle"
   },
   {
-    "id": "ind_5349",
-    "name": "Subway Cold Coffee",
-    "category": "Sandwiches",
-    "servingSize": "1 serving",
-    "calories": 262,
-    "protein": 8.4,
-    "carbs": 36.7,
-    "fat": 8.4,
-    "fiber": 1.8,
-    "region": "Subway"
-  },
-  {
-    "id": "ind_5350",
-    "name": "Britannia Plain Yogurt (1 cup)",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 168,
-    "protein": 9,
-    "carbs": 13.4,
-    "fat": 9,
-    "fiber": 0.7,
-    "region": "Britannia"
-  },
-  {
     "id": "ind_5351",
     "name": "KFC Veggie Burger",
     "category": "Non-Veg",
@@ -64224,30 +62592,6 @@
     "region": "Mother Dairy"
   },
   {
-    "id": "ind_5353",
-    "name": "Bikanervala Cold Coffee",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 280,
-    "protein": 9,
-    "carbs": 39.2,
-    "fat": 9,
-    "fiber": 2,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5354",
-    "name": "Mother Dairy Moong Dal Snack",
-    "category": "Ice Cream",
-    "servingSize": "1 serving",
-    "calories": 168,
-    "protein": 9,
-    "carbs": 16.8,
-    "fat": 6.7,
-    "fiber": 0.8,
-    "region": "Mother Dairy"
-  },
-  {
     "id": "ind_5355",
     "name": "MTR Roasted Almonds",
     "category": "Breakfast",
@@ -64258,18 +62602,6 @@
     "fat": 16.1,
     "fiber": 0,
     "region": "MTR"
-  },
-  {
-    "id": "ind_5356",
-    "name": "Pizza Hut Milk Chocolate Bar",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 489,
-    "protein": 7.4,
-    "carbs": 55.4,
-    "fat": 27.7,
-    "fiber": 2.8,
-    "region": "Pizza Hut"
   },
   {
     "id": "ind_5357",
@@ -64294,18 +62626,6 @@
     "fat": 8.7,
     "fiber": 0,
     "region": "Amul"
-  },
-  {
-    "id": "ind_5359",
-    "name": "Barbeque Nation Rasgulla (Canned)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 228,
-    "protein": 6.2,
-    "carbs": 46.7,
-    "fat": 2.1,
-    "fiber": 2.3,
-    "region": "Barbeque Nation"
   },
   {
     "id": "ind_5360",
@@ -64356,66 +62676,6 @@
     "region": "Domino's Pizza"
   },
   {
-    "id": "ind_5364",
-    "name": "KFC Paneer Butter Masala (Ready-to-Eat)",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 394,
-    "protein": 13.5,
-    "carbs": 16.9,
-    "fat": 31.5,
-    "fiber": 0.8,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5365",
-    "name": "Starbucks Butter Panner Meal",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 725,
-    "protein": 22.3,
-    "carbs": 66.9,
-    "fat": 39,
-    "fiber": 3.3,
-    "region": "Starbucks"
-  },
-  {
-    "id": "ind_5366",
-    "name": "Burger King Cream & Onion Chips",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 146,
-    "protein": 1.8,
-    "carbs": 13.7,
-    "fat": 9.1,
-    "fiber": 0.7,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5367",
-    "name": "Starbucks Plain Yogurt (1 cup)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 172,
-    "protein": 9.2,
-    "carbs": 13.8,
-    "fat": 9.2,
-    "fiber": 0.7,
-    "region": "Starbucks"
-  },
-  {
-    "id": "ind_5368",
-    "name": "Starbucks Moong Dal Snack",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 162,
-    "protein": 8.6,
-    "carbs": 16.2,
-    "fat": 6.5,
-    "fiber": 0.8,
-    "region": "Starbucks"
-  },
-  {
     "id": "ind_5369",
     "name": "Bikano Roasted Almonds",
     "category": "Sweets",
@@ -64426,18 +62686,6 @@
     "fat": 14.2,
     "fiber": 0,
     "region": "Bikano"
-  },
-  {
-    "id": "ind_5370",
-    "name": "Taco Bell Dark Chocolate Bar",
-    "category": "Mexican",
-    "servingSize": "1 serving",
-    "calories": 609,
-    "protein": 10.1,
-    "carbs": 45.7,
-    "fat": 42.6,
-    "fiber": 2.3,
-    "region": "Taco Bell"
   },
   {
     "id": "ind_5371",
@@ -64464,30 +62712,6 @@
     "region": "ITC"
   },
   {
-    "id": "ind_5373",
-    "name": "Haldiram's Chocolate Chip Cookies (2 pcs)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 179,
-    "protein": 2,
-    "carbs": 23.8,
-    "fat": 8.9,
-    "fiber": 1.2,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5374",
-    "name": "Haldiram's Butter Panner Meal",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 611,
-    "protein": 18.8,
-    "carbs": 56.4,
-    "fat": 32.9,
-    "fiber": 2.8,
-    "region": "Haldiram's"
-  },
-  {
     "id": "ind_5375",
     "name": "Subway French Fries (Medium)",
     "category": "Healthy",
@@ -64500,18 +62724,6 @@
     "region": "Subway"
   },
   {
-    "id": "ind_5376",
-    "name": "Lays Veg Biryani",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 521,
-    "protein": 13,
-    "carbs": 81.4,
-    "fat": 15.2,
-    "fiber": 4.1,
-    "region": "Lays"
-  },
-  {
     "id": "ind_5377",
     "name": "Bikanervala Potato Chips",
     "category": "Vegetarian",
@@ -64522,102 +62734,6 @@
     "fat": 10.6,
     "fiber": 0.8,
     "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5378",
-    "name": "Britannia Rasgulla (Canned)",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 241,
-    "protein": 6.6,
-    "carbs": 49.4,
-    "fat": 2.2,
-    "fiber": 2.5,
-    "region": "Britannia"
-  },
-  {
-    "id": "ind_5379",
-    "name": "Chai Point Classic Burger",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 261,
-    "protein": 13.1,
-    "carbs": 30.5,
-    "fat": 10.4,
-    "fiber": 1.5,
-    "region": "Chai Point"
-  },
-  {
-    "id": "ind_5380",
-    "name": "Bikanervala Chicken Biryani (Medium)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 470,
-    "protein": 21.4,
-    "carbs": 59.9,
-    "fat": 15.4,
-    "fiber": 3,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5381",
-    "name": "Subway Dark Chocolate Bar",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 557,
-    "protein": 9.3,
-    "carbs": 41.8,
-    "fat": 39,
-    "fiber": 2.1,
-    "region": "Subway"
-  },
-  {
-    "id": "ind_5382",
-    "name": "Starbucks Greek Yogurt",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 99,
-    "protein": 14.9,
-    "carbs": 5.9,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Starbucks"
-  },
-  {
-    "id": "ind_5383",
-    "name": "Haldiram's Peanut Butter (2 tbsp)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 193,
-    "protein": 8.1,
-    "carbs": 6.1,
-    "fat": 16.3,
-    "fiber": 0,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5384",
-    "name": "Subway Paneer Butter Masala (Ready-to-Eat)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 401,
-    "protein": 13.7,
-    "carbs": 17.2,
-    "fat": 32.1,
-    "fiber": 0.9,
-    "region": "Subway"
-  },
-  {
-    "id": "ind_5385",
-    "name": "Maggi Potato Chips",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 138,
-    "protein": 1.7,
-    "carbs": 12.9,
-    "fat": 8.6,
-    "fiber": 0.6,
-    "region": "Maggi"
   },
   {
     "id": "ind_5386",
@@ -64656,18 +62772,6 @@
     "region": "Kurkure"
   },
   {
-    "id": "ind_5389",
-    "name": "ITC Margherita Pizza (Regular)",
-    "category": "Packaged Goods",
-    "servingSize": "1 serving",
-    "calories": 813,
-    "protein": 35.6,
-    "carbs": 101.6,
-    "fat": 28.5,
-    "fiber": 5.1,
-    "region": "ITC"
-  },
-  {
     "id": "ind_5390",
     "name": "Starbucks Vanilla Ice Cream (1 Scoop)",
     "category": "Beverages",
@@ -64677,42 +62781,6 @@
     "carbs": 18.9,
     "fat": 6.6,
     "fiber": 0.9,
-    "region": "Starbucks"
-  },
-  {
-    "id": "ind_5391",
-    "name": "Bikano Margherita Pizza (Regular)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 714,
-    "protein": 31.2,
-    "carbs": 89.2,
-    "fat": 25,
-    "fiber": 4.5,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5392",
-    "name": "Burger King Roasted Almonds",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 183,
-    "protein": 6.9,
-    "carbs": 6.9,
-    "fat": 16,
-    "fiber": 0,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5393",
-    "name": "Starbucks Gulab Jamun (Canned)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 311,
-    "protein": 4.1,
-    "carbs": 51.8,
-    "fat": 12.4,
-    "fiber": 2.6,
     "region": "Starbucks"
   },
   {
@@ -64740,66 +62808,6 @@
     "region": "Taco Bell"
   },
   {
-    "id": "ind_5396",
-    "name": "Kurkure Plain Yogurt (1 cup)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 153,
-    "protein": 8.1,
-    "carbs": 12.2,
-    "fat": 8.1,
-    "fiber": 0.6,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5397",
-    "name": "ITC Greek Yogurt",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 101,
-    "protein": 15.1,
-    "carbs": 6.1,
-    "fat": 0,
-    "fiber": 0,
-    "region": "ITC"
-  },
-  {
-    "id": "ind_5398",
-    "name": "Nestle Classic Burger",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 295,
-    "protein": 14.8,
-    "carbs": 34.5,
-    "fat": 11.8,
-    "fiber": 1.7,
-    "region": "Nestle"
-  },
-  {
-    "id": "ind_5399",
-    "name": "Burger King Granola Bar",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 137,
-    "protein": 2.9,
-    "carbs": 19.5,
-    "fat": 4.9,
-    "fiber": 1,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5400",
-    "name": "Britannia Cold Coffee",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 234,
-    "protein": 7.5,
-    "carbs": 32.8,
-    "fat": 7.5,
-    "fiber": 1.6,
-    "region": "Britannia"
-  },
-  {
     "id": "ind_5401",
     "name": "KFC Tandoori Chicken Pizza",
     "category": "Snacks",
@@ -64810,18 +62818,6 @@
     "fat": 36,
     "fiber": 5.1,
     "region": "KFC"
-  },
-  {
-    "id": "ind_5402",
-    "name": "Chai Point Cheese Noodles",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 411,
-    "protein": 9.8,
-    "carbs": 50.9,
-    "fat": 17.6,
-    "fiber": 2.5,
-    "region": "Chai Point"
   },
   {
     "id": "ind_5403",
@@ -64836,42 +62832,6 @@
     "region": "Amul"
   },
   {
-    "id": "ind_5404",
-    "name": "McDonald's Potato Chips",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 167,
-    "protein": 2.1,
-    "carbs": 15.7,
-    "fat": 10.4,
-    "fiber": 0.8,
-    "region": "McDonald's"
-  },
-  {
-    "id": "ind_5405",
-    "name": "Bikanervala Plain Yogurt (1 cup)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 161,
-    "protein": 8.6,
-    "carbs": 12.9,
-    "fat": 8.6,
-    "fiber": 0.6,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5406",
-    "name": "Barbeque Nation Cream & Onion Chips",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 151,
-    "protein": 1.9,
-    "carbs": 14.2,
-    "fat": 9.5,
-    "fiber": 0.7,
-    "region": "Barbeque Nation"
-  },
-  {
     "id": "ind_5407",
     "name": "Domino's Pizza Moong Dal Snack",
     "category": "Fast Food",
@@ -64882,30 +62842,6 @@
     "fat": 6.3,
     "fiber": 0.8,
     "region": "Domino's Pizza"
-  },
-  {
-    "id": "ind_5408",
-    "name": "Nestle Cheese Burger",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 341,
-    "protein": 17.6,
-    "carbs": 34.1,
-    "fat": 15.6,
-    "fiber": 1.7,
-    "region": "Nestle"
-  },
-  {
-    "id": "ind_5409",
-    "name": "Kurkure Frappuccino",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 392,
-    "protein": 7.8,
-    "carbs": 53.9,
-    "fat": 15.7,
-    "fiber": 2.7,
-    "region": "Kurkure"
   },
   {
     "id": "ind_5410",
@@ -64944,30 +62880,6 @@
     "region": "MTR"
   },
   {
-    "id": "ind_5413",
-    "name": "Nandini Roasted Cashews",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 143,
-    "protein": 4.5,
-    "carbs": 8,
-    "fat": 10.7,
-    "fiber": 0,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5414",
-    "name": "Haldiram's Digestive Biscuits (2 pcs)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 156,
-    "protein": 3.3,
-    "carbs": 22.3,
-    "fat": 6.7,
-    "fiber": 1.1,
-    "region": "Haldiram's"
-  },
-  {
     "id": "ind_5415",
     "name": "Burger King Margherita Pizza (Regular)",
     "category": "Fast Food",
@@ -64980,42 +62892,6 @@
     "region": "Burger King"
   },
   {
-    "id": "ind_5416",
-    "name": "Amul Chocolate Chip Cookies (2 pcs)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 190,
-    "protein": 2.1,
-    "carbs": 25.4,
-    "fat": 9.5,
-    "fiber": 1.3,
-    "region": "Amul"
-  },
-  {
-    "id": "ind_5417",
-    "name": "Nandini Margherita Pizza (Regular)",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 779,
-    "protein": 34.1,
-    "carbs": 97.4,
-    "fat": 27.3,
-    "fiber": 4.9,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5418",
-    "name": "Subway Potato Chips",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 147,
-    "protein": 1.8,
-    "carbs": 13.8,
-    "fat": 9.2,
-    "fiber": 0.7,
-    "region": "Subway"
-  },
-  {
     "id": "ind_5419",
     "name": "Subway Classic Burger",
     "category": "Sandwiches",
@@ -65025,18 +62901,6 @@
     "carbs": 39.1,
     "fat": 13.4,
     "fiber": 2,
-    "region": "Subway"
-  },
-  {
-    "id": "ind_5420",
-    "name": "Subway Chocolate Chip Cookies (2 pcs)",
-    "category": "Sandwiches",
-    "servingSize": "1 serving",
-    "calories": 199,
-    "protein": 2.2,
-    "carbs": 26.6,
-    "fat": 10,
-    "fiber": 1.3,
     "region": "Subway"
   },
   {
@@ -65052,54 +62916,6 @@
     "region": "ITC"
   },
   {
-    "id": "ind_5422",
-    "name": "Nandini Dal Makhani (Ready-to-Eat)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 305,
-    "protein": 15.3,
-    "carbs": 32.7,
-    "fat": 13.1,
-    "fiber": 1.6,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5423",
-    "name": "McDonald's Diet Soda",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "McDonald's"
-  },
-  {
-    "id": "ind_5424",
-    "name": "Chai Point Diet Soda",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Chai Point"
-  },
-  {
-    "id": "ind_5425",
-    "name": "Barbeque Nation Instant Noodles",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 402,
-    "protein": 9.2,
-    "carbs": 57.5,
-    "fat": 16.1,
-    "fiber": 2.9,
-    "region": "Barbeque Nation"
-  },
-  {
     "id": "ind_5426",
     "name": "Mother Dairy Milk Chocolate Bar",
     "category": "Dairy",
@@ -65109,30 +62925,6 @@
     "carbs": 56.1,
     "fat": 28,
     "fiber": 2.8,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5427",
-    "name": "Barbeque Nation Digestive Biscuits (2 pcs)",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 153,
-    "protein": 3.3,
-    "carbs": 21.9,
-    "fat": 6.6,
-    "fiber": 1.1,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5428",
-    "name": "Mother Dairy Paneer Tikka Wrap",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 409,
-    "protein": 15.6,
-    "carbs": 46.7,
-    "fat": 17.5,
-    "fiber": 2.3,
     "region": "Mother Dairy"
   },
   {
@@ -65148,66 +62940,6 @@
     "region": "MTR"
   },
   {
-    "id": "ind_5430",
-    "name": "Haldiram's Chicken Biryani (Medium)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 525,
-    "protein": 23.9,
-    "carbs": 66.9,
-    "fat": 17.2,
-    "fiber": 3.3,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5431",
-    "name": "Bikano Tandoori Chicken Pizza",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 1016,
-    "protein": 49.7,
-    "carbs": 110.4,
-    "fat": 38.6,
-    "fiber": 5.5,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5432",
-    "name": "Mother Dairy Pepperoni Pizza (Regular)",
-    "category": "Ice Cream",
-    "servingSize": "1 serving",
-    "calories": 1022,
-    "protein": 45.2,
-    "carbs": 107.6,
-    "fat": 43,
-    "fiber": 5.4,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5433",
-    "name": "Britannia Crispy Chicken Wrap",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 513,
-    "protein": 25.1,
-    "carbs": 51.3,
-    "fat": 22.8,
-    "fiber": 2.6,
-    "region": "Britannia"
-  },
-  {
-    "id": "ind_5434",
-    "name": "Amul Cheese Burger",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 329,
-    "protein": 16.9,
-    "carbs": 32.9,
-    "fat": 15.1,
-    "fiber": 1.6,
-    "region": "Amul"
-  },
-  {
     "id": "ind_5435",
     "name": "Mother Dairy Vanilla Ice Cream (1 Scoop)",
     "category": "Ice Cream",
@@ -65218,18 +62950,6 @@
     "fat": 7.5,
     "fiber": 1.1,
     "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5436",
-    "name": "Nandini Paneer Butter Masala (Ready-to-Eat)",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 340,
-    "protein": 11.7,
-    "carbs": 14.6,
-    "fat": 27.2,
-    "fiber": 0.7,
-    "region": "Nandini"
   },
   {
     "id": "ind_5437",
@@ -65244,66 +62964,6 @@
     "region": "KFC"
   },
   {
-    "id": "ind_5438",
-    "name": "McDonald's Instant Noodles",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 329,
-    "protein": 7.5,
-    "carbs": 47,
-    "fat": 13.1,
-    "fiber": 2.4,
-    "region": "McDonald's"
-  },
-  {
-    "id": "ind_5439",
-    "name": "McDonald's Chocolate Chip Cookies (2 pcs)",
-    "category": "Burgers",
-    "servingSize": "1 serving",
-    "calories": 161,
-    "protein": 1.8,
-    "carbs": 21.5,
-    "fat": 8,
-    "fiber": 1.1,
-    "region": "McDonald's"
-  },
-  {
-    "id": "ind_5440",
-    "name": "Nandini Chocolate Chip Cookies (2 pcs)",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 183,
-    "protein": 2,
-    "carbs": 24.4,
-    "fat": 9.1,
-    "fiber": 1.2,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5441",
-    "name": "Bikanervala Chocolate Ice Cream (1 Scoop)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 140,
-    "protein": 2.8,
-    "carbs": 20.6,
-    "fat": 6.6,
-    "fiber": 1,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5442",
-    "name": "Parle Cheese Noodles",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 364,
-    "protein": 8.7,
-    "carbs": 45,
-    "fat": 15.6,
-    "fiber": 2.3,
-    "region": "Parle"
-  },
-  {
     "id": "ind_5443",
     "name": "Maggi Dark Chocolate Bar",
     "category": "Snacks",
@@ -65314,18 +62974,6 @@
     "fat": 47.9,
     "fiber": 2.6,
     "region": "Maggi"
-  },
-  {
-    "id": "ind_5444",
-    "name": "Bikanervala Protein Bar",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 195,
-    "protein": 19.5,
-    "carbs": 21.5,
-    "fat": 5.9,
-    "fiber": 1.1,
-    "region": "Bikanervala"
   },
   {
     "id": "ind_5445",
@@ -65352,18 +63000,6 @@
     "region": "ITC"
   },
   {
-    "id": "ind_5447",
-    "name": "Barbeque Nation Diet Soda",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Barbeque Nation"
-  },
-  {
     "id": "ind_5448",
     "name": "Amul Dark Chocolate Bar",
     "category": "Dairy",
@@ -65374,126 +63010,6 @@
     "fat": 40.5,
     "fiber": 2.2,
     "region": "Amul"
-  },
-  {
-    "id": "ind_5449",
-    "name": "Nestle Peri Peri Fries",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 360,
-    "protein": 3.6,
-    "carbs": 43.2,
-    "fat": 18,
-    "fiber": 2.2,
-    "region": "Nestle"
-  },
-  {
-    "id": "ind_5450",
-    "name": "MTR Frappuccino",
-    "category": "Spices",
-    "servingSize": "1 serving",
-    "calories": 403,
-    "protein": 8.1,
-    "carbs": 55.5,
-    "fat": 16.1,
-    "fiber": 2.8,
-    "region": "MTR"
-  },
-  {
-    "id": "ind_5451",
-    "name": "Faasos Protein Bar",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 190,
-    "protein": 19,
-    "carbs": 20.9,
-    "fat": 5.7,
-    "fiber": 1,
-    "region": "Faasos"
-  },
-  {
-    "id": "ind_5452",
-    "name": "Lays Butter Panner Meal",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 707,
-    "protein": 21.7,
-    "carbs": 65.2,
-    "fat": 38.1,
-    "fiber": 3.3,
-    "region": "Lays"
-  },
-  {
-    "id": "ind_5453",
-    "name": "Chai Point Paneer Butter Masala (Ready-to-Eat)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 299,
-    "protein": 10.3,
-    "carbs": 12.8,
-    "fat": 23.9,
-    "fiber": 0.6,
-    "region": "Chai Point"
-  },
-  {
-    "id": "ind_5454",
-    "name": "Chai Point Butter (1 tbsp)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 94,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 10.3,
-    "fiber": 0,
-    "region": "Chai Point"
-  },
-  {
-    "id": "ind_5455",
-    "name": "McDonald's Peanut Butter (2 tbsp)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 167,
-    "protein": 7,
-    "carbs": 5.3,
-    "fat": 14.1,
-    "fiber": 0,
-    "region": "McDonald's"
-  },
-  {
-    "id": "ind_5456",
-    "name": "Amul Cream & Onion Chips",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 173,
-    "protein": 2.2,
-    "carbs": 16.2,
-    "fat": 10.8,
-    "fiber": 0.8,
-    "region": "Amul"
-  },
-  {
-    "id": "ind_5457",
-    "name": "Barbeque Nation Milk Chocolate Bar",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 467,
-    "protein": 7,
-    "carbs": 52.8,
-    "fat": 26.4,
-    "fiber": 2.6,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5458",
-    "name": "Barbeque Nation Cheese Noodles",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 372,
-    "protein": 8.9,
-    "carbs": 46,
-    "fat": 15.9,
-    "fiber": 2.3,
-    "region": "Barbeque Nation"
   },
   {
     "id": "ind_5459",
@@ -65508,18 +63024,6 @@
     "region": "McDonald's"
   },
   {
-    "id": "ind_5460",
-    "name": "Chai Point Pepperoni Pizza (Regular)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 869,
-    "protein": 38.4,
-    "carbs": 91.5,
-    "fat": 36.6,
-    "fiber": 4.6,
-    "region": "Chai Point"
-  },
-  {
     "id": "ind_5461",
     "name": "Taco Bell Paneer Tikka Wrap",
     "category": "Mexican",
@@ -65530,18 +63034,6 @@
     "fat": 20.7,
     "fiber": 2.8,
     "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5462",
-    "name": "Subway Diet Soda",
-    "category": "Healthy",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Subway"
   },
   {
     "id": "ind_5463",
@@ -65556,114 +63048,6 @@
     "region": "Lays"
   },
   {
-    "id": "ind_5464",
-    "name": "Bikano Protein Bar",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 188,
-    "protein": 18.8,
-    "carbs": 20.7,
-    "fat": 5.6,
-    "fiber": 1,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5465",
-    "name": "Kurkure French Fries (Medium)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 361,
-    "protein": 3.8,
-    "carbs": 45.5,
-    "fat": 17.1,
-    "fiber": 2.3,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5466",
-    "name": "Kurkure Peanut Butter (2 tbsp)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 191,
-    "protein": 8,
-    "carbs": 6,
-    "fat": 16.1,
-    "fiber": 0,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5467",
-    "name": "Parle Moong Dal Snack",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 170,
-    "protein": 9,
-    "carbs": 17,
-    "fat": 6.8,
-    "fiber": 0.9,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5468",
-    "name": "McDonald's Frappuccino",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 397,
-    "protein": 7.9,
-    "carbs": 54.5,
-    "fat": 15.9,
-    "fiber": 2.7,
-    "region": "McDonald's"
-  },
-  {
-    "id": "ind_5469",
-    "name": "Parle Farmhouse Veg Pizza",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 834,
-    "protein": 31.4,
-    "carbs": 107.9,
-    "fat": 29.4,
-    "fiber": 5.4,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5470",
-    "name": "Faasos Diet Soda",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Faasos"
-  },
-  {
-    "id": "ind_5471",
-    "name": "Pizza Hut Digestive Biscuits (2 pcs)",
-    "category": "Pizza",
-    "servingSize": "1 serving",
-    "calories": 155,
-    "protein": 3.3,
-    "carbs": 22.1,
-    "fat": 6.6,
-    "fiber": 1.1,
-    "region": "Pizza Hut"
-  },
-  {
-    "id": "ind_5472",
-    "name": "Chai Point Peanut Butter (2 tbsp)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 211,
-    "protein": 8.9,
-    "carbs": 6.7,
-    "fat": 17.8,
-    "fiber": 0,
-    "region": "Chai Point"
-  },
-  {
     "id": "ind_5473",
     "name": "KFC Chicken Nuggets (6 pcs)",
     "category": "Snacks",
@@ -65674,30 +63058,6 @@
     "fat": 19.1,
     "fiber": 1,
     "region": "KFC"
-  },
-  {
-    "id": "ind_5474",
-    "name": "Amul Pepperoni Pizza (Regular)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 948,
-    "protein": 41.9,
-    "carbs": 99.8,
-    "fat": 39.9,
-    "fiber": 5,
-    "region": "Amul"
-  },
-  {
-    "id": "ind_5475",
-    "name": "Faasos Peanut Butter (2 tbsp)",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 209,
-    "protein": 8.8,
-    "carbs": 6.6,
-    "fat": 17.6,
-    "fiber": 0,
-    "region": "Faasos"
   },
   {
     "id": "ind_5476",
@@ -65712,42 +63072,6 @@
     "region": "Faasos"
   },
   {
-    "id": "ind_5477",
-    "name": "Nandini Pepperoni Pizza (Regular)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 965,
-    "protein": 42.7,
-    "carbs": 101.6,
-    "fat": 40.6,
-    "fiber": 5.1,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5478",
-    "name": "Nestle Moong Dal Snack",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 167,
-    "protein": 8.9,
-    "carbs": 16.7,
-    "fat": 6.7,
-    "fiber": 0.8,
-    "region": "Nestle"
-  },
-  {
-    "id": "ind_5479",
-    "name": "Kurkure Chicken Biryani (Medium)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 527,
-    "protein": 24,
-    "carbs": 67.1,
-    "fat": 17.2,
-    "fiber": 3.4,
-    "region": "Kurkure"
-  },
-  {
     "id": "ind_5480",
     "name": "Barbeque Nation Vanilla Ice Cream (1 Scoop)",
     "category": "Buffet",
@@ -65758,102 +63082,6 @@
     "fat": 7.5,
     "fiber": 1.1,
     "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5481",
-    "name": "Burger King Roasted Cashews",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 166,
-    "protein": 5.2,
-    "carbs": 9.3,
-    "fat": 12.4,
-    "fiber": 0,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5482",
-    "name": "ITC Moong Dal Snack",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 170,
-    "protein": 9.1,
-    "carbs": 17,
-    "fat": 6.8,
-    "fiber": 0.9,
-    "region": "ITC"
-  },
-  {
-    "id": "ind_5483",
-    "name": "Taco Bell Instant Noodles",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 313,
-    "protein": 7.2,
-    "carbs": 44.7,
-    "fat": 12.5,
-    "fiber": 2.2,
-    "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5484",
-    "name": "Lays Cheese Slices (2)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 135,
-    "protein": 9.7,
-    "carbs": 1.9,
-    "fat": 9.7,
-    "fiber": 0,
-    "region": "Lays"
-  },
-  {
-    "id": "ind_5485",
-    "name": "Burger King Butter Panner Meal",
-    "category": "Burgers",
-    "servingSize": "1 serving",
-    "calories": 702,
-    "protein": 21.6,
-    "carbs": 64.8,
-    "fat": 37.8,
-    "fiber": 3.2,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5486",
-    "name": "Faasos Gulab Jamun (Canned)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 330,
-    "protein": 4.4,
-    "carbs": 54.9,
-    "fat": 13.2,
-    "fiber": 2.7,
-    "region": "Faasos"
-  },
-  {
-    "id": "ind_5487",
-    "name": "Maggi Digestive Biscuits (2 pcs)",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 151,
-    "protein": 3.2,
-    "carbs": 21.6,
-    "fat": 6.5,
-    "fiber": 1.1,
-    "region": "Maggi"
-  },
-  {
-    "id": "ind_5488",
-    "name": "Nestle Butter Panner Meal",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 611,
-    "protein": 18.8,
-    "carbs": 56.4,
-    "fat": 32.9,
-    "fiber": 2.8,
-    "region": "Nestle"
   },
   {
     "id": "ind_5489",
@@ -65868,18 +63096,6 @@
     "region": "Mother Dairy"
   },
   {
-    "id": "ind_5490",
-    "name": "Chai Point Aloo Bhujia",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 171,
-    "protein": 3.8,
-    "carbs": 11.4,
-    "fat": 13.3,
-    "fiber": 0.6,
-    "region": "Chai Point"
-  },
-  {
     "id": "ind_5491",
     "name": "Subway Farmhouse Veg Pizza",
     "category": "Fast Food",
@@ -65890,30 +63106,6 @@
     "fat": 32.6,
     "fiber": 6,
     "region": "Subway"
-  },
-  {
-    "id": "ind_5492",
-    "name": "MTR Pepperoni Pizza (Regular)",
-    "category": "Spices",
-    "servingSize": "1 serving",
-    "calories": 995,
-    "protein": 44,
-    "carbs": 104.7,
-    "fat": 41.9,
-    "fiber": 5.2,
-    "region": "MTR"
-  },
-  {
-    "id": "ind_5493",
-    "name": "Pizza Hut Dark Chocolate Bar",
-    "category": "Pizza",
-    "servingSize": "1 serving",
-    "calories": 613,
-    "protein": 10.2,
-    "carbs": 46,
-    "fat": 42.9,
-    "fiber": 2.3,
-    "region": "Pizza Hut"
   },
   {
     "id": "ind_5494",
@@ -65940,174 +63132,6 @@
     "region": "MTR"
   },
   {
-    "id": "ind_5496",
-    "name": "Nandini Potato Chips",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 144,
-    "protein": 1.8,
-    "carbs": 13.5,
-    "fat": 9,
-    "fiber": 0.7,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5497",
-    "name": "Nestle Diet Soda",
-    "category": "Chocolates",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Nestle"
-  },
-  {
-    "id": "ind_5498",
-    "name": "Maggi Chicken Biryani (Medium)",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 472,
-    "protein": 21.4,
-    "carbs": 60.1,
-    "fat": 15.4,
-    "fiber": 3,
-    "region": "Maggi"
-  },
-  {
-    "id": "ind_5499",
-    "name": "Nestle Chocolate Chip Cookies (2 pcs)",
-    "category": "Chocolates",
-    "servingSize": "1 serving",
-    "calories": 169,
-    "protein": 1.9,
-    "carbs": 22.5,
-    "fat": 8.4,
-    "fiber": 1.1,
-    "region": "Nestle"
-  },
-  {
-    "id": "ind_5500",
-    "name": "Pizza Hut Cheese Noodles",
-    "category": "Pizza",
-    "servingSize": "1 serving",
-    "calories": 441,
-    "protein": 10.5,
-    "carbs": 54.6,
-    "fat": 18.9,
-    "fiber": 2.7,
-    "region": "Pizza Hut"
-  },
-  {
-    "id": "ind_5501",
-    "name": "Nandini Peri Peri Fries",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 389,
-    "protein": 3.9,
-    "carbs": 46.7,
-    "fat": 19.5,
-    "fiber": 2.3,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5502",
-    "name": "Kurkure Veggie Burger",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 282,
-    "protein": 10.1,
-    "carbs": 40.3,
-    "fat": 10.1,
-    "fiber": 2,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5503",
-    "name": "Lays Chicken Nuggets (6 pcs)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 320,
-    "protein": 17.1,
-    "carbs": 20.6,
-    "fat": 20.6,
-    "fiber": 1,
-    "region": "Lays"
-  },
-  {
-    "id": "ind_5504",
-    "name": "Britannia Protein Bar",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 220,
-    "protein": 22,
-    "carbs": 24.2,
-    "fat": 6.6,
-    "fiber": 1.2,
-    "region": "Britannia"
-  },
-  {
-    "id": "ind_5505",
-    "name": "Parle Butter (1 tbsp)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 113,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 12.5,
-    "fiber": 0,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5506",
-    "name": "Amul Potato Chips",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 146,
-    "protein": 1.8,
-    "carbs": 13.6,
-    "fat": 9.1,
-    "fiber": 0.7,
-    "region": "Amul"
-  },
-  {
-    "id": "ind_5507",
-    "name": "Amul Dal Makhani (Ready-to-Eat)",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 269,
-    "protein": 13.5,
-    "carbs": 28.9,
-    "fat": 11.5,
-    "fiber": 1.4,
-    "region": "Amul"
-  },
-  {
-    "id": "ind_5508",
-    "name": "Kurkure Paneer Tikka Wrap",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 388,
-    "protein": 14.8,
-    "carbs": 44.4,
-    "fat": 16.6,
-    "fiber": 2.2,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5509",
-    "name": "Chai Point Dark Chocolate Bar",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 585,
-    "protein": 9.7,
-    "carbs": 43.9,
-    "fat": 40.9,
-    "fiber": 2.2,
-    "region": "Chai Point"
-  },
-  {
     "id": "ind_5510",
     "name": "MTR Paneer Butter Masala (Ready-to-Eat)",
     "category": "Breakfast",
@@ -66118,18 +63142,6 @@
     "fat": 30.7,
     "fiber": 0.8,
     "region": "MTR"
-  },
-  {
-    "id": "ind_5511",
-    "name": "Britannia Cream & Onion Chips",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 160,
-    "protein": 2,
-    "carbs": 15,
-    "fat": 10,
-    "fiber": 0.8,
-    "region": "Britannia"
   },
   {
     "id": "ind_5512",
@@ -66144,150 +63156,6 @@
     "region": "Domino's Pizza"
   },
   {
-    "id": "ind_5513",
-    "name": "MTR Cola (Regular)",
-    "category": "Spices",
-    "servingSize": "1 serving",
-    "calories": 149,
-    "protein": 0,
-    "carbs": 41.6,
-    "fat": 0,
-    "fiber": 2.1,
-    "region": "MTR"
-  },
-  {
-    "id": "ind_5514",
-    "name": "Subway Masala Oats",
-    "category": "Healthy",
-    "servingSize": "1 serving",
-    "calories": 131,
-    "protein": 3.5,
-    "carbs": 21.8,
-    "fat": 2.6,
-    "fiber": 1.1,
-    "region": "Subway"
-  },
-  {
-    "id": "ind_5515",
-    "name": "Maggi Cold Coffee",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 267,
-    "protein": 8.5,
-    "carbs": 37.4,
-    "fat": 8.5,
-    "fiber": 1.9,
-    "region": "Maggi"
-  },
-  {
-    "id": "ind_5516",
-    "name": "Barbeque Nation Cola (Regular)",
-    "category": "Buffet",
-    "servingSize": "1 serving",
-    "calories": 148,
-    "protein": 0,
-    "carbs": 41.3,
-    "fat": 0,
-    "fiber": 2.1,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5517",
-    "name": "Subway Aloo Bhujia",
-    "category": "Healthy",
-    "servingSize": "1 serving",
-    "calories": 165,
-    "protein": 3.7,
-    "carbs": 11,
-    "fat": 12.8,
-    "fiber": 0.6,
-    "region": "Subway"
-  },
-  {
-    "id": "ind_5518",
-    "name": "Britannia Butter Panner Meal",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 657,
-    "protein": 20.2,
-    "carbs": 60.6,
-    "fat": 35.4,
-    "fiber": 3,
-    "region": "Britannia"
-  },
-  {
-    "id": "ind_5519",
-    "name": "KFC Rasgulla (Canned)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 234,
-    "protein": 6.4,
-    "carbs": 47.8,
-    "fat": 2.1,
-    "fiber": 2.4,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5520",
-    "name": "Subway Peanut Butter (2 tbsp)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 207,
-    "protein": 8.7,
-    "carbs": 6.5,
-    "fat": 17.4,
-    "fiber": 0,
-    "region": "Subway"
-  },
-  {
-    "id": "ind_5521",
-    "name": "Chai Point Instant Noodles",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 354,
-    "protein": 8.1,
-    "carbs": 50.6,
-    "fat": 14.2,
-    "fiber": 2.5,
-    "region": "Chai Point"
-  },
-  {
-    "id": "ind_5522",
-    "name": "ITC Chicken Biryani (Medium)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 477,
-    "protein": 21.7,
-    "carbs": 60.7,
-    "fat": 15.6,
-    "fiber": 3,
-    "region": "ITC"
-  },
-  {
-    "id": "ind_5523",
-    "name": "Parle Chicken Biryani (Medium)",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 613,
-    "protein": 27.9,
-    "carbs": 78,
-    "fat": 20.1,
-    "fiber": 3.9,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5524",
-    "name": "Lays French Fries (Medium)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 326,
-    "protein": 3.4,
-    "carbs": 41.2,
-    "fat": 15.5,
-    "fiber": 2.1,
-    "region": "Lays"
-  },
-  {
     "id": "ind_5525",
     "name": "Taco Bell Classic Burger",
     "category": "Mexican",
@@ -66298,30 +63166,6 @@
     "fat": 12,
     "fiber": 1.7,
     "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5526",
-    "name": "Subway Cola (Regular)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 141,
-    "protein": 0,
-    "carbs": 39.4,
-    "fat": 0,
-    "fiber": 2,
-    "region": "Subway"
-  },
-  {
-    "id": "ind_5527",
-    "name": "Amul French Fries (Medium)",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 424,
-    "protein": 4.5,
-    "carbs": 53.6,
-    "fat": 20.1,
-    "fiber": 2.7,
-    "region": "Amul"
   },
   {
     "id": "ind_5528",
@@ -66336,54 +63180,6 @@
     "region": "Domino's Pizza"
   },
   {
-    "id": "ind_5529",
-    "name": "Barbeque Nation Dal Makhani (Ready-to-Eat)",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 318,
-    "protein": 15.9,
-    "carbs": 34,
-    "fat": 13.6,
-    "fiber": 1.7,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5530",
-    "name": "Kurkure Chocolate Ice Cream (1 Scoop)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 129,
-    "protein": 2.6,
-    "carbs": 18.9,
-    "fat": 6,
-    "fiber": 0.9,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5531",
-    "name": "ITC Crispy Chicken Wrap",
-    "category": "Packaged Goods",
-    "servingSize": "1 serving",
-    "calories": 420,
-    "protein": 20.5,
-    "carbs": 42,
-    "fat": 18.7,
-    "fiber": 2.1,
-    "region": "ITC"
-  },
-  {
-    "id": "ind_5532",
-    "name": "Bikano Cheese Noodles",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 410,
-    "protein": 9.8,
-    "carbs": 50.8,
-    "fat": 17.6,
-    "fiber": 2.5,
-    "region": "Bikano"
-  },
-  {
     "id": "ind_5533",
     "name": "Domino's Pizza Digestive Biscuits (2 pcs)",
     "category": "Fast Food",
@@ -66394,42 +63190,6 @@
     "fat": 5.4,
     "fiber": 0.9,
     "region": "Domino's Pizza"
-  },
-  {
-    "id": "ind_5534",
-    "name": "Parle Potato Chips",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 139,
-    "protein": 1.7,
-    "carbs": 13,
-    "fat": 8.7,
-    "fiber": 0.7,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5535",
-    "name": "Chai Point Cola (Regular)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 141,
-    "protein": 0,
-    "carbs": 39.4,
-    "fat": 0,
-    "fiber": 2,
-    "region": "Chai Point"
-  },
-  {
-    "id": "ind_5536",
-    "name": "Lays Chocolate Chip Cookies (2 pcs)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 172,
-    "protein": 1.9,
-    "carbs": 23,
-    "fat": 8.6,
-    "fiber": 1.2,
-    "region": "Lays"
   },
   {
     "id": "ind_5537",
@@ -66444,30 +63204,6 @@
     "region": "Mother Dairy"
   },
   {
-    "id": "ind_5538",
-    "name": "Bikano Frappuccino",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 398,
-    "protein": 8,
-    "carbs": 54.8,
-    "fat": 15.9,
-    "fiber": 2.7,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5539",
-    "name": "McDonald's Gulab Jamun (Canned)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 298,
-    "protein": 4,
-    "carbs": 49.6,
-    "fat": 11.9,
-    "fiber": 2.5,
-    "region": "McDonald's"
-  },
-  {
     "id": "ind_5540",
     "name": "Domino's Pizza Peri Peri Fries",
     "category": "Pizza",
@@ -66478,126 +63214,6 @@
     "fat": 20.2,
     "fiber": 2.4,
     "region": "Domino's Pizza"
-  },
-  {
-    "id": "ind_5541",
-    "name": "Taco Bell Fruit Juice (1 cup)",
-    "category": "Mexican",
-    "servingSize": "1 serving",
-    "calories": 105,
-    "protein": 0,
-    "carbs": 26.8,
-    "fat": 0,
-    "fiber": 1.3,
-    "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5542",
-    "name": "Britannia Chicken Biryani (Medium)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 501,
-    "protein": 22.8,
-    "carbs": 63.8,
-    "fat": 16.4,
-    "fiber": 3.2,
-    "region": "Britannia"
-  },
-  {
-    "id": "ind_5543",
-    "name": "Haldiram's Cheese Slices (2)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 131,
-    "protein": 9.3,
-    "carbs": 1.9,
-    "fat": 9.3,
-    "fiber": 0,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5544",
-    "name": "Burger King Chocolate Chip Cookies (2 pcs)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 205,
-    "protein": 2.3,
-    "carbs": 27.4,
-    "fat": 10.3,
-    "fiber": 1.4,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5545",
-    "name": "Bikano Dal Makhani (Ready-to-Eat)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 282,
-    "protein": 14.1,
-    "carbs": 30.2,
-    "fat": 12.1,
-    "fiber": 1.5,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5546",
-    "name": "Amul Aloo Bhujia",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 190,
-    "protein": 4.2,
-    "carbs": 12.6,
-    "fat": 14.7,
-    "fiber": 0.6,
-    "region": "Amul"
-  },
-  {
-    "id": "ind_5547",
-    "name": "KFC Diet Soda",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5548",
-    "name": "Taco Bell Milk Chocolate Bar",
-    "category": "Mexican",
-    "servingSize": "1 serving",
-    "calories": 526,
-    "protein": 7.9,
-    "carbs": 59.6,
-    "fat": 29.8,
-    "fiber": 3,
-    "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5549",
-    "name": "MTR Vanilla Ice Cream (1 Scoop)",
-    "category": "Ready to Eat",
-    "servingSize": "1 serving",
-    "calories": 146,
-    "protein": 3.1,
-    "carbs": 20.8,
-    "fat": 7.3,
-    "fiber": 1,
-    "region": "MTR"
-  },
-  {
-    "id": "ind_5550",
-    "name": "Amul Chicken Nuggets (6 pcs)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 313,
-    "protein": 16.8,
-    "carbs": 20.1,
-    "fat": 20.1,
-    "fiber": 1,
-    "region": "Amul"
   },
   {
     "id": "ind_5551",
@@ -66612,102 +63228,6 @@
     "region": "McDonald's"
   },
   {
-    "id": "ind_5552",
-    "name": "Pizza Hut Granola Bar",
-    "category": "Pizza",
-    "servingSize": "1 serving",
-    "calories": 124,
-    "protein": 2.7,
-    "carbs": 17.8,
-    "fat": 4.4,
-    "fiber": 0.9,
-    "region": "Pizza Hut"
-  },
-  {
-    "id": "ind_5553",
-    "name": "Starbucks Peri Peri Fries",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 343,
-    "protein": 3.4,
-    "carbs": 41.1,
-    "fat": 17.1,
-    "fiber": 2.1,
-    "region": "Starbucks"
-  },
-  {
-    "id": "ind_5554",
-    "name": "Parle Crispy Chicken Wrap",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 463,
-    "protein": 22.6,
-    "carbs": 46.3,
-    "fat": 20.6,
-    "fiber": 2.3,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5555",
-    "name": "Lays Vanilla Ice Cream (1 Scoop)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 159,
-    "protein": 3.4,
-    "carbs": 22.7,
-    "fat": 7.9,
-    "fiber": 1.1,
-    "region": "Lays"
-  },
-  {
-    "id": "ind_5556",
-    "name": "Starbucks Granola Bar",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 143,
-    "protein": 3.1,
-    "carbs": 20.5,
-    "fat": 5.1,
-    "fiber": 1,
-    "region": "Starbucks"
-  },
-  {
-    "id": "ind_5557",
-    "name": "Bikanervala Cheese Burger",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 347,
-    "protein": 17.8,
-    "carbs": 34.7,
-    "fat": 15.8,
-    "fiber": 1.7,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5558",
-    "name": "Pizza Hut Rasgulla (Canned)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 234,
-    "protein": 6.4,
-    "carbs": 47.9,
-    "fat": 2.1,
-    "fiber": 2.4,
-    "region": "Pizza Hut"
-  },
-  {
-    "id": "ind_5559",
-    "name": "Parle Margherita Pizza (Regular)",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 709,
-    "protein": 31,
-    "carbs": 88.6,
-    "fat": 24.8,
-    "fiber": 4.4,
-    "region": "Parle"
-  },
-  {
     "id": "ind_5560",
     "name": "Subway Paneer Tikka Wrap",
     "category": "Healthy",
@@ -66718,42 +63238,6 @@
     "fat": 18.9,
     "fiber": 2.5,
     "region": "Subway"
-  },
-  {
-    "id": "ind_5561",
-    "name": "Faasos Potato Chips",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 180,
-    "protein": 2.2,
-    "carbs": 16.8,
-    "fat": 11.2,
-    "fiber": 0.8,
-    "region": "Faasos"
-  },
-  {
-    "id": "ind_5562",
-    "name": "Kurkure Chocolate Chip Cookies (2 pcs)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 198,
-    "protein": 2.2,
-    "carbs": 26.4,
-    "fat": 9.9,
-    "fiber": 1.3,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5563",
-    "name": "Taco Bell Dal Makhani (Ready-to-Eat)",
-    "category": "Mexican",
-    "servingSize": "1 serving",
-    "calories": 314,
-    "protein": 15.7,
-    "carbs": 33.7,
-    "fat": 13.5,
-    "fiber": 1.7,
-    "region": "Taco Bell"
   },
   {
     "id": "ind_5564",
@@ -66768,42 +63252,6 @@
     "region": "McDonald's"
   },
   {
-    "id": "ind_5565",
-    "name": "Nandini Cola (Regular)",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 133,
-    "protein": 0,
-    "carbs": 36.9,
-    "fat": 0,
-    "fiber": 1.8,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5566",
-    "name": "Mother Dairy Roasted Almonds",
-    "category": "Ice Cream",
-    "servingSize": "1 serving",
-    "calories": 154,
-    "protein": 5.8,
-    "carbs": 5.8,
-    "fat": 13.5,
-    "fiber": 0,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5567",
-    "name": "ITC Frappuccino",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 346,
-    "protein": 6.9,
-    "carbs": 47.6,
-    "fat": 13.9,
-    "fiber": 2.4,
-    "region": "ITC"
-  },
-  {
     "id": "ind_5568",
     "name": "Domino's Pizza Rasgulla (Canned)",
     "category": "Fast Food",
@@ -66814,114 +63262,6 @@
     "fat": 2,
     "fiber": 2.3,
     "region": "Domino's Pizza"
-  },
-  {
-    "id": "ind_5569",
-    "name": "Bikanervala Crispy Chicken Wrap",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 393,
-    "protein": 19.2,
-    "carbs": 39.3,
-    "fat": 17.5,
-    "fiber": 2,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5570",
-    "name": "Haldiram's Paneer Butter Masala (Ready-to-Eat)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 354,
-    "protein": 12.1,
-    "carbs": 15.2,
-    "fat": 28.3,
-    "fiber": 0.8,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5571",
-    "name": "Burger King Butter (1 tbsp)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 97,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 10.7,
-    "fiber": 0,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5572",
-    "name": "Bikano Farmhouse Veg Pizza",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 858,
-    "protein": 32.3,
-    "carbs": 111.1,
-    "fat": 30.3,
-    "fiber": 5.6,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5573",
-    "name": "KFC Greek Yogurt",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 111,
-    "protein": 16.6,
-    "carbs": 6.6,
-    "fat": 0,
-    "fiber": 0,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5574",
-    "name": "Bikano Butter (1 tbsp)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 108,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 11.8,
-    "fiber": 0,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5575",
-    "name": "Britannia Roasted Almonds",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 161,
-    "protein": 6,
-    "carbs": 6,
-    "fat": 14.1,
-    "fiber": 0,
-    "region": "Britannia"
-  },
-  {
-    "id": "ind_5576",
-    "name": "Burger King Paneer Butter Masala (Ready-to-Eat)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 312,
-    "protein": 10.7,
-    "carbs": 13.4,
-    "fat": 24.9,
-    "fiber": 0.7,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5577",
-    "name": "Starbucks Cola (Regular)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 126,
-    "protein": 0,
-    "carbs": 35.2,
-    "fat": 0,
-    "fiber": 1.8,
-    "region": "Starbucks"
   },
   {
     "id": "ind_5578",
@@ -66936,42 +63276,6 @@
     "region": "MTR"
   },
   {
-    "id": "ind_5579",
-    "name": "MTR Plain Yogurt (1 cup)",
-    "category": "Ready to Eat",
-    "servingSize": "1 serving",
-    "calories": 151,
-    "protein": 8.1,
-    "carbs": 12.1,
-    "fat": 8.1,
-    "fiber": 0.6,
-    "region": "MTR"
-  },
-  {
-    "id": "ind_5580",
-    "name": "Maggi Moong Dal Snack",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 149,
-    "protein": 8,
-    "carbs": 14.9,
-    "fat": 6,
-    "fiber": 0.7,
-    "region": "Maggi"
-  },
-  {
-    "id": "ind_5581",
-    "name": "Amul Farmhouse Veg Pizza",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 835,
-    "protein": 31.4,
-    "carbs": 108,
-    "fat": 29.5,
-    "fiber": 5.4,
-    "region": "Amul"
-  },
-  {
     "id": "ind_5582",
     "name": "Burger King Vanilla Ice Cream (1 Scoop)",
     "category": "Fast Food",
@@ -66984,42 +63288,6 @@
     "region": "Burger King"
   },
   {
-    "id": "ind_5583",
-    "name": "Kurkure Granola Bar",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 136,
-    "protein": 2.9,
-    "carbs": 19.5,
-    "fat": 4.9,
-    "fiber": 1,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5584",
-    "name": "Lays Frappuccino",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 452,
-    "protein": 9,
-    "carbs": 62.1,
-    "fat": 18.1,
-    "fiber": 3.1,
-    "region": "Lays"
-  },
-  {
-    "id": "ind_5585",
-    "name": "Kurkure Cheese Slices (2)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 153,
-    "protein": 10.9,
-    "carbs": 2.2,
-    "fat": 10.9,
-    "fiber": 0,
-    "region": "Kurkure"
-  },
-  {
     "id": "ind_5586",
     "name": "Maggi Gulab Jamun (Canned)",
     "category": "Noodles",
@@ -67030,18 +63298,6 @@
     "fat": 10.6,
     "fiber": 2.2,
     "region": "Maggi"
-  },
-  {
-    "id": "ind_5587",
-    "name": "MTR Moong Dal Snack",
-    "category": "Ready to Eat",
-    "servingSize": "1 serving",
-    "calories": 148,
-    "protein": 7.9,
-    "carbs": 14.8,
-    "fat": 5.9,
-    "fiber": 0.7,
-    "region": "MTR"
   },
   {
     "id": "ind_5588",
@@ -67092,30 +63348,6 @@
     "region": "KFC"
   },
   {
-    "id": "ind_5592",
-    "name": "Lays Paneer Butter Masala (Ready-to-Eat)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 306,
-    "protein": 10.5,
-    "carbs": 13.1,
-    "fat": 24.5,
-    "fiber": 0.7,
-    "region": "Lays"
-  },
-  {
-    "id": "ind_5593",
-    "name": "Subway Roasted Cashews",
-    "category": "Healthy",
-    "servingSize": "1 serving",
-    "calories": 160,
-    "protein": 5,
-    "carbs": 9,
-    "fat": 12,
-    "fiber": 0,
-    "region": "Subway"
-  },
-  {
     "id": "ind_5594",
     "name": "Pizza Hut Chocolate Shake",
     "category": "Fast Food",
@@ -67140,30 +63372,6 @@
     "region": "KFC"
   },
   {
-    "id": "ind_5596",
-    "name": "KFC Dal Makhani (Ready-to-Eat)",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 317,
-    "protein": 15.9,
-    "carbs": 34,
-    "fat": 13.6,
-    "fiber": 1.7,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5597",
-    "name": "Chai Point Dal Makhani (Ready-to-Eat)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 257,
-    "protein": 12.9,
-    "carbs": 27.6,
-    "fat": 11,
-    "fiber": 1.4,
-    "region": "Chai Point"
-  },
-  {
     "id": "ind_5598",
     "name": "McDonald's Peri Peri Fries",
     "category": "Burgers",
@@ -67176,30 +63384,6 @@
     "region": "McDonald's"
   },
   {
-    "id": "ind_5599",
-    "name": "Parle Roasted Almonds",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 168,
-    "protein": 6.3,
-    "carbs": 6.3,
-    "fat": 14.7,
-    "fiber": 0,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5600",
-    "name": "Nestle Vanilla Ice Cream (1 Scoop)",
-    "category": "Chocolates",
-    "servingSize": "1 serving",
-    "calories": 155,
-    "protein": 3.3,
-    "carbs": 22.1,
-    "fat": 7.7,
-    "fiber": 1.1,
-    "region": "Nestle"
-  },
-  {
     "id": "ind_5601",
     "name": "Taco Bell Chocolate Shake",
     "category": "Mexican",
@@ -67210,18 +63394,6 @@
     "fat": 13.1,
     "fiber": 2.2,
     "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5602",
-    "name": "Lays Digestive Biscuits (2 pcs)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 153,
-    "protein": 3.3,
-    "carbs": 21.9,
-    "fat": 6.6,
-    "fiber": 1.1,
-    "region": "Lays"
   },
   {
     "id": "ind_5603",
@@ -67248,18 +63420,6 @@
     "region": "Mother Dairy"
   },
   {
-    "id": "ind_5605",
-    "name": "McDonald's Rasgulla (Canned)",
-    "category": "Burgers",
-    "servingSize": "1 serving",
-    "calories": 199,
-    "protein": 5.4,
-    "carbs": 40.6,
-    "fat": 1.8,
-    "fiber": 2,
-    "region": "McDonald's"
-  },
-  {
     "id": "ind_5606",
     "name": "Bikano Potato Chips",
     "category": "Snacks",
@@ -67272,30 +63432,6 @@
     "region": "Bikano"
   },
   {
-    "id": "ind_5607",
-    "name": "Burger King Masala Oats",
-    "category": "Burgers",
-    "servingSize": "1 serving",
-    "calories": 153,
-    "protein": 4.1,
-    "carbs": 25.6,
-    "fat": 3.1,
-    "fiber": 1.3,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5608",
-    "name": "McDonald's Roasted Almonds",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 151,
-    "protein": 5.7,
-    "carbs": 5.7,
-    "fat": 13.2,
-    "fiber": 0,
-    "region": "McDonald's"
-  },
-  {
     "id": "ind_5609",
     "name": "Burger King Veggie Burger",
     "category": "Burgers",
@@ -67306,18 +63442,6 @@
     "fat": 9.8,
     "fiber": 2,
     "region": "Burger King"
-  },
-  {
-    "id": "ind_5610",
-    "name": "Bikanervala Peri Peri Fries",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 358,
-    "protein": 3.6,
-    "carbs": 43,
-    "fat": 17.9,
-    "fiber": 2.2,
-    "region": "Bikanervala"
   },
   {
     "id": "ind_5611",
@@ -67356,66 +63480,6 @@
     "region": "McDonald's"
   },
   {
-    "id": "ind_5614",
-    "name": "ITC Classic Burger",
-    "category": "Packaged Goods",
-    "servingSize": "1 serving",
-    "calories": 345,
-    "protein": 17.2,
-    "carbs": 40.2,
-    "fat": 13.8,
-    "fiber": 2,
-    "region": "ITC"
-  },
-  {
-    "id": "ind_5615",
-    "name": "Starbucks Dal Makhani (Ready-to-Eat)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 301,
-    "protein": 15,
-    "carbs": 32.2,
-    "fat": 12.9,
-    "fiber": 1.6,
-    "region": "Starbucks"
-  },
-  {
-    "id": "ind_5616",
-    "name": "Nandini Chicken Nuggets (6 pcs)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 266,
-    "protein": 14.2,
-    "carbs": 17.1,
-    "fat": 17.1,
-    "fiber": 0.9,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5617",
-    "name": "Barbeque Nation Roasted Cashews",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 165,
-    "protein": 5.2,
-    "carbs": 9.3,
-    "fat": 12.4,
-    "fiber": 0,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5618",
-    "name": "Subway Cheese Slices (2)",
-    "category": "Healthy",
-    "servingSize": "1 serving",
-    "calories": 137,
-    "protein": 9.8,
-    "carbs": 2,
-    "fat": 9.8,
-    "fiber": 0,
-    "region": "Subway"
-  },
-  {
     "id": "ind_5619",
     "name": "Bikanervala Moong Dal Snack",
     "category": "Snacks",
@@ -67440,30 +63504,6 @@
     "region": "Kurkure"
   },
   {
-    "id": "ind_5621",
-    "name": "Britannia Gulab Jamun (Canned)",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 344,
-    "protein": 4.6,
-    "carbs": 57.4,
-    "fat": 13.8,
-    "fiber": 2.9,
-    "region": "Britannia"
-  },
-  {
-    "id": "ind_5622",
-    "name": "Faasos Butter (1 tbsp)",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 98,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 10.8,
-    "fiber": 0,
-    "region": "Faasos"
-  },
-  {
     "id": "ind_5623",
     "name": "Domino's Pizza Cheese Burger",
     "category": "Pizza",
@@ -67474,54 +63514,6 @@
     "fat": 15.7,
     "fiber": 1.7,
     "region": "Domino's Pizza"
-  },
-  {
-    "id": "ind_5624",
-    "name": "Britannia Frappuccino",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 424,
-    "protein": 8.5,
-    "carbs": 58.3,
-    "fat": 17,
-    "fiber": 2.9,
-    "region": "Britannia"
-  },
-  {
-    "id": "ind_5625",
-    "name": "Bikanervala Classic Burger",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 269,
-    "protein": 13.5,
-    "carbs": 31.4,
-    "fat": 10.8,
-    "fiber": 1.6,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5626",
-    "name": "Nestle Frappuccino",
-    "category": "Chocolates",
-    "servingSize": "1 serving",
-    "calories": 432,
-    "protein": 8.6,
-    "carbs": 59.4,
-    "fat": 17.3,
-    "fiber": 3,
-    "region": "Nestle"
-  },
-  {
-    "id": "ind_5627",
-    "name": "Lays Cheese Noodles",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 373,
-    "protein": 8.9,
-    "carbs": 46.2,
-    "fat": 16,
-    "fiber": 2.3,
-    "region": "Lays"
   },
   {
     "id": "ind_5628",
@@ -67536,30 +63528,6 @@
     "region": "Barbeque Nation"
   },
   {
-    "id": "ind_5629",
-    "name": "Chai Point Paneer Tikka Wrap",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 471,
-    "protein": 17.9,
-    "carbs": 53.8,
-    "fat": 20.2,
-    "fiber": 2.7,
-    "region": "Chai Point"
-  },
-  {
-    "id": "ind_5630",
-    "name": "Parle Cheese Burger",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 399,
-    "protein": 20.5,
-    "carbs": 39.9,
-    "fat": 18.2,
-    "fiber": 2,
-    "region": "Parle"
-  },
-  {
     "id": "ind_5631",
     "name": "Nestle Rasgulla (Canned)",
     "category": "Noodles",
@@ -67570,18 +63538,6 @@
     "fat": 1.8,
     "fiber": 2.1,
     "region": "Nestle"
-  },
-  {
-    "id": "ind_5632",
-    "name": "Bikanervala Peanut Butter (2 tbsp)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 177,
-    "protein": 7.5,
-    "carbs": 5.6,
-    "fat": 14.9,
-    "fiber": 0,
-    "region": "Bikanervala"
   },
   {
     "id": "ind_5633",
@@ -67596,18 +63552,6 @@
     "region": "Domino's Pizza"
   },
   {
-    "id": "ind_5634",
-    "name": "Britannia Margherita Pizza (Regular)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 886,
-    "protein": 38.8,
-    "carbs": 110.8,
-    "fat": 31,
-    "fiber": 5.5,
-    "region": "Britannia"
-  },
-  {
     "id": "ind_5635",
     "name": "KFC French Fries (Medium)",
     "category": "Fast Food",
@@ -67620,30 +63564,6 @@
     "region": "KFC"
   },
   {
-    "id": "ind_5636",
-    "name": "Taco Bell Digestive Biscuits (2 pcs)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 155,
-    "protein": 3.3,
-    "carbs": 22.1,
-    "fat": 6.6,
-    "fiber": 1.1,
-    "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5637",
-    "name": "ITC Diet Soda",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "ITC"
-  },
-  {
     "id": "ind_5638",
     "name": "Lays Aloo Bhujia",
     "category": "Snacks",
@@ -67653,18 +63573,6 @@
     "carbs": 13.6,
     "fat": 15.9,
     "fiber": 0.7,
-    "region": "Lays"
-  },
-  {
-    "id": "ind_5639",
-    "name": "Lays Veggie Burger",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 269,
-    "protein": 9.6,
-    "carbs": 38.4,
-    "fat": 9.6,
-    "fiber": 1.9,
     "region": "Lays"
   },
   {
@@ -67680,42 +63588,6 @@
     "region": "Domino's Pizza"
   },
   {
-    "id": "ind_5641",
-    "name": "Parle Fruit Juice (1 cup)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 113,
-    "protein": 0,
-    "carbs": 28.8,
-    "fat": 0,
-    "fiber": 1.4,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5642",
-    "name": "MTR Cheese Slices (2)",
-    "category": "Spices",
-    "servingSize": "1 serving",
-    "calories": 137,
-    "protein": 9.8,
-    "carbs": 2,
-    "fat": 9.8,
-    "fiber": 0,
-    "region": "MTR"
-  },
-  {
-    "id": "ind_5643",
-    "name": "Subway Dal Makhani (Ready-to-Eat)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 313,
-    "protein": 15.7,
-    "carbs": 33.5,
-    "fat": 13.4,
-    "fiber": 1.7,
-    "region": "Subway"
-  },
-  {
     "id": "ind_5644",
     "name": "ITC Instant Noodles",
     "category": "Packaged Goods",
@@ -67726,18 +63598,6 @@
     "fat": 13.3,
     "fiber": 2.4,
     "region": "ITC"
-  },
-  {
-    "id": "ind_5645",
-    "name": "Starbucks Dark Chocolate Bar",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 673,
-    "protein": 11.2,
-    "carbs": 50.5,
-    "fat": 47.1,
-    "fiber": 2.5,
-    "region": "Starbucks"
   },
   {
     "id": "ind_5646",
@@ -67752,30 +63612,6 @@
     "region": "Pizza Hut"
   },
   {
-    "id": "ind_5647",
-    "name": "Nestle Farmhouse Veg Pizza",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 925,
-    "protein": 34.8,
-    "carbs": 119.7,
-    "fat": 32.6,
-    "fiber": 6,
-    "region": "Nestle"
-  },
-  {
-    "id": "ind_5648",
-    "name": "Lays Dark Chocolate Bar",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 562,
-    "protein": 9.4,
-    "carbs": 42.2,
-    "fat": 39.4,
-    "fiber": 2.1,
-    "region": "Lays"
-  },
-  {
     "id": "ind_5649",
     "name": "Nandini Milk Chocolate Bar",
     "category": "Sweets",
@@ -67785,162 +63621,6 @@
     "carbs": 56.7,
     "fat": 28.3,
     "fiber": 2.8,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5650",
-    "name": "Haldiram's Vanilla Ice Cream (1 Scoop)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 151,
-    "protein": 3.2,
-    "carbs": 21.5,
-    "fat": 7.5,
-    "fiber": 1.1,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5651",
-    "name": "Parle Chocolate Ice Cream (1 Scoop)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 152,
-    "protein": 3,
-    "carbs": 22.3,
-    "fat": 7.1,
-    "fiber": 1.1,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5652",
-    "name": "Britannia Veg Biryani",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 546,
-    "protein": 13.6,
-    "carbs": 85.2,
-    "fat": 15.9,
-    "fiber": 4.3,
-    "region": "Britannia"
-  },
-  {
-    "id": "ind_5653",
-    "name": "Bikanervala Cheese Noodles",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 375,
-    "protein": 8.9,
-    "carbs": 46.4,
-    "fat": 16.1,
-    "fiber": 2.3,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5654",
-    "name": "Chai Point Rasgulla (Canned)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 206,
-    "protein": 5.6,
-    "carbs": 42.1,
-    "fat": 1.9,
-    "fiber": 2.1,
-    "region": "Chai Point"
-  },
-  {
-    "id": "ind_5655",
-    "name": "Mother Dairy Protein Bar",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 227,
-    "protein": 22.7,
-    "carbs": 24.9,
-    "fat": 6.8,
-    "fiber": 1.2,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5656",
-    "name": "Taco Bell Cola (Regular)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 147,
-    "protein": 0,
-    "carbs": 41.1,
-    "fat": 0,
-    "fiber": 2.1,
-    "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5657",
-    "name": "Maggi Diet Soda",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Maggi"
-  },
-  {
-    "id": "ind_5658",
-    "name": "Parle Chocolate Shake",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 388,
-    "protein": 10.2,
-    "carbs": 51.1,
-    "fat": 15.3,
-    "fiber": 2.6,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5659",
-    "name": "Maggi Chocolate Ice Cream (1 Scoop)",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 133,
-    "protein": 2.7,
-    "carbs": 19.5,
-    "fat": 6.2,
-    "fiber": 1,
-    "region": "Maggi"
-  },
-  {
-    "id": "ind_5660",
-    "name": "Maggi Peri Peri Fries",
-    "category": "Noodles",
-    "servingSize": "1 serving",
-    "calories": 359,
-    "protein": 3.6,
-    "carbs": 43.1,
-    "fat": 18,
-    "fiber": 2.2,
-    "region": "Maggi"
-  },
-  {
-    "id": "ind_5661",
-    "name": "KFC Butter (1 tbsp)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 99,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 10.8,
-    "fiber": 0,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5662",
-    "name": "Nandini Aloo Bhujia",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 169,
-    "protein": 3.7,
-    "carbs": 11.2,
-    "fat": 13.1,
-    "fiber": 0.6,
     "region": "Nandini"
   },
   {
@@ -67956,30 +63636,6 @@
     "region": "Pizza Hut"
   },
   {
-    "id": "ind_5664",
-    "name": "Barbeque Nation Cold Coffee",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 252,
-    "protein": 8.1,
-    "carbs": 35.3,
-    "fat": 8.1,
-    "fiber": 1.8,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5665",
-    "name": "Parle Instant Noodles",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 323,
-    "protein": 7.4,
-    "carbs": 46.1,
-    "fat": 12.9,
-    "fiber": 2.3,
-    "region": "Parle"
-  },
-  {
     "id": "ind_5666",
     "name": "Barbeque Nation Cheese Burger",
     "category": "Vegetarian",
@@ -67990,78 +63646,6 @@
     "fat": 18.3,
     "fiber": 2,
     "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5667",
-    "name": "Parle Chicken Nuggets (6 pcs)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 299,
-    "protein": 16,
-    "carbs": 19.2,
-    "fat": 19.2,
-    "fiber": 1,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5668",
-    "name": "Parle Rasgulla (Canned)",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 213,
-    "protein": 5.8,
-    "carbs": 43.5,
-    "fat": 1.9,
-    "fiber": 2.2,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5669",
-    "name": "Faasos Greek Yogurt",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 88,
-    "protein": 13.2,
-    "carbs": 5.3,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Faasos"
-  },
-  {
-    "id": "ind_5670",
-    "name": "Taco Bell Chocolate Chip Cookies (2 pcs)",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 202,
-    "protein": 2.2,
-    "carbs": 26.9,
-    "fat": 10.1,
-    "fiber": 1.3,
-    "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5671",
-    "name": "Lays Paneer Tikka Wrap",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 477,
-    "protein": 18.2,
-    "carbs": 54.6,
-    "fat": 20.5,
-    "fiber": 2.7,
-    "region": "Lays"
-  },
-  {
-    "id": "ind_5672",
-    "name": "Burger King Instant Noodles",
-    "category": "Burgers",
-    "servingSize": "1 serving",
-    "calories": 333,
-    "protein": 7.6,
-    "carbs": 47.6,
-    "fat": 13.3,
-    "fiber": 2.4,
-    "region": "Burger King"
   },
   {
     "id": "ind_5673",
@@ -68076,18 +63660,6 @@
     "region": "Nestle"
   },
   {
-    "id": "ind_5674",
-    "name": "Bikano Peri Peri Fries",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 361,
-    "protein": 3.6,
-    "carbs": 43.4,
-    "fat": 18.1,
-    "fiber": 2.2,
-    "region": "Bikano"
-  },
-  {
     "id": "ind_5675",
     "name": "Nestle Protein Bar",
     "category": "Chocolates",
@@ -68098,42 +63670,6 @@
     "fat": 5.5,
     "fiber": 1,
     "region": "Nestle"
-  },
-  {
-    "id": "ind_5676",
-    "name": "Nestle Plain Yogurt (1 cup)",
-    "category": "Chocolates",
-    "servingSize": "1 serving",
-    "calories": 152,
-    "protein": 8.1,
-    "carbs": 12.1,
-    "fat": 8.1,
-    "fiber": 0.6,
-    "region": "Nestle"
-  },
-  {
-    "id": "ind_5677",
-    "name": "Subway Protein Bar",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 196,
-    "protein": 19.6,
-    "carbs": 21.6,
-    "fat": 5.9,
-    "fiber": 1.1,
-    "region": "Subway"
-  },
-  {
-    "id": "ind_5678",
-    "name": "Pizza Hut Diet Soda",
-    "category": "Pizza",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Pizza Hut"
   },
   {
     "id": "ind_5679",
@@ -68172,102 +63708,6 @@
     "region": "Barbeque Nation"
   },
   {
-    "id": "ind_5682",
-    "name": "Haldiram's Margherita Pizza (Regular)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 817,
-    "protein": 35.7,
-    "carbs": 102.1,
-    "fat": 28.6,
-    "fiber": 5.1,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5683",
-    "name": "Bikano Cola (Regular)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 132,
-    "protein": 0,
-    "carbs": 36.7,
-    "fat": 0,
-    "fiber": 1.8,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5684",
-    "name": "Bikano Chocolate Ice Cream (1 Scoop)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 136,
-    "protein": 2.7,
-    "carbs": 20,
-    "fat": 6.4,
-    "fiber": 1,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5685",
-    "name": "Britannia Aloo Bhujia",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 173,
-    "protein": 3.9,
-    "carbs": 11.6,
-    "fat": 13.5,
-    "fiber": 0.6,
-    "region": "Britannia"
-  },
-  {
-    "id": "ind_5686",
-    "name": "Maggi Margherita Pizza (Regular)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 725,
-    "protein": 31.7,
-    "carbs": 90.6,
-    "fat": 25.4,
-    "fiber": 4.5,
-    "region": "Maggi"
-  },
-  {
-    "id": "ind_5687",
-    "name": "Bikanervala Fruit Juice (1 cup)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 120,
-    "protein": 0,
-    "carbs": 30.6,
-    "fat": 0,
-    "fiber": 1.5,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5688",
-    "name": "Chai Point Plain Yogurt (1 cup)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 148,
-    "protein": 7.9,
-    "carbs": 11.8,
-    "fat": 7.9,
-    "fiber": 0.6,
-    "region": "Chai Point"
-  },
-  {
-    "id": "ind_5689",
-    "name": "ITC Peri Peri Fries",
-    "category": "Packaged Goods",
-    "servingSize": "1 serving",
-    "calories": 360,
-    "protein": 3.6,
-    "carbs": 43.2,
-    "fat": 18,
-    "fiber": 2.2,
-    "region": "ITC"
-  },
-  {
     "id": "ind_5690",
     "name": "Mother Dairy Chocolate Ice Cream (1 Scoop)",
     "category": "Dairy",
@@ -68278,18 +63718,6 @@
     "fat": 7.6,
     "fiber": 1.2,
     "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5691",
-    "name": "Taco Bell Masala Oats",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 136,
-    "protein": 3.6,
-    "carbs": 22.7,
-    "fat": 2.7,
-    "fiber": 1.1,
-    "region": "Taco Bell"
   },
   {
     "id": "ind_5692",
@@ -68316,54 +63744,6 @@
     "region": "MTR"
   },
   {
-    "id": "ind_5694",
-    "name": "Barbeque Nation Plain Yogurt (1 cup)",
-    "category": "Buffet",
-    "servingSize": "1 serving",
-    "calories": 168,
-    "protein": 9,
-    "carbs": 13.4,
-    "fat": 9,
-    "fiber": 0.7,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5695",
-    "name": "Mother Dairy Potato Chips",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 151,
-    "protein": 1.9,
-    "carbs": 14.1,
-    "fat": 9.4,
-    "fiber": 0.7,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5696",
-    "name": "Bikano Cheese Burger",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 343,
-    "protein": 17.7,
-    "carbs": 34.3,
-    "fat": 15.7,
-    "fiber": 1.7,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5697",
-    "name": "ITC Digestive Biscuits (2 pcs)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 142,
-    "protein": 3.1,
-    "carbs": 20.3,
-    "fat": 6.1,
-    "fiber": 1,
-    "region": "ITC"
-  },
-  {
     "id": "ind_5698",
     "name": "Domino's Pizza Vanilla Ice Cream (1 Scoop)",
     "category": "Fast Food",
@@ -68374,78 +63754,6 @@
     "fat": 6.1,
     "fiber": 0.9,
     "region": "Domino's Pizza"
-  },
-  {
-    "id": "ind_5699",
-    "name": "Bikanervala Digestive Biscuits (2 pcs)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 122,
-    "protein": 2.6,
-    "carbs": 17.4,
-    "fat": 5.2,
-    "fiber": 0.9,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5700",
-    "name": "ITC Cream & Onion Chips",
-    "category": "Packaged Goods",
-    "servingSize": "1 serving",
-    "calories": 183,
-    "protein": 2.3,
-    "carbs": 17.2,
-    "fat": 11.5,
-    "fiber": 0.9,
-    "region": "ITC"
-  },
-  {
-    "id": "ind_5701",
-    "name": "McDonald's Dal Makhani (Ready-to-Eat)",
-    "category": "Burgers",
-    "servingSize": "1 serving",
-    "calories": 296,
-    "protein": 14.8,
-    "carbs": 31.7,
-    "fat": 12.7,
-    "fiber": 1.6,
-    "region": "McDonald's"
-  },
-  {
-    "id": "ind_5702",
-    "name": "Parle Aloo Bhujia",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 180,
-    "protein": 4,
-    "carbs": 12,
-    "fat": 14,
-    "fiber": 0.6,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5703",
-    "name": "Barbeque Nation Masala Oats",
-    "category": "Buffet",
-    "servingSize": "1 serving",
-    "calories": 159,
-    "protein": 4.2,
-    "carbs": 26.5,
-    "fat": 3.2,
-    "fiber": 1.3,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5704",
-    "name": "Maggi Frappuccino",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 411,
-    "protein": 8.2,
-    "carbs": 56.5,
-    "fat": 16.4,
-    "fiber": 2.8,
-    "region": "Maggi"
   },
   {
     "id": "ind_5705",
@@ -68472,18 +63780,6 @@
     "region": "Domino's Pizza"
   },
   {
-    "id": "ind_5707",
-    "name": "Kurkure Greek Yogurt",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 109,
-    "protein": 16.4,
-    "carbs": 6.6,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Kurkure"
-  },
-  {
     "id": "ind_5708",
     "name": "Bikanervala Roasted Almonds",
     "category": "Vegetarian",
@@ -68496,30 +63792,6 @@
     "region": "Bikanervala"
   },
   {
-    "id": "ind_5709",
-    "name": "Mother Dairy Chocolate Chip Cookies (2 pcs)",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 199,
-    "protein": 2.2,
-    "carbs": 26.5,
-    "fat": 9.9,
-    "fiber": 1.3,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5710",
-    "name": "KFC Frappuccino",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 400,
-    "protein": 8,
-    "carbs": 54.9,
-    "fat": 16,
-    "fiber": 2.7,
-    "region": "KFC"
-  },
-  {
     "id": "ind_5711",
     "name": "MTR Protein Bar",
     "category": "Spices",
@@ -68530,30 +63802,6 @@
     "fat": 5.3,
     "fiber": 1,
     "region": "MTR"
-  },
-  {
-    "id": "ind_5712",
-    "name": "Parle Cheese Slices (2)",
-    "category": "Biscuits",
-    "servingSize": "1 serving",
-    "calories": 132,
-    "protein": 9.4,
-    "carbs": 1.9,
-    "fat": 9.4,
-    "fiber": 0,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5713",
-    "name": "Haldiram's Greek Yogurt",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 109,
-    "protein": 16.3,
-    "carbs": 6.5,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Haldiram's"
   },
   {
     "id": "ind_5714",
@@ -68592,54 +63840,6 @@
     "region": "Subway"
   },
   {
-    "id": "ind_5717",
-    "name": "Faasos Cold Coffee",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 241,
-    "protein": 7.7,
-    "carbs": 33.8,
-    "fat": 7.7,
-    "fiber": 1.7,
-    "region": "Faasos"
-  },
-  {
-    "id": "ind_5718",
-    "name": "Nandini Farmhouse Veg Pizza",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 744,
-    "protein": 28,
-    "carbs": 96.3,
-    "fat": 26.3,
-    "fiber": 4.8,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5719",
-    "name": "Maggi Butter Panner Meal",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 718,
-    "protein": 22.1,
-    "carbs": 66.3,
-    "fat": 38.7,
-    "fiber": 3.3,
-    "region": "Maggi"
-  },
-  {
-    "id": "ind_5720",
-    "name": "KFC Cold Coffee",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 262,
-    "protein": 8.4,
-    "carbs": 36.6,
-    "fat": 8.4,
-    "fiber": 1.8,
-    "region": "KFC"
-  },
-  {
     "id": "ind_5721",
     "name": "MTR Peanut Butter (2 tbsp)",
     "category": "Breakfast",
@@ -68664,78 +63864,6 @@
     "region": "Domino's Pizza"
   },
   {
-    "id": "ind_5723",
-    "name": "KFC Cola (Regular)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 137,
-    "protein": 0,
-    "carbs": 38.1,
-    "fat": 0,
-    "fiber": 1.9,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5724",
-    "name": "Starbucks Veg Biryani",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 540,
-    "protein": 13.5,
-    "carbs": 84.3,
-    "fat": 15.7,
-    "fiber": 4.2,
-    "region": "Starbucks"
-  },
-  {
-    "id": "ind_5725",
-    "name": "Burger King Cold Coffee",
-    "category": "Burgers",
-    "servingSize": "1 serving",
-    "calories": 263,
-    "protein": 8.4,
-    "carbs": 36.9,
-    "fat": 8.4,
-    "fiber": 1.8,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5726",
-    "name": "Subway Moong Dal Snack",
-    "category": "Healthy",
-    "servingSize": "1 serving",
-    "calories": 143,
-    "protein": 7.6,
-    "carbs": 14.3,
-    "fat": 5.7,
-    "fiber": 0.7,
-    "region": "Subway"
-  },
-  {
-    "id": "ind_5727",
-    "name": "KFC Butter Panner Meal",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 739,
-    "protein": 22.7,
-    "carbs": 68.2,
-    "fat": 39.8,
-    "fiber": 3.4,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5728",
-    "name": "KFC Plain Yogurt (1 cup)",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 143,
-    "protein": 7.6,
-    "carbs": 11.4,
-    "fat": 7.6,
-    "fiber": 0.6,
-    "region": "KFC"
-  },
-  {
     "id": "ind_5729",
     "name": "Amul Plain Yogurt (1 cup)",
     "category": "Sweets",
@@ -68746,18 +63874,6 @@
     "fat": 9.1,
     "fiber": 0.7,
     "region": "Amul"
-  },
-  {
-    "id": "ind_5730",
-    "name": "Haldiram's Chocolate Ice Cream (1 Scoop)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 132,
-    "protein": 2.6,
-    "carbs": 19.4,
-    "fat": 6.2,
-    "fiber": 1,
-    "region": "Haldiram's"
   },
   {
     "id": "ind_5731",
@@ -68784,54 +63900,6 @@
     "region": "MTR"
   },
   {
-    "id": "ind_5733",
-    "name": "Burger King Peanut Butter (2 tbsp)",
-    "category": "Burgers",
-    "servingSize": "1 serving",
-    "calories": 216,
-    "protein": 9.1,
-    "carbs": 6.8,
-    "fat": 18.2,
-    "fiber": 0,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5734",
-    "name": "KFC Masala Oats",
-    "category": "Non-Veg",
-    "servingSize": "1 serving",
-    "calories": 139,
-    "protein": 3.7,
-    "carbs": 23.1,
-    "fat": 2.8,
-    "fiber": 1.2,
-    "region": "KFC"
-  },
-  {
-    "id": "ind_5735",
-    "name": "Bikano French Fries (Medium)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 332,
-    "protein": 3.5,
-    "carbs": 42,
-    "fat": 15.7,
-    "fiber": 2.1,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5736",
-    "name": "ITC Paneer Tikka Wrap",
-    "category": "Packaged Goods",
-    "servingSize": "1 serving",
-    "calories": 472,
-    "protein": 18,
-    "carbs": 54,
-    "fat": 20.2,
-    "fiber": 2.7,
-    "region": "ITC"
-  },
-  {
     "id": "ind_5737",
     "name": "Parle Granola Bar",
     "category": "Bakery",
@@ -68842,66 +63910,6 @@
     "fat": 5.2,
     "fiber": 1,
     "region": "Parle"
-  },
-  {
-    "id": "ind_5738",
-    "name": "Subway Cheese Noodles",
-    "category": "Sandwiches",
-    "servingSize": "1 serving",
-    "calories": 430,
-    "protein": 10.2,
-    "carbs": 53.2,
-    "fat": 18.4,
-    "fiber": 2.7,
-    "region": "Subway"
-  },
-  {
-    "id": "ind_5739",
-    "name": "Burger King Dark Chocolate Bar",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 539,
-    "protein": 9,
-    "carbs": 40.5,
-    "fat": 37.8,
-    "fiber": 2,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5740",
-    "name": "Pizza Hut Aloo Bhujia",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 198,
-    "protein": 4.4,
-    "carbs": 13.2,
-    "fat": 15.4,
-    "fiber": 0.7,
-    "region": "Pizza Hut"
-  },
-  {
-    "id": "ind_5741",
-    "name": "Lays Plain Yogurt (1 cup)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 158,
-    "protein": 8.5,
-    "carbs": 12.7,
-    "fat": 8.5,
-    "fiber": 0.6,
-    "region": "Lays"
-  },
-  {
-    "id": "ind_5742",
-    "name": "Kurkure Crispy Chicken Wrap",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 406,
-    "protein": 19.8,
-    "carbs": 40.6,
-    "fat": 18,
-    "fiber": 2,
-    "region": "Kurkure"
   },
   {
     "id": "ind_5743",
@@ -68940,42 +63948,6 @@
     "region": "Parle"
   },
   {
-    "id": "ind_5746",
-    "name": "Mother Dairy Cheese Burger",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 326,
-    "protein": 16.7,
-    "carbs": 32.6,
-    "fat": 14.9,
-    "fiber": 1.6,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5747",
-    "name": "Mother Dairy Dal Makhani (Ready-to-Eat)",
-    "category": "Ice Cream",
-    "servingSize": "1 serving",
-    "calories": 278,
-    "protein": 13.9,
-    "carbs": 29.8,
-    "fat": 11.9,
-    "fiber": 1.5,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5748",
-    "name": "Chai Point Chocolate Chip Cookies (2 pcs)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 196,
-    "protein": 2.2,
-    "carbs": 26.1,
-    "fat": 9.8,
-    "fiber": 1.3,
-    "region": "Chai Point"
-  },
-  {
     "id": "ind_5749",
     "name": "Subway Chicken Nuggets (6 pcs)",
     "category": "Healthy",
@@ -68986,114 +63958,6 @@
     "fat": 18.5,
     "fiber": 0.9,
     "region": "Subway"
-  },
-  {
-    "id": "ind_5750",
-    "name": "Nandini Diet Soda",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5751",
-    "name": "Starbucks Butter (1 tbsp)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 114,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 12.5,
-    "fiber": 0,
-    "region": "Starbucks"
-  },
-  {
-    "id": "ind_5752",
-    "name": "Lays Chocolate Shake",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 422,
-    "protein": 11.1,
-    "carbs": 55.5,
-    "fat": 16.7,
-    "fiber": 2.8,
-    "region": "Lays"
-  },
-  {
-    "id": "ind_5753",
-    "name": "Mother Dairy Digestive Biscuits (2 pcs)",
-    "category": "Ice Cream",
-    "servingSize": "1 serving",
-    "calories": 135,
-    "protein": 2.9,
-    "carbs": 19.3,
-    "fat": 5.8,
-    "fiber": 1,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5754",
-    "name": "Bikanervala Chocolate Shake",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 363,
-    "protein": 9.6,
-    "carbs": 47.8,
-    "fat": 14.3,
-    "fiber": 2.4,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5755",
-    "name": "Bikanervala Masala Oats",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 151,
-    "protein": 4,
-    "carbs": 25.2,
-    "fat": 3,
-    "fiber": 1.3,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5756",
-    "name": "Mother Dairy Diet Soda",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 0,
-    "protein": 0,
-    "carbs": 0,
-    "fat": 0,
-    "fiber": 0,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5757",
-    "name": "MTR French Fries (Medium)",
-    "category": "Ready to Eat",
-    "servingSize": "1 serving",
-    "calories": 346,
-    "protein": 3.6,
-    "carbs": 43.7,
-    "fat": 16.4,
-    "fiber": 2.2,
-    "region": "MTR"
-  },
-  {
-    "id": "ind_5758",
-    "name": "Pizza Hut Moong Dal Snack",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 131,
-    "protein": 7,
-    "carbs": 13.1,
-    "fat": 5.2,
-    "fiber": 0.7,
-    "region": "Pizza Hut"
   },
   {
     "id": "ind_5759",
@@ -69108,66 +63972,6 @@
     "region": "Nandini"
   },
   {
-    "id": "ind_5760",
-    "name": "Mother Dairy French Fries (Medium)",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 409,
-    "protein": 4.3,
-    "carbs": 51.7,
-    "fat": 19.4,
-    "fiber": 2.6,
-    "region": "Mother Dairy"
-  },
-  {
-    "id": "ind_5761",
-    "name": "Nestle Cream & Onion Chips",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 161,
-    "protein": 2,
-    "carbs": 15.1,
-    "fat": 10.1,
-    "fiber": 0.8,
-    "region": "Nestle"
-  },
-  {
-    "id": "ind_5762",
-    "name": "Nandini Paneer Tikka Wrap",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 422,
-    "protein": 16.1,
-    "carbs": 48.2,
-    "fat": 18.1,
-    "fiber": 2.4,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5763",
-    "name": "Chai Point Fruit Juice (1 cup)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 121,
-    "protein": 0,
-    "carbs": 30.8,
-    "fat": 0,
-    "fiber": 1.5,
-    "region": "Chai Point"
-  },
-  {
-    "id": "ind_5764",
-    "name": "Bikanervala Paneer Butter Masala (Ready-to-Eat)",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 399,
-    "protein": 13.7,
-    "carbs": 17.1,
-    "fat": 31.9,
-    "fiber": 0.9,
-    "region": "Bikanervala"
-  },
-  {
     "id": "ind_5765",
     "name": "Barbeque Nation Veg Biryani",
     "category": "Buffet",
@@ -69178,30 +63982,6 @@
     "fat": 14.8,
     "fiber": 4,
     "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5766",
-    "name": "Haldiram's Pepperoni Pizza (Regular)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 1046,
-    "protein": 46.2,
-    "carbs": 110.1,
-    "fat": 44,
-    "fiber": 5.5,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5767",
-    "name": "Bikano Fruit Juice (1 cup)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 94,
-    "protein": 0,
-    "carbs": 24,
-    "fat": 0,
-    "fiber": 1.2,
-    "region": "Bikano"
   },
   {
     "id": "ind_5768",
@@ -69216,42 +63996,6 @@
     "region": "Domino's Pizza"
   },
   {
-    "id": "ind_5769",
-    "name": "Kurkure Protein Bar",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 202,
-    "protein": 20.2,
-    "carbs": 22.2,
-    "fat": 6.1,
-    "fiber": 1.1,
-    "region": "Kurkure"
-  },
-  {
-    "id": "ind_5770",
-    "name": "Burger King Cheese Slices (2)",
-    "category": "Burgers",
-    "servingSize": "1 serving",
-    "calories": 153,
-    "protein": 10.9,
-    "carbs": 2.2,
-    "fat": 10.9,
-    "fiber": 0,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5771",
-    "name": "ITC Vanilla Ice Cream (1 Scoop)",
-    "category": "Packaged Goods",
-    "servingSize": "1 serving",
-    "calories": 138,
-    "protein": 3,
-    "carbs": 19.8,
-    "fat": 6.9,
-    "fiber": 1,
-    "region": "ITC"
-  },
-  {
     "id": "ind_5772",
     "name": "Burger King French Fries (Medium)",
     "category": "Fast Food",
@@ -69262,30 +64006,6 @@
     "fat": 17.4,
     "fiber": 2.3,
     "region": "Burger King"
-  },
-  {
-    "id": "ind_5773",
-    "name": "Chai Point Gulab Jamun (Canned)",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 318,
-    "protein": 4.2,
-    "carbs": 53,
-    "fat": 12.7,
-    "fiber": 2.7,
-    "region": "Chai Point"
-  },
-  {
-    "id": "ind_5774",
-    "name": "Chai Point Roasted Almonds",
-    "category": "Beverages",
-    "servingSize": "1 serving",
-    "calories": 151,
-    "protein": 5.7,
-    "carbs": 5.7,
-    "fat": 13.2,
-    "fiber": 0,
-    "region": "Chai Point"
   },
   {
     "id": "ind_5775",
@@ -69300,30 +64020,6 @@
     "region": "Nestle"
   },
   {
-    "id": "ind_5776",
-    "name": "Haldiram's Masala Oats",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 137,
-    "protein": 3.6,
-    "carbs": 22.8,
-    "fat": 2.7,
-    "fiber": 1.1,
-    "region": "Haldiram's"
-  },
-  {
-    "id": "ind_5777",
-    "name": "ITC Aloo Bhujia",
-    "category": "Packaged Goods",
-    "servingSize": "1 serving",
-    "calories": 153,
-    "protein": 3.4,
-    "carbs": 10.2,
-    "fat": 11.9,
-    "fiber": 0.5,
-    "region": "ITC"
-  },
-  {
     "id": "ind_5778",
     "name": "ITC Roasted Almonds",
     "category": "Beverages",
@@ -69334,78 +64030,6 @@
     "fat": 14.4,
     "fiber": 0,
     "region": "ITC"
-  },
-  {
-    "id": "ind_5779",
-    "name": "Nandini Masala Oats",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 163,
-    "protein": 4.4,
-    "carbs": 27.2,
-    "fat": 3.3,
-    "fiber": 1.4,
-    "region": "Nandini"
-  },
-  {
-    "id": "ind_5780",
-    "name": "Maggi Paneer Tikka Wrap",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 452,
-    "protein": 17.2,
-    "carbs": 51.7,
-    "fat": 19.4,
-    "fiber": 2.6,
-    "region": "Maggi"
-  },
-  {
-    "id": "ind_5781",
-    "name": "Bikano Cold Coffee",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 216,
-    "protein": 6.9,
-    "carbs": 30.3,
-    "fat": 6.9,
-    "fiber": 1.5,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5782",
-    "name": "Barbeque Nation Roasted Almonds",
-    "category": "Buffet",
-    "servingSize": "1 serving",
-    "calories": 178,
-    "protein": 6.7,
-    "carbs": 6.7,
-    "fat": 15.6,
-    "fiber": 0,
-    "region": "Barbeque Nation"
-  },
-  {
-    "id": "ind_5783",
-    "name": "Bikanervala Chocolate Chip Cookies (2 pcs)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 186,
-    "protein": 2.1,
-    "carbs": 24.7,
-    "fat": 9.3,
-    "fiber": 1.2,
-    "region": "Bikanervala"
-  },
-  {
-    "id": "ind_5784",
-    "name": "Lays Peri Peri Fries",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 419,
-    "protein": 4.2,
-    "carbs": 50.3,
-    "fat": 21,
-    "fiber": 2.5,
-    "region": "Lays"
   },
   {
     "id": "ind_5785",
@@ -69420,18 +64044,6 @@
     "region": "MTR"
   },
   {
-    "id": "ind_5786",
-    "name": "Burger King Digestive Biscuits (2 pcs)",
-    "category": "Burgers",
-    "servingSize": "1 serving",
-    "calories": 146,
-    "protein": 3.1,
-    "carbs": 20.9,
-    "fat": 6.3,
-    "fiber": 1,
-    "region": "Burger King"
-  },
-  {
     "id": "ind_5787",
     "name": "Faasos Vanilla Ice Cream (1 Scoop)",
     "category": "Non-Veg",
@@ -69442,54 +64054,6 @@
     "fat": 8,
     "fiber": 1.2,
     "region": "Faasos"
-  },
-  {
-    "id": "ind_5788",
-    "name": "Bikano Butter Panner Meal",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 639,
-    "protein": 19.7,
-    "carbs": 59,
-    "fat": 34.4,
-    "fiber": 3,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5789",
-    "name": "Parle Roasted Cashews",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 183,
-    "protein": 5.7,
-    "carbs": 10.3,
-    "fat": 13.7,
-    "fiber": 0.5,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5790",
-    "name": "Subway Roasted Almonds",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 148,
-    "protein": 5.5,
-    "carbs": 5.5,
-    "fat": 12.9,
-    "fiber": 0,
-    "region": "Subway"
-  },
-  {
-    "id": "ind_5791",
-    "name": "Taco Bell Granola Bar",
-    "category": "Mexican",
-    "servingSize": "1 serving",
-    "calories": 150,
-    "protein": 3.2,
-    "carbs": 21.5,
-    "fat": 5.4,
-    "fiber": 1.1,
-    "region": "Taco Bell"
   },
   {
     "id": "ind_5792",
@@ -69504,42 +64068,6 @@
     "region": "Domino's Pizza"
   },
   {
-    "id": "ind_5793",
-    "name": "Amul Protein Bar",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 171,
-    "protein": 17.1,
-    "carbs": 18.8,
-    "fat": 5.1,
-    "fiber": 0.9,
-    "region": "Amul"
-  },
-  {
-    "id": "ind_5794",
-    "name": "Parle Vanilla Ice Cream (1 Scoop)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 154,
-    "protein": 3.3,
-    "carbs": 22,
-    "fat": 7.7,
-    "fiber": 1.1,
-    "region": "Parle"
-  },
-  {
-    "id": "ind_5795",
-    "name": "Britannia Cheese Slices (2)",
-    "category": "Bakery",
-    "servingSize": "1 serving",
-    "calories": 152,
-    "protein": 10.8,
-    "carbs": 2.2,
-    "fat": 10.8,
-    "fiber": 0,
-    "region": "Britannia"
-  },
-  {
     "id": "ind_5796",
     "name": "Kurkure Moong Dal Snack",
     "category": "Snacks",
@@ -69552,42 +64080,6 @@
     "region": "Kurkure"
   },
   {
-    "id": "ind_5797",
-    "name": "McDonald's Roasted Cashews",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 161,
-    "protein": 5,
-    "carbs": 9,
-    "fat": 12.1,
-    "fiber": 0,
-    "region": "McDonald's"
-  },
-  {
-    "id": "ind_5798",
-    "name": "Burger King Aloo Bhujia",
-    "category": "Fast Food",
-    "servingSize": "1 serving",
-    "calories": 207,
-    "protein": 4.6,
-    "carbs": 13.8,
-    "fat": 16.1,
-    "fiber": 0.7,
-    "region": "Burger King"
-  },
-  {
-    "id": "ind_5799",
-    "name": "Lays Cold Coffee",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 262,
-    "protein": 8.4,
-    "carbs": 36.7,
-    "fat": 8.4,
-    "fiber": 1.8,
-    "region": "Lays"
-  },
-  {
     "id": "ind_5800",
     "name": "Subway Chocolate Ice Cream (1 Scoop)",
     "category": "Healthy",
@@ -69598,18 +64090,6 @@
     "fat": 7.5,
     "fiber": 1.2,
     "region": "Subway"
-  },
-  {
-    "id": "ind_5801",
-    "name": "Amul Chicken Biryani (Medium)",
-    "category": "Dairy",
-    "servingSize": "1 serving",
-    "calories": 573,
-    "protein": 26.1,
-    "carbs": 73,
-    "fat": 18.8,
-    "fiber": 3.7,
-    "region": "Amul"
   },
   {
     "id": "ind_5802",
@@ -69708,18 +64188,6 @@
     "region": "MTR"
   },
   {
-    "id": "ind_5810",
-    "name": "Haldiram's Cheese Burger",
-    "category": "Vegetarian",
-    "servingSize": "1 serving",
-    "calories": 355,
-    "protein": 18.3,
-    "carbs": 35.5,
-    "fat": 16.2,
-    "fiber": 1.8,
-    "region": "Haldiram's"
-  },
-  {
     "id": "ind_5811",
     "name": "Chai Point Chocolate Ice Cream (1 Scoop)",
     "category": "Beverages",
@@ -69732,18 +64200,6 @@
     "region": "Chai Point"
   },
   {
-    "id": "ind_5812",
-    "name": "Haldiram's Cola (Regular)",
-    "category": "Sweets",
-    "servingSize": "1 serving",
-    "calories": 130,
-    "protein": 0,
-    "carbs": 36.3,
-    "fat": 0,
-    "fiber": 1.8,
-    "region": "Haldiram's"
-  },
-  {
     "id": "ind_5813",
     "name": "Taco Bell Tandoori Chicken Pizza",
     "category": "Fast Food",
@@ -69754,30 +64210,6 @@
     "fat": 34.2,
     "fiber": 4.9,
     "region": "Taco Bell"
-  },
-  {
-    "id": "ind_5814",
-    "name": "Bikano Milk Chocolate Bar",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 471,
-    "protein": 7.1,
-    "carbs": 53.3,
-    "fat": 26.7,
-    "fiber": 2.7,
-    "region": "Bikano"
-  },
-  {
-    "id": "ind_5815",
-    "name": "Bikano Paneer Butter Masala (Ready-to-Eat)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 389,
-    "protein": 13.3,
-    "carbs": 16.7,
-    "fat": 31.1,
-    "fiber": 0.8,
-    "region": "Bikano"
   },
   {
     "id": "ind_5816",
@@ -69814,18 +64246,6 @@
     "fat": 18.2,
     "fiber": 2.4,
     "region": "Domino's Pizza"
-  },
-  {
-    "id": "ind_5819",
-    "name": "Bikano Plain Yogurt (1 cup)",
-    "category": "Snacks",
-    "servingSize": "1 serving",
-    "calories": 154,
-    "protein": 8.2,
-    "carbs": 12.3,
-    "fat": 8.2,
-    "fiber": 0.6,
-    "region": "Bikano"
   },
   {
     "id": "ind_5820",
@@ -78460,7 +72880,7 @@
     "name": "Canteen Pav Bhaji",
     "category": "Canteen",
     "servingSize": "1 plate (2 pav)",
-    "calories": "440",
+    "calories": 440,
     "protein": 10,
     "carbs": 52,
     "fat": 22,
@@ -89644,7 +84064,7 @@
     "name": "Schezwan Paneer",
     "category": "Indo-Chinese",
     "servingSize": "1 plate",
-    "calories": "300",
+    "calories": 300,
     "protein": 14,
     "carbs": 16,
     "fat": 20,
@@ -95272,7 +89692,7 @@
     "name": "Paneer Wrap",
     "category": "Continental",
     "servingSize": "1 wrap",
-    "calories": "360",
+    "calories": 360,
     "protein": 14,
     "carbs": 32,
     "fat": 18,
