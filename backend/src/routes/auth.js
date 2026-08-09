@@ -332,13 +332,48 @@ router.post('/google', asyncHandler(async (req, res) => {
 
     try {
 
-        // Check if user exists
-        const userResult = await query(
-            'SELECT * FROM users WHERE email = $1',
-            [email]
-        );
+        // Identity is keyed on Google's `sub`, falling back to email.
+        //
+        // `sub` first, because it is stable for the life of a Google account
+        // and never reused. Email is not: a Workspace address can be renamed
+        // (same person returns as a stranger and gets a second, empty account)
+        // or released and reassigned (a new employee inherits the previous
+        // holder's logs, weight history and friends).
+        //
+        // The email fallback stays because no existing row has a google_id yet
+        // — `sub` was never stored and cannot be backfilled — so every current
+        // Google user matches by email exactly once more, and CLAIMS their sub
+        // on that sign-in. After that they match on `sub`. The fallback also
+        // covers the legitimate first link of a password account to Google.
+        let user = (await query(
+            'SELECT * FROM users WHERE google_id = $1',
+            [googleId]
+        )).rows[0];
 
-        let user = userResult.rows[0];
+        if (!user && googleId) {
+            const byEmail = (await query('SELECT * FROM users WHERE email = $1', [email])).rows[0];
+
+            if (byEmail) {
+                if (byEmail.google_id && byEmail.google_id !== googleId) {
+                    // This address already belongs to a DIFFERENT Google
+                    // account. Almost certainly a reassigned Workspace address.
+                    // Linking here would hand one person another's history, so
+                    // refuse rather than guess which of them owns the row.
+                    console.warn('⚠️  Google login refused: email is bound to a different Google account —', email);
+                    throw new AuthError('This email is already linked to a different Google account');
+                }
+
+                // Claim it. Guarded on google_id IS NULL so two concurrent
+                // sign-ins cannot both think they claimed the same row.
+                const claimed = await query(
+                    `UPDATE users SET google_id = $1
+                     WHERE id = $2 AND google_id IS NULL
+                     RETURNING *`,
+                    [googleId, byEmail.id]
+                );
+                user = claimed.rows[0] || byEmail;
+            }
+        }
 
         if (!user) {
             // This account signs in with Google and never uses this password,
@@ -369,10 +404,10 @@ router.post('/google', asyncHandler(async (req, res) => {
                 const username = rawBase.slice(0, USERNAME_MAX - suffix.length) + suffix;
                 try {
                     newUser = await query(
-                        `INSERT INTO users (email, password_hash, name, username, avatar_url, role)
-                         VALUES ($1, $2, $3, $4, $5, 'member')
-                         RETURNING id, email, name, username, role, avatar_url, xp_points`,
-                        [email, hashedPassword, name, username, picture]
+                        `INSERT INTO users (email, password_hash, name, username, avatar_url, role, google_id)
+                         VALUES ($1, $2, $3, $4, $5, 'member', $6)
+                         RETURNING id, email, name, username, role, avatar_url, xp_points, google_id`,
+                        [email, hashedPassword, name, username, picture, googleId]
                     );
                 } catch (err) {
                     // 23505 = unique_violation. Retry only when the username
