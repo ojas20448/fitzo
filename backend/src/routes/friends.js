@@ -224,19 +224,39 @@ router.post('/request', authenticate, asyncHandler(async (req, res) => {
     );
 
     if (reverseResult.rows.length > 0) {
-        // Auto-accept since both want to be friends
-        await query(
-            `UPDATE friendships SET status = 'accepted', updated_at = NOW() 
-       WHERE user_id = $1 AND friend_id = $2`,
-            [friend_id, userId]
-        );
+        // Both people asked, so this becomes a mutual accept.
+        //
+        // Two problems this used to have. The INSERT had no ON CONFLICT, so if
+        // a (me -> them) row already existed — most commonly one I had declined
+        // earlier — it raised 23505 and the request 500'd. And the two
+        // statements were unbatched, so that failure left THEIR row flipped to
+        // 'accepted' while mine never appeared: a one-directional friendship
+        // where they see a buddy and I do not.
+        const client = await getClient();
+        try {
+            await client.query('BEGIN');
 
-        // Create reverse friendship
-        await query(
-            `INSERT INTO friendships (user_id, friend_id, status) 
-       VALUES ($1, $2, 'accepted')`,
-            [userId, friend_id]
-        );
+            await client.query(
+                `UPDATE friendships SET status = 'accepted', updated_at = NOW()
+                 WHERE user_id = $1 AND friend_id = $2`,
+                [friend_id, userId]
+            );
+
+            await client.query(
+                `INSERT INTO friendships (user_id, friend_id, status)
+                 VALUES ($1, $2, 'accepted')
+                 ON CONFLICT (user_id, friend_id)
+                 DO UPDATE SET status = 'accepted', updated_at = NOW()`,
+                [userId, friend_id]
+            );
+
+            await client.query('COMMIT');
+        } catch (err) {
+            await client.query('ROLLBACK').catch(() => {});
+            throw err;
+        } finally {
+            client.release();
+        }
 
         return res.json({
             message: "You're now gym buddies! 🎉",
@@ -471,17 +491,32 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
     if (q.startsWith('@')) {
         queryText = `
             SELECT u.id, u.name, u.username, u.avatar_url,
-            CASE 
+            CASE
+              WHEN f.status = 'blocked' THEN 'blocked'
               WHEN f.status = 'accepted' THEN 'friend'
               WHEN f.status = 'pending' AND f.user_id = $1 THEN 'pending_sent'
-              WHEN f.status = 'pending' AND f.friend_id = $1 THEN 'pending_received'
+              WHEN f.status = 'pending' THEN 'pending_received'
               ELSE 'none'
             END as friendship_status
             FROM users u
-            LEFT JOIN friendships f ON (
-              (f.user_id = $1 AND f.friend_id = u.id)
-              OR (f.friend_id = $1 AND f.user_id = u.id)
-            )
+            -- LATERAL ... LIMIT 1, not a plain LEFT JOIN. An accepted
+            -- friendship is stored as TWO rows (A->B and B->A) and the
+            -- both-directions predicate matched both, so every existing friend
+            -- appeared in search results twice. Ordering picks the most
+            -- significant row when several exist.
+            LEFT JOIN LATERAL (
+              SELECT f2.status, f2.user_id
+              FROM friendships f2
+              WHERE (f2.user_id = $1 AND f2.friend_id = u.id)
+                 OR (f2.friend_id = $1 AND f2.user_id = u.id)
+              ORDER BY CASE f2.status
+                         WHEN 'blocked'  THEN 0
+                         WHEN 'accepted' THEN 1
+                         WHEN 'pending'  THEN 2
+                         ELSE 3
+                       END
+              LIMIT 1
+            ) f ON true
             WHERE u.username = $2 AND u.id != $1
         `;
         queryParams = [userId, q.substring(1).toLowerCase()];
@@ -489,17 +524,32 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
         // Search by name
         queryText = `
             SELECT u.id, u.name, u.username, u.avatar_url,
-            CASE 
+            CASE
+              WHEN f.status = 'blocked' THEN 'blocked'
               WHEN f.status = 'accepted' THEN 'friend'
               WHEN f.status = 'pending' AND f.user_id = $1 THEN 'pending_sent'
-              WHEN f.status = 'pending' AND f.friend_id = $1 THEN 'pending_received'
+              WHEN f.status = 'pending' THEN 'pending_received'
               ELSE 'none'
             END as friendship_status
             FROM users u
-            LEFT JOIN friendships f ON (
-              (f.user_id = $1 AND f.friend_id = u.id)
-              OR (f.friend_id = $1 AND f.user_id = u.id)
-            )
+            -- LATERAL ... LIMIT 1, not a plain LEFT JOIN. An accepted
+            -- friendship is stored as TWO rows (A->B and B->A) and the
+            -- both-directions predicate matched both, so every existing friend
+            -- appeared in search results twice. Ordering picks the most
+            -- significant row when several exist.
+            LEFT JOIN LATERAL (
+              SELECT f2.status, f2.user_id
+              FROM friendships f2
+              WHERE (f2.user_id = $1 AND f2.friend_id = u.id)
+                 OR (f2.friend_id = $1 AND f2.user_id = u.id)
+              ORDER BY CASE f2.status
+                         WHEN 'blocked'  THEN 0
+                         WHEN 'accepted' THEN 1
+                         WHEN 'pending'  THEN 2
+                         ELSE 3
+                       END
+              LIMIT 1
+            ) f ON true
             WHERE u.gym_id = $2 
               AND u.id != $1
               AND u.role = 'member'

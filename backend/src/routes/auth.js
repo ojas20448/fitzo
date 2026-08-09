@@ -322,6 +322,14 @@ router.post('/google', asyncHandler(async (req, res) => {
         throw new AuthError('Your Google email address is not verified');
     }
 
+    // /register and /login both lower-case before touching the users table;
+    // this path used Google's raw claim for BOTH the lookup and the insert. A
+    // member who registered as "Ojas@Gmail.com" and later signed in with Google
+    // therefore missed their own row and got a SECOND account — same person,
+    // two histories, and the email UNIQUE constraint does not catch it because
+    // the strings genuinely differ.
+    email = String(email).trim().toLowerCase();
+
     try {
 
         // Check if user exists
@@ -346,13 +354,19 @@ router.post('/google', asyncHandler(async (req, res) => {
             // and then inserting is a race — two concurrent signups can both
             // pass the check and one still fails. Retry against the constraint
             // instead, which is the only authority, adding entropy each round.
-            const base = email.split('@')[0].slice(0, 24) || 'user';
+            // users.username is VARCHAR(30). The base must leave room for the
+            // suffix or a late retry overflows and throws 22001 instead of
+            // retrying — 24 chars of base plus up to 9 digits is 33. The suffix
+            // is generated first and the base trimmed to fit around it.
+            const USERNAME_MAX = 30;
+            const rawBase = email.split('@')[0].replace(/[^a-z0-9._-]/gi, '') || 'user';
             let newUser = null;
 
             for (let attempt = 0; attempt < 6 && !newUser; attempt++) {
-                const username = attempt === 0
-                    ? base
-                    : `${base}${crypto.randomInt(10 ** Math.min(attempt + 2, 9))}`;
+                const suffix = attempt === 0
+                    ? ''
+                    : String(crypto.randomInt(10 ** Math.min(attempt + 2, 9)));
+                const username = rawBase.slice(0, USERNAME_MAX - suffix.length) + suffix;
                 try {
                     newUser = await query(
                         `INSERT INTO users (email, password_hash, name, username, avatar_url, role)
