@@ -29,5 +29,6 @@ google-services-key.json
 *.p12
 *.mobileprovision
 
-# dither pipeline scratch output
-mobile/.dtest/
+# dither pipeline scratch output. Path is relative to THIS file, which lives
+# in mobile/ — so ".dtest/", not "mobile/.dtest/".
+.dtest/
