@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const { query } = require('../config/database');
+const { renderEmail } = require('../utils/emailTemplate');
 const { generateToken } = require('../middleware/auth');
 const { ValidationError, AuthError, NotFoundError, asyncHandler } = require('../utils/errors');
 const { OAuth2Client } = require('google-auth-library');
@@ -509,16 +510,12 @@ router.post('/forgot-password', passwordLimiter, validate({ body: forgotPassword
         from: 'Fitzo <onboarding@resend.dev>',
         to: email,
         subject: 'Your Fitzo Password Reset Code',
-        html: `
-            <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #0f172a; color: #f1f5f9; border-radius: 16px;">
-                <h1 style="font-size: 24px; margin-bottom: 8px;">🏋️ Reset Your Password</h1>
-                <p style="color: #94a3b8; margin-bottom: 32px;">Use the code below to reset your Fitzo password. It expires in 15 minutes.</p>
-                <div style="background: #1e293b; border-radius: 12px; padding: 24px; text-align: center; letter-spacing: 0.3em; font-size: 40px; font-weight: bold; color: #6366f1;">
-                    ${code}
-                </div>
-                <p style="color: #64748b; font-size: 13px; margin-top: 24px;">If you didn't request this, you can safely ignore this email.</p>
-            </div>
-        `
+        html: renderEmail({
+            heading: 'Reset your password',
+            intro: 'Use the code below to reset your Fitzo password. It expires in 15 minutes.',
+            code,
+            footnote: "If you didn't request this, you can safely ignore this email.",
+        })
     });
 
     if (sendError) {

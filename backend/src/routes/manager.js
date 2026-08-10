@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { query } = require('../config/database');
+const { renderEmail } = require('../utils/emailTemplate');
 const { authenticate } = require('../middleware/auth');
 const { roleGuard } = require('../middleware/roleGuard');
 const { ValidationError, asyncHandler } = require('../utils/errors');
@@ -172,17 +173,12 @@ router.post('/users', asyncHandler(async (req, res) => {
                 from: 'Fitzo <onboarding@resend.dev>',
                 to: email.toLowerCase(),
                 subject: '🏋️ Welcome to Fitzo - Your Temporary Account Credentials',
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #0f172a; color: #f1f5f9; border-radius: 16px;">
-                        <h1 style="font-size: 24px; margin-bottom: 8px; color: #6366f1;">🏋️ Welcome to Fitzo</h1>
-                        <p style="color: #94a3b8; margin-bottom: 16px;">You have been registered as a <strong>${role}</strong> on Fitzo.</p>
-                        <p style="color: #94a3b8; margin-bottom: 32px;">Your temporary login password is:</p>
-                        <div style="background: #1e293b; border-radius: 12px; padding: 24px; text-align: center; font-size: 32px; font-weight: bold; color: #6366f1; letter-spacing: 0.1em;">
-                            ${tempPassword}
-                        </div>
-                        <p style="color: #94a3b8; margin-top: 32px;">Please log in using your email and this temporary password, then reset your password immediately in Settings.</p>
-                    </div>
-                `
+                html: renderEmail({
+                    heading: 'Welcome to Fitzo',
+                    intro: `You have been registered as a <strong style="color:#FFFFFF;">${role}</strong>. Your temporary login password is:`,
+                    code: tempPassword,
+                    outro: 'Log in with your email and this password, then change it in Settings straight away.',
+                })
             });
             if (sendError) {
                 console.error('Resend email error:', sendError);
