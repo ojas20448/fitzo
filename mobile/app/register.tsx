@@ -10,6 +10,7 @@ import {
     ScrollView,
 } from 'react-native';
 import { useToast } from '../src/components/Toast';
+import AvatarPicker from '../src/components/AvatarPicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -29,6 +30,8 @@ export default function RegisterScreen() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    // Optional by design — skipping yields initials, which is a fine identity.
+    const [avatar, setAvatar] = useState<string | null>(null);
 
     const validateStep1 = () => {
         const newErrors: Record<string, string> = {};
@@ -81,7 +84,7 @@ export default function RegisterScreen() {
 
         setLoading(true);
         try {
-            await register(email.trim().toLowerCase(), password, name.trim(), gymCode.trim() || '');
+            await register(email.trim().toLowerCase(), password, name.trim(), gymCode.trim() || '', avatar);
             toast.success('Account created successfully!');
             // Redirect to root and let the auth guard in app/index.tsx decide where to send the user
             // This prevents conflicts with the onboarding redirect
@@ -99,6 +102,11 @@ export default function RegisterScreen() {
         <>
             <Text style={styles.stepTitle}>Let's get started</Text>
             <Text style={styles.stepSubtitle}>Tell us about yourself</Text>
+
+            <View style={styles.avatarSection}>
+                <Text style={styles.inputLabel}>Pick an avatar <Text style={styles.optional}>(optional)</Text></Text>
+                <AvatarPicker value={avatar} onChange={setAvatar} name={name} compact />
+            </View>
 
             <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Full Name</Text>
@@ -423,6 +431,13 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.regular,
         color: colors.text.secondary,
         marginBottom: spacing['2xl'],
+    },
+    avatarSection: {
+        marginBottom: spacing.lg,
+    },
+    optional: {
+        color: colors.text.muted,
+        fontFamily: typography.fontFamily.regular,
     },
     inputGroup: {
         marginBottom: spacing.lg,

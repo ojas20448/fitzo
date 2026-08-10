@@ -5,6 +5,7 @@
  */
 
 const { z } = require('zod');
+const { AVATAR_PRESETS } = require('../utils/avatarPresets');
 
 // ===========================================
 // AUTH SCHEMAS
@@ -14,6 +15,12 @@ const registerSchema = z.object({
     password: z.string().min(6, 'Password must be at least 6 characters'),
     name: z.string().min(1, 'Name is required').max(100, 'Name is too long'),
     gym_code: z.string().optional(),
+    // An enum, not a string. avatar_url also holds Google photo URLs, so the
+    // column would accept anything — and the app renders it in an <Image>, so a
+    // free-form URL here would be a tracking beacon that phones home with the
+    // IP of everyone who views that profile. Presets are keys to bundled
+    // assets; nothing is fetched.
+    avatar_url: z.enum(AVATAR_PRESETS).optional(),
 });
 
 const loginSchema = z.object({

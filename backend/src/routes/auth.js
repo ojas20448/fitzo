@@ -33,7 +33,7 @@ const passwordLimiter = rateLimit({
  */
 router.post('/register', passwordLimiter, validate({ body: registerSchema }), asyncHandler(async (req, res) => {
 
-    const { email, password, name, gym_code } = req.body;
+    const { email, password, name, gym_code, avatar_url } = req.body;
 
     // Find gym by QR code (optional)
     let gym = null;
@@ -72,10 +72,13 @@ router.post('/register', passwordLimiter, validate({ body: registerSchema }), as
 
     // Create user
     const result = await query(
-        `INSERT INTO users (email, password_hash, name, role, gym_id, username)
-         VALUES ($1, $2, $3, 'member', $4, $5)
-         RETURNING id, email, name, role, gym_id, xp_points, username`,
-        [email.toLowerCase(), password_hash, name, gym ? gym.id : null, username]
+        `INSERT INTO users (email, password_hash, name, role, gym_id, username, avatar_url)
+         VALUES ($1, $2, $3, 'member', $4, $5, $6)
+         RETURNING id, email, name, role, gym_id, xp_points, username, avatar_url`,
+        // avatar_url is already narrowed to a preset key by registerSchema; the
+        // enum is the guard, this is just the pass-through. Undefined becomes
+        // NULL, which renders as the member's initials.
+        [email.toLowerCase(), password_hash, name, gym ? gym.id : null, username, avatar_url || null]
     );
 
     const user = result.rows[0];
@@ -92,6 +95,11 @@ router.post('/register', passwordLimiter, validate({ body: registerSchema }), as
             gym_id: user.gym_id,
             gym_name: gym ? gym.name : null,
             xp_points: user.xp_points || 0,
+            // Returned so the client caches the chosen avatar immediately.
+            // Without it the member picks a lion, lands on the home screen, and
+            // sees their initials until the next full profile fetch.
+            avatar_url: user.avatar_url,
+            username: user.username,
             onboarding_completed: false
         }
     });

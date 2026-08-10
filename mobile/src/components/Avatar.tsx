@@ -26,6 +26,29 @@ const LOCAL_AVATARS: Record<string, any> = {
     avatar_barbell: require('../../assets/avatar_barbell.png'),
 };
 
+/**
+ * The pickable presets, DERIVED from the asset map above rather than written
+ * out again. The signup picker and the profile picker both read this, so a
+ * preset can never exist in one list and not the other.
+ *
+ * Mirrored server-side in backend/src/utils/avatarPresets.js, which is the
+ * allow-list that stops arbitrary URLs being stored. Adding a preset means
+ * adding the asset here AND the key there.
+ */
+export const AVATAR_PRESETS: string[] = Object.keys(LOCAL_AVATARS);
+
+/** A friendly label for each preset, for accessibility. */
+export const AVATAR_LABELS: Record<string, string> = {
+    avatar_zeus: 'Zeus',
+    avatar_discobolus: 'Discus thrower',
+    avatar_lion: 'Lion',
+    avatar_kettlebell: 'Kettlebell',
+    avatar_trophy: 'Trophy',
+    avatar_runner: 'Runner',
+    avatar_heart: 'Heart',
+    avatar_barbell: 'Barbell',
+};
+
 const Avatar: React.FC<AvatarProps> = ({
     uri,
     name,
