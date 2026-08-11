@@ -40,7 +40,6 @@
       },
       "package": "com.fitzo.app",
       "versionCode": 7,
-      "minSdkVersion": 26,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
@@ -111,7 +110,8 @@
         {
           "iosUrlScheme": "com.googleusercontent.apps.1030039443378-k15ujl968cs24u1t6ln06oaapudt03e2"
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true

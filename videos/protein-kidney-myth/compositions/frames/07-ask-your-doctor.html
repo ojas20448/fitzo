@@ -1,0 +1,97 @@
+<template>
+  <style>
+    @font-face {
+      font-family: 'Lexend';
+      src: url('assets/fonts/Lexend-Bold.ttf') format('truetype');
+      font-weight: 700; font-style: normal; font-display: block;
+    }
+    @font-face {
+      font-family: 'Lexend';
+      src: url('assets/fonts/Lexend-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: block;
+    }
+
+    #root {
+      width: 1080px; height: 1920px; position: relative; overflow: hidden;
+      font-family: 'Lexend', sans-serif;
+    }
+    .f07-bg { position: absolute; inset: 0; background: #000000; }
+    
+    .grain {
+      position: absolute; inset: 0; z-index: 999; pointer-events: none;
+      opacity: 0.04; background: repeating-radial-gradient(circle at center, #000 0, #fff 1px);
+    }
+    .flash {
+      position: absolute; inset: 0; z-index: 1000; pointer-events: none;
+      background: #FFFFFF;
+    }
+
+    .f07-questions {
+      position: absolute; left: 84px; top: 380px; right: 84px;
+      display: flex; flex-direction: column; gap: 32px;
+    }
+    .f07-q {
+      font-size: 48px; font-weight: 700; color: rgba(255,255,255,0.7);
+      background: rgba(255,255,255,0.06); padding: 30px; border-radius: 16px;
+      transform-origin: center center;
+    }
+
+    .f07-instruction {
+      position: absolute; left: 84px; top: 920px; right: 84px;
+      font-weight: 800; font-size: 88px; line-height: 1.1;
+      letter-spacing: -0.03em; color: #FFFFFF; text-transform: uppercase;
+      border-left: 3px solid #FF6B35; padding-left: 40px;
+      transform-origin: center center;
+    }
+  </style>
+
+  <div data-hf-id="hf-q9tu" id="root" data-composition-id="07-ask-your-doctor" data-width="1080" data-height="1920">
+    <div data-hf-id="hf-034b" class="clip f07-bg" data-start="0" data-duration="4.0" data-track-index="0"></div>
+    <div data-hf-id="hf-7wpw" class="clip grain" data-start="0" data-duration="4.0" data-track-index="1"></div>
+    <div data-hf-id="hf-3bxq" class="clip flash" data-start="0" data-duration="4.0" data-track-index="2" id="f07-flash"></div>
+
+    <div data-hf-id="hf-77cy" class="clip f07-questions" data-start="0" data-duration="4.0" data-track-index="3">
+      <div data-hf-id="hf-30w6" class="f07-q">Pre-existing kidney issue?</div>
+      <div data-hf-id="hf-rv9v" class="f07-q">Diabetes?</div>
+      <div data-hf-id="hf-urb3" class="f07-q">High blood pressure?</div>
+    </div>
+
+    <div data-hf-id="hf-3b2i" class="clip f07-instruction" data-start="0" data-duration="4.0" data-track-index="4" id="f07-instruction">
+      THEN ASK YOUR DOCTOR
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      tl.fromTo('#f07-flash',
+        { opacity: 1 },
+        { opacity: 0, duration: 0.08, ease: 'none' },
+        0);
+
+      tl.fromTo('.f07-q',
+        { opacity: 0, scale: 0.9 },
+        { opacity: 1, scale: 1.0, duration: 0.5, stagger: 0.2, ease: 'power3.out' },
+        0.2);
+
+      tl.fromTo('#f07-instruction',
+        { opacity: 0, rotation: -3, scale: 0.9 },
+        { opacity: 1, rotation: 0, scale: 1.0, duration: 0.6, ease: 'back.out(1.5)' },
+        1.2);
+
+      tl.fromTo('#f07-instruction',
+        { borderColor: 'rgba(255,107,53,0.3)' },
+        { borderColor: '#FF6B35', duration: 0.4, yoyo: true, repeat: 50, ease: 'power1.inOut' },
+        1.2);
+
+      tl.fromTo('#f07-instruction',
+        { y: 0 },
+        { y: -4, duration: 1.5, ease: 'none' },
+        1.8);
+
+      window.__timelines['07-ask-your-doctor'] = tl;
+    })();
+  </script>
+</template>

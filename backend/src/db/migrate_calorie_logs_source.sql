@@ -1,0 +1,2 @@
+ALTER TABLE calorie_logs ADD COLUMN IF NOT EXISTS is_estimate BOOLEAN DEFAULT false;
+ALTER TABLE calorie_logs ADD COLUMN IF NOT EXISTS user_food_id UUID REFERENCES user_foods(id) ON DELETE SET NULL;

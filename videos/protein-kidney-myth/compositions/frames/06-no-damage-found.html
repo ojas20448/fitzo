@@ -1,0 +1,114 @@
+<template>
+  <style>
+    @font-face {
+      font-family: 'Lexend';
+      src: url('assets/fonts/Lexend-Bold.ttf') format('truetype');
+      font-weight: 700; font-style: normal; font-display: block;
+    }
+    @font-face {
+      font-family: 'Lexend';
+      src: url('assets/fonts/Lexend-Regular.ttf') format('truetype');
+      font-weight: 400; font-style: normal; font-display: block;
+    }
+    @font-face {
+      font-family: 'IBM Plex Mono';
+      src: url('assets/fonts/IBMPlexMono-500.woff2') format('woff2');
+      font-weight: 500; font-style: normal; font-display: block;
+    }
+
+    #root {
+      width: 1080px; height: 1920px; position: relative; overflow: hidden;
+      font-family: 'Lexend', sans-serif;
+    }
+    .f06-bg { position: absolute; inset: 0; background: #000000; }
+    
+    .grain {
+      position: absolute; inset: 0; z-index: 999; pointer-events: none;
+      opacity: 0.04; background: repeating-radial-gradient(circle at center, #000 0, #fff 1px);
+    }
+    .flash {
+      position: absolute; inset: 0; z-index: 1000; pointer-events: none;
+      background: #FFFFFF;
+    }
+
+    .f06-conditions {
+      position: absolute; left: 84px; top: 400px; right: 84px;
+      display: flex; flex-direction: column; gap: 40px;
+    }
+    .f06-cond {
+      font-size: 56px; font-weight: 700; color: #FFFFFF;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
+      padding: 30px 40px; border-radius: 20px;
+      text-transform: uppercase;
+    }
+
+    .f06-verdict {
+      position: absolute; left: 84px; right: 84px; top: 960px;
+      font-weight: 800; font-size: 110px; line-height: 1.05;
+      letter-spacing: -0.04em; color: #4ECDC4; text-transform: uppercase;
+      text-align: center;
+      transform-origin: center center;
+    }
+
+    .f06-source {
+      position: absolute; bottom: 120px; left: 84px; right: 84px;
+      font-family: 'Lexend', sans-serif; font-size: 28px; color: rgba(255,255,255,0.5);
+      text-align: center; font-weight: 400;
+    }
+  </style>
+
+  <div data-hf-id="hf-0kta" id="root" data-composition-id="06-no-damage-found" data-width="1080" data-height="1920">
+    <div data-hf-id="hf-jg3m" class="clip f06-bg" data-start="0" data-duration="4.0" data-track-index="0" id="f06-bg"></div>
+    <div data-hf-id="hf-7wpw" class="clip grain" data-start="0" data-duration="4.0" data-track-index="1"></div>
+    <div data-hf-id="hf-bjej" class="clip flash" data-start="0" data-duration="4.0" data-track-index="2" id="f06-flash"></div>
+
+    <div data-hf-id="hf-7aq4" class="clip f06-conditions" data-start="0" data-duration="4.0" data-track-index="3">
+      <div data-hf-id="hf-x5e8" class="f06-cond">High Protein Diet</div>
+      <div data-hf-id="hf-ekcr" class="f06-cond">Healthy Kidneys</div>
+    </div>
+
+    <div data-hf-id="hf-4qxm" class="clip f06-verdict" data-start="0" data-duration="4.0" data-track-index="4" id="f06-verdict">
+      NO DAMAGE<br data-hf-id="hf-x5px">FOUND
+    </div>
+
+    <div data-hf-id="hf-brqy" class="clip f06-source" data-start="0" data-duration="4.0" data-track-index="5" id="f06-source">
+      *Based on comprehensive meta-analyses of healthy adults.
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      tl.fromTo('#f06-flash',
+        { opacity: 1 },
+        { opacity: 0, duration: 0.08, ease: 'none' },
+        0);
+
+      tl.fromTo('.f06-cond',
+        { opacity: 0, x: 40 },
+        { opacity: 1, x: 0, duration: 0.6, stagger: 0.2, ease: 'power3.out' },
+        0.2);
+
+      tl.fromTo('#f06-verdict',
+        { opacity: 0, scale: 0.9, textShadow: '0 0 0px rgba(78,205,196,0)' },
+        { opacity: 1, scale: 1.0, textShadow: '0 0 40px rgba(78,205,196,0.4)', duration: 0.5, ease: 'back.out(1.5)' },
+        1.0);
+        
+      tl.to('#f06-verdict',
+        { textShadow: '0 0 0px rgba(78,205,196,0)', duration: 0.4, ease: 'power2.out' },
+        1.5);
+
+      tl.to('#f06-verdict',
+        { scale: 1.02, duration: 0.15, ease: 'power1.inOut', yoyo: true, repeat: 1 },
+        1.6);
+        
+      tl.to('#f06-verdict',
+        { scale: 1.02, duration: 0.15, ease: 'power1.inOut', yoyo: true, repeat: 1 },
+        2.2);
+
+      window.__timelines['06-no-damage-found'] = tl;
+    })();
+  </script>
+</template>

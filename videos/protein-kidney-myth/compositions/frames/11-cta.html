@@ -1,0 +1,118 @@
+<template>
+    <style>
+        @font-face { font-family: 'Lexend'; src: url('assets/fonts/Lexend-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
+        @font-face { font-family: 'Lexend'; src: url('assets/fonts/Lexend-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: block; }
+        @font-face { font-family: 'IBM Plex Mono'; src: url('assets/fonts/IBMPlexMono-500.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: block; }
+        
+        #root {
+            width: 1080px;
+            height: 1920px;
+            background-color: #000000;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Lexend', sans-serif;
+            color: #FFFFFF;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .grain {
+            position: absolute; inset: 0; z-index: 999; pointer-events: none; opacity: 0.15;
+            background-image: repeating-radial-gradient(circle at 50% 50%, #000 0, #000 2px, transparent 2px, transparent 100%);
+            background-size: 4px 4px;
+        }
+        
+        .brutal-title { font-size: 140px; font-weight: 900; text-transform: uppercase; line-height: 0.85; letter-spacing: -4px; text-align: center; }
+
+        .logo-container {
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 150px;
+        }
+
+        .logo-text {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 200px;
+            font-weight: 900;
+            color: #FF6B35;
+            text-shadow: 15px 15px 0px #FFFFFF;
+            opacity: 0;
+        }
+
+        .btn {
+            background-color: #FF6B35;
+            color: #000000;
+            font-size: 70px;
+            font-weight: 900;
+            padding: 40px 100px;
+            border-radius: 0;
+            text-transform: uppercase;
+            box-shadow: 15px 15px 0px #FFFFFF;
+            opacity: 0;
+        }
+
+        .link-bio {
+            margin-top: 100px;
+            font-size: 60px;
+            font-weight: 900;
+            color: #FFFFFF;
+            text-transform: uppercase;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+            opacity: 0;
+        }
+
+        .arrow {
+            font-size: 100px;
+        }
+    </style>
+    
+    <div data-hf-id="hf-r8aj" id="root" data-composition-id="11-cta" data-duration="7.0" data-width="1080" data-height="1920">
+        <div data-hf-id="hf-h60x" class="grain"></div>
+        
+        <div data-hf-id="hf-18pb" class="logo-container">
+            <div data-hf-id="hf-3c61" class="logo-text">FITZO</div>
+        </div>
+        
+        <div data-hf-id="hf-z974" class="btn">DOWNLOAD FITZO</div>
+        
+        <div data-hf-id="hf-5b6e" class="link-bio">
+            Link in bio
+            <div data-hf-id="hf-eqsn" class="arrow">👇</div>
+        </div>
+    </div>
+    
+    <script>
+        (function() {
+            const tl = gsap.timeline();
+            
+            // Logo slams in like a stamp
+            tl.fromTo('.logo-text', 
+                { opacity: 0, scale: 4, rotation: 15 }, 
+                { opacity: 1, scale: 1, rotation: -5, duration: 0.3, ease: 'power4.in' }, 
+                0.2
+            );
+            
+            // Add a shake effect after stamp
+            tl.to('.logo-text', { x: 10, y: -10, duration: 0.05, yoyo: true, repeat: 5 }, 0.5);
+            tl.to('.logo-text', { x: 0, y: 0, duration: 0.05 }, 0.8);
+
+            // Button slams in
+            tl.fromTo('.btn', { opacity: 0, scale: 3 }, { opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(1.5)' }, 1.0);
+            
+            // Link in bio slams in
+            tl.fromTo('.link-bio', { opacity: 0, y: 200 }, { opacity: 1, y: 0, duration: 0.3, ease: 'back.out(1.2)' }, 1.5);
+            
+            // Arrow bouncing but without repeat:-1 to avoid lint warnings, just long duration or limited repeats
+            tl.to('.arrow', { y: 30, duration: 0.3, yoyo: true, repeat: 20, ease: 'sine.inOut' }, 1.8);
+            
+            window.__timelines['11-cta'] = tl;
+        })();
+    </script>
+</template>

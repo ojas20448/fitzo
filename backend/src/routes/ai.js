@@ -3,9 +3,9 @@ const router = express.Router();
 const geminiService = require('../services/gemini');
 const { authenticate } = require('../middleware/auth');
 const { aiQuota, getUsage } = require('../middleware/aiQuota');
-const { asyncHandler } = require('../utils/errors');
+const { asyncHandler, ValidationError } = require('../utils/errors');
 const { validate } = require('../middleware/validate');
-const { aiWorkoutPlanSchema, aiChatSchema, aiFormAnalysisSchema, aiTranscribeSchema } = require('../schemas');
+const { aiWorkoutPlanSchema, aiChatSchema, aiFormAnalysisSchema, aiTranscribeSchema, aiExtractSchema } = require('../schemas');
 const { query } = require('../config/database');
 const contextPackService = require('../services/contextPack');
 const dailyInsightService = require('../services/dailyInsight');
@@ -121,7 +121,25 @@ router.post('/transcribe', aiQuota, validate({ body: aiTranscribeSchema }), asyn
     const { audio, mimeType } = req.body;
 
     const text = await geminiService.transcribeAudio(audio, mimeType);
-    res.json({ success: true, text });
+
+    // Silence or a safety-blocked response comes back empty. Say so here rather
+    // than letting the client call /extract-* with "" and get a confusing error
+    // two hops from the real cause.
+    if (!text || !text.trim()) {
+        throw new ValidationError("Didn't catch that — try again a bit closer to the mic");
+    }
+
+    res.json({ success: true, text: text.trim() });
+}));
+
+router.post('/extract-foods', aiQuota, validate({ body: aiExtractSchema }), asyncHandler(async (req, res) => {
+    const items = await geminiService.extractItemsFromText(req.body.text);
+    res.json({ success: true, items });
+}));
+
+router.post('/extract-workout', aiQuota, validate({ body: aiExtractSchema }), asyncHandler(async (req, res) => {
+    const workout = await geminiService.extractWorkoutFromText(req.body.text);
+    res.json({ success: true, workout });
 }));
 
 module.exports = router;

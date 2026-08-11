@@ -40,6 +40,16 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID_WEB
         sync: false
+      - key: GOOGLE_CLIENT_ID_IOS
+        sync: false
+      - key: GOOGLE_CLIENT_ID_ANDROID
+        sync: false
+      - key: GOOGLE_CLIENT_ID_ANDROID_DEBUG
+        sync: false
+      - key: API_NINJAS_KEY
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
       - key: CRON_SECRET
         sync: false
       - key: RENDER_EXTERNAL_URL

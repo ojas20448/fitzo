@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { FoodDraftSheet } from '../../components/FoodDraftSheet';
 import {
     View,
     Text,
@@ -21,8 +22,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { foodAPI, caloriesAPI, nutritionAPI, settingsAPI, aiAPI, CalorieEntry } from '../../services/api';
 import Input from '../../components/Input';
-import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
+import VoiceCaptureSheet from '../../components/VoiceCaptureSheet';
+import { useVoiceCapture } from '../../hooks/useVoiceCapture';
 import Celebration from '../../components/Celebration';
 import ThaliPresets from '../../components/ThaliPresets';
 import FoodEntrySheet from '../../components/FoodEntrySheet';
@@ -109,6 +110,8 @@ const CustomSlider: React.FC<SliderProps> = ({ value, min, max, onChange }) => {
 };
 
 const CalorieLogScreen: React.FC = () => {
+  const [draftItems, setDraftItems] = React.useState<any[]>([]);
+  const [showDraftSheet, setShowDraftSheet] = React.useState(false);
     const toast = useToast();
     const { logFoodOptimistic, refreshToday } = useNutrition();
     
@@ -122,9 +125,6 @@ const CalorieLogScreen: React.FC = () => {
     }>();
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [recording, setRecording] = useState<Audio.Recording | null>(null);
-    const [isRecording, setIsRecording] = useState(false);
-    const [transcribing, setTranscribing] = useState(false);
     const [todayEntries, setTodayEntries] = useState<CalorieEntry[]>([]);
     const [openEntry, setOpenEntry] = useState<CalorieEntry | null>(null);
 
@@ -175,66 +175,50 @@ const CalorieLogScreen: React.FC = () => {
         }
     }, [params.foodName, params.calories]);
 
-    const startRecording = async () => {
-        try {
-            const permission = await Audio.requestPermissionsAsync();
-            if (permission.status !== 'granted') {
-                toast.error('Permission Denied', 'Microphone access is required to record audio');
-                return;
-            }
+    const [voiceSheetOpen, setVoiceSheetOpen] = useState(false);
+    const [resolving, setResolving] = useState(false);
 
-            await Audio.setAudioModeAsync({
-                allowsRecordingIOS: true,
-                playsInSilentModeIOS: true,
-            });
-
-            const { recording: newRecording } = await Audio.Recording.createAsync(
-                Audio.RecordingOptionsPresets.HIGH_QUALITY
-            );
-
-            setRecording(newRecording);
-            setIsRecording(true);
-            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        } catch (err: any) {
-            toast.error('Error', 'Failed to start recording');
-            console.error('Failed to start recording', err);
-        }
-    };
-
-    const stopRecording = async () => {
-        if (!recording) return;
-
-        setIsRecording(false);
-        setTranscribing(true);
-        try {
-            await recording.stopAndUnloadAsync();
-            const uri = recording.getURI();
-            setRecording(null);
-            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-            if (uri) {
-                const base64 = await FileSystem.readAsStringAsync(uri, {
-                    encoding: 'base64',
-                });
-
-                const extension = uri.split('.').pop() || 'm4a';
-                const mimeType = `audio/${extension === 'm4a' ? 'm4a' : extension}`;
-
-                const res = await aiAPI.transcribeAudio(base64, mimeType);
-                if (res.success && res.text) {
-                    setSearchQuery(prev => (prev ? prev + ' ' : '') + res.text);
-                    toast.success('Success', 'Audio transcribed!');
-                } else {
-                    toast.error('Error', 'Failed to transcribe audio');
+    const voice = useVoiceCapture({
+        mode: 'food',
+        onResult: async (items) => {
+            setVoiceSheetOpen(false);
+            // Match spoken items against the Indian food catalog; anything the
+            // catalog doesn't know falls back to a private AI estimate.
+            setResolving(true);
+            try {
+                const resolved = await foodAPI.bulkResolve(items);
+                const list = resolved?.items || [];
+                if (list.length === 0) {
+                    toast.error('Nothing matched', 'Try naming the dish on its own, like "rajma chawal".');
+                    return;
                 }
+                setDraftItems(list);
+                setShowDraftSheet(true);
+            } catch (e: any) {
+                toast.error(
+                    'Could not look those up',
+                    e?.response?.data?.message || 'Check your connection and try again.'
+                );
+            } finally {
+                setResolving(false);
             }
-        } catch (err) {
-            console.error('Failed to stop recording', err);
-            toast.error('Error', 'Failed to transcribe audio');
-        } finally {
-            setTranscribing(false);
-        }
+        },
+        onError: (title, message) => {
+            setVoiceSheetOpen(false);
+            toast.error(title, message);
+        },
+    });
+
+    const openVoice = async () => {
+        setVoiceSheetOpen(true);
+        await voice.start();
     };
+
+    const cancelVoice = async () => {
+        await voice.cancel();
+        setVoiceSheetOpen(false);
+    };
+
     const [searchResults, setSearchResults] = useState<FoodItem[]>([]);
     const [searching, setSearching] = useState(false);
     const [selectedFood, setSelectedFood] = useState<FoodDetails | null>(null);
@@ -766,18 +750,18 @@ const CalorieLogScreen: React.FC = () => {
                     )}
                     <View style={styles.searchBarDivider} />
                     <Pressable
-                        onPress={isRecording ? stopRecording : startRecording}
-                        style={[styles.barcodeScanBtn, isRecording && { opacity: 0.7 }]}
-                        accessibilityLabel={isRecording ? "Stop recording" : "Record voice description"}
-                        disabled={transcribing}
+                        onPress={openVoice}
+                        style={styles.barcodeScanBtn}
+                        accessibilityLabel="Log food by voice"
+                        disabled={voice.isBusy || resolving}
                     >
-                        {transcribing ? (
+                        {voice.isBusy || resolving ? (
                             <ActivityIndicator size="small" color={colors.primary} />
                         ) : (
                             <MaterialIcons
-                                name={isRecording ? "stop" : "mic"}
+                                name="mic"
                                 size={20}
-                                color={isRecording ? colors.error : colors.text.secondary}
+                                color={colors.text.secondary}
                             />
                         )}
                     </Pressable>
@@ -1428,6 +1412,39 @@ const CalorieLogScreen: React.FC = () => {
                     </ScrollView>
                 </SafeAreaView>
             </Modal>
+            <VoiceCaptureSheet
+                visible={voiceSheetOpen}
+                stage={voice.stage}
+                durationLabel={voice.durationLabel}
+                durationProgress={voice.durationProgress}
+                hint={'Say what you ate — "two roti, dal and a bowl of curd"'}
+                onCancel={cancelVoice}
+                onDone={voice.stopAndProcess}
+            />
+
+            <FoodDraftSheet 
+                visible={showDraftSheet}
+                onClose={() => setShowDraftSheet(false)}
+                items={draftItems}
+                onConfirm={async (items) => {
+                    try {
+                        const payload = items.map(i => ({
+                            meal_name: i.name,
+                            calories: Math.round((i.calories || 0) * (i.quantity || 1)),
+                            protein: Math.round((i.protein || 0) * (i.quantity || 1)),
+                            carbs: Math.round((i.carbs || 0) * (i.quantity || 1)),
+                            fat: Math.round((i.fat || 0) * (i.quantity || 1))
+                        }));
+                        await nutritionAPI.logBulk(payload);
+                        toast.success('Logged!', `Successfully logged ${items.length} items`);
+                        loadTodayEntries();
+                        setShowDraftSheet(false);
+                        setDraftItems([]);
+                    } catch (e: any) {
+                        toast.error('Failed to log', e.message);
+                    }
+                }}
+            />
         </SafeAreaView >
     );
 };

@@ -1,0 +1,79 @@
+<template>
+  <style>
+    @font-face {
+      font-family: 'Lexend';
+      src: url('assets/fonts/Lexend-Bold.ttf') format('truetype');
+      font-weight: 700; font-style: normal; font-display: block;
+    }
+    #root {
+      width: 1080px; height: 1920px; position: relative; overflow: hidden;
+      font-family: 'Lexend', sans-serif; background: #000000;
+    }
+    .grain {
+      position: absolute; inset: 0; z-index: 999; pointer-events: none; opacity: 0.15;
+      background-image: repeating-radial-gradient(circle at 50% 50%, #000 0, #000 2px, transparent 2px, transparent 100%);
+      background-size: 4px 4px;
+    }
+    .duotone-container {
+      width: 700px; height: 700px; background-color: #FF6B35;
+      overflow: hidden; border-radius: 40px;
+      box-shadow: 20px -20px 0px #FFFFFF;
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 10;
+    }
+    .duotone-container img {
+      width: 100%; height: 100%; object-fit: cover;
+      mix-blend-mode: multiply;
+      filter: grayscale(100%) contrast(250%) brightness(1.2);
+    }
+    .marquee-container {
+      position: absolute; top: 45%; left: -50%; width: 200%;
+      white-space: nowrap; transform: rotate(-5deg);
+      z-index: 5;
+    }
+    .marquee-text {
+      font-size: 200px; font-weight: 900; text-transform: uppercase;
+      color: transparent; -webkit-text-stroke: 4px #FF6B35;
+      display: inline-block;
+    }
+    .brutal-title { 
+      font-size: 140px; font-weight: 900; text-transform: uppercase; 
+      line-height: 0.85; letter-spacing: -4px; 
+      color: #FFFFFF; text-align: center;
+      position: absolute; bottom: 150px; left: 0; width: 100%;
+      z-index: 20;
+    }
+  </style>
+
+  <div data-hf-id="hf-8ev6" id="root" data-composition-id="08-food-3" data-duration="2" data-width="1080" data-height="1920">
+    <div data-hf-id="hf-h60x" class="grain"></div>
+    <div data-hf-id="hf-okge" class="marquee-container">
+      <div data-hf-id="hf-v2aj" class="marquee-text" id="mq3">EAT REAL FOOD • EAT REAL FOOD • EAT REAL FOOD • EAT REAL FOOD • EAT REAL FOOD</div>
+    </div>
+    <div data-hf-id="hf-lgt2" class="duotone-container" id="img-container3">
+      <img data-hf-id="hf-lf44" src="assets/images/eggs_boiled_1786143598740.jpg">
+    </div>
+    <div data-hf-id="hf-n8ev" class="brutal-title" id="text-title3">EGGS &amp;<br data-hf-id="hf-x5px">WHEY</div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      tl.fromTo('#img-container3',
+        { scale: 0, opacity: 0, xPercent: -50, yPercent: -50, rotation: 45 },
+        { scale: 1, opacity: 1, xPercent: -50, yPercent: -50, rotation: 0, duration: 0.6, ease: 'back.out(1.5)' },
+        0);
+
+      tl.fromTo('#text-title3',
+        { scale: 3, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(2)' },
+        0.4);
+
+      tl.to('#mq3', { x: -1000, duration: 2, ease: 'none' }, 0);
+
+      window.__timelines['08-food-3'] = tl;
+    })();
+  </script>
+</template>

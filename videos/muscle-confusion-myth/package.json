@@ -1,0 +1,11 @@
+{
+  "name": "muscle-confusion-myth",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes hyperframes@0.7.100 preview",
+    "check": "npx --yes hyperframes@0.7.100 check",
+    "render": "npx --yes hyperframes@0.7.100 render",
+    "publish": "npx --yes hyperframes@0.7.100 publish"
+  }
+}

@@ -1,0 +1,33 @@
+<template id="04-the-turn">
+  <style>
+    @font-face { font-family: 'Lexend'; src: url('assets/fonts/Lexend-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
+    #root { width: 1080px; height: 1920px; background: #FF6B35; position: relative; overflow: hidden; font-family: 'Lexend', sans-serif; color: #000000; }
+    
+    .grain { position: absolute; inset: 0; z-index: 999; pointer-events: none; opacity: 0.15; background-image: repeating-radial-gradient(circle at 50% 50%, #000 0, #000 2px, transparent 2px, transparent 100%); background-size: 4px 4px; }
+    
+    .bg-uncle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-90deg); font-size: 450px; font-weight: 900; color: transparent; -webkit-text-stroke: 8px #000000; opacity: 0.3; line-height: 0.8; z-index: 1; letter-spacing: -10px; }
+
+    .brutal-title { font-size: 140px; font-weight: 900; text-transform: uppercase; line-height: 0.85; letter-spacing: -4px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 1000px; text-align: center; z-index: 10; }
+    
+    .outline-text { color: transparent; -webkit-text-stroke: 4px #000000; }
+  </style>
+  <div data-hf-id="hf-syfc" id="root" data-composition-id="04-the-turn" data-duration="4.5" data-width="1080" data-height="1920">
+    <div data-hf-id="hf-h60x" class="grain"></div>
+    <div data-hf-id="hf-fbro" class="bg-uncle" id="bguncle">UNCLE</div>
+    <div data-hf-id="hf-ydb7" class="brutal-title" id="hero">
+      BUT HE'S<br data-hf-id="hf-x5px">TALKING<br data-hf-id="hf-rsrt"><span data-hf-id="hf-5m6c" class="outline-text">TO...</span>
+    </div>
+  </div>
+  <script>
+    (function() {
+      const tl = gsap.timeline();
+      
+      tl.fromTo('#bguncle', {scale: 3, opacity: 0}, {scale: 1, opacity: 0.3, duration: 0.3, ease: 'back.out(1.5)'}, 0.1);
+      tl.fromTo('#hero', {x: -2000}, {x: 0, duration: 0.2, ease: 'back.out(1.2)'}, 0.3);
+      
+      tl.fromTo('#hero', {x: -20, skewX: 20}, {x: 0, skewX: 0, duration: 0.1, ease: 'none'}, 0.6);
+
+      window.__timelines['04-the-turn'] = tl;
+    })();
+  </script>
+</template>

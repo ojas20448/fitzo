@@ -1,3 +1,4 @@
+const { query } = require('../config/database');
 /**
  * Food API Routes
  * Priority: Indian Foods (local + IFCT2017) > Open Food Facts > API Ninjas > USDA > FatSecret
@@ -321,6 +322,30 @@ router.post('/barcode', authenticate, asyncHandler(async (req, res) => {
             message: error.message
         });
     }
+}));
+
+
+router.post('/bulk-resolve', authenticate, aiQuota, asyncHandler(async (req, res) => {
+    const { items } = req.body;
+    if (!Array.isArray(items)) return res.status(400).json({ error: 'items must be an array' });
+    const results = [];
+    for (const { item, quantity } of items) {
+        const searchQuery = `${quantity} ${item}`.trim();
+        const searchRes = indianFood.searchFoods(searchQuery, 1);
+        const bestMatch = searchRes.foods && searchRes.foods.length > 0 ? searchRes.foods[0] : null;
+        
+        if (bestMatch) {
+            results.push({ ...bestMatch, is_estimate: false, source: 'catalog', original_query: searchQuery });
+        } else {
+            const aiEstimated = await geminiService.analyzeFoodFromText(searchQuery);
+            const queryRes = await query(
+                `INSERT INTO user_foods (user_id, name, calories, protein, carbs, fat) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+                [req.user.id, aiEstimated.name || searchQuery, aiEstimated.calories, aiEstimated.protein_g, aiEstimated.carbs_g, aiEstimated.fat_g]
+            );
+            results.push({ ...aiEstimated, id: queryRes.rows[0].id, is_estimate: true, source: 'ai_estimate', user_food_id: queryRes.rows[0].id, original_query: searchQuery });
+        }
+    }
+    return res.json({ success: true, items: results });
 }));
 
 module.exports = router;

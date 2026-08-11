@@ -1,0 +1,39 @@
+<template id="01-hook">
+    <style>
+        @font-face { font-family: 'Lexend'; src: url('assets/fonts/Lexend-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
+        
+        #root { width: 1080px; height: 1920px; background: #000000; position: relative; overflow: hidden; font-family: 'Lexend', sans-serif; color: #FFFFFF; }
+        
+        .grain { position: absolute; inset: 0; z-index: 999; pointer-events: none; opacity: 0.15; background-image: repeating-radial-gradient(circle at 50% 50%, #000 0, #000 2px, transparent 2px, transparent 100%); background-size: 4px 4px; }
+        
+        .hook-container { position: absolute; top: 50%; left: 0; width: 1080px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+        
+        .word { font-size: 160px; font-weight: 900; text-transform: uppercase; line-height: 0.85; letter-spacing: -5px; text-align: center; opacity: 0; will-change: transform, opacity; }
+        .red-text { color: #FF2A2A; text-shadow: 10px 10px 0px #FFFFFF; }
+        .white-text { color: #FFFFFF; text-shadow: 10px 10px 0px #FF2A2A; }
+    </style>
+    <div id="root" data-composition-id="01-hook" data-duration="4.0" data-width="1080" data-height="1920">
+        <div class="grain"></div>
+        <div class="hook-container">
+            <div class="word red-text" id="w1">STOP</div>
+            <div class="word white-text" id="w2">CHANGING</div>
+            <div class="word white-text" id="w3">YOUR</div>
+            <div class="word red-text" id="w4">WORKOUTS</div>
+        </div>
+    </div>
+    <script>
+        (function() {
+            const tl = gsap.timeline();
+            
+            gsap.set('.hook-container', { yPercent: -50 });
+            
+            // Slam each word in
+            tl.fromTo('#w1', {scale: 4, opacity: 0}, {scale: 1, opacity: 1, duration: 0.2, ease: 'back.out(2)'}, 0.2);
+            tl.fromTo('#w2', {scale: 4, opacity: 0}, {scale: 1, opacity: 1, duration: 0.2, ease: 'back.out(2)'}, 0.5);
+            tl.fromTo('#w3', {scale: 4, opacity: 0}, {scale: 1, opacity: 1, duration: 0.2, ease: 'back.out(2)'}, 0.8);
+            tl.fromTo('#w4', {scale: 4, opacity: 0}, {scale: 1, opacity: 1, duration: 0.2, ease: 'back.out(2)'}, 1.1);
+            
+            window.__timelines['01-hook'] = tl;
+        })();
+    </script>
+</template>

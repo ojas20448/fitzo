@@ -1,0 +1,44 @@
+<template id="04-solution">
+    <style>
+        @font-face { font-family: 'Lexend'; src: url('assets/fonts/Lexend-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
+        
+        #root { width: 1080px; height: 1920px; background: #FF6B35; position: relative; overflow: hidden; font-family: 'Lexend', sans-serif; color: #000000; }
+        
+        .grain { position: absolute; inset: 0; z-index: 999; pointer-events: none; opacity: 0.2; background-image: repeating-radial-gradient(circle at 50% 50%, #000 0, #000 2px, transparent 2px, transparent 100%); background-size: 4px 4px; }
+        
+        .container { position: absolute; top: 50%; left: 50%; width: 1000px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 40px; }
+        
+        .sub-text { font-size: 100px; font-weight: 900; text-transform: uppercase; line-height: 1.0; letter-spacing: -2px; color: #000000; opacity: 0; }
+        .big-text { font-size: 130px; font-weight: 900; text-transform: uppercase; line-height: 0.85; letter-spacing: -3px; color: #FFFFFF; text-shadow: 20px 20px 0px #000000; opacity: 0; transform-origin: center center; }
+        .flash { position: absolute; inset: 0; background: #FFFFFF; z-index: 900; opacity: 0; pointer-events: none; }
+    </style>
+    <div id="root" data-composition-id="04-solution" data-duration="4.0" data-width="1080" data-height="1920">
+        <div class="grain"></div>
+        <div class="flash" id="flash"></div>
+        <div class="container" id="solution-container">
+            <div class="sub-text" id="s1">They respond</div>
+            <div class="sub-text" id="s2">to ONE thing:</div>
+            <div class="big-text" id="b1">PROGRESSIVE</div>
+            <div class="big-text" id="b2">OVERLOAD</div>
+        </div>
+    </div>
+    <script>
+        (function() {
+            const tl = gsap.timeline();
+            
+            gsap.set('#solution-container', { xPercent: -50, yPercent: -50 });
+            
+            tl.fromTo('#s1', {opacity: 0, y: 50}, {opacity: 1, y: 0, duration: 0.2, ease: 'none'}, 0.2);
+            tl.fromTo('#s2', {opacity: 0, y: 50}, {opacity: 1, y: 0, duration: 0.2, ease: 'none'}, 0.6);
+            
+            // Boom
+            tl.fromTo('#b1', {scale: 4, opacity: 0}, {scale: 1, opacity: 1, duration: 0.2, ease: 'back.out(1.5)'}, 1.2);
+            tl.fromTo('#b2', {scale: 4, opacity: 0}, {scale: 1, opacity: 1, duration: 0.2, ease: 'back.out(1.5)'}, 1.6);
+            
+            // Screen flash
+            tl.fromTo('#flash', {opacity: 1}, {opacity: 0, duration: 0.3}, 1.6);
+            
+            window.__timelines['04-solution'] = tl;
+        })();
+    </script>
+</template>

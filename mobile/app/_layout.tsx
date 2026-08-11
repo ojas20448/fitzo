@@ -181,7 +181,6 @@ export default function RootLayout() {
                                 <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
                                 <Stack.Screen name="onboarding" options={{ animation: 'slide_from_right' }} />
                                 <Stack.Screen name="manager-dashboard" options={{ animation: 'fade' }} />
-                                <Stack.Screen name="trainer-home" options={{ animation: 'fade' }} />
                                 <Stack.Screen name="qr-checkin" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="workout-intent" />
                                 <Stack.Screen name="workout-videos" />
@@ -209,7 +208,6 @@ export default function RootLayout() {
                                 <Stack.Screen name="member/user-profile" />
                                 <Stack.Screen name="member/buddy-activity" />
                                 <Stack.Screen name="member/squad-feed" options={{ animation: 'slide_from_right' }} />
-                                <Stack.Screen name="member-detail/[id]" />
                                 <Stack.Screen name="lesson/[id]" />
                                 <Stack.Screen name="log/calories" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="log/workout" options={{ animation: 'slide_from_bottom' }} />

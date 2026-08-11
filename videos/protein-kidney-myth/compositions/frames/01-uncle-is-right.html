@@ -1,0 +1,37 @@
+<template id="01-uncle-is-right">
+  <style>
+    @font-face { font-family: 'Lexend'; src: url('assets/fonts/Lexend-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
+    @font-face { font-family: 'Lexend'; src: url('assets/fonts/Lexend-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: block; }
+    
+    #root { width: 1080px; height: 1920px; background: #000000; position: relative; overflow: hidden; font-family: 'Lexend', sans-serif; color: #FFFFFF; }
+    
+    .grain { position: absolute; inset: 0; z-index: 999; pointer-events: none; opacity: 0.15; background-image: repeating-radial-gradient(circle at 50% 50%, #000 0, #000 2px, transparent 2px, transparent 100%); background-size: 4px 4px; }
+    
+    .brutal-title { font-size: 140px; font-weight: 900; text-transform: uppercase; line-height: 0.85; letter-spacing: -4px; position: absolute; width: 1080px; text-align: center; top: 50%; left: 0; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    
+    .outline-text { color: transparent; -webkit-text-stroke: 4px #FFFFFF; }
+    .orange-text { color: #FF6B35; }
+    .word { will-change: transform; display: block; margin-bottom: 20px;}
+  </style>
+  <div data-hf-id="hf-7g1r" id="root" data-composition-id="01-uncle-is-right" data-duration="2.5" data-width="1080" data-height="1920">
+    <div data-hf-id="hf-h60x" class="grain"></div>
+    <div data-hf-id="hf-hg23" class="brutal-title" id="hero">
+      <div data-hf-id="hf-qtt5" class="word" id="w1">YOUR</div>
+      <div data-hf-id="hf-0422" class="word outline-text" id="w2">UNCLE</div>
+      <div data-hf-id="hf-3oxg" class="word orange-text" id="w3">IS RIGHT</div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      const tl = gsap.timeline();
+      
+      tl.fromTo('#w1', {x: -2000}, {x: 0, duration: 0.2, ease: 'back.out(1.2)'}, 0.1);
+      tl.fromTo('#w2', {x: 2000}, {x: 0, duration: 0.2, ease: 'back.out(1.2)'}, 0.3);
+      tl.fromTo('#w3', {scale: 3, opacity: 0}, {scale: 1, opacity: 1, duration: 0.2, ease: 'back.out(1.2)'}, 0.5);
+
+      tl.fromTo('#hero', {x: -20, skewX: 20}, {x: 0, skewX: 0, duration: 0.1, ease: 'none'}, 0.8);
+      
+      window.__timelines['01-uncle-is-right'] = tl;
+    })();
+  </script>
+</template>

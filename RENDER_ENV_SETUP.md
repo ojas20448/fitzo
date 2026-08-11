@@ -9,8 +9,8 @@ Go to: https://dashboard.render.com → Select 'fitzo' backend → Environment t
 ### Essential Variables
 
 ```
-DATABASE_URL=postgresql://postgres.pieyjxokfjvsnfygblmv:jitJNCS1TGkyWab5@aws-1-ap-south-1.pooler.supabase.com:5432/postgres
-JWT_SECRET=your-super-secret-key-change-in-production-minimum-32-chars
+DATABASE_URL=<REDACTED>
+JWT_SECRET=<REDACTED>
 NODE_ENV=production
 PORT=3001
 CORS_ORIGIN=*
@@ -19,19 +19,19 @@ CORS_ORIGIN=*
 ### API Keys (Required for Food Search & AI)
 
 ```
-GEMINI_API_KEY=AIzaSyDg7Q9wjtc7kWn2sJBk-Wip2Zerpcnw4fE
-FATSECRET_CLIENT_ID=f8a9b76d66aa432098acdd703a4a17a0
-FATSECRET_CLIENT_SECRET=2d83c8a073db48eaa29f75cced1714c7
-USDA_API_KEY=qznVri73qSDmwb9tiadFC1Qbe8aO45w7gjcPohA1
-RAPIDAPI_KEY=a2fd290823msh7ac3463cfd94a54p102f99jsn08cf65848b9a
+GEMINI_API_KEY=<REDACTED>
+FATSECRET_CLIENT_ID=<REDACTED>
+FATSECRET_CLIENT_SECRET=<REDACTED>
+USDA_API_KEY=<REDACTED>
+RAPIDAPI_KEY=<REDACTED>
 ```
 
 ### Google OAuth (Required for Google Sign-In on iOS TestFlight / Android / Web)
 
 ```
-GOOGLE_CLIENT_ID_WEB=1030039443378-ek0r7ar68qfjga2dmj5inr7e715g5c1f.apps.googleusercontent.com
-GOOGLE_CLIENT_ID_IOS=1030039443378-k15ujl968cs24u1t6ln06oaapudt03e2.apps.googleusercontent.com
-GOOGLE_CLIENT_ID_ANDROID=1030039443378-u3vdk2fq3ebu90sv2okvimbta1rs2d7v.apps.googleusercontent.com
+GOOGLE_CLIENT_ID_WEB=<REDACTED>
+GOOGLE_CLIENT_ID_IOS=<REDACTED>
+GOOGLE_CLIENT_ID_ANDROID=<REDACTED>
 ```
 
 ---

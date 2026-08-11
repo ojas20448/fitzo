@@ -228,6 +228,19 @@ CREATE INDEX idx_workout_log_visibility ON workout_logs(visibility, logged_date 
 -- ===========================================
 -- CALORIE LOGS TABLE (Member calorie tracking)
 -- ===========================================
+
+CREATE TABLE user_foods (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  calories INTEGER NOT NULL,
+  protein NUMERIC(5, 1) NOT NULL,
+  carbs NUMERIC(5, 1) NOT NULL,
+  fat NUMERIC(5, 1) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX idx_user_foods_user_id ON user_foods(user_id);
+
 CREATE TABLE calorie_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -240,6 +253,10 @@ CREATE TABLE calorie_logs (
   meal_type VARCHAR(50),
   visibility intent_visibility DEFAULT 'friends',
   logged_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  -- Provenance: was this an AI macro estimate, and which private user_foods
+  -- row backs it? Lets the app mark estimates as approximate after the fact.
+  is_estimate BOOLEAN DEFAULT false,
+  user_food_id UUID REFERENCES user_foods(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

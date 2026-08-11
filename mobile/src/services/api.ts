@@ -783,6 +783,7 @@ export const caloriesAPI = {
 // ===========================================
 
 export const foodAPI = {
+  bulkResolve: async (items: any[]) => { const res = await api.post('/food/bulk-resolve', { items }); return res.data; },
     search: async (query: string, page = 0, limit = 20) => {
         const response = await api.get(`/food/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
         return response.data;
@@ -945,6 +946,8 @@ export const recipesAPI = {
 // ===========================================
 
 export const aiAPI = {
+  extractFoods: async (text: string) => { const res = await api.post('/ai/extract-foods', { text }); return res.data; },
+  extractWorkout: async (text: string) => { const res = await api.post('/ai/extract-workout', { text }); return res.data; },
     generateWorkoutPlan: async (profile: any) => {
         const response = await api.post('/ai/workout-plan', profile, { timeout: 60000 });
         return response.data;

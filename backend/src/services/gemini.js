@@ -23,10 +23,45 @@ KEY CONTEXT - INDIAN FOOD & CULTURE:
 - Regional variations: South Indian (dosa/idli/uttapam), North Indian (roti/paratha/naan), Bengali (fish/mishti), Gujarati (dhokla/thepla)
 - Understand serving sizes in Indian context: "1 katori" (bowl ~150ml), "1 roti" (~80-100cal), "1 plate" rice (~200g cooked)`;
 
-// Helper: extract JSON from Gemini response
+/**
+ * Extract a JSON payload from a Gemini response.
+ *
+ * Handles both objects AND arrays. The previous implementation used
+ * /\{[\s\S]*\}/ as its fallback, which is object-only: given the bare array
+ * our extraction prompts ask for (`[{...},{...}]`) it sliced off the outer
+ * brackets and produced invalid JSON — so every multi-item voice log threw.
+ *
+ * Strategy: strip any code fence (labelled or not, CRLF-safe), then slice
+ * from the first bracket to its matching last bracket, preferring whichever
+ * of `[` / `{` appears first.
+ */
 function extractJSON(text) {
-    const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/\{[\s\S]*\}/);
-    return jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : text;
+    if (typeof text !== 'string') return '';
+
+    // Remove ```json ... ``` or ``` ... ``` wrappers anywhere in the response
+    let cleaned = text.replace(/```[a-zA-Z]*\s*([\s\S]*?)```/g, '$1').trim();
+
+    const firstBrace = cleaned.indexOf('{');
+    const firstBracket = cleaned.indexOf('[');
+
+    // Pick whichever container starts first (arrays are the common case here)
+    let openIdx;
+    let closeChar;
+    if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
+        openIdx = firstBracket;
+        closeChar = ']';
+    } else if (firstBrace !== -1) {
+        openIdx = firstBrace;
+        closeChar = '}';
+    } else {
+        return cleaned; // no JSON container found — let the caller's parse fail loudly
+    }
+
+    const closeIdx = cleaned.lastIndexOf(closeChar);
+    if (closeIdx > openIdx) {
+        return cleaned.slice(openIdx, closeIdx + 1);
+    }
+    return cleaned;
 }
 
 // ===========================================
@@ -438,6 +473,80 @@ async function transcribeAudio(base64Data, mimeType) {
     }
 }
 
+async function extractWorkoutFromText(text) {
+    const prompt = `Extract all exercises and their sets from the following text describing a workout.
+Return ONLY a valid JSON array of objects (no markdown, no code fences).
+Each object must have:
+- "name" (string, the exercise name)
+- "is_unilateral" (boolean, true if it's a single-arm/leg movement)
+- "sets" (array of objects, each with "reps" (number), "weight_kg" (number), "rir" (number, default 0 if not mentioned))
+
+Example:
+Text: "I did 3 sets of bench press 60kg for 10 reps, and 2 sets of bicep curls 15kg for 12 reps."
+Output: [{"name": "Bench Press", "is_unilateral": false, "sets": [{"reps": 10, "weight_kg": 60, "rir": 0}, {"reps": 10, "weight_kg": 60, "rir": 0}, {"reps": 10, "weight_kg": 60, "rir": 0}]}, {"name": "Bicep Curls", "is_unilateral": false, "sets": [{"reps": 12, "weight_kg": 15, "rir": 0}, {"reps": 12, "weight_kg": 15, "rir": 0}]}]
+
+Text: ${JSON.stringify(text)}`;
+
+    let responseText = '';
+    try {
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-2.5-flash',
+            generationConfig: { responseMimeType: 'application/json' },
+        });
+        const result = await model.generateContent(prompt);
+        responseText = (await result.response).text();
+    } catch (error) {
+        console.error('Gemini workout extraction call failed:', error.message);
+        throw new Error('Could not reach the AI service. Please try again.');
+    }
+
+    // Parse failures are separated from network failures so logs say which
+    // happened, and so a weird model reply degrades instead of 500-ing.
+    try {
+        const parsed = JSON.parse(extractJSON(responseText));
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.error('Gemini workout extraction returned unparseable output:', responseText.slice(0, 300));
+        return [];
+    }
+}
+
+// ===========================================
+// FOOD ITEMS TEXT EXTRACTION
+// ===========================================
+async function extractItemsFromText(text) {
+    const prompt = `Extract all food items and their quantities or portion sizes from the following text.
+Return ONLY a valid JSON array of objects (no markdown, no code fences).
+Each object must have "item" (string) and "quantity" (string).
+Do NOT include macros, just the raw text extraction.
+
+Example:
+Text: "I ate 250g of paneer tikka and 2 plates of biryani"
+Output: [{"item": "paneer tikka", "quantity": "250g"}, {"item": "biryani", "quantity": "2 plates"}]
+
+Text: ${JSON.stringify(text)}`;
+
+    let responseText = '';
+    try {
+        const model = genAI.getGenerativeModel({
+            model: 'gemini-2.5-flash',
+            generationConfig: { responseMimeType: 'application/json' },
+        });
+        const result = await model.generateContent(prompt);
+        responseText = (await result.response).text();
+    } catch (error) {
+        console.error('Gemini food extraction call failed:', error.message);
+        throw new Error('Could not reach the AI service. Please try again.');
+    }
+
+    try {
+        const parsed = JSON.parse(extractJSON(responseText));
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.error('Gemini food extraction returned unparseable output:', responseText.slice(0, 300));
+        return [];
+    }
+}
 module.exports = {
     generateWorkoutPlan,
     getNutritionAdvice,
@@ -445,5 +554,7 @@ module.exports = {
     analyzeForm,
     analyzeFoodFromText,
     analyzeFoodFromPhoto,
-    transcribeAudio
+    transcribeAudio,
+    extractItemsFromText,
+    extractWorkoutFromText
 };

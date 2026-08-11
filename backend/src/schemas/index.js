@@ -180,9 +180,22 @@ const aiFormAnalysisSchema = z.object({
     description: z.string().min(1, 'Form description is required').max(2000),
 });
 
+// Gemini accepts only these audio MIME types. The client records .m4a, whose
+// correct type is audio/mp4 — sending "audio/m4a" made every recording 400.
 const aiTranscribeSchema = z.object({
-    audio: z.string().min(1, 'Audio base64 is required'),
-    mimeType: z.string().min(1, 'Mime type is required'),
+    // ~3MB base64 ≈ 2MB audio ≈ 2 min of speech: plenty for a log, and it caps
+    // both the Gemini bill and the request body.
+    audio: z.string().min(1, 'Audio is required').max(3_000_000, 'Recording too long — keep it under 2 minutes'),
+    mimeType: z.enum(
+        ['audio/mp4', 'audio/aac', 'audio/wav', 'audio/mp3', 'audio/mpeg', 'audio/ogg', 'audio/flac'],
+        { message: 'Unsupported audio format' }
+    ),
+});
+
+// Free-text → structured items/sets. Bounded so a runaway transcript can't be
+// piped into a paid model.
+const aiExtractSchema = z.object({
+    text: z.string().trim().min(1, 'Nothing to read').max(2000, 'That was too long — try a shorter note'),
 });
 
 module.exports = {
@@ -216,4 +229,5 @@ module.exports = {
     aiWorkoutPlanSchema,
     aiFormAnalysisSchema,
     aiTranscribeSchema,
+    aiExtractSchema,
 };

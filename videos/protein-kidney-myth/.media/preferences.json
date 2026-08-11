@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "preferences": {
+    "destination": {
+      "value": "instagram-reels",
+      "confirmed_in": [
+        "protein-kidney-myth"
+      ],
+      "updated_at": "2026-08-07T23:21:47.279Z"
+    },
+    "aspect": {
+      "value": "1080x1920",
+      "confirmed_in": [
+        "protein-kidney-myth"
+      ],
+      "updated_at": "2026-08-07T23:21:47.369Z"
+    },
+    "language": {
+      "value": "en",
+      "confirmed_in": [
+        "protein-kidney-myth"
+      ],
+      "updated_at": "2026-08-07T23:21:47.466Z"
+    },
+    "flow": {
+      "value": "automation",
+      "confirmed_in": [
+        "protein-kidney-myth"
+      ],
+      "updated_at": "2026-08-07T23:21:47.556Z"
+    },
+    "storyboard": {
+      "value": "no",
+      "confirmed_in": [
+        "protein-kidney-myth"
+      ],
+      "updated_at": "2026-08-07T23:21:47.647Z"
+    },
+    "style_preset.faceless-explainer": {
+      "value": "broadside",
+      "confirmed_in": [
+        "protein-kidney-myth"
+      ],
+      "updated_at": "2026-08-07T23:23:48.137Z"
+    }
+  },
+  "sightings": {}
+}

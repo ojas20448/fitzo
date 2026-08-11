@@ -3,10 +3,14 @@ const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 
+// Order matters: migrate_calorie_logs_source adds an FK to user_foods, so
+// the table must exist first.
 const MIGRATIONS = [
     'migrate_nutrition_profile.sql',
     'migrate_recipes.sql',
-    'migrate_published_splits.sql'
+    'migrate_published_splits.sql',
+    'migrate_user_foods.sql',
+    'migrate_calorie_logs_source.sql'
 ];
 
 async function runMigrations() {

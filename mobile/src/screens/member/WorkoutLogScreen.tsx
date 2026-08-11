@@ -21,10 +21,13 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { workoutsAPI, settingsAPI } from '../../services/api';
+import { workoutsAPI, settingsAPI, aiAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import ExerciseList from '../../components/ExerciseList';
+import { WorkoutDraftSheet } from '../../components/WorkoutDraftSheet';
 import { useToast } from '../../components/Toast';
+import VoiceCaptureSheet from '../../components/VoiceCaptureSheet';
+import { useVoiceCapture } from '../../hooks/useVoiceCapture';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import {
     ScrollWheelPicker,
@@ -136,6 +139,33 @@ const WorkoutLogScreen: React.FC = () => {
     // Optional RIR logging — opt-in via Settings
     const [showRir, setShowRir] = useState(false);
     const [showPrefsSheet, setShowPrefsSheet] = useState(false);
+
+    const [showDraftSheet, setShowDraftSheet] = useState(false);
+    const [draftItems, setDraftItems] = useState<any[]>([]);
+    const [voiceSheetOpen, setVoiceSheetOpen] = useState(false);
+
+    const voice = useVoiceCapture({
+        mode: 'workout',
+        onResult: (items) => {
+            setVoiceSheetOpen(false);
+            setDraftItems(items);
+            setShowDraftSheet(true);
+        },
+        onError: (title, message) => {
+            setVoiceSheetOpen(false);
+            toast.error(title, message);
+        },
+    });
+
+    const openVoice = async () => {
+        setVoiceSheetOpen(true);
+        await voice.start();
+    };
+
+    const cancelVoice = async () => {
+        await voice.cancel();
+        setVoiceSheetOpen(false);
+    };
 
     useEffect(() => {
         loadSharingPreference();
@@ -681,15 +711,30 @@ const WorkoutLogScreen: React.FC = () => {
                     <MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
                 </TouchableOpacity>
 
-                {/* Add Exercise Ghost Button */}
-                <TouchableOpacity
-                    style={styles.addExerciseBtn}
-                    onPress={() => setShowPicker(true)}
-                    activeOpacity={0.7}
-                >
-                    <MaterialIcons name="add" size={20} color={colors.text.muted} />
-                    <Text style={styles.addExerciseText}>Add Exercise</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
+                    <TouchableOpacity
+                        style={[styles.addExerciseBtn, { flex: 1, marginTop: 0 }]}
+                        onPress={() => setShowPicker(true)}
+                        activeOpacity={0.7}
+                    >
+                        <MaterialIcons name="add" size={20} color={colors.text.muted} />
+                        <Text style={styles.addExerciseText}>Add Exercise</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.addExerciseBtn, { width: 60, marginTop: 0 }]}
+                        onPress={openVoice}
+                        disabled={voice.isBusy}
+                        activeOpacity={0.7}
+                        accessibilityLabel="Log exercises by voice"
+                    >
+                        {voice.isBusy ? (
+                            <ActivityIndicator size="small" color={colors.primary} />
+                        ) : (
+                            <MaterialIcons name="mic" size={20} color={colors.text.muted} />
+                        )}
+                    </TouchableOpacity>
+                </View>
             </View>
         ),
         // footerHeight must be here: it is measured after first layout, and
@@ -704,6 +749,30 @@ const WorkoutLogScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <VoiceCaptureSheet
+                visible={voiceSheetOpen}
+                stage={voice.stage}
+                durationLabel={voice.durationLabel}
+                durationProgress={voice.durationProgress}
+                hint={'Say it like you would to a friend — "3 sets of bench press at 60 kilos, 10 reps"'}
+                onCancel={cancelVoice}
+                onDone={voice.stopAndProcess}
+            />
+
+            <WorkoutDraftSheet
+                visible={showDraftSheet}
+                onClose={() => setShowDraftSheet(false)}
+                items={draftItems}
+                onConfirm={(added) => {
+                    const enhanced = added.map(ex => ({
+                        ...ex,
+                        id: Math.random().toString(),
+                        sets: ex.sets.map(s => ({...s, id: Math.random().toString(), completed: false}))
+                    }));
+                    setUserExercises(prev => [...prev, ...enhanced as any]);
+                    setShowDraftSheet(false);
+                }}
+            />
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.headerBtn}>

@@ -1,0 +1,84 @@
+TOPIC
+=====
+The Indian WhatsApp forward: "Protein powder se kidney fail ho jaata hai."
+("Protein powder causes kidney failure.")
+
+AUDIENCE
+========
+Indians who train, or want to, and their families. Specifically the person who
+has been talked out of protein by a relative forwarding a health message. Many
+are vegetarian and already well below their protein target.
+
+WHY THIS MYTH IS DIFFERENT FROM MOST
+====================================
+It is half true, and that is exactly why it spreads and why it is hard to
+dislodge. Protein restriction is genuine, mainstream medical advice — for
+people with existing chronic kidney disease. That advice, written for a sick
+population, got generalised into a warning for everybody. The correction is
+therefore not "your uncle is wrong" but "your uncle is repeating real advice
+that was never written for you."
+
+THE EVIDENCE (what may and may not be claimed)
+==============================================
+MAY be claimed:
+- In people with healthy kidneys, long-term studies of resistance-trained
+  adults eating high protein have found no damage to kidney function.
+- The 0.8 g/kg figure people cite is a minimum to prevent deficiency, not a
+  ceiling or a safety limit.
+- People training regularly are generally advised 1.6–2.2 g/kg.
+- Whey is a milk derivative. Protein powder is food in powder form, not a drug
+  and not a steroid. Paneer, dahi, dal and eggs are the same macronutrient.
+- Creatine supplementation raises serum creatinine, a marker used in kidney
+  panels, WITHOUT indicating kidney damage. This is a common cause of alarming
+  blood reports among people who lift, and it is a measurement artefact rather
+  than a disease.
+
+MUST NOT be claimed:
+- That protein is safe for everyone. It is not a claim the evidence supports
+  and it is not the claim this video makes.
+- That anyone should ignore, delay or override medical advice.
+- Anything that would read as reassurance to a person who already has reduced
+  kidney function.
+
+REQUIRED CAVEAT (non-negotiable, gets its own scene)
+====================================================
+Anyone with existing kidney disease, diabetes, or high blood pressure should
+have their protein intake guided by a doctor. The video must state this
+plainly, at full size, not as fine print. A viewer with early kidney disease
+must not come away thinking this video was addressed to them.
+
+THE GAP THE CTA POINTS AT
+=========================
+The practical problem in India is not excess protein — it is deficit. A typical
+vegetarian day of poha, dal-rice-sabzi, chai and roti-sabzi lands around
+40–50 g of protein. A 70 kg person training four days a week wants roughly
+110–150 g. Most people miss the target by about half. The myth makes that gap
+wider by scaring people away from the easiest tool for closing it.
+
+APPROVED 10-SCENE SCRIPT (user-confirmed; on-screen text)
+=========================================================
+1. "Your uncle is right."           sub: Protein does damage kidneys.
+2. WhatsApp bubble, "Forwarded many times":
+   "Protein powder se kidney fail ho jaata hai 🙏"
+3. "That advice is real."           sub: A doctor wrote it.
+4. TURN. Prescription slip, patient name lights up:
+   "For people who already have kidney disease."   sub: Not for you.
+5. "Advice for the sick"  →  "became a warning for everyone."
+6. "Healthy kidneys. High protein."  "No damage found."
+   sub: long-term studies, trained adults
+7. "Kidney disease? Diabetes? High BP?"  "Then ask your doctor."
+   sub: This one's not for you either.
+8. "Creatine raises creatinine."  "That's a marker. Not damage."
+9. "Most Indians don't overshoot protein."  "They miss it by half."
+10. CTA. Fitzo — track what you actually eat.
+    "Which forward next? 👇"
+
+STRUCTURAL NOTES
+================
+- The hook agrees with the viewer. That is the pattern interrupt.
+- Scene 3 opens a loop ("that advice is real") that scene 4 closes.
+- The colour flips at scene 4, the turn.
+- Scene 8 is the comment-driver: it explains why a lifter's blood report can
+  look alarming when nothing is wrong.
+- Scene 7 is the trust beat. A video that admits who it is not for is the one
+  people believe.
