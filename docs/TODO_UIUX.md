@@ -97,9 +97,9 @@ This document outlines all identified UI/UX issues and improvement opportunities
 - [ ] **BDG_002**: Icon positioning is inconsistent with text alignment
 
 ### WeeklyProgress Component
-- [ ] **WKP_001**: Static weekly target (hardcoded 4) - should come from user settings
-- [ ] **WKP_002**: No animation on progress changes
-- [ ] **WKP_003**: Check icon inside small dot is hard to see
+- [x] **WKP_001**: Static weekly target (hardcoded 4) - should come from user settings ✅ Fixed
+- [x] **WKP_002**: No animation on progress changes ✅ Fixed
+- [x] **WKP_003**: Check icon inside small dot is hard to see ✅ Fixed
 - [ ] **WKP_004**: Past week data not visible - can't see historical trends
 
 ### NutritionAnalytics Component
