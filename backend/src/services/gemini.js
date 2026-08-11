@@ -5,6 +5,16 @@ if (!process.env.GEMINI_API_KEY) {
 }
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// The model name lives in ONE place, and is env-overridable.
+//
+// Google retires model IDs over time: `gemini-2.5-flash` became unavailable to
+// newly-created API keys, so the moment the key was rotated EVERY AI feature
+// (coach, voice logging, food analysis, daily insights, weekly recaps) started
+// returning 500s — with no obvious link between "I rotated a key" and "the AI
+// died". The "-latest" alias tracks the current Flash generation so a future
+// retirement can't do that again. Set GEMINI_MODEL to pin an exact version.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+
 // ===========================================
 // SHARED: Indian/Hinglish-aware system context
 // ===========================================
@@ -137,7 +147,7 @@ Format the response as JSON with this structure:
 }`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
@@ -179,7 +189,7 @@ Format as JSON:
 }`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
@@ -277,7 +287,7 @@ User's current question: ${question}
 Provide your expert coaching advice:`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         return response.text();
@@ -302,7 +312,7 @@ Provide:
 Keep it brief and actionable.`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         return response.text();
@@ -342,7 +352,7 @@ Return ONLY valid JSON (no markdown, no code fences) with this exact structure:
 }`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const responseText = response.text();
@@ -403,7 +413,7 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
 }`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
         const imagePart = {
             inlineData: {
@@ -455,7 +465,7 @@ async function transcribeAudio(base64Data, mimeType) {
     const prompt = "Transcribe the spoken audio in this file. Provide only the text transcription, matching the languages spoken (usually English or Hinglish). Do not add any introduction, greeting, or explanation.";
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
         const result = await model.generateContent([
             {
                 inlineData: {
@@ -490,7 +500,7 @@ Text: ${JSON.stringify(text)}`;
     let responseText = '';
     try {
         const model = genAI.getGenerativeModel({
-            model: 'gemini-2.5-flash',
+            model: GEMINI_MODEL,
             generationConfig: { responseMimeType: 'application/json' },
         });
         const result = await model.generateContent(prompt);
@@ -529,7 +539,7 @@ Text: ${JSON.stringify(text)}`;
     let responseText = '';
     try {
         const model = genAI.getGenerativeModel({
-            model: 'gemini-2.5-flash',
+            model: GEMINI_MODEL,
             generationConfig: { responseMimeType: 'application/json' },
         });
         const result = await model.generateContent(prompt);
