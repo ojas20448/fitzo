@@ -70,16 +70,28 @@ function bmiCategory(bmi: number) {
     return { label: 'Obese', color: '#EF4444' };
 }
 
-const TOTAL_STEPS = 6;
+/**
+ * Onboarding is two screens, deliberately.
+ *
+ * It used to be six: body stats, goal, activity, blueprint, training split,
+ * health connect. Only the first three collect anything the app cannot run
+ * without — the blueprint is a read-only reveal, and the split and Health
+ * Connect are both changeable later from Workouts and Settings respectively.
+ * Four screens of that was a wall between signup and the first logged set.
+ *
+ * Now: stats, then goal + activity + the blueprint reveal on one screen.
+ * Split and Health Connect moved out and are offered in-app afterwards.
+ */
+const TOTAL_STEPS = 2;
 
 // ─── Step metadata ───────────────────────────────────────────────────────────
 const STEP_META: Record<number, { icon: keyof typeof MaterialIcons.glyphMap; purpose: string }> = {
     1: { icon: 'straighten', purpose: "Let's get to know your body" },
-    2: { icon: 'flag', purpose: "Define what you're working towards" },
+    2: { icon: 'auto-graph', purpose: 'Your goal, and the plan that follows from it' },
+    // Retained: renderStep3/4 still read STEP_META[3] and [4] for their
+    // sub-section headers now that they are composed into step 2.
     3: { icon: 'directions-run', purpose: "Let's calculate your daily needs" },
     4: { icon: 'auto-graph', purpose: 'Your personalised nutrition blueprint' },
-    5: { icon: 'calendar-today', purpose: 'Choose how you want to train' },
-    6: { icon: 'watch', purpose: 'Sync your health data automatically' },
 };
 
 // ─── Animated Chip Selector ──────────────────────────────────────────────────
@@ -135,6 +147,138 @@ const chip = StyleSheet.create({
 });
 
 // ─── Number input ─────────────────────────────────────────────────────────────
+/**
+ * HeightInput — cm by default, switchable to ft/in.
+ *
+ * The canonical value stays centimetres (that is what the backend stores and
+ * what BMI/TDEE are computed from); feet and inches are a display layer that
+ * converts on the way in and out. The imperial half keeps its own local ft/in
+ * text so a half-typed value like 5' with an empty inches box doesn't get
+ * rounded away mid-keystroke.
+ */
+function HeightInput({ valueCm, onChangeCm, unit, onToggleUnit }: {
+    valueCm: string;
+    onChangeCm: (v: string) => void;
+    unit: 'cm' | 'ft';
+    onToggleUnit: (u: 'cm' | 'ft') => void;
+}) {
+    const [ft, setFt] = useState('');
+    const [inch, setInch] = useState('');
+
+    // Keep the ft/in boxes in sync when cm changes from elsewhere (e.g. the
+    // user switches units, or a value is restored), but never while they are
+    // actively typing in them — that would fight the cursor.
+    useEffect(() => {
+        if (unit !== 'ft') return;
+        const cm = parseFloat(valueCm);
+        if (!cm || Number.isNaN(cm)) return;
+        const totalInches = cm / 2.54;
+        const f = Math.floor(totalInches / 12);
+        const i = Math.round(totalInches - f * 12);
+        // 11.6" rounds to 12" — carry it into the next foot instead of showing 5'12"
+        const carried = i === 12 ? { f: f + 1, i: 0 } : { f, i };
+        setFt(String(carried.f));
+        setInch(String(carried.i));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [unit]);
+
+    const pushImperial = (nextFt: string, nextIn: string) => {
+        setFt(nextFt);
+        setInch(nextIn);
+        const f = parseFloat(nextFt) || 0;
+        const i = parseFloat(nextIn) || 0;
+        if (!nextFt && !nextIn) {
+            onChangeCm('');
+            return;
+        }
+        onChangeCm(((f * 12 + i) * 2.54).toFixed(1));
+    };
+
+    return (
+        <View style={num.container}>
+            <View style={num.labelRow}>
+                <Text style={[num.label, { marginBottom: 0 }]}>Height</Text>
+                <View style={unitTog.wrap}>
+                    {(['cm', 'ft'] as const).map(u => (
+                        <TouchableOpacity
+                            key={u}
+                            onPress={() => onToggleUnit(u)}
+                            style={[unitTog.btn, unit === u && unitTog.btnActive]}
+                            accessibilityLabel={`Enter height in ${u === 'cm' ? 'centimetres' : 'feet and inches'}`}
+                            accessibilityState={{ selected: unit === u }}
+                        >
+                            <Text style={[unitTog.text, unit === u && unitTog.textActive]}>
+                                {u === 'cm' ? 'cm' : 'ft/in'}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+
+            {unit === 'cm' ? (
+                <View style={num.row}>
+                    <TextInput
+                        style={num.input}
+                        value={valueCm}
+                        onChangeText={onChangeCm}
+                        keyboardType="decimal-pad"
+                        placeholder="175"
+                        placeholderTextColor={colors.text.subtle}
+                    />
+                    <Text style={num.unit}>cm</Text>
+                </View>
+            ) : (
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={[num.row, { flex: 1 }]}>
+                        <TextInput
+                            style={num.input}
+                            value={ft}
+                            onChangeText={v => pushImperial(v.replace(/[^0-9]/g, ''), inch)}
+                            keyboardType="number-pad"
+                            placeholder="5"
+                            placeholderTextColor={colors.text.subtle}
+                            maxLength={1}
+                        />
+                        <Text style={num.unit}>ft</Text>
+                    </View>
+                    <View style={[num.row, { flex: 1 }]}>
+                        <TextInput
+                            style={num.input}
+                            value={inch}
+                            onChangeText={v => pushImperial(ft, v.replace(/[^0-9]/g, ''))}
+                            keyboardType="number-pad"
+                            placeholder="9"
+                            placeholderTextColor={colors.text.subtle}
+                            maxLength={2}
+                        />
+                        <Text style={num.unit}>in</Text>
+                    </View>
+                </View>
+            )}
+        </View>
+    );
+}
+
+const unitTog = StyleSheet.create({
+    wrap: {
+        flexDirection: 'row',
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.full,
+        padding: 2,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    btn: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: borderRadius.full },
+    btnActive: { backgroundColor: colors.primary },
+    text: {
+        fontSize: 10,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.muted,
+        letterSpacing: 0.5,
+    },
+    textActive: { color: colors.background },
+});
+
 function NumInput({ label, unit, value, onChange, placeholder }: {
     label: string; unit: string; value: string; onChange: (v: string) => void; placeholder: string;
 }) {
@@ -161,6 +305,12 @@ const num = StyleSheet.create({
     label: {
         fontSize: typography.sizes.sm, fontFamily: typography.fontFamily.semiBold,
         color: colors.text.muted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8,
+    },
+    // Height needs its label and unit toggle on one line; the toggle carries
+    // its own bottom margin so both halves sit on the same baseline.
+    labelRow: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: 8,
     },
     row: {
         flexDirection: 'row', alignItems: 'center',
@@ -331,6 +481,10 @@ export default function OnboardingWizard() {
     });
 
     const set = useCallback((k: string, v: any) => setForm(p => ({ ...p, [k]: v })), []);
+
+    // Metric by default (India-first), but switchable. height_cm stays the
+    // single source of truth regardless of what's on screen.
+    const [heightUnit, setHeightUnit] = useState<'cm' | 'ft'>('cm');
 
     // ── Health Connect state ─────────────────────────────────────
     const [healthAvailable, setHealthAvailable] = useState(false);
@@ -506,7 +660,12 @@ export default function OnboardingWizard() {
 
             <Animated.View entering={FadeInDown.delay(200).duration(600).springify()}>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                    <NumInput label="Height" unit="cm" value={form.height_cm} onChange={v => set('height_cm', v)} placeholder="175" />
+                    <HeightInput
+                        valueCm={form.height_cm}
+                        onChangeCm={v => set('height_cm', v)}
+                        unit={heightUnit}
+                        onToggleUnit={setHeightUnit}
+                    />
                     <NumInput label="Weight" unit="kg" value={form.weight_kg} onChange={v => set('weight_kg', v)} placeholder="70" />
                 </View>
             </Animated.View>
@@ -893,78 +1052,12 @@ export default function OnboardingWizard() {
         },
     ], []);
 
-    const renderStep5 = () => (
-        <View style={s.stepWrap}>
-            <Animated.View entering={FadeInDown.delay(100).duration(600).springify()} style={s.stepHeader}>
-                <View style={s.stepIconWrap}>
-                    <MaterialIcons name="calendar-today" size={28} color={colors.text.primary} />
-                </View>
-                <Text style={s.title}>Training Split</Text>
-                <Text style={s.purpose}>{STEP_META[5].purpose}</Text>
-                <Text style={s.subtitle}>
-                    Based on your experience ({form.experience}), we recommend{' '}
-                    <Text style={{ color: colors.text.primary, fontFamily: typography.fontFamily.bold }}>
-                        {splits.find(sp => sp.id === suggested)?.name}
-                    </Text>.
-                </Text>
-            </Animated.View>
-
-            <View style={{ gap: 10 }}>
-                {splits.map((sp, idx) => {
-                    const active = form.split_id === sp.id;
-                    const isRecommended = sp.id === suggested;
-                    return (
-                        <Animated.View
-                            key={sp.id}
-                            entering={FadeInDown.delay(200 + idx * 100).duration(600).springify()}
-                        >
-                            <TouchableOpacity
-                                style={[s.splitCard, active && s.splitCardActive]}
-                                onPress={() => set('split_id', sp.id)}
-                                activeOpacity={0.85}
-                            >
-                                <View style={[s.splitIconWrap, active && s.splitIconWrapActive]}>
-                                    <MaterialIcons
-                                        name={sp.icon}
-                                        size={20}
-                                        color={active ? colors.text.primary : colors.text.muted}
-                                    />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                        <Text style={[s.splitName, active && { color: colors.text.primary }]}>{sp.name}</Text>
-                                        {isRecommended && <PulsingBadge text="Recommended" />}
-                                    </View>
-                                    <Text style={s.splitMeta}>{sp.days}  {sp.level}</Text>
-                                    <Text style={s.splitDesc}>{sp.desc}</Text>
-
-                                    {/* Workout preview */}
-                                    {active && sp.preview.length > 0 && (
-                                        <Animated.View
-                                            entering={FadeInDown.delay(50).duration(400).springify()}
-                                            style={s.splitPreview}
-                                        >
-                                            {sp.preview.map((day, i) => (
-                                                <View key={i} style={s.splitPreviewRow}>
-                                                    <View style={s.splitPreviewDot} />
-                                                    <Text style={s.splitPreviewText}>{day}</Text>
-                                                </View>
-                                            ))}
-                                        </Animated.View>
-                                    )}
-                                </View>
-                                {active && <MaterialIcons name="check-circle" size={20} color={colors.text.primary} />}
-                            </TouchableOpacity>
-                        </Animated.View>
-                    );
-                })}
-            </View>
-        </View>
-    );
-
-    // ─────────────────────────────────────────────────────────────
-    // STEP 6: Health Connect
-    // ─────────────────────────────────────────────────────────────
+    // Training split (old step 5) and Health Connect (old step 6) were removed
+    // from onboarding. Both are set later: split via Workouts -> Today's
+    // Training, Health Connect via Settings -> Health.
+    //
+    // handleConnectHealth is kept below: the Health Connect prompt shown after
+    // onboarding reuses it.
     const handleConnectHealth = async () => {
         setHealthSyncing(true);
         try {
@@ -991,91 +1084,6 @@ export default function OnboardingWizard() {
         }
     };
 
-    const renderStep6 = () => (
-        <View style={s.stepWrap}>
-            <Animated.View entering={FadeInDown.delay(100).duration(600).springify()} style={s.stepHeader}>
-                <View style={s.stepIconWrap}>
-                    <MaterialIcons name="watch" size={28} color={colors.text.primary} />
-                </View>
-                <Text style={s.title}>Connect Health Data</Text>
-                <Text style={s.purpose}>{STEP_META[6].purpose}</Text>
-                <Text style={s.subtitle}>
-                    Connect your smartwatch or phone's health data to track steps, calories burned, heart rate, and sleep automatically.
-                </Text>
-            </Animated.View>
-
-            <Animated.View entering={FadeInDown.delay(200).duration(600).springify()}>
-                {healthAvailable ? (
-                    <View style={{ gap: spacing.lg }}>
-                        {/* Connect Button */}
-                        <TouchableOpacity
-                            style={[
-                                s.splitCard,
-                                healthConnected && s.splitCardActive,
-                            ]}
-                            onPress={healthConnected ? undefined : handleConnectHealth}
-                            activeOpacity={healthConnected ? 1 : 0.85}
-                            disabled={healthSyncing}
-                        >
-                            <View style={[s.splitIconWrap, healthConnected && s.splitIconWrapActive]}>
-                                <MaterialIcons
-                                    name={healthConnected ? 'check-circle' : 'favorite'}
-                                    size={20}
-                                    color={healthConnected ? colors.crowd.low : colors.text.muted}
-                                />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={[s.splitName, healthConnected && { color: colors.text.primary }]}>
-                                    {Platform.OS === 'ios' ? 'Apple Health' : 'Health Connect'}
-                                </Text>
-                                <Text style={s.splitDesc}>
-                                    {healthConnected
-                                        ? 'Connected! Your health data will sync automatically.'
-                                        : 'Tap to connect and grant permission to read your health data.'}
-                                </Text>
-                            </View>
-                            {healthSyncing && <ActivityIndicator size="small" color={colors.text.primary} />}
-                            {healthConnected && <MaterialIcons name="check-circle" size={20} color={colors.crowd.low} />}
-                        </TouchableOpacity>
-
-                        {/* What we track */}
-                        <View style={{ gap: spacing.sm }}>
-                            <Text style={s.sectionLabel}>What we'll track</Text>
-                            {[
-                                { icon: 'directions-walk' as const, label: 'Daily Steps' },
-                                { icon: 'local-fire-department' as const, label: 'Active Calories' },
-                                { icon: 'favorite' as const, label: 'Resting Heart Rate' },
-                                { icon: 'bedtime' as const, label: 'Sleep Duration' },
-                            ].map((item, idx) => (
-                                <Animated.View
-                                    key={item.label}
-                                    entering={FadeInDown.delay(300 + idx * 80).duration(400).springify()}
-                                    style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        gap: spacing.md,
-                                        paddingVertical: spacing.sm,
-                                    }}
-                                >
-                                    <MaterialIcons name={item.icon} size={20} color={colors.text.muted} />
-                                    <Text style={{ color: colors.text.secondary, fontFamily: typography.fontFamily.medium, fontSize: typography.sizes.base }}>
-                                        {item.label}
-                                    </Text>
-                                </Animated.View>
-                            ))}
-                        </View>
-                    </View>
-                ) : (
-                    <View style={{ alignItems: 'center', paddingVertical: spacing['2xl'] }}>
-                        <MaterialIcons name="watch-off" size={48} color={colors.text.muted} />
-                        <Text style={{ color: colors.text.secondary, fontFamily: typography.fontFamily.medium, fontSize: typography.sizes.base, textAlign: 'center', marginTop: spacing.lg }}>
-                            Health services are not available on this device.{'\n'}You can skip this step.
-                        </Text>
-                    </View>
-                )}
-            </Animated.View>
-        </View>
-    );
 
     // ─────────────────────────────────────────────────────────────
     // RENDER
@@ -1113,11 +1121,17 @@ export default function OnboardingWizard() {
                 showsVerticalScrollIndicator={false}
             >
                 {step === 1 && renderStep1()}
-                {step === 2 && renderStep2()}
-                {step === 3 && renderStep3()}
-                {step === 4 && renderStep4()}
-                {step === 5 && renderStep5()}
-                {step === 6 && renderStep6()}
+                {/* Step 2 composes what used to be three separate screens:
+                    goal, activity level, and the calculated blueprint. They
+                    are stacked in one scroll so the numbers update live as
+                    the user picks, instead of hiding the payoff two taps away. */}
+                {step === 2 && (
+                    <>
+                        {renderStep2()}
+                        {renderStep3()}
+                        {renderStep4()}
+                    </>
+                )}
             </ScrollView>
 
             {/* Sticky bottom button with glow */}
@@ -1133,7 +1147,7 @@ export default function OnboardingWizard() {
                 <View style={s.footerContent}>
                     <TouchableOpacity
                         style={[s.nextBtn, loading && { opacity: 0.6 }]}
-                        onPress={step === TOTAL_STEPS ? handleComplete : (step === 4 ? nextStep : nextStep)}
+                        onPress={step === TOTAL_STEPS ? handleComplete : nextStep}
                         disabled={loading}
                         activeOpacity={0.85}
                     >
@@ -1148,24 +1162,13 @@ export default function OnboardingWizard() {
                             : (
                                 <View style={s.nextBtnInner}>
                                     <Text style={s.nextText}>
-                                        {step === TOTAL_STEPS
-                                            ? 'Get Started'
-                                            : step === 4
-                                                ? 'This Looks Right'
-                                                : 'Continue'}
+                                        {step === TOTAL_STEPS ? 'Start Training' : 'Continue'}
                                     </Text>
                                     {step < TOTAL_STEPS && <MaterialIcons name="arrow-forward" size={18} color={colors.text.dark} />}
                                 </View>
                             )
                         }
                     </TouchableOpacity>
-                    {step === TOTAL_STEPS && !healthConnected && (
-                        <TouchableOpacity onPress={handleComplete} style={{ paddingVertical: spacing.md }} activeOpacity={0.7}>
-                            <Text style={{ color: colors.text.muted, fontFamily: typography.fontFamily.medium, fontSize: typography.sizes.sm, textAlign: 'center' }}>
-                                Skip for now
-                            </Text>
-                        </TouchableOpacity>
-                    )}
                 </View>
             </Animated.View>
         </SafeAreaView>

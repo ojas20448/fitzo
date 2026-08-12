@@ -242,3 +242,33 @@ accent breaking mono). Full redesign to app standards:
   the fake like button is gone
 - Skeleton loading + EmptyState with "Find buddies" action
 - Strict theme tokens, no off-palette color
+
+## Onboarding: 6 steps → 2, height unit toggle (Aug 13, 2026)
+
+**Why:** four of the six screens stood between signup and the first logged set
+without collecting anything the app can't run without. The blueprint is a
+read-only reveal; training split and Health Connect are both changeable later.
+
+- **Step 1** — body stats (height/weight/age/body-fat/sex) + live BMI/TDEE
+- **Step 2** — goal + activity + the blueprint reveal, composed into one scroll
+  so the numbers update live as the user picks instead of hiding the payoff two
+  taps away. CTA is now "Start Training".
+- **Removed from onboarding:** training split (set via Workouts → Today's
+  Training, `WorkoutIntentScreen.saveSplit`) and Health Connect (Settings →
+  Health). Both verified reachable before removal — nothing stranded.
+- Deleted `renderStep5`/`renderStep6`; `renderStep6` referenced `STEP_META[6]`,
+  which would have been `undefined.purpose` had anything rendered it.
+
+**Height in ft/in:** new `HeightInput` with a cm ⇄ ft/in toggle. cm stays the
+canonical value (backend column, BMI, Mifflin-St Jeor all read it); ft/in is a
+display layer converting both ways, with its own local text state so a
+half-typed `5'` isn't rounded away mid-keystroke. Metric is the default.
+Round-trip verified exact for 5'9", 6'0", 5'0", 4'11", 6'3", and the 11.6"
+carry case that would otherwise render as `5'12"`.
+
+**Google sign-in still onboards — verified, not assumed.** The gate is
+`onboarding_completed = (a nutrition_profiles row exists)`. Google signup
+(`routes/auth.js`) creates only a `fitness_profiles` row, so a new Google user
+comes back `false` and `app/index.tsx` redirects to `/onboarding`. Completion
+upserts `nutrition_profiles` (`ON CONFLICT (user_id) DO UPDATE`), closing the
+loop — so no infinite-onboarding risk either. Confirmed against the live DB.
