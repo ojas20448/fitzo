@@ -4,6 +4,11 @@ const { query } = require('../config/database');
 const { authenticate, invalidateUserCache } = require('../middleware/auth');
 const { ValidationError, NotFoundError, asyncHandler } = require('../utils/errors');
 const cache = require('../services/cache');
+const {
+    WORKOUT_PREF_COLUMNS,
+    readPrefs,
+    planPrefUpdate,
+} = require('../utils/workoutPrefs');
 
 // All routes require authentication
 router.use(authenticate);
@@ -192,77 +197,92 @@ router.patch('/sharing', asyncHandler(async (req, res) => {
  * GET /api/settings/workout
  * Workout logging preferences (RIR opt-in, first-run sheet state).
  */
-router.get('/workout', asyncHandler(async (req, res) => {
-    const userId = req.user.id;
+// Reading the row as jsonb instead of naming columns: a column added by a
+// migration that has not run yet is simply absent from the object, where
+// naming it would raise 42703 and 500 the whole endpoint — taking the older
+// preferences down with the new ones. password_hash is stripped in SQL so the
+// hash never enters the process.
+const WORKOUT_PREF_ROW_SQL = `
+    SELECT to_jsonb(u) - 'password_hash' AS prefs
+      FROM users u
+     WHERE u.id = $1
+`;
 
-    const result = await query(
-        `SELECT log_rir_enabled, workout_prefs_seen,
-                rest_timer_enabled, warmup_card_enabled
-         FROM users
-         WHERE id = $1`,
-        [userId]
-    );
+router.get('/workout', asyncHandler(async (req, res) => {
+    const result = await query(WORKOUT_PREF_ROW_SQL, [req.user.id]);
 
     if (result.rows.length === 0) {
         throw new ValidationError('User not found');
     }
 
-    res.json({
-        log_rir_enabled: result.rows[0].log_rir_enabled,
-        workout_prefs_seen: result.rows[0].workout_prefs_seen,
-        rest_timer_enabled: result.rows[0].rest_timer_enabled,
-        warmup_card_enabled: result.rows[0].warmup_card_enabled,
-    });
+    res.json(readPrefs(result.rows[0].prefs));
 }));
 
 /**
  * PATCH /api/settings/workout
  * Update either preference. Both fields are optional; at least one required.
  */
-// Every workout preference is a plain boolean on users, so the handler builds
-// the UPDATE from whichever keys were sent. Adding a preference means adding it
-// to this list — not another pair of if-branches and another COALESCE slot.
-const WORKOUT_PREF_COLUMNS = [
-    'log_rir_enabled',
-    'workout_prefs_seen',
-    'rest_timer_enabled',
-    'warmup_card_enabled',
-];
-
 router.patch('/workout', asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
-    const provided = WORKOUT_PREF_COLUMNS.filter(col => req.body[col] !== undefined);
-
-    if (provided.length === 0) {
-        throw new ValidationError(`Provide at least one of: ${WORKOUT_PREF_COLUMNS.join(', ')}`);
-    }
-
-    for (const col of provided) {
-        if (typeof req.body[col] !== 'boolean') {
-            throw new ValidationError(`${col} must be a boolean`);
-        }
-    }
-
-    // Only the supplied columns are assigned, so a partial PATCH cannot reset
-    // the preferences it did not mention. Column names come from the allow-list
-    // above, never from user input, so they are safe to interpolate.
-    const assignments = provided.map((col, i) => `${col} = $${i + 1}`).join(', ');
-    const values = provided.map(col => req.body[col]);
-
-    const result = await query(
-        `UPDATE users
-            SET ${assignments}
-          WHERE id = $${provided.length + 1}
-      RETURNING ${WORKOUT_PREF_COLUMNS.join(', ')}`,
-        [...values, userId]
-    );
-
-    if (result.rows.length === 0) {
+    // Read first: the jsonb keys tell us which preference columns this database
+    // actually has, so a write aimed at a not-yet-migrated column is deferred
+    // rather than raising 42703 and failing the whole request.
+    const current = await query(WORKOUT_PREF_ROW_SQL, [userId]);
+    if (current.rows.length === 0) {
         throw new ValidationError('User not found');
     }
+    const row = current.rows[0].prefs || {};
 
-    res.json({ success: true, ...result.rows[0] });
+    const { requested, invalid, applicable, deferred } = planPrefUpdate(
+        req.body,
+        WORKOUT_PREF_COLUMNS.filter(col => col in row)
+    );
+
+    if (requested.length === 0) {
+        throw new ValidationError(`Provide at least one of: ${WORKOUT_PREF_COLUMNS.join(', ')}`);
+    }
+    if (invalid.length > 0) {
+        throw new ValidationError(`${invalid[0]} must be a boolean`);
+    }
+
+    let updated = row;
+
+    if (applicable.length > 0) {
+        // Only the supplied columns are assigned, so a partial PATCH cannot
+        // reset the preferences it did not mention. Column names come from the
+        // allow-list, never from user input, so they are safe to interpolate.
+        const assignments = applicable.map((col, i) => `${col} = $${i + 1}`).join(', ');
+        const values = applicable.map(col => req.body[col]);
+
+        const result = await query(
+            `UPDATE users
+                SET ${assignments}
+              WHERE id = $${applicable.length + 1}
+          RETURNING to_jsonb(users) - 'password_hash' AS prefs`,
+            [...values, userId]
+        );
+
+        if (result.rows.length === 0) {
+            throw new ValidationError('User not found');
+        }
+        updated = result.rows[0].prefs || {};
+    }
+
+    if (deferred.length > 0) {
+        console.warn(
+            `[settings/workout] ignoring ${deferred.join(', ')} — column(s) missing. ` +
+            'Run backend/apply_migrations.js.'
+        );
+    }
+
+    res.json({
+        success: true,
+        ...readPrefs(updated),
+        // Surfaced rather than swallowed: the client gets its 200 and keeps
+        // working, but the unapplied migration is visible instead of silent.
+        ...(deferred.length > 0 ? { pending_migration: deferred } : {}),
+    });
 }));
 
 /**
