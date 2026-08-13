@@ -18,4 +18,10 @@ backend/scripts/exercisedb_full.json
 # SDD scratch workspace (ledger, briefs, review packages)
 .superpowers/
 
+# Local media scratch folder (~834MB: source art, video projects, renders,
+# and a vendored node_modules with a 194MB chrome-headless-shell binary).
+# Git rejects files >100MB, and none of this is needed to build the app —
+# shipped assets live in mobile/assets/. Keep this backed up outside git.
+Media/
+
 /RENDER_ENV_SETUP.md
