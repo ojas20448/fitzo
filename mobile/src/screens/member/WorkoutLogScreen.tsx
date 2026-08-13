@@ -35,6 +35,7 @@ import {
     RestTimerPill,
     ExerciseCard,
     WorkoutPrefsSheet,
+    WarmUpCard,
     PICKER_HEIGHT,
     WEIGHT_VALUES,
     REPS_VALUES,
@@ -117,6 +118,11 @@ const WorkoutLogScreen: React.FC = () => {
     // Rest timer state
     const [restSeconds, setRestSeconds] = useState(0);
     const [restDuration, setRestDuration] = useState(90);
+    // Opt-in. The pill fired after every set and floated over the log, which
+    // read as nagging mid-session. Rest intervals still matter for strength
+    // work, so the feature stays — you just have to ask for it.
+    const [restTimerEnabled, setRestTimerEnabled] = useState(false);
+    const [showWarmUp, setShowWarmUp] = useState(false);
     const [restActive, setRestActive] = useState(false);
     const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -190,9 +196,17 @@ const WorkoutLogScreen: React.FC = () => {
         settingsAPI.getWorkoutPreferences()
             .then((p) => {
                 setShowRir(!!p.log_rir_enabled);
+                setRestTimerEnabled(!!p.rest_timer_enabled);
+                setShowWarmUp(p.warmup_card_enabled !== false);
                 if (!p.workout_prefs_seen) setShowPrefsSheet(true);
             })
-            .catch(() => setShowRir(false));
+            .catch(() => {
+                // Offline or a pre-migration backend. Match the column defaults:
+                // rest timer off (it was the complaint), warm-up shown.
+                setShowRir(false);
+                setRestTimerEnabled(false);
+                setShowWarmUp(true);
+            });
     }, []);
 
     const loadSharingPreference = async () => {
@@ -436,20 +450,24 @@ const WorkoutLogScreen: React.FC = () => {
                 sets[setIndex] = { ...sets[setIndex], [field]: value };
                 updated[exerciseIndex] = { ...updated[exerciseIndex], sets };
 
-                // Trigger rest timer & layered double-pulse haptics when a set becomes completed
+                // Layered double-pulse haptics when a set becomes completed.
                 if (field === 'completed' && value === true && !wasCompleted) {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     setTimeout(() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     }, 80);
-                    // Start rest timer (via setTimeout to avoid setState-in-setState)
-                    setTimeout(() => startRestTimer(), 0);
+                    // The rest timer is opt-in, so completing a set no longer
+                    // pops a countdown unless it was asked for.
+                    if (restTimerEnabled) {
+                        // setTimeout avoids setState-in-setState.
+                        setTimeout(() => startRestTimer(), 0);
+                    }
                 }
 
                 return updated;
             });
         },
-        [startRestTimer],
+        [startRestTimer, restTimerEnabled],
     );
 
     const handleToggleUnilateral = useCallback((eIdx: number) => {
@@ -651,6 +669,20 @@ const WorkoutLogScreen: React.FC = () => {
     const ListHeader = useMemo(
         () => (
             <View>
+                {/* Warm-up sits above the exercises: read it, tick it off, or
+                    skip it. It never blocks getting to the first set. */}
+                {showWarmUp && (
+                    <WarmUpCard
+                        workoutType={workoutType}
+                        onDismiss={() => setShowWarmUp(false)}
+                        onNeverShowAgain={() => {
+                            setShowWarmUp(false);
+                            settingsAPI
+                                .updateWorkoutPreferences({ warmup_card_enabled: false })
+                                .catch(() => {});
+                        }}
+                    />
+                )}
                 {/* The manual WORKOUT TYPE pill row lived here. It was removed:
                     the session is already declared as an intent (e.g. "Push"),
                     and the row could only express single muscles, so a push day
@@ -706,7 +738,9 @@ const WorkoutLogScreen: React.FC = () => {
                 )}
             </View>
         ),
-        [workoutType, sessionMuscles, lastWorkoutPreview, userExercises.length],
+        // showWarmUp must be here — without it the memo holds the old header and
+        // dismissing the warm-up card does nothing on screen.
+        [workoutType, sessionMuscles, lastWorkoutPreview, userExercises.length, showWarmUp],
     );
 
     // Footer component for FlatList
@@ -984,9 +1018,40 @@ const WorkoutLogScreen: React.FC = () => {
                 >
                     <Pressable style={styles.restConfigSheet} onPress={() => {}}>
                         <Text style={styles.restConfigTitle}>Rest Timer</Text>
-                        <Text style={styles.restConfigSubtitle}>Choose your rest duration</Text>
+                        <Text style={styles.restConfigSubtitle}>
+                            {restTimerEnabled
+                                ? 'A countdown appears after each completed set'
+                                : 'Off — completing a set will not interrupt you'}
+                        </Text>
 
-                        <View style={styles.restOptions}>
+                        <Pressable
+                            style={styles.restToggleRow}
+                            onPress={() => {
+                                const next = !restTimerEnabled;
+                                setRestTimerEnabled(next);
+                                Haptics.selectionAsync();
+                                if (!next) dismissRestTimer();
+                                // Fire-and-forget: the toggle already applies
+                                // locally, so a failed sync must not block it.
+                                settingsAPI
+                                    .updateWorkoutPreferences({ rest_timer_enabled: next })
+                                    .catch(() => {});
+                            }}
+                        >
+                            <Text style={styles.restToggleLabel}>Show rest timer</Text>
+                            <View style={[styles.restToggle, restTimerEnabled && styles.restToggleActive]}>
+                                <View
+                                    style={[
+                                        styles.restToggleKnob,
+                                        restTimerEnabled && styles.restToggleKnobActive,
+                                    ]}
+                                />
+                            </View>
+                        </Pressable>
+
+                        <View style={[styles.restOptions, !restTimerEnabled && { opacity: 0.4 }]}
+                            pointerEvents={restTimerEnabled ? 'auto' : 'none'}
+                        >
                             {REST_PRESETS.map((dur) => (
                                 <TouchableOpacity
                                     key={dur}
@@ -1432,6 +1497,46 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.glass.border,
         alignItems: 'center',
+    },
+    restToggleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: spacing.md,
+        marginTop: spacing.md,
+        borderTopWidth: 1,
+        borderBottomWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    restToggleLabel: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.primary,
+    },
+    restToggle: {
+        width: 44,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: colors.glass.surfaceLight,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        justifyContent: 'center',
+        paddingHorizontal: 3,
+    },
+    restToggleActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    restToggleKnob: {
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        backgroundColor: colors.text.muted,
+        alignSelf: 'flex-start',
+    },
+    restToggleKnobActive: {
+        backgroundColor: colors.background,
+        alignSelf: 'flex-end',
     },
     restConfigTitle: {
         fontSize: typography.sizes.xl,

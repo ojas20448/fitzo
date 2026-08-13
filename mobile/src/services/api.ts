@@ -391,7 +391,12 @@ export const settingsAPI = {
         return response.data;
     },
 
-    getWorkoutPreferences: async (): Promise<{ log_rir_enabled: boolean; workout_prefs_seen: boolean }> => {
+    getWorkoutPreferences: async (): Promise<{
+        log_rir_enabled: boolean;
+        workout_prefs_seen: boolean;
+        rest_timer_enabled: boolean;
+        warmup_card_enabled: boolean;
+    }> => {
         const response = await api.get('/settings/workout');
         return response.data;
     },
@@ -399,6 +404,8 @@ export const settingsAPI = {
     updateWorkoutPreferences: async (prefs: {
         log_rir_enabled?: boolean;
         workout_prefs_seen?: boolean;
+        rest_timer_enabled?: boolean;
+        warmup_card_enabled?: boolean;
     }) => {
         const response = await api.patch('/settings/workout', prefs);
         return response.data;

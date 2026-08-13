@@ -196,7 +196,8 @@ router.get('/workout', asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
     const result = await query(
-        `SELECT log_rir_enabled, workout_prefs_seen
+        `SELECT log_rir_enabled, workout_prefs_seen,
+                rest_timer_enabled, warmup_card_enabled
          FROM users
          WHERE id = $1`,
         [userId]
@@ -209,6 +210,8 @@ router.get('/workout', asyncHandler(async (req, res) => {
     res.json({
         log_rir_enabled: result.rows[0].log_rir_enabled,
         workout_prefs_seen: result.rows[0].workout_prefs_seen,
+        rest_timer_enabled: result.rows[0].rest_timer_enabled,
+        warmup_card_enabled: result.rows[0].warmup_card_enabled,
     });
 }));
 
@@ -216,43 +219,50 @@ router.get('/workout', asyncHandler(async (req, res) => {
  * PATCH /api/settings/workout
  * Update either preference. Both fields are optional; at least one required.
  */
+// Every workout preference is a plain boolean on users, so the handler builds
+// the UPDATE from whichever keys were sent. Adding a preference means adding it
+// to this list — not another pair of if-branches and another COALESCE slot.
+const WORKOUT_PREF_COLUMNS = [
+    'log_rir_enabled',
+    'workout_prefs_seen',
+    'rest_timer_enabled',
+    'warmup_card_enabled',
+];
+
 router.patch('/workout', asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const { log_rir_enabled, workout_prefs_seen } = req.body;
 
-    const hasRir = log_rir_enabled !== undefined;
-    const hasSeen = workout_prefs_seen !== undefined;
+    const provided = WORKOUT_PREF_COLUMNS.filter(col => req.body[col] !== undefined);
 
-    if (!hasRir && !hasSeen) {
-        throw new ValidationError('Provide log_rir_enabled or workout_prefs_seen');
-    }
-    if (hasRir && typeof log_rir_enabled !== 'boolean') {
-        throw new ValidationError('log_rir_enabled must be a boolean');
-    }
-    if (hasSeen && typeof workout_prefs_seen !== 'boolean') {
-        throw new ValidationError('workout_prefs_seen must be a boolean');
+    if (provided.length === 0) {
+        throw new ValidationError(`Provide at least one of: ${WORKOUT_PREF_COLUMNS.join(', ')}`);
     }
 
-    // COALESCE keeps the untouched field at its current value, so a partial
-    // PATCH cannot silently reset the other preference.
+    for (const col of provided) {
+        if (typeof req.body[col] !== 'boolean') {
+            throw new ValidationError(`${col} must be a boolean`);
+        }
+    }
+
+    // Only the supplied columns are assigned, so a partial PATCH cannot reset
+    // the preferences it did not mention. Column names come from the allow-list
+    // above, never from user input, so they are safe to interpolate.
+    const assignments = provided.map((col, i) => `${col} = $${i + 1}`).join(', ');
+    const values = provided.map(col => req.body[col]);
+
     const result = await query(
         `UPDATE users
-            SET log_rir_enabled    = COALESCE($1, log_rir_enabled),
-                workout_prefs_seen = COALESCE($2, workout_prefs_seen)
-          WHERE id = $3
-      RETURNING log_rir_enabled, workout_prefs_seen`,
-        [hasRir ? log_rir_enabled : null, hasSeen ? workout_prefs_seen : null, userId]
+            SET ${assignments}
+          WHERE id = $${provided.length + 1}
+      RETURNING ${WORKOUT_PREF_COLUMNS.join(', ')}`,
+        [...values, userId]
     );
 
     if (result.rows.length === 0) {
         throw new ValidationError('User not found');
     }
 
-    res.json({
-        success: true,
-        log_rir_enabled: result.rows[0].log_rir_enabled,
-        workout_prefs_seen: result.rows[0].workout_prefs_seen,
-    });
+    res.json({ success: true, ...result.rows[0] });
 }));
 
 /**
