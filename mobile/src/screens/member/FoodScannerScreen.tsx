@@ -8,13 +8,14 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import GlassCard from '../../components/GlassCard';
 import Button from '../../components/Button';
-import { memberAPI, foodPhotoAPI } from '../../services/api';
+import { foodPhotoAPI } from '../../services/api';
 
 export default function FoodScannerScreen() {
     const [permission, requestPermission] = useCameraPermissions();
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [analyzing, setAnalyzing] = useState(false);
     const [detectedFood, setDetectedFood] = useState<any>(null);
+    const [base64Image, setBase64Image] = useState<string | null>(null);
     const cameraRef = useRef<any>(null);
 
     // Request camera permission if not granted
@@ -36,8 +37,6 @@ export default function FoodScannerScreen() {
             </SafeAreaView>
         );
     }
-
-    const [base64Image, setBase64Image] = useState<string | null>(null);
 
     // A phone camera shoots ~12MP. Base64 of that JPEG is 2-4MB, which is far
     // more than Gemini Vision needs and slow/flaky to upload on mobile data.
