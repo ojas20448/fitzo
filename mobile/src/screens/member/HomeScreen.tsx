@@ -36,6 +36,7 @@ import CustomRefreshHeader from '../../components/CustomRefreshHeader';
 import BusyTimesStrip from '../../components/BusyTimesStrip';
 import { gymAPI, BusyTimes } from '../../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
+import { firstName as getFirstName } from '../../utils/displayName';
 
 interface HomeData {
     user: {
@@ -339,7 +340,9 @@ const HomeScreen: React.FC = () => {
         );
     }
 
-    const firstName = data?.user?.name?.split(' ')[0] || user?.name?.split(' ')[0] || 'there';
+    // Registration takes `name` as free text, so some accounts store an email
+    // there. getFirstName() keeps the address off the greeting.
+    const greetingName = getFirstName(data?.user || user);
     const hasLoggedWorkoutToday = todayWorkouts.length > 0;
     const currentIntent = data?.intent;
     const activeFriendsCount = activeCount;
@@ -402,7 +405,7 @@ const HomeScreen: React.FC = () => {
                         </View>
                         <View style={styles.greetingContainer}>
                             <Text style={styles.welcomeText}>{greeting}</Text>
-                            <Text style={styles.userName}>{firstName}</Text>
+                            <Text style={styles.userName}>{greetingName}</Text>
                         </View>
                     </Pressable>
 
@@ -603,26 +606,9 @@ const HomeScreen: React.FC = () => {
                     </View>
                 )}
 
-                {/* Completed Workout Card - Show when workout is logged today */}
-                {hasLoggedWorkoutToday && (
-                    <View style={styles.activeSessionCard}>
-                        <View style={styles.inProgressPill}>
-                            <MaterialIcons name="check-circle" size={16} color={colors.primary} style={{ marginRight: 6 }} />
-                            <Text style={styles.inProgressText}>COMPLETED TODAY</Text>
-                        </View>
-
-                        <View style={styles.statsGrid}>
-                            <View style={styles.statItem}>
-                                <Text style={styles.statLabel}>WORKOUTS</Text>
-                                <Text style={styles.statValue}>{todayWorkouts.length}</Text>
-                            </View>
-                            <View style={styles.statItem}>
-                                <Text style={styles.statLabel}>CALORIES LOGGED</Text>
-                                <Text style={styles.statValue}>{todayMacros.calories}<Text style={styles.statUnit}>kcal</Text></Text>
-                            </View>
-                        </View>
-                    </View>
-                )}
+                {/* "Completed today" used to sit here. It restated numbers the
+                    Today block already shows and pushed the next action further
+                    down the screen, so it now lives on Stats. */}
 
                 {/* Quick Action Buttons
                     One primary only. Two identical white CTAs (plus the tab-bar FAB

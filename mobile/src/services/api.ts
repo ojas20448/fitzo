@@ -847,6 +847,12 @@ export const nutritionAPI = {
         goal_type?: 'fat_loss' | 'maintenance' | 'muscle_gain';
         target_weight_kg?: number;
         is_vegetarian?: boolean;
+        // Manual overrides. The backend auto-calculates targets from the
+        // biometrics above unless these are supplied (routes/nutrition.js).
+        target_calories?: number;
+        target_protein?: number;
+        target_carbs?: number;
+        target_fat?: number;
     }) => {
         const response = await api.post('/nutrition/profile', data);
         return response.data;

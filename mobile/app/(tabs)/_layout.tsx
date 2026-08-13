@@ -3,11 +3,20 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { View, StyleSheet, TouchableOpacity, Modal, Text, Pressable } from 'react-native';
 import { useState } from 'react';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/styles/theme';
 import { AnimatedTabIcon } from '../../src/components/AnimatedTabIcon';
 
+// Expo SDK 54 forces edge-to-edge on Android and offers no way to opt out, so
+// the app draws underneath the gesture pill / 3-button nav bar. A fixed tab bar
+// height therefore puts the tabs *behind* the system buttons. Grow the bar by
+// the bottom inset and pad the content up out of it. On devices with no bottom
+// inset (older Android, most iPhones with a home button) this is a no-op.
+const TAB_BAR_HEIGHT = 90;
+
 export default function TabLayout() {
     const [showLogModal, setShowLogModal] = useState(false);
+    const insets = useSafeAreaInsets();
 
     const handleLogOption = (route: string) => {
         setShowLogModal(false);
@@ -19,7 +28,13 @@ export default function TabLayout() {
             <Tabs
                 screenOptions={{
                     headerShown: false,
-                    tabBarStyle: styles.tabBar,
+                    tabBarStyle: [
+                        styles.tabBar,
+                        {
+                            height: TAB_BAR_HEIGHT + insets.bottom,
+                            paddingBottom: insets.bottom,
+                        },
+                    ],
                     tabBarActiveTintColor: colors.primary,
                     tabBarInactiveTintColor: colors.text.muted,
                     tabBarLabelStyle: styles.tabLabel,
@@ -181,7 +196,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface,
         borderTopWidth: 1,
         borderTopColor: colors.glass.border,
-        height: 90,
+        // height / paddingBottom are applied inline from the safe-area inset.
         paddingTop: 8,
         elevation: 0,
         shadowOpacity: 0,

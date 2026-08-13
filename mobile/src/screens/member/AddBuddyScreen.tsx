@@ -11,6 +11,7 @@ import Button from '../../components/Button';
 import { friendsAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
+import { displayName } from '../../utils/displayName';
 import { useLocalSearchParams } from 'expo-router';
 
 type Tab = 'search' | 'scan' | 'code';
@@ -138,7 +139,7 @@ export default function AddBuddyScreen() {
                     <GlassCard style={styles.resultItem} padding="md">
                         <Avatar uri={item.avatar_url} size="md" />
                         <View style={styles.resultInfo}>
-                            <Text style={styles.resultName}>{item.name}</Text>
+                            <Text style={styles.resultName} numberOfLines={1}>{displayName(item)}</Text>
                             <Text style={styles.resultUsername}>@{item.username || 'user'}</Text>
                         </View>
                         {item.friendship_status === 'none' ? (
@@ -146,9 +147,30 @@ export default function AddBuddyScreen() {
                                 <MaterialIcons name="person-add" size={20} color={colors.primary} />
                             </TouchableOpacity>
                         ) : (
-                            <Text style={styles.statusText}>
-                                {item.friendship_status === 'friend' ? 'Buddy' : 'Pending'}
-                            </Text>
+                            // A bare <Text> here had no width of its own, so it sat
+                            // flush against the name while neighbouring rows showed a
+                            // 40pt round button — the rows never lined up. A chip with
+                            // the same trailing footprint fixes the ragged column.
+                            <View
+                                style={[
+                                    styles.statusChip,
+                                    item.friendship_status === 'friend' && styles.statusChipFriend,
+                                ]}
+                            >
+                                <MaterialIcons
+                                    name={item.friendship_status === 'friend' ? 'check' : 'schedule'}
+                                    size={12}
+                                    color={item.friendship_status === 'friend' ? colors.primary : colors.text.muted}
+                                />
+                                <Text
+                                    style={[
+                                        styles.statusChipText,
+                                        item.friendship_status === 'friend' && styles.statusChipTextFriend,
+                                    ]}
+                                >
+                                    {item.friendship_status === 'friend' ? 'BUDDY' : 'SENT'}
+                                </Text>
+                            </View>
                         )}
                     </GlassCard>
                 )}
@@ -353,11 +375,28 @@ const styles = StyleSheet.create({
         backgroundColor: colors.glass.surface,
         borderRadius: borderRadius.full,
     },
-    statusText: {
-        fontSize: typography.sizes.xs,
+    statusChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: spacing.md,
+        paddingVertical: 6,
+        borderRadius: borderRadius.full,
+        backgroundColor: colors.glass.surfaceLight,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    statusChipFriend: {
+        borderColor: colors.primary,
+    },
+    statusChipText: {
+        fontSize: 10,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.muted,
-        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    statusChipTextFriend: {
+        color: colors.primary,
     },
     emptyText: {
         textAlign: 'center',

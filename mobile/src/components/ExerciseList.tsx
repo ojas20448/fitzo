@@ -28,6 +28,8 @@ interface ExerciseListProps {
 }
 
 // Helper function to get icon based on body part
+const PAGE_SIZE = 50;
+
 const getExerciseIcon = (bodyPart: string): keyof typeof MaterialIcons.glyphMap => {
     const iconMap: Record<string, keyof typeof MaterialIcons.glyphMap> = {
         'chest': 'fitness-center',
@@ -51,6 +53,12 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter, a
     const [selectedBodyPart, setSelectedBodyPart] = useState<string | null>(initialFilter || null);
     const [bodyParts, setBodyParts] = useState<string[]>([]);
     const [isOffline, setIsOffline] = useState(false);
+    // Pagination. The catalogue is ~1,300 exercises but the API is offset-based
+    // and returns them grouped by body part, so fetching only the first page
+    // yields nothing but "back" — alphabetically first. Keep paging on scroll.
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     // Load initial data
     useEffect(() => {
@@ -91,6 +99,10 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter, a
 
     const loadExercises = async () => {
         setLoading(true);
+        // Any change of filter or search rebuilds the list from scratch, so the
+        // paging cursor has to go back to the start with it.
+        setOffset(0);
+        setHasMore(true);
         try {
             const { defaultExercises } = require('../data/defaultExercises');
             // Check offline store first
@@ -153,10 +165,17 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter, a
                 try {
                     const apiRes = selectedBodyPart
                         ? await exerciseAPI.getByBodyPart(selectedBodyPart)
-                        : await exerciseAPI.getAll(50, 0);
+                        : await exerciseAPI.getAll(PAGE_SIZE, 0);
                     if (apiRes.exercises && apiRes.exercises.length > 0) {
                         useOfflineStore.getState().cacheExercises(apiRes.exercises);
                         results = apiRes.exercises;
+                        // A short page means the catalogue is exhausted. Filtering
+                        // by body part returns the whole group in one call, so
+                        // there is nothing further to page through either.
+                        setOffset(apiRes.exercises.length);
+                        setHasMore(!selectedBodyPart && apiRes.exercises.length >= PAGE_SIZE);
+                    } else {
+                        setHasMore(false);
                     }
                 } catch (err: any) {
                     // Silently handle - parent screen manages error state
@@ -168,6 +187,40 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter, a
         } catch (error: any) {
             // Silently handle - parent screen manages error state
             setLoading(false);
+        }
+    };
+
+    // Fetch the next page and append. Guarded so an in-flight page, an
+    // exhausted catalogue, or a filtered/searched list cannot trigger a fetch —
+    // those paths are resolved entirely client-side.
+    const loadMoreExercises = async () => {
+        if (loadingMore || loading || !hasMore) return;
+        if (searchQuery.trim() || selectedBodyPart) return;
+
+        setLoadingMore(true);
+        try {
+            const apiRes = await exerciseAPI.getAll(PAGE_SIZE, offset);
+            const next = apiRes?.exercises || [];
+
+            if (next.length === 0) {
+                setHasMore(false);
+            } else {
+                setExercises(prev => {
+                    // The API paginates over a live dataset, so a page can repeat
+                    // an item that already arrived. De-dupe on id before appending.
+                    const seen = new Set(prev.map((e: any) => e.id));
+                    const merged = [...prev, ...next.filter((e: any) => !seen.has(e.id))];
+                    useOfflineStore.getState().cacheExercises(merged);
+                    return merged;
+                });
+                setOffset(offset + next.length);
+                setHasMore(next.length >= PAGE_SIZE);
+            }
+        } catch {
+            // Offline or API failure — stop paging rather than spinning forever.
+            setHasMore(false);
+        } finally {
+            setLoadingMore(false);
         }
     };
 
@@ -320,6 +373,15 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter, a
                     contentContainerStyle={styles.listContent}
                     estimatedItemSize={100}
                     showsVerticalScrollIndicator={false}
+                    onEndReached={loadMoreExercises}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={
+                        loadingMore ? (
+                            <View style={styles.footerLoader}>
+                                <ActivityIndicator size="small" color={colors.text.muted} />
+                            </View>
+                        ) : null
+                    }
                     ListEmptyComponent={
                         !loading && searchQuery.trim().length > 0 ? (
                             <View style={styles.emptyContainer}>
@@ -481,6 +543,10 @@ const styles = StyleSheet.create({
     },
     loadingText: {
         color: colors.text.muted,
+    },
+    footerLoader: {
+        paddingVertical: spacing.xl,
+        alignItems: 'center',
     },
     emptyContainer: {
         padding: spacing.xl,

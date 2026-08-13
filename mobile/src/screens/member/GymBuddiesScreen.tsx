@@ -9,6 +9,8 @@ import {
     TextInput,
     ActivityIndicator,
     Alert,
+    Modal,
+    Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -49,6 +51,11 @@ const GymBuddiesScreen: React.FC = () => {
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [showSearch, setShowSearch] = useState(false);
     const [loading, setLoading] = useState(true);
+    // "Join your gym" used to dump you on the profile tab with no explanation of
+    // what to do next. The join lives here now, where the intent started.
+    const [showJoinGym, setShowJoinGym] = useState(false);
+    const [gymCode, setGymCode] = useState('');
+    const [joiningGym, setJoiningGym] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [nudgingId, setNudgingId] = useState<string | null>(null);
 
@@ -158,6 +165,30 @@ const GymBuddiesScreen: React.FC = () => {
             toast.error('Kudos failed', msg);
         } finally {
             setSendingKudosId(null);
+        }
+    };
+
+    const handleJoinGym = async () => {
+        const code = gymCode.trim();
+        if (!code) {
+            Alert.alert('Missing code', 'Enter the access code from your gym.');
+            return;
+        }
+
+        setJoiningGym(true);
+        try {
+            const res = await settingsAPI.joinGym(code);
+            setShowJoinGym(false);
+            setGymCode('');
+            Alert.alert('Gym joined', `Welcome to ${res?.gym?.name || 'your gym'}!`);
+            loadData(); // the leaderboard is gym-scoped, so refetch it
+        } catch (err: any) {
+            Alert.alert(
+                'Could not join',
+                err?.response?.data?.error || 'That code was not recognised. Check it with your gym.',
+            );
+        } finally {
+            setJoiningGym(false);
         }
     };
 
@@ -571,7 +602,7 @@ const GymBuddiesScreen: React.FC = () => {
                                     />
                                     <TouchableOpacity
                                         style={styles.joinGymBtn}
-                                        onPress={() => router.push('/profile' as any)}
+                                        onPress={() => setShowJoinGym(true)}
                                     >
                                         <MaterialIcons name="add-business" size={20} color={colors.background} style={{ marginRight: 8 }} />
                                         <Text style={styles.joinGymBtnText}>JOIN YOUR GYM</Text>
@@ -653,11 +684,134 @@ const GymBuddiesScreen: React.FC = () => {
                     router.push('/member/settings');
                 }}
             />
+
+            {/* Join a gym — asked for right where the leaderboard says you need one */}
+            <Modal
+                visible={showJoinGym}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowJoinGym(false)}
+            >
+                <Pressable style={styles.joinModalBackdrop} onPress={() => setShowJoinGym(false)}>
+                    {/* Swallow taps on the card so they don't dismiss the sheet */}
+                    <Pressable style={styles.joinModalCard} onPress={() => {}}>
+                        <Text style={styles.joinModalTitle}>JOIN YOUR GYM</Text>
+                        <Text style={styles.joinModalBody}>
+                            Enter the access code from your gym. Reception or your trainer can give
+                            it to you.
+                        </Text>
+
+                        <TextInput
+                            style={styles.joinModalInput}
+                            placeholder="Gym access code"
+                            placeholderTextColor={colors.text.muted}
+                            value={gymCode}
+                            onChangeText={setGymCode}
+                            autoCapitalize="characters"
+                            autoCorrect={false}
+                            editable={!joiningGym}
+                            onSubmitEditing={handleJoinGym}
+                            returnKeyType="go"
+                        />
+
+                        <View style={styles.joinModalActions}>
+                            <TouchableOpacity
+                                style={styles.joinModalCancel}
+                                onPress={() => setShowJoinGym(false)}
+                                disabled={joiningGym}
+                            >
+                                <Text style={styles.joinModalCancelText}>CANCEL</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.joinModalConfirm, joiningGym && { opacity: 0.6 }]}
+                                onPress={handleJoinGym}
+                                disabled={joiningGym}
+                            >
+                                {joiningGym ? (
+                                    <ActivityIndicator size="small" color={colors.background} />
+                                ) : (
+                                    <Text style={styles.joinModalConfirmText}>JOIN</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </Pressable>
+                </Pressable>
+            </Modal>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
+    joinModalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        justifyContent: 'center',
+        paddingHorizontal: spacing.xl,
+    },
+    joinModalCard: {
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.xl,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        padding: spacing.xl,
+        gap: spacing.md,
+    },
+    joinModalTitle: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+        letterSpacing: typography.letterSpacing.wider,
+    },
+    joinModalBody: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.secondary,
+        lineHeight: 20,
+    },
+    joinModalInput: {
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.lg,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        color: colors.text.primary,
+        fontFamily: typography.fontFamily.medium,
+        fontSize: typography.sizes.base,
+        letterSpacing: 1,
+        marginTop: spacing.xs,
+    },
+    joinModalActions: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        gap: spacing.md,
+        marginTop: spacing.xs,
+    },
+    joinModalCancel: {
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+    },
+    joinModalCancelText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.muted,
+        letterSpacing: 1,
+    },
+    joinModalConfirm: {
+        backgroundColor: colors.primary,
+        borderRadius: borderRadius.full,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
+        minWidth: 96,
+        alignItems: 'center',
+    },
+    joinModalConfirmText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.background,
+        letterSpacing: 1,
+    },
     container: {
         flex: 1,
         backgroundColor: colors.background,

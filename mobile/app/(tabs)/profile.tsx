@@ -26,6 +26,7 @@ import WorkoutCalendar from '../../src/components/WorkoutCalendar';
 import Skeleton, { SkeletonCard } from '../../src/components/Skeleton';
 import { useToast } from '../../src/components/Toast';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/styles/theme';
+import { displayName } from '../../src/utils/displayName';
 
 export default function ProfileScreen() {
     const { user, logout, refreshUser } = useAuth();
@@ -250,7 +251,7 @@ export default function ProfileScreen() {
                         <Avatar uri={user?.avatar_url} size="xl" />
                     </View>
 
-                    <Text style={styles.userName}>{user?.name || 'Member'}</Text>
+                    <Text style={styles.userName}>{displayName(user)}</Text>
 
                     {/* Quick Status Badges */}
                     <View style={styles.badgeRow}>

@@ -23,6 +23,7 @@ import * as Haptics from 'expo-haptics';
 import { foodAPI, caloriesAPI, nutritionAPI, settingsAPI, aiAPI, CalorieEntry } from '../../services/api';
 import Input from '../../components/Input';
 import VoiceCaptureSheet from '../../components/VoiceCaptureSheet';
+import { hasSeenTip, markTipSeen, TIP_KEYS } from '../../utils/firstRun';
 import { useVoiceCapture } from '../../hooks/useVoiceCapture';
 import Celebration from '../../components/Celebration';
 import ThaliPresets from '../../components/ThaliPresets';
@@ -135,6 +136,23 @@ const CalorieLogScreen: React.FC = () => {
     }, []);
 
     useEffect(() => { loadTodayEntries(); }, [loadTodayEntries]);
+
+    // First visit only: surface voice logging, which is faster than searching
+    // the catalogue for a home-cooked meal.
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            if (await hasSeenTip(TIP_KEYS.voiceCalories)) return;
+            if (cancelled) return;
+            await markTipSeen(TIP_KEYS.voiceCalories);
+            Alert.alert(
+                'Log with your voice',
+                'Tap the mic and say what you ate — "two roti, dal and a bowl of curd". Fitzo works out the macros.',
+                [{ text: 'Got it' }],
+            );
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
     useEffect(() => {
         if (params.foodName && params.calories) {

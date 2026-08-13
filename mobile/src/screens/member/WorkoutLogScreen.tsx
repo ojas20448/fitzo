@@ -27,6 +27,7 @@ import ExerciseList from '../../components/ExerciseList';
 import { WorkoutDraftSheet } from '../../components/WorkoutDraftSheet';
 import { useToast } from '../../components/Toast';
 import VoiceCaptureSheet from '../../components/VoiceCaptureSheet';
+import { hasSeenTip, markTipSeen, TIP_KEYS } from '../../utils/firstRun';
 import { useVoiceCapture } from '../../hooks/useVoiceCapture';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import {
@@ -166,6 +167,23 @@ const WorkoutLogScreen: React.FC = () => {
         await voice.cancel();
         setVoiceSheetOpen(false);
     };
+
+    // First visit only: point out that the whole workout can be dictated. The
+    // mic is otherwise just another icon in a busy header.
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            if (await hasSeenTip(TIP_KEYS.voiceWorkout)) return;
+            if (cancelled) return;
+            await markTipSeen(TIP_KEYS.voiceWorkout);
+            Alert.alert(
+                'Log with your voice',
+                'Tap the mic and just say it — "bench press 3 sets of 8 at 60 kilos". Fitzo fills in the sets for you.',
+                [{ text: 'Got it' }],
+            );
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
     useEffect(() => {
         loadSharingPreference();

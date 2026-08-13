@@ -35,6 +35,12 @@ export default function FitnessProfileScreen() {
     const [goalType, setGoalType] = useState('maintenance');
     const [activityLevel, setActivityLevel] = useState('moderate');
     const [isVegetarian, setIsVegetarian] = useState(false);
+    // Manual calorie override. Off by default so the app keeps auto-calculating
+    // from biometrics; on, it sends target_calories and the backend stops
+    // recomputing it (routes/nutrition.js treats a supplied target as final).
+    const [useCustomCalories, setUseCustomCalories] = useState(false);
+    const [customCalories, setCustomCalories] = useState('');
+    const [calculatedCalories, setCalculatedCalories] = useState<number | null>(null);
 
     // Calculated values
     const bmi = parseFloat(weight) / Math.pow(parseFloat(height) / 100, 2) || 0;
@@ -63,6 +69,10 @@ export default function FitnessProfileScreen() {
                 setGoalType(profile.goal_type || 'maintenance');
                 setActivityLevel(profile.activity_level || 'moderate');
                 setIsVegetarian(profile.is_vegetarian || false);
+                setCalculatedCalories(profile.target_calories ?? null);
+                if (profile.target_calories) {
+                    setCustomCalories(String(Math.round(profile.target_calories)));
+                }
             }
         } catch (error: any) {
             toast.error('Error', error.message || 'Something went wrong');
@@ -72,6 +82,12 @@ export default function FitnessProfileScreen() {
     };
 
     const handleSave = async () => {
+        const override = parseInt(customCalories, 10);
+        if (useCustomCalories && (!Number.isFinite(override) || override < 800 || override > 8000)) {
+            toast.error('Check that number', 'Enter a daily target between 800 and 8000 kcal.');
+            return;
+        }
+
         setSaving(true);
         try {
             const result = await nutritionAPI.updateProfile({
@@ -82,6 +98,8 @@ export default function FitnessProfileScreen() {
                 activity_level: activityLevel as any,
                 goal_type: goalType as any,
                 is_vegetarian: isVegetarian,
+                // Omitted entirely when off, so the backend recalculates.
+                ...(useCustomCalories ? { target_calories: override } : {}),
             });
 
             // Save weekly goal
@@ -285,6 +303,43 @@ export default function FitnessProfileScreen() {
                             <View style={[styles.toggleKnob, isVegetarian && styles.toggleKnobActive]} />
                         </View>
                     </Pressable>
+                </View>
+
+                {/* Daily calorie target — auto by default, overridable */}
+                <View style={styles.section}>
+                    <Pressable
+                        style={styles.toggleRow}
+                        onPress={() => setUseCustomCalories(!useCustomCalories)}
+                    >
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.toggleLabel}>Set my own calorie target</Text>
+                            <Text style={styles.toggleDesc}>
+                                {useCustomCalories
+                                    ? 'Your number is used as-is. Turn off to go back to automatic.'
+                                    : calculatedCalories
+                                        ? `Calculated for you: ${Math.round(calculatedCalories)} kcal/day`
+                                        : 'Calculated from your stats, goal and activity level'}
+                            </Text>
+                        </View>
+                        <View style={[styles.toggle, useCustomCalories && styles.toggleActive]}>
+                            <View style={[styles.toggleKnob, useCustomCalories && styles.toggleKnobActive]} />
+                        </View>
+                    </Pressable>
+
+                    {useCustomCalories && (
+                        <View style={styles.customCalRow}>
+                            <TextInput
+                                style={styles.customCalInput}
+                                value={customCalories}
+                                onChangeText={setCustomCalories}
+                                keyboardType="number-pad"
+                                placeholder={calculatedCalories ? String(Math.round(calculatedCalories)) : '2200'}
+                                placeholderTextColor={colors.text.muted}
+                                maxLength={4}
+                            />
+                            <Text style={styles.customCalUnit}>kcal / day</Text>
+                        </View>
+                    )}
                 </View>
 
                 {/* Save Button */}
@@ -513,6 +568,30 @@ const styles = StyleSheet.create({
     },
 
     // Toggle
+    customCalRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        marginTop: spacing.md,
+    },
+    customCalInput: {
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.lg,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        color: colors.text.primary,
+        fontFamily: typography.fontFamily.bold,
+        fontSize: typography.sizes.lg,
+        minWidth: 110,
+        textAlign: 'center',
+    },
+    customCalUnit: {
+        fontFamily: typography.fontFamily.regular,
+        fontSize: typography.sizes.sm,
+        color: colors.text.muted,
+    },
     toggleRow: {
         flexDirection: 'row',
         alignItems: 'center',
