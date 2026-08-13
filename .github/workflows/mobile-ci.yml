@@ -29,7 +29,15 @@ jobs:
 
       - name: TypeScript type check
         working-directory: mobile
-        run: npx tsc --noEmit
+        run: npm run typecheck
+
+      - name: Lint
+        working-directory: mobile
+        run: npm run lint
+
+      - name: Unit tests
+        working-directory: mobile
+        run: npm test -- --ci
 
       - name: Wiring audit (nav targets ↔ screens, api.ts ↔ backend routes)
         run: |
