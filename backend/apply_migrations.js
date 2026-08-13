@@ -5,12 +5,39 @@ const { Client } = require('pg');
 
 // Order matters: migrate_calorie_logs_source adds an FK to user_foods, so
 // the table must exist first.
-const MIGRATIONS = [
+const LEGACY_MIGRATIONS = [
     'migrate_nutrition_profile.sql',
     'migrate_recipes.sql',
     'migrate_published_splits.sql',
     'migrate_user_foods.sql',
     'migrate_calorie_logs_source.sql'
+];
+
+/**
+ * Everything in data/migrations/ is numbered (005_… through 013_…) and gets run
+ * in filename order after the legacy set.
+ *
+ * These used to be applied by hand, one bespoke run_*_migration.js at a time,
+ * which meant a fresh database could not be rebuilt from the repo and a new
+ * migration silently never ran anywhere. They are all written with
+ * IF NOT EXISTS and contain no DROP/TRUNCATE/DELETE, so re-running them is a
+ * no-op — safe to sweep on every invocation.
+ */
+function numberedMigrations() {
+    const dir = path.join(__dirname, 'data', 'migrations');
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir)
+        .filter(f => /^\d+.*\.sql$/i.test(f))
+        .sort() // zero-padded prefixes make lexical order the intended order
+        .map(f => ({ label: `data/migrations/${f}`, path: path.join(dir, f) }));
+}
+
+const MIGRATIONS = [
+    ...LEGACY_MIGRATIONS.map(f => ({
+        label: f,
+        path: path.join(__dirname, 'src', 'db', f),
+    })),
+    ...numberedMigrations(),
 ];
 
 async function runMigrations() {
@@ -25,8 +52,7 @@ async function runMigrations() {
 
         let applied = 0, skipped = 0, failed = 0;
 
-        for (const file of MIGRATIONS) {
-            const filePath = path.join(__dirname, 'src', 'db', file);
+        for (const { label: file, path: filePath } of MIGRATIONS) {
             if (!fs.existsSync(filePath)) {
                 console.warn(`⚠️  Warning: ${file} not found at ${filePath}`);
                 continue;
