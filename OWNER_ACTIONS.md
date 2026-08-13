@@ -109,13 +109,71 @@ Paste that fingerprint into [Google Cloud Console](https://console.cloud.google.
 → your **Android** OAuth client. EAS signs with its own keystore, so its SHA-1 is
 different from your local debug key — both need to be registered.
 
+Also check, before publishing:
+
+- [ ] Android package and iOS bundle ID are both exactly `com.fitzo.app`
+- [ ] Test users are added in the Google Cloud consent screen while the app is
+      unpublished, or sign-in fails for anyone not listed
+
 ---
 
-## 7. Stop it happening again
+## 7. Play Store publishing — ✅ done (Aug 13, 2026)
 
-- [ ] `RENDER_ENV_SETUP.md` is now gitignored, but **still tracked**. Untrack it:
-      `git rm --cached RENDER_ENV_SETUP.md && git commit -m "chore: untrack env setup doc"`
+Automated submission is wired up; no manual Play Console upload needed.
+
+- [x] Service account created (`eas-473@golden-cubist-484521-g0.iam.gserviceaccount.com`)
+- [x] JSON key saved to `mobile/google-services-key.json` (gitignored)
+- [x] Granted release permission in Play Console
+- [x] **Google Play Android Developer API enabled** — on project `1030039443378`,
+      not the project owning the service account. This is the one that bites:
+      the failure is a 403 `SERVICE_DISABLED`, and the project it names is the
+      one linked in Play Console.
+
+Every future release is now one command:
+
+```bash
+cd mobile && eas build --profile production --platform android --auto-submit
+```
+
+It lands on the **internal** track; promote to production from Play Console.
+
+To re-verify the credentials at any time, the check is: mint a JWT from the key,
+exchange it for a token, open an edit on `com.fitzo.app`, abandon it. If step 2
+fails you have a permissions problem; if it 403s with `SERVICE_DISABLED` you have
+an API-enablement problem.
+
+---
+
+## 8. Database migrations
+
+`render.yaml` has **no migration step** — `buildCommand` is just `npm install`.
+Migrations are manual, always:
+
+```bash
+cd backend && node apply_migrations.js     # additive, idempotent, safe to re-run
+```
+
+That runner now sweeps `data/migrations/*.sql` (005–013) as well as the legacy
+`src/db/` set, so a fresh database can be rebuilt from the repo.
+
+> ⚠️ **Do not confuse it with `backend/scripts/apply_migration.js`** (singular).
+> That one DROPs 12 tables and rebuilds from `supabase_setup.sql` — total user
+> data loss on a live database. It now refuses to run without `--force-reset`
+> and refuses outright under `NODE_ENV=production`, but the names are one letter
+> apart, so read twice.
+
+- [ ] **Blocked on you:** `backend/.env` still has `<REDACTED>` for
+      `DATABASE_URL`, so migration `013` (rest-timer + warm-up preferences)
+      has not run anywhere. Restore the value from Render, run the command
+      above locally, then run it against production.
+
+---
+
+## 9. Stop it happening again
+
+- [x] `RENDER_ENV_SETUP.md` untracked and gitignored
 - [ ] Never paste a real value into a `.md` file. Document the **names** only;
       values live in Render and `backend/.env`.
 - [ ] Optional: enable GitHub → Settings → Code security → **Secret scanning +
       push protection** — it blocks commits containing credentials.
+- [ ] Delete any credential sitting in `~/Downloads` once it is in place.

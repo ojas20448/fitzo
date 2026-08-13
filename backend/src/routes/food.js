@@ -338,8 +338,21 @@ router.post('/bulk-resolve', authenticate, aiQuota, asyncHandler(async (req, res
             results.push({ ...bestMatch, is_estimate: false, source: 'catalog', original_query: searchQuery });
         } else {
             const aiEstimated = await geminiService.analyzeFoodFromText(searchQuery);
+            // Upsert on (user_id, lower(name)) — the unique index in
+            // migrate_user_foods.sql. A plain INSERT here was wrong both ways
+            // round: with the index present, the second "2 roti" of the week
+            // threw a unique violation and 500'd; without it, a daily log grew
+            // 365 near-identical rows. Re-logging now refreshes the estimate,
+            // which is what the index was always for.
             const queryRes = await query(
-                `INSERT INTO user_foods (user_id, name, calories, protein, carbs, fat) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+                `INSERT INTO user_foods (user_id, name, calories, protein, carbs, fat)
+                 VALUES ($1, $2, $3, $4, $5, $6)
+                 ON CONFLICT (user_id, lower(name)) DO UPDATE
+                    SET calories = EXCLUDED.calories,
+                        protein  = EXCLUDED.protein,
+                        carbs    = EXCLUDED.carbs,
+                        fat      = EXCLUDED.fat
+                 RETURNING *`,
                 [req.user.id, aiEstimated.name || searchQuery, aiEstimated.calories, aiEstimated.protein_g, aiEstimated.carbs_g, aiEstimated.fat_g]
             );
             results.push({ ...aiEstimated, id: queryRes.rows[0].id, is_estimate: true, source: 'ai_estimate', user_food_id: queryRes.rows[0].id, original_query: searchQuery });
