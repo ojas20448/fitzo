@@ -177,7 +177,9 @@ This document outlines all identified UI/UX issues and improvement opportunities
 - [ ] **BUD_003**: Friend request UI is buried
 - [ ] **BUD_004**: No "suggested friends" based on gym/activity
 - [ ] **BUD_005**: Like/reaction functionality has no animation
-- [ ] **BUD_006**: No comments on feed items
+- [x] **BUD_006**: ~~No comments on feed items~~ — won't do; posting and
+      commenting were removed to keep the app simple. The squad feed is
+      read-only by design.
 - [ ] **BUD_007**: Search UX is hidden behind icon - not discoverable
 
 ### Learn Screen

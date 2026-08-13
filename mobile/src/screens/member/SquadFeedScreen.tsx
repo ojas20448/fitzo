@@ -6,13 +6,12 @@ import { router } from 'expo-router';
 import Avatar from '../../components/Avatar';
 import EmptyState from '../../components/EmptyState';
 import { SkeletonList } from '../../components/Skeleton';
-import CommentModal from '../../components/CommentModal';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { workoutsAPI } from '../../services/api';
 
 /**
- * Squad Feed — the one social feed.
- * Minimal mono: glass cards, one real action (comments), no decoration.
+ * Squad Feed — a read-only view of what your buddies logged.
+ * Minimal mono: glass cards, no decoration, no social actions.
  */
 
 interface FeedItem {
@@ -23,7 +22,6 @@ interface FeedItem {
     exerciseNames: string[];
     setCount: number;
     volumeKg: number;
-    commentCount: number;
     createdAt: Date;
 }
 
@@ -65,7 +63,6 @@ const SquadFeedScreen = () => {
     const [feed, setFeed] = useState<FeedItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [commentTarget, setCommentTarget] = useState<string | null>(null);
 
     const loadFeed = useCallback(async () => {
         try {
@@ -80,7 +77,6 @@ const SquadFeedScreen = () => {
                     exerciseNames: parsed.names,
                     setCount: parsed.sets,
                     volumeKg: parsed.volume,
-                    commentCount: item.comment_count || 0,
                     createdAt: new Date(item.created_at),
                 };
             });
@@ -134,18 +130,6 @@ const SquadFeedScreen = () => {
                         {item.volumeKg > 0 ? `${item.volumeKg.toLocaleString()} kg` : ''}
                     </Text>
                 )}
-
-                {/* One real action */}
-                <TouchableOpacity
-                    style={styles.commentBtn}
-                    onPress={() => setCommentTarget(item.id)}
-                    accessibilityLabel={`Comments on ${item.user}'s workout`}
-                >
-                    <MaterialIcons name="chat-bubble-outline" size={16} color={colors.text.muted} />
-                    <Text style={styles.commentText}>
-                        {item.commentCount > 0 ? item.commentCount : 'Comment'}
-                    </Text>
-                </TouchableOpacity>
             </View>
         );
     };
@@ -192,17 +176,6 @@ const SquadFeedScreen = () => {
                     }
                 />
             )}
-
-            {/* Comments */}
-            <CommentModal
-                visible={commentTarget !== null}
-                onClose={() => {
-                    setCommentTarget(null);
-                    loadFeed(); // refresh counts after commenting
-                }}
-                itemId={commentTarget || ''}
-                type="workout"
-            />
         </SafeAreaView>
     );
 };
@@ -317,20 +290,6 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.regular,
         color: colors.text.muted,
         marginTop: 4,
-    },
-    commentBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        alignSelf: 'flex-start',
-        marginTop: spacing.md,
-        paddingVertical: 4,
-        paddingRight: spacing.md,
-    },
-    commentText: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
     },
 });
 

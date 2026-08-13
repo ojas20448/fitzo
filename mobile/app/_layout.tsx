@@ -204,7 +204,6 @@ export default function RootLayout() {
                                 <Stack.Screen name="member/readiness-checkin" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="member/nutrition-insights" />
                                 <Stack.Screen name="member/health-report" />
-                                <Stack.Screen name="member/create-post" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="member/user-profile" />
                                 <Stack.Screen name="member/buddy-activity" />
                                 <Stack.Screen name="member/squad-feed" options={{ animation: 'slide_from_right' }} />

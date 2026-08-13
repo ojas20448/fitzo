@@ -141,14 +141,6 @@
       "note": "HTTP 200"
     },
     {
-      "name": "posts feed",
-      "method": "GET",
-      "path": "/api/posts/feed",
-      "role": "member",
-      "pass": true,
-      "note": "HTTP 200"
-    },
-    {
       "name": "notification status",
       "method": "GET",
       "path": "/api/notifications/status",

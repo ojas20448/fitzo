@@ -11,9 +11,9 @@
  */
 
 import { useOfflineStore } from '../stores/offlineStore';
-import { workoutsAPI, caloriesAPI, intentAPI, postsAPI } from './api';
+import { workoutsAPI, caloriesAPI, intentAPI } from './api';
 
-type PendingActionType = 'LOG_WORKOUT' | 'LOG_CALORIES' | 'SET_INTENT' | 'CREATE_POST' | 'ADD_COMMENT';
+type PendingActionType = 'LOG_WORKOUT' | 'LOG_CALORIES' | 'SET_INTENT';
 
 const MAX_RETRIES = 5;
 
@@ -30,12 +30,6 @@ async function executeAction(type: PendingActionType, payload: any): Promise<any
 
         case 'SET_INTENT':
             return intentAPI.setIntent(payload);
-
-        case 'CREATE_POST':
-            return postsAPI.create(payload);
-
-        case 'ADD_COMMENT':
-            return postsAPI.addComment(payload.postId, payload.comment);
 
         default:
             throw new Error(`Unknown action type: ${type}`);

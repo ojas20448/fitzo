@@ -111,18 +111,6 @@ const setIntentSchema = z.object({
 });
 
 // ===========================================
-// SOCIAL SCHEMAS
-// ===========================================
-const createPostSchema = z.object({
-    content: z.string().min(1, 'Post content is required').max(2000),
-    visibility: z.enum(visibilityOptions).default('friends'),
-});
-
-const createCommentSchema = z.object({
-    content: z.string().min(1, 'Comment is required').max(500),
-});
-
-// ===========================================
 // PROFILE SCHEMAS
 // ===========================================
 const updateProfileSchema = z.object({
@@ -215,9 +203,6 @@ module.exports = {
     analyzeFoodPhotoSchema,
     // Intent
     setIntentSchema,
-    // Social
-    createPostSchema,
-    createCommentSchema,
     // Profile
     updateProfileSchema,
     fitnessProfileSchema,

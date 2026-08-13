@@ -272,3 +272,47 @@ carry case that would otherwise render as `5'12"`.
 comes back `false` and `app/index.tsx` redirects to `/onboarding`. Completion
 upserts `nutrition_profiles` (`ON CONFLICT (user_id) DO UPDATE`), closing the
 loop — so no infinite-onboarding risk either. Confirmed against the live DB.
+
+## Posting & commenting removed entirely (Aug 13, 2026)
+
+**Why:** the app is meant to be simple. Posts never rendered anywhere (see
+"Feed rescue", July 2026 — the system was orphaned and left dormant), and
+commenting was the one social action bolted onto the squad feed. Both are gone;
+the product no longer carries user-authored social content.
+
+**Posts** (a prior pass had already removed most of this): `routes/posts.js`,
+`app/member/create-post.tsx`, `postsAPI`, the route mount, the nav stack entry,
+and the `CREATE_POST`/`ADD_COMMENT` offline-queue types. This pass swept the
+leftovers it missed: `run_posts_migration.js`, `add_posts_table.sql`, and
+`createPostSchema` (still exported from `schemas/index.js` with no caller).
+
+**Comments:** `routes/comments.js`, `src/db/migrate_comments.sql`,
+`createCommentSchema`, the `/api/comments` mount, `CommentModal.tsx`, and the
+`comment_count` correlated subquery on `GET /api/workouts/feed` — which now
+does one less per-row COUNT on every feed load.
+
+**Squad feed is read-only.** It survives because it is *not* posting: it's a
+generated view of workouts your buddies logged, and friends/buddies/kudos all
+depend on it. Removing it would have gutted features nobody asked to remove.
+The comment button and its styles are gone; the header, glass cards, exercise
+lines, relative time, skeletons and EmptyState are untouched.
+
+**Tables kept, code removed.** `comments`, `posts`, `post_likes`, and
+`post_comments` still exist in the DB with zero code referencing them. Dropping
+them is a one-way door, so it's left as a deliberate manual step:
+
+```sql
+DROP TABLE IF EXISTS post_comments, post_likes, posts CASCADE;
+DROP TABLE IF EXISTS comments CASCADE;
+```
+
+**Verified:** typecheck clean, 25/25 tests pass, lint 0 errors (269 warnings,
+down from 273), wiring audit 0 nav + 0 api orphans (150 api.ts calls vs 164
+backend routes, down from 166), backend boots, `node --check` on every changed
+file. `bridge_audit.js` no longer probes the dropped tables.
+
+**Also:** `Media/` is now gitignored — 834MB of source art, video projects and a
+vendored `node_modules` containing a 194MB `chrome-headless-shell.exe`. GitHub
+hard-rejects files over 100MB, so a `git add -A` would have failed the push
+outright. Nothing in it is needed to build the app; shipped assets live in
+`mobile/assets/`. Back it up outside git.

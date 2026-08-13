@@ -99,7 +99,6 @@ async function main() {
     await check('friends list', 'GET', '/api/friends', { role: 'member' }, d => Array.isArray(d.friends) || 'no friends[]');
     await check('friends search', 'GET', '/api/friends/search?q=priya', { role: 'member' }, d => Array.isArray(d.users) || 'no users[]');
     await check('friends suggested', 'GET', '/api/friends/suggested', { role: 'member' });
-    await check('posts feed', 'GET', '/api/posts/feed', { role: 'member' });
     await check('notification status', 'GET', '/api/notifications/status', { role: 'member' });
     await check('notification prefs', 'GET', '/api/notifications/preferences', { role: 'member' });
     await check('leaderboard', 'GET', '/api/leaderboard', { role: 'member' }, d => Array.isArray(d.leaderboard) || 'no leaderboard[]');

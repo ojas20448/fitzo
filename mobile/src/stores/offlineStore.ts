@@ -34,7 +34,7 @@ interface CachedLesson {
 // ===========================================
 // OFFLINE WRITE QUEUE TYPES
 // ===========================================
-type PendingActionType = 'LOG_WORKOUT' | 'LOG_CALORIES' | 'SET_INTENT' | 'CREATE_POST' | 'ADD_COMMENT';
+type PendingActionType = 'LOG_WORKOUT' | 'LOG_CALORIES' | 'SET_INTENT';
 
 interface PendingAction {
     id: string;
