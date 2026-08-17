@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -25,6 +25,7 @@ import {
     isErrorWithCode,
     statusCodes,
 } from '@react-native-google-signin/google-signin';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 // Configure Google Sign-In once
 GoogleSignin.configure({
@@ -34,13 +35,55 @@ GoogleSignin.configure({
 });
 
 export default function LoginScreen() {
-    const { login, googleSignIn } = useAuth();
+    const { login, googleSignIn, appleSignIn } = useAuth();
     const toast = useToast();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [appleAvailable, setAppleAvailable] = useState(false);
+
+    // Availability is asked at runtime rather than assumed from Platform.OS.
+    // Sign in with Apple needs iOS 13+, so an older device reports false and
+    // must not be shown a button that cannot open the authorisation sheet.
+    useEffect(() => {
+        if (Platform.OS !== 'ios') return;
+        AppleAuthentication.isAvailableAsync()
+            .then(setAppleAvailable)
+            .catch(() => setAppleAvailable(false));
+    }, []);
+
+    const handleApplePress = async () => {
+        setLoading(true);
+        try {
+            const credential = await AppleAuthentication.signInAsync({
+                requestedScopes: [
+                    AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                    AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                ],
+            });
+
+            if (!credential.identityToken) {
+                toast.error('Apple Sign-In Failed', 'Could not get authentication token');
+                return;
+            }
+
+            // credential.fullName is populated ONLY on the first authorisation
+            // for this app; it is null on every subsequent sign-in. Forward it
+            // regardless — the server decides whether it still needs it.
+            await appleSignIn(credential.identityToken, credential.fullName);
+            router.replace('/');
+        } catch (error: any) {
+            // Tapping Cancel on the Apple sheet throws with this code. It is a
+            // deliberate user action, not a failure, so it must not raise an
+            // error toast.
+            if (error?.code === 'ERR_REQUEST_CANCELED') return;
+            toast.error('Apple Sign-In Failed', error?.message || 'Something went wrong');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleGooglePress = async () => {
         setLoading(true);
@@ -183,14 +226,36 @@ export default function LoginScreen() {
                             <View style={styles.dividerLine} />
                         </View>
 
-                        <TouchableOpacity
-                            style={styles.googleBtn}
-                            onPress={handleGooglePress}
-                            disabled={loading}
-                        >
-                            <MaterialIcons name="g-translate" size={24} color={colors.text.primary} />
-                            <Text style={styles.googleBtnText}>Google</Text>
-                        </TouchableOpacity>
+                        <View style={styles.socialRow}>
+                            <TouchableOpacity
+                                style={styles.googleBtn}
+                                onPress={handleGooglePress}
+                                disabled={loading}
+                            >
+                                <MaterialIcons name="g-translate" size={24} color={colors.text.primary} />
+                                <Text style={styles.googleBtnText}>Google</Text>
+                            </TouchableOpacity>
+
+                            {/*
+                              * iOS only. Guideline 4.8 requires Sign in with Apple
+                              * wherever a third-party sign-in is offered, but only on
+                              * Apple platforms — rendering it on Android would show a
+                              * button that cannot work, since the native
+                              * authorisation sheet does not exist there.
+                              */}
+                            {appleAvailable && (
+                                <TouchableOpacity
+                                    style={styles.appleBtn}
+                                    onPress={handleApplePress}
+                                    disabled={loading}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Sign in with Apple"
+                                >
+                                    <MaterialIcons name="apple" size={24} color={colors.text.dark} />
+                                    <Text style={styles.appleBtnText}>Apple</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
 
                     </GlassCard>
 
@@ -325,7 +390,14 @@ const styles = StyleSheet.create({
         marginHorizontal: spacing.lg,
         letterSpacing: 1,
     },
+    // Both buttons flex equally so neither reads as the preferred option.
+    // Apple requires its button be no less prominent than the alternatives.
+    socialRow: {
+        flexDirection: 'row',
+        gap: spacing.md,
+    },
     googleBtn: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -335,6 +407,23 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: colors.glass.border,
         gap: spacing.md,
+    },
+    // White-on-black is one of the three treatments Apple's Human Interface
+    // Guidelines permit; arbitrary brand colours are not allowed.
+    appleBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.text.primary,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        gap: spacing.md,
+    },
+    appleBtnText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: colors.text.dark,
     },
     googleBtnText: {
         fontSize: 16,

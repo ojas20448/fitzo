@@ -13,6 +13,7 @@ const { validate } = require('../middleware/validate');
 const { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } = require('../schemas');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID_WEB);
+const { verifyAppleToken } = require('../services/appleAuth');
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // Rate limiter for password-based endpoints only (not Google OAuth)
@@ -21,6 +22,19 @@ const passwordLimiter = rateLimit({
     max: 10,
     standardHeaders: true,
     legacyHeaders: false,
+    message: { error: true, message: 'Too many attempts. Please try again in 15 minutes.', code: 'RATE_LIMITED' },
+    skip: () => process.env.NODE_ENV === 'development',
+});
+
+// Per-EMAIL limiter for the reset-code endpoint. The IP limiter above cannot
+// stop a distributed brute force (10^6 code space); keying on the target
+// email caps guesses per account regardless of IP.
+const resetCodeLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 min
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => `reset-code:${String(req.body?.email || '').toLowerCase().trim()}`,
     message: { error: true, message: 'Too many attempts. Please try again in 15 minutes.', code: 'RATE_LIMITED' },
     skip: () => process.env.NODE_ENV === 'development',
 });
@@ -198,12 +212,15 @@ router.get('/me', require('../middleware/auth').authenticate, asyncHandler(async
 /**
  * POST /api/auth/dev-login
  * Bypass login for development (auto-login as first user)
+ *
+ * Gated behind ALLOW_DEV_LOGIN=true (explicit opt-in), NOT NODE_ENV alone.
+ * A misconfigured NODE_ENV must never expose an unauthenticated login.
  */
 router.post('/dev-login', asyncHandler(async (req, res) => {
     // Dev/demo login - get the demo user for quick access
     // Get any user (preferably demo)
-    // Block dev-login in production
-    if (process.env.NODE_ENV === 'production') {
+    // Block dev-login unless explicitly enabled
+    if (process.env.ALLOW_DEV_LOGIN !== 'true') {
         return res.status(404).json({ error: true, message: 'Not found' });
     }
 
@@ -478,6 +495,159 @@ router.post('/google', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * POST /api/auth/apple
+ * Sign in with Apple.
+ *
+ * Required by App Store Review Guideline 4.8 — an app offering Google sign-in
+ * must offer an equivalent privacy-preserving option.
+ *
+ * Two things make this materially different from the Google route:
+ *
+ *  1. The user's NAME arrives only on the first authorisation, ever. Apple
+ *     never sends it again, not on re-install and not on re-sign-in. If it is
+ *     not persisted on that first call it is unrecoverable without the user
+ *     revoking the app in iOS Settings. So the client forwards whatever Apple
+ *     gave it and we take it if we have nothing better.
+ *
+ *  2. The email may be a @privaterelay.appleid.com alias, or absent entirely on
+ *     repeat sign-ins. It therefore cannot be the identity key — `sub` is.
+ */
+router.post('/apple', asyncHandler(async (req, res) => {
+    const { identityToken, fullName } = req.body;
+
+    if (!identityToken) {
+        throw new ValidationError('Apple identity token is required');
+    }
+
+    let appleId, appleEmail, emailVerified, isPrivateEmail;
+    try {
+        ({ appleId, email: appleEmail, emailVerified, isPrivateEmail } =
+            await verifyAppleToken(identityToken));
+    } catch (err) {
+        console.error('❌ Apple identity token rejected:', err.message);
+        throw new AuthError('Apple login failed: invalid authentication token');
+    }
+
+    if (!appleId) {
+        throw new AuthError('Apple login failed: token carried no user identifier');
+    }
+
+    try {
+        // Identity is keyed on `sub`, which is stable for the life of the
+        // Apple ID and unique per developer team.
+        let user = (await query('SELECT * FROM users WHERE apple_id = $1', [appleId])).rows[0];
+
+        // Fall back to email ONLY for a real, verified, non-relay address.
+        //
+        // A private-relay alias must never be used to claim an existing row:
+        // the alias is generated per app and tells us nothing about who owns
+        // that mailbox, so matching on it could hand one person another's
+        // account. A verified real address is the legitimate case of someone
+        // who already signed up with email/password and is now linking Apple.
+        if (!user && appleEmail && emailVerified && !isPrivateEmail) {
+            const byEmail = (await query('SELECT * FROM users WHERE email = $1', [appleEmail])).rows[0];
+            if (byEmail) {
+                if (byEmail.apple_id && byEmail.apple_id !== appleId) {
+                    console.warn('⚠️  Apple login refused: email bound to a different Apple ID —', appleEmail);
+                    throw new AuthError('This email is already linked to a different Apple account');
+                }
+                // Guarded on apple_id IS NULL so two concurrent sign-ins
+                // cannot both believe they claimed the row.
+                const claimed = await query(
+                    `UPDATE users SET apple_id = $1
+                      WHERE id = $2 AND apple_id IS NULL
+                      RETURNING *`,
+                    [appleId, byEmail.id]
+                );
+                user = claimed.rows[0] || byEmail;
+            }
+        }
+
+        if (!user) {
+            // Apple can withhold the email on repeat authorisations. The users
+            // table requires one and it is UNIQUE, so synthesise a stable
+            // placeholder from `sub` rather than failing the signup. It is
+            // deterministic, so a retry maps to the same row instead of
+            // creating a second account.
+            const email = appleEmail || `apple_${appleId.replace(/[^a-zA-Z0-9]/g, '')}@privaterelay.appleid.com`;
+
+            // Never Math.random() — this hash guards the password route for an
+            // account that will never knowingly use it.
+            const randomPassword = crypto.randomBytes(32).toString('hex');
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(randomPassword, salt);
+
+            const displayName =
+                [fullName?.givenName, fullName?.familyName].filter(Boolean).join(' ').trim()
+                || 'Fitzo Athlete';
+
+            // Same username race handling as the Google route: the UNIQUE
+            // constraint is the only authority, so retry against it rather
+            // than checking availability first. VARCHAR(30) — the base is
+            // trimmed around the suffix so a late retry cannot overflow.
+            const USERNAME_MAX = 30;
+            const rawBase = (appleEmail ? appleEmail.split('@')[0] : 'athlete')
+                .replace(/[^a-z0-9._-]/gi, '') || 'athlete';
+            let newUser = null;
+
+            for (let attempt = 0; attempt < 6 && !newUser; attempt++) {
+                const suffix = attempt === 0
+                    ? ''
+                    : String(crypto.randomInt(10 ** Math.min(attempt + 2, 9)));
+                const username = rawBase.slice(0, USERNAME_MAX - suffix.length) + suffix;
+                try {
+                    newUser = await query(
+                        `INSERT INTO users (email, password_hash, name, username, role, apple_id, apple_name_captured)
+                         VALUES ($1, $2, $3, $4, 'member', $5, $6)
+                         RETURNING id, email, name, username, role, avatar_url, xp_points`,
+                        [email, hashedPassword, displayName, username, appleId, Boolean(fullName?.givenName)]
+                    );
+                } catch (err) {
+                    if (err.code === '23505' && err.constraint === 'users_username_key') continue;
+                    throw err;
+                }
+            }
+
+            if (!newUser) throw new AuthError('Could not create your account, please try again');
+            user = newUser.rows[0];
+
+            await query('INSERT INTO fitness_profiles (user_id) VALUES ($1)', [user.id]);
+        } else if (fullName?.givenName && !user.apple_name_captured) {
+            // First authorisation on an account that was created some other
+            // way. This is the only moment Apple will ever supply the name.
+            const name = [fullName.givenName, fullName.familyName].filter(Boolean).join(' ').trim();
+            await query(
+                'UPDATE users SET name = $1, apple_name_captured = true WHERE id = $2',
+                [name, user.id]
+            );
+            user.name = name;
+        }
+
+        const profileCheck = await query('SELECT id FROM nutrition_profiles WHERE user_id = $1', [user.id]);
+        const onboarding_completed = profileCheck.rows.length > 0;
+
+        res.json({
+            message: `Welcome ${user.name}! 💪`,
+            token: generateToken(user.id),
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                username: user.username,
+                role: user.role,
+                avatar_url: user.avatar_url,
+                xp_points: user.xp_points || 0,
+                onboarding_completed,
+            },
+        });
+    } catch (error) {
+        if (error instanceof AuthError) throw error;
+        console.error('Apple Auth Error:', error);
+        throw new AuthError('Apple login failed: ' + error.message);
+    }
+}));
+
+/**
  * POST /api/auth/forgot-password
  * Request password reset
  */
@@ -491,8 +661,10 @@ router.post('/forgot-password', passwordLimiter, validate({ body: forgotPassword
         return res.json({ success: true, message: 'If an account exists, a reset code has been sent.' });
     }
 
-    // Generate a secure 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate a secure 6-digit code. Math.random() is not cryptographically
+    // secure and its internal state can be recovered from prior outputs, so a
+    // predictable reset code would let an attacker take over any account.
+    const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     // Invalidate any existing codes for this email
@@ -531,7 +703,7 @@ router.post('/forgot-password', passwordLimiter, validate({ body: forgotPassword
  * POST /api/auth/reset-password
  * Reset password (Mock implementation for now)
  */
-router.post('/reset-password', passwordLimiter, validate({ body: resetPasswordSchema }), asyncHandler(async (req, res) => {
+router.post('/reset-password', passwordLimiter, resetCodeLimiter, validate({ body: resetPasswordSchema }), asyncHandler(async (req, res) => {
     const { email, newPassword: password, code } = req.body;
     if (password.length < 6) {
         throw new ValidationError('Password must be at least 6 characters');

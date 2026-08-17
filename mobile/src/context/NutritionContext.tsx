@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { nutritionAPI } from '../services/api';
+import { nutritionAPI, workoutsAPI } from '../services/api';
 import { useAuth } from './AuthContext';
 
 interface Macros {
@@ -78,13 +78,40 @@ export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
     }, [user?.id]);
 
+    /**
+     * Resolve the weekly workout goal.
+     *
+     * Precedence: an explicit goal the user set in Fitness Profile, then the
+     * days-per-week of their active training split, then 4.
+     *
+     * The split step is the point of this. Previously the goal was a hardcoded
+     * 4 that only ever changed if the user went and set it by hand, so someone
+     * who picked the PPL 6-day split saw "0 / 4 workouts" on the home screen
+     * and hit "Weekly goal crushed!" two sessions before finishing their week.
+     * Picking a split is already a statement of how often you intend to train;
+     * the goal should follow it without being asked twice.
+     */
     const loadWeeklyGoal = async () => {
         try {
             const stored = await AsyncStorage.getItem(`weekly_goal_${user?.id}`);
             if (stored) {
-                setWeeklyWorkoutGoal(parseInt(stored));
+                const n = parseInt(stored, 10);
+                // Guard the parse: a corrupt key used to yield NaN, and
+                // `workouts >= NaN` is false forever, so the goal could never
+                // be met.
+                if (Number.isFinite(n) && n > 0) {
+                    setWeeklyWorkoutGoal(n);
+                    return;
+                }
+            }
+
+            const res = await workoutsAPI.getMySplits();
+            const days = res?.splits?.[0]?.days_per_week;
+            if (Number.isFinite(days) && days > 0) {
+                setWeeklyWorkoutGoal(days);
             }
         } catch (e) {
+            // Non-critical: the useState default of 4 stands.
         }
     };
 

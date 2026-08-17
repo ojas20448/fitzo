@@ -10,6 +10,7 @@ const { authenticate } = require('../middleware/auth');
 const { ValidationError, asyncHandler } = require('../utils/errors');
 const pushNotifications = require('../services/pushNotifications');
 const xpService = require('../services/xpService');
+const { resolveMuscleGroup } = require('../utils/muscleGroup');
 const { invalidateContextPack } = require('../services/contextPack');
 
 /**
@@ -376,7 +377,15 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
 router.post('/sessions/:sessionId/exercises', authenticate, asyncHandler(async (req, res) => {
     const { sessionId } = req.params;
     const userId = req.user.id;
-    const { exercise_id, custom_exercise_name, notes } = req.body;
+    const { exercise_id, custom_exercise_name, notes, muscle_group } = req.body;
+
+    // A custom exercise has no catalogue row, so unless a muscle group is
+    // recorded here its sets fall into the volume query's 'other' bucket, which
+    // the heatmap silently discards — the user trains a muscle and the app
+    // still reports it untrained. The repeat-session path at the top of this
+    // file already persisted this column; this, the primary logging path, did
+    // not.
+    const resolvedGroup = resolveMuscleGroup({ exercise_id, custom_exercise_name, muscle_group });
 
     // Verify session ownership
     const sessionCheck = await query(
@@ -396,10 +405,10 @@ router.post('/sessions/:sessionId/exercises', authenticate, asyncHandler(async (
     );
 
     const result = await query(
-        `INSERT INTO exercise_logs (session_id, exercise_id, custom_exercise_name, order_index, notes)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO exercise_logs (session_id, exercise_id, custom_exercise_name, order_index, notes, muscle_group)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        [sessionId, exercise_id, custom_exercise_name, orderResult.rows[0].next_order, notes]
+        [sessionId, exercise_id, custom_exercise_name, orderResult.rows[0].next_order, notes, resolvedGroup]
     );
 
     res.status(201).json({
@@ -413,7 +422,23 @@ router.post('/sessions/:sessionId/exercises', authenticate, asyncHandler(async (
  */
 router.post('/exercises/:exerciseLogId/sets', authenticate, asyncHandler(async (req, res) => {
     const { exerciseLogId } = req.params;
+    const userId = req.user.id;
     const { reps, weight_kg, is_warmup, is_failure, rpe } = req.body;
+
+    // Verify ownership (via exercise log -> session -> user). Same join the
+    // PUT /sets/:id handler uses; without it any member could append sets to
+    // another member's exercise log and poison their volume/PR/recap data.
+    const checkOwner = await query(
+        `SELECT el.id
+         FROM exercise_logs el
+         JOIN workout_sessions ws ON el.session_id = ws.id
+         WHERE el.id = $1 AND ws.user_id = $2`,
+        [exerciseLogId, userId]
+    );
+
+    if (checkOwner.rows.length === 0) {
+        return res.status(404).json({ error: 'Exercise log not found' });
+    }
 
     // Get next set number
     const setNumResult = await query(

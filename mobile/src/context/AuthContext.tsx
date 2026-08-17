@@ -70,6 +70,10 @@ interface AuthContextType extends AuthState {
     forgotPassword: (email: string) => Promise<void>;
     resetPassword: (email: string, code: string, password: string) => Promise<void>;
     googleSignIn: (token: string) => Promise<void>;
+    appleSignIn: (
+        identityToken: string,
+        fullName?: { givenName?: string | null; familyName?: string | null } | null,
+    ) => Promise<void>;
     completeOnboarding: () => void;
 }
 
@@ -246,6 +250,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
+    /**
+     * Sign in with Apple. `fullName` is only ever non-null on the user's very
+     * first authorisation — Apple never sends it again — so it is passed
+     * straight through for the server to persist on that one occasion.
+     */
+    const appleSignIn = async (
+        identityToken: string,
+        fullName?: { givenName?: string | null; familyName?: string | null } | null,
+    ) => {
+        try {
+            const { token, user } = await authAPI.appleLogin(identityToken, fullName);
+            await setAuthToken(token);
+            await cacheUser(user);
+
+            useOfflineStore.getState().setOnline(true);
+
+            setState({
+                user,
+                token,
+                isLoading: false,
+                isAuthenticated: true,
+            });
+        } catch (error: any) {
+            throw new Error(error.message || 'Sign in with Apple failed');
+        }
+    };
+
     const forgotPassword = async (email: string) => {
         return authAPI.forgotPassword(email);
     };
@@ -279,6 +310,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 logout,
                 refreshUser,
                 googleSignIn,
+                appleSignIn,
                 forgotPassword,
                 resetPassword,
                 devLogin,

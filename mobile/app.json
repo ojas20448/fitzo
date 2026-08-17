@@ -31,7 +31,8 @@
           "remote-notification"
         ],
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
@@ -111,7 +112,8 @@
           "iosUrlScheme": "com.googleusercontent.apps.1030039443378-k15ujl968cs24u1t6ln06oaapudt03e2"
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true

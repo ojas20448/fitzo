@@ -1,230 +1,280 @@
-# Fitzo — Path to the Stores
+# Fitzo — Store Launch Status
 
-Everything standing between Fitzo and a public listing, in the order it has to
-happen. Researched and assembled 2026-08-17 against current Play Console and App
-Store Connect rules.
+Everything standing between Fitzo and being live on both stores. Written
+2026-08-17 from a code audit plus the current Play Console and App Store rules.
 
-**Where things stand:** Android is already building and shipping to the Play
-**internal** track (`versionCode 10`). Nothing has been done for iOS. The gating
-work is no longer engineering — it is the compliance paperwork, and one
-production account decision.
-
-Supporting documents:
-
-- [`store/DATA_MAP.md`](./store/DATA_MAP.md) — where data lives, who processes it
-- [`store/DATA_SAFETY.md`](./store/DATA_SAFETY.md) — field-by-field form answers
-- [`store/LISTING.md`](./store/LISTING.md) — listing copy, screenshots, keywords
+Companion documents:
+- [`store/DATA_MAP.md`](./store/DATA_MAP.md) — where data actually lives
+- [`store/DATA_SAFETY.md`](./store/DATA_SAFETY.md) — copy-paste answers for every console form
 
 ---
 
-## 🔴 Blockers — nothing ships until these are done
+## Where things stand
 
-### 1. Enable billing on the Gemini API key
-
-The single most important item, and the least obvious.
-
-Fitzo sends **voice recordings, food photos, and a health-data context pack** to
-Gemini. On the **free tier**, Google may use submitted content to improve its
-products and may have it human-reviewed. On the **paid tier** it may not.
-
-That difference decides three things at once:
-
-- Whether the privacy policy's claims are true
-- Whether the Data safety form can honestly answer **Shared: No** (free tier ⇒
-  the honest answer is *Yes*, because Google is processing for its own purposes)
-- Whether the app satisfies Play's Health apps policy and Apple's HealthKit
-  terms, both of which restrict onward use of health data
-
-Enabling billing is far cheaper than the alternatives. → Google AI Studio → the
-Fitzo project → enable billing.
-
-### 2. Closed testing: 12 testers, 14 continuous days
-
-Personal Play developer accounts created after 13 Nov 2023 cannot reach
-production until they have run a closed test with **12 testers opted in
-continuously for 14 days**. "Opted in" means each tester accepted the invite and
-installed the build under the matching Google account.
-
-- Start **now** — it is a 14-day wall clock, and nothing else shortens it
-- Losing testers below 12 mid-window restarts the count
-- Everything else on this page can proceed in parallel
-
-*(If the account is an organisation account rather than personal, this does not
-apply — verify which it is before assuming a 2-week delay.)*
-
-### 3. Confirm `support@fitzoapp.in` receives mail
-
-Both stores email this address, and the old policy pointed at
-`support@fitzo.app` — a different domain from the actual site. Everything now
-points at `fitzoapp.in`. An undeliverable support address is a rejection.
-
-### 4. Health apps declaration
-
-Mandatory for Health & Fitness apps. Until it is submitted, **all future app
-updates are blocked from review**, not just this one. Answers are pre-written in
-[`DATA_SAFETY.md` §B](./store/DATA_SAFETY.md), including the per-permission
-Health Connect justifications that Google began requiring in January 2026.
+| | Google Play | Apple App Store |
+|---|---|---|
+| Developer account | ✅ | ❓ needed |
+| App uploaded | ✅ internal track, versionCode 10 | ❌ never built for iOS |
+| Automated submission | ✅ `--auto-submit` wired | ❌ |
+| Closed testing | 🔄 **in progress** (12 testers × 14 days) | n/a |
+| Privacy policy | ✅ live and rewritten | ✅ same URL |
+| Account deletion URL | ✅ **added this session** | n/a |
+| Sign in with Apple | ✅ **added this session** | ✅ required, now present |
+| Screenshots | ✅ **real captures, both sizes** | ✅ |
+| Data safety form | 📝 answers ready, needs filling in | 📝 answers ready |
+| Health declaration | 📝 answers ready, needs filling in | n/a |
 
 ---
 
-## ✅ Done in this pass
+## 1. The Gemini decision — you asked what happens if you don't upgrade
 
-| Item | Where |
+**The situation.** Google's Gemini API has two tiers with materially different
+data terms. On the **free tier**, submitted content may be used to improve
+Google's products and may be reviewed by humans. On the **paid tier**, it is
+not used for training. Fitzo sends voice recordings, food photos, and a health
+summary to Gemini — so on the free tier, user health data is in scope for that.
+
+**You do not have to upgrade.** Here are the four real options, honestly rated.
+
+### Option A — Disclose it plainly and keep the free tier ✅ *done, currently in force*
+
+The privacy policy now says outright that content sent to the AI features may
+be used by Google to improve its products, and tells the user they can simply
+not use those three features. Every other feature works untouched.
+
+- **Cost:** ₹0
+- **Store risk:** low. Neither store forbids this; both require that you
+  *disclose* it. What gets apps rejected is a policy that claims data is never
+  used for training while the free tier is in force.
+- **Consequence:** on the Data safety form, Health info / Fitness info / Photos
+  / Voice must be declared **Shared: Yes**, because Google is processing for its
+  own purposes and not purely as your service provider.
+- **Honest downside:** "Shared: Yes" on health data is visible to users on your
+  store listing, and it is a genuine competitive disadvantage against apps that
+  can answer No.
+
+### Option B — Upgrade billing 💰 *recommended when revenue allows*
+
+Enabling billing on the Gemini API key flips the terms. The policy's AI section
+can then be tightened, and Data safety becomes **Shared: No** across the board.
+
+- **Cost:** pay-as-you-go. At Fitzo's current volume this is small, but it is
+  not zero and it scales with users.
+- This is the only option that makes "we don't share your health data" true
+  without removing features.
+
+### Option C — Send less to the AI 🔧 *cheap, worth doing regardless*
+
+The free-tier exposure is proportional to what you send. Right now the coach
+context pack includes training history, nutrition, readiness and wearable
+metrics. You could:
+
+- strip the context pack down to aggregates ("3 sessions this week, 15% under
+  protein target") instead of row-level history
+- keep voice and photo — those are unavoidable for the feature — but drop the
+  health context from the coach prompt
+
+This reduces what leaves the system without removing a single feature, and it
+is worth doing even on the paid tier as basic data minimisation.
+
+### Option D — Make AI features explicitly opt-in 🔧 *strongest consent position*
+
+Add a one-time consent sheet before first use of coach / voice / photo, stating
+what is sent and to whom. Nothing reaches Gemini until the user agrees.
+
+- Converts a passive disclosure into active consent, which is what DPDP and
+  GDPR actually prefer.
+- Costs one screen of work and pairs well with Option A.
+
+**My recommendation:** ship on **A + C** now (already disclosed; minimise the
+context pack), add **D** before you have meaningful user numbers, and move to
+**B** the moment there is revenue. Nothing here blocks launch.
+
+---
+
+## 2. Blocked on you
+
+| # | Item | Why it matters |
+|---|---|---|
+| 1 | **Create `support@fitzoapp.in`** | Cited in the privacy policy, the deletion page, and both store listings. Reviewers do email it. A bouncing address is a rejection. |
+| 2 | **Create `review@fitzo.app`**, or tell me another address | Currently the reviewer account's login. If the domain doesn't exist the account still works (login is by our own DB), but a reachable address is better. |
+| 3 | **Fill the Data safety form** | Answers ready in `store/DATA_SAFETY.md` §A. |
+| 4 | **Fill the Health apps declaration** | Answers ready in §B, including the per-permission justifications Google now demands. |
+| 5 | **Content rating questionnaire** | Answers in §C. |
+| 6 | **Finish closed testing** | 12 testers, 14 continuous days. You said this has started — the clock is the gate. |
+| 7 | **Apple Developer Program** ($99/yr) | Nothing iOS can proceed without it. |
+| 8 | **Register the Apple Services ID + enable Sign in with Apple capability** | The code is done; the Apple Developer portal side is not. |
+| 9 | **Google OAuth SHA-1** | `cd mobile && eas credentials` → Android → register the fingerprint. |
+| 10 | **Decide on Gemini billing** | See §1. Not a blocker either way. |
+
+---
+
+## 3. Done this session
+
+**Store compliance**
+- Account deletion page at `/delete-account` — Play requires deletion to be
+  startable without installing the app. This was missing entirely.
+- Privacy policy: added the explicit AI/Gemini disclosure and Apple as a
+  processor. Corrected earlier over-disclosure — Fitzo has no `bio` field, no
+  progress-photo upload, and no mobile crash reporting, all of which the old
+  policy claimed.
+- `store/DATA_MAP.md` and `store/DATA_SAFETY.md` written from a code audit.
+
+**Sign in with Apple** — required by Guideline 4.8 wherever Google sign-in is
+offered. Backend verifies Apple's RS256 token against the live JWKS with issuer
+and audience both checked; `apple_id` migration added; iOS-only button wired.
+Two details that are easy to get wrong and are handled: Apple sends the user's
+name **only on the first authorisation ever**, so it is captured then or lost;
+and private-relay aliases are never used to claim an existing account.
+
+**Reviewer account** — `review@fitzo.app` / `FitzoReview2026!`, seeded with 18
+sessions, 282 sets, 56 meals, a 14-day streak, an active PPL split and a gym.
+Both stores reject apps they cannot sign into, and reject accounts that look
+empty. Re-runnable via `node backend/scripts/seed_review_account.js`.
+
+**Real screenshots** — captured from the running app against that account, at
+both required sizes. Not mock-ups.
+
+**Three bugs you flagged, plus one found on the way**
+- *Custom exercises missing from the muscle heatmap* — the primary logging path
+  never wrote `exercise_logs.muscle_group`, so custom exercises landed in an
+  `other` bucket the client silently discards. Verified against production: the
+  API was returning `"other": 7940` of volume that never rendered. Added a
+  tested classifier (45 tests), wired it into the write path, backfilled 19
+  historical rows.
+- *Weekly goal* — was hardcoded to 4 and stored only on-device, so a user on the
+  PPL 6-day split saw "0 / 4 workouts" and hit "goal crushed" two sessions
+  early. Now derives from the active split, with an explicit override still
+  winning.
+- *Schema drift* — see below; the real finding was much worse than the one
+  reported.
+
+---
+
+## 4. ⚠️ The migration runner — read this one
+
+`apply_migrations.js` ran **5** of the 18 files in `src/db/`, and **none** of the
+7 in `src/db/migrations/`. Twenty files were unreachable, including
+`migrate_workout_logging.sql`, which creates `workout_sessions`,
+`exercise_logs`, `set_logs` and `user_splits`.
+
+Production has those tables because they were applied by hand long ago. **The
+repository could not rebuild its own database.** If the Supabase project were
+ever lost, a restore from source would have come up without the core
+workout-logging schema, and the failure would have surfaced later as
+`42P01 relation does not exist`.
+
+The runner now sweeps all three locations in dependency order — 34 files instead
+of 14 — with `--dry-run` to inspect the plan. `enable_rls.sql` is deliberately
+excluded from the automatic sweep: enabling row-level security against untested
+policies would lock the API out of its own tables. It is opt-in via `--with-rls`.
+
+**Not yet verified end to end.** Proving the repo can rebuild the database
+requires applying it to an empty scratch database, which needs a database I
+should not create without asking. Until that is done, treat "the repo can
+rebuild prod" as *probable, not proven*.
+
+`scripts/check_schema_drift.js` now guards the other direction — columns that
+exist in production but in no repo SQL file. It currently reports exactly one:
+`users.subscription_tier`, which is referenced nowhere in the codebase and was
+presumably added by hand and abandoned.
+
+---
+
+## 5. Store listing copy
+
+**Title (30 chars max):** `Fitzo: Gym & Nutrition Coach`
+
+**Short description (80 chars max):**
+`Track lifts, log meals by voice, and train with an AI coach that knows you.`
+
+**Full description:**
+
+```
+Fitzo is a training and nutrition tracker built for people who actually go
+to the gym.
+
+LOG A SET IN SECONDS
+Previous-set ghosting shows what you lifted last time, so you just confirm
+and move on. A plate calculator tells you what to load on the bar. Rest
+timer optional.
+
+LOG A MEAL BY TALKING
+Say "two rotis, dal, and a bowl of curd" and it becomes macros. Or
+photograph the plate. Built on an Indian food database, so it knows what
+a paneer bhurji actually contains.
+
+AN AI COACH WITH CONTEXT
+Not a chatbot with a fitness prompt. It sees your recent training, your
+recovery, and your nutrition, and answers accordingly.
+
+SEE WHAT YOU ARE ACTUALLY TRAINING
+A muscle-volume heatmap shows which muscles got worked this week and which
+you keep skipping. Progressive overload tracked per exercise.
+
+TRAIN WITH YOUR GYM
+Check in by QR, see how busy your gym is before you go, and keep a streak
+with your gym buddies.
+
+CONNECTS TO YOUR HEALTH DATA
+Optionally reads steps, heart rate, sleep and active calories from Health
+Connect or Apple Health to set your daily targets from what you actually
+did — not an assumed average.
+
+No ads. No in-app purchases. Your data lives in India and is never sold.
+```
+
+**Category:** Health & Fitness · **Ads:** none · **IAP:** none
+
+---
+
+## 6. Screenshots
+
+Captured from the live app signed in as the reviewer account.
+
+| Store | Size | Location |
+|---|---|---|
+| Apple 6.9" (iPhone 17 Pro Max class) | 1320 × 2868 (ratio 2.173) | `mobile/store-screenshots/app-store/` |
+| Google Play | 1080 × 2160 (ratio 2.000) | `mobile/store-screenshots/google-play/` |
+
+Eight shots each: home, stats, coach, logger, nutrition, profile, learn, buddies.
+
+Two sets, deliberately. Apple's 6.9" slot is 2.17:1, and **Google Play caps
+screenshots at 2:1** — a single set cannot satisfy both. Upload only the 6.9"
+set to App Store Connect; it scales that down to every smaller iPhone shelf
+automatically.
+
+Regenerate with `node capture.mjs` from the website project while
+`npx expo start --web --port 8099` is running in `mobile/`.
+
+> **Caveat worth knowing:** these are captured from the Expo **web** build, so
+> they are the real UI with real data but rendered by the browser. Fonts and
+> shadows can differ very slightly from native. They are honest and shippable;
+> if you want pixel-exact native captures, take them on-device once the dev
+> build lands and drop them in the same folders.
+
+---
+
+## 7. Ordered path to live
+
+**Play (closest):**
+1. Finish the 14-day closed test ← *the gate, already running*
+2. Fill Data safety + Health declaration + content rating (§2)
+3. Create `support@fitzoapp.in`
+4. Apply for production access
+5. `cd mobile && eas build --profile production --platform android --auto-submit`
+
+**Apple:**
+1. Join the Apple Developer Program
+2. Register the Services ID and enable the Sign in with Apple capability
+3. Build for iOS — this has never been done, so budget time for first-build issues
+4. Fill App Privacy labels (§E of `DATA_SAFETY.md`)
+5. Submit with the reviewer account and the review notes from §F
+
+---
+
+## Change log
+
+| Date | Change |
 |---|---|
-| Data-flow audit from source | `docs/store/DATA_MAP.md` |
-| Privacy policy rewritten to match reality | `fitzoapp.in/privacy-policy` |
-| Web account-deletion page (a Play requirement) | `fitzoapp.in/delete-account` |
-| Play Data safety answers | `DATA_SAFETY.md` §A |
-| Health apps declaration answers | `DATA_SAFETY.md` §B |
-| Content rating answers | `DATA_SAFETY.md` §C |
-| Apple App Privacy labels | `DATA_SAFETY.md` §E |
-| Reviewer account, seeded with real history | `backend/scripts/seed_review_account.js` |
-| Review notes for both consoles | `DATA_SAFETY.md` §F |
-| Store listing copy, both stores | `store/LISTING.md` |
-| Screenshots, Apple 1320×2868 | `mobile/store-screenshots/app-store/` |
-| Screenshots, Play 1080×2160 | `mobile/store-screenshots/google-play/` |
-| Feature graphic 1024×500 | `Fitzo web/fitzo/feature-graphic.png` |
-
-### What the privacy policy rewrite actually changed
-
-The previous policy was not merely thin — it was **wrong in both directions**,
-which is the worst position to be in with a reviewer:
-
-**Claimed data we never touch** (over-disclosure invites scrutiny and forces
-inaccurate Data safety answers):
-- A user `bio` — no such column exists
-- Progress photo uploads — no upload path exists; avatars are 9 bundled presets
-- Mobile crash reporting — there is no Sentry dependency in the mobile app
-
-**Omitted things we genuinely do** (under-disclosure is a policy violation):
-- Health Connect / HealthKit data, which Google and Apple both require be
-  disclosed explicitly and per-category
-- Voice recordings leaving the device for transcription
-- Food photos leaving the device for macro analysis
-- That a health-data context pack is sent to a third-party AI
-- Where data physically lives (Mumbai, `ap-south-1`)
-- Any named processor list, any retention period
-
-It also raised the age floor from 13 to **18** — India's DPDP Act treats under-18s
-as children requiring verifiable parental consent, and declaring an under-18
-audience would pull the app into Google's much stricter Families policy.
-
----
-
-## 📋 Play Console — remaining steps
-
-1. **App content** — complete every declaration in `DATA_SAFETY.md` §A–D
-2. **Store listing** — paste from `LISTING.md`; upload the `google-play/` screenshots
-   and the feature graphic
-3. **Testers** — recruit 12, keep them opted in for 14 days
-4. **Production access** — apply on the Play Console dashboard once the window
-   closes
-5. **Release** —
-   ```bash
-   cd mobile && eas build --profile production --platform android --auto-submit
-   ```
-   Automated submission is already wired up (service account, key, and the Play
-   Android Developer API are all enabled). Builds land on the internal track;
-   promote from the console.
-
----
-
-## 🍎 App Store — not started
-
-Nothing here exists yet. Ordered by lead time:
-
-1. **Apple Developer Program membership** — $99/year, and identity verification
-   can take days. Start first.
-2. **App Store Connect record** — bundle ID `com.fitzo.app` (already reserved in
-   `app.json`).
-3. **iOS build** —
-   ```bash
-   cd mobile && eas build --profile production --platform ios
-   ```
-   EAS can manage signing; expect first-run certificate setup.
-4. **App Privacy labels** — `DATA_SAFETY.md` §E.
-5. **Screenshots** — upload the `app-store/` set (1320×2868). That single size covers
-   every smaller iPhone.
-6. **Review notes and demo account** — `DATA_SAFETY.md` §F.
-
-### iOS-specific risks
-
-- **HealthKit.** Apple scrutinises health apps harder than Google. Blocker #1
-  (Gemini billing) matters more here: Apple explicitly prohibits sharing
-  HealthKit data with third parties for data mining.
-- **`NSHealthUpdateUsageDescription` is declared but nothing writes to
-  HealthKit.** Either implement workout export or remove the string — a declared
-  purpose with no matching behaviour reads as careless.
-- **Guideline 4.2 (minimum functionality).** Not a real risk; Fitzo is
-  substantial.
-- **Sign in with Apple.** Offering Google Sign-In means Apple requires Sign in
-  with Apple as an equivalent option. **This is currently not implemented and
-  will cause rejection.** Budget engineering time, or drop Google Sign-In on iOS.
-
----
-
-## 🐛 Found while doing this work
-
-Real defects surfaced by seeding and screenshotting a realistic account. None
-block launch, but the first two are user-visible.
-
-### 1. Custom exercises count as zero in the Muscle Volume heatmap
-
-The heatmap resolves muscle groups through `exercise_logs.exercise_id`. A log
-with only `custom_exercise_name` set — which is what you get for any exercise not
-in the 164-row catalogue — contributes **nothing** to any muscle group.
-
-Seeding 282 sets produced a heatmap reading "UNTRAINED" across every group.
-Anyone who logs custom exercises sees a blank heatmap and no explanation.
-
-*Fix:* let custom exercises carry a muscle group, or fall back to the parent
-session's `workout_type`.
-
-### 2. Gym occupancy card layout collision — **fixed in this pass**
-
-`CrowdIndicator`'s root sets `flex: 1`, so inside the gym card it claimed half
-the row and pushed the gym name into the percentage — "Iron Paradise" rendered
-on top of "0%". Fixed in `HomeScreen.tsx` by wrapping the indicator and giving
-the text block `flex: 1; minWidth: 0`.
-
-### 3. Schema drift: `users.username`
-
-`username` is **NOT NULL in production** but absent from
-`backend/src/db/schema.sql`. Anyone rebuilding a database from the repo gets a
-schema that silently disagrees with production. Found because the seed script
-failed against prod.
-
-*Fix:* add the column to `schema.sql`, or drop the NOT NULL in a migration.
-
-### 4. Two vocabularies for one concept
-
-`fitness_goal` is `deficit | maintenance | surplus`; `nutrition_goal` is
-`fat_loss | maintenance | muscle_gain`. Both describe the same user intent, and
-`fitness_profiles` / `nutrition_profiles` store it twice. Worth collapsing.
-
-### 5. Weekly workout goal ignores the chosen split, and is device-local
-
-`weeklyWorkoutGoal` defaults to `4` and is only ever changed by hand on the
-Fitness Profile screen. Selecting **PPL (6 Day)** does not update it, so a user
-on a 6-day split sees "0 / 4 workouts" — a target contradicting the plan the app
-itself assigned them.
-
-It is also persisted to **AsyncStorage keyed by user id, not to the server**, so
-it silently resets to 4 on reinstall or on a second device.
-
-*Fix:* default it from the active split's `days_per_week`, and move it to
-`nutrition_profiles` so it syncs.
-
----
-
-## Ongoing: keeping the three artifacts in sync
-
-Whenever data handling changes, the order is always:
-
-```
-DATA_MAP.md  →  DATA_SAFETY.md  →  live privacy policy  →  console forms
-```
-
-Editing the console directly is how the four drift apart, and drift between a
-store form and the shipped binary is treated as a policy violation rather than
-an oversight.
+| 2026-08-17 | Written. Added Sign in with Apple, deletion page, reviewer account, real screenshots; fixed the muscle-heatmap and weekly-goal bugs; found and fixed the migration runner covering 20 unreachable files. |

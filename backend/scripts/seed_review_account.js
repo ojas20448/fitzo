@@ -25,7 +25,7 @@ const bcrypt = require('bcryptjs');
 const { query } = require('../src/config/database');
 
 const REVIEW_EMAIL = 'review@fitzo.app';
-const REVIEW_NAME = 'Arjun Mehta';
+const REVIEW_NAME = 'Aarav Kapoor';
 // Not a secret: it is printed in the Play Console and App Store Connect review
 // notes by design. It must stay stable — rotating it mid-review locks the
 // reviewer out and the submission is rejected for "cannot sign in".
@@ -109,10 +109,9 @@ async function seed() {
     await remove();
 
     const hash = await bcrypt.hash(REVIEW_PASSWORD, 10);
-    // `username` is NOT NULL in the live database but is missing from
-    // src/db/schema.sql — real drift, found by this script failing against
-    // production. Anyone rebuilding a database from the repo gets a schema that
-    // silently disagrees with prod. Tracked in docs/STORE_LAUNCH.md.
+    // `username` is NOT NULL and UNIQUE. It is absent from schema.sql because
+    // src/db/migrate_username.sql adds it afterwards — schema.sql is the base
+    // table, migrations layer on top — so any INSERT here must supply it.
     const user = await query(
         `INSERT INTO users (email, password_hash, name, username, role, avatar_url, xp_points)
          VALUES ($1, $2, $3, $4, 'member', 'avatar_lion', 2450)

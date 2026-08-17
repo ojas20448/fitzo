@@ -59,10 +59,11 @@ export const removeAuthToken = async (): Promise<void> => {
 // Request interceptor - add auth token (except for auth endpoints)
 api.interceptors.request.use(
     async (config) => {
-        // Don't add auth token to login/register/google endpoints
+        // Don't add auth token to login/register/social sign-in endpoints
         const isAuthEndpoint = config.url?.includes('/auth/login') ||
             config.url?.includes('/auth/register') ||
-            config.url?.includes('/auth/google');
+            config.url?.includes('/auth/google') ||
+            config.url?.includes('/auth/apple');
 
         if (!isAuthEndpoint) {
             const token = await getAuthToken();
@@ -97,9 +98,13 @@ api.interceptors.response.use(
         }
 
         // Handle token expiry - but NOT on auth endpoints (login/register)
+        // Apple must be listed alongside Google: a rejected Apple token returns
+        // 401, and without this exemption the interceptor would treat it as an
+        // expired session and force-log-out a user who was never signed in.
         const isAuthEndpoint = originalRequest?.url?.includes('/auth/login') ||
             originalRequest?.url?.includes('/auth/register') ||
-            originalRequest?.url?.includes('/auth/google');
+            originalRequest?.url?.includes('/auth/google') ||
+            originalRequest?.url?.includes('/auth/apple');
 
         if (error.response?.status === 401 && !originalRequest._retried && !isAuthEndpoint) {
             originalRequest._retried = true;
@@ -140,6 +145,19 @@ export const authAPI = {
 
     devLogin: async () => {
         const response = await api.post('/auth/dev-login', {});
+        return response.data;
+    },
+
+    /**
+     * Sign in with Apple.
+     *
+     * `fullName` is forwarded because Apple supplies it ONLY on the user's
+     * first authorisation and never again — if the server doesn't capture it
+     * on that one call it is unrecoverable. It is null on every later sign-in,
+     * which is expected, not an error.
+     */
+    appleLogin: async (identityToken: string, fullName?: { givenName?: string | null; familyName?: string | null } | null) => {
+        const response = await api.post('/auth/apple', { identityToken, fullName });
         return response.data;
     },
 
