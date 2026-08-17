@@ -564,10 +564,20 @@ const HomeScreen: React.FC = () => {
                         <GlassCard style={styles.gymStatusCard}>
                             <View style={styles.gymStatusTop}>
                                 <View style={styles.gymStatusLeft}>
-                                    <CrowdIndicator level={data.crowd.level} size="sm" showLabel={false} />
-                                    <View>
-                                        <Text style={styles.gymStatusName}>{data.gym.name}</Text>
-                                        <Text style={styles.gymStatusSub}>
+                                    {/* CrowdIndicator's own root sets flex: 1, which in this row
+                                        makes it claim half the width and shove the gym name into
+                                        the middle of the card. Wrapping it in a column View turns
+                                        that flex into a vertical one, so it collapses to the dot's
+                                        natural width. Wrapped rather than changing the component,
+                                        because flex: 1 is correct where it is used full-width. */}
+                                    <View style={styles.gymStatusDot}>
+                                        <CrowdIndicator level={data.crowd.level} size="sm" showLabel={false} />
+                                    </View>
+                                    <View style={styles.gymStatusText}>
+                                        <Text style={styles.gymStatusName} numberOfLines={1}>
+                                            {data.gym.name}
+                                        </Text>
+                                        <Text style={styles.gymStatusSub} numberOfLines={1}>
                                             {data.crowd.count} of {data.crowd.capacity} training now
                                         </Text>
                                     </View>
@@ -1304,6 +1314,18 @@ const styles = StyleSheet.create({
         gap: spacing.md,
         flex: 1,
     },
+    // The name/sub block must be allowed to shrink. Without flex + minWidth 0 a
+    // long gym name sizes the block to its full intrinsic width and slides under
+    // the percentage on the right — "Iron Paradise" and "0%" rendered on top of
+    // each other. minWidth: 0 is the load-bearing half: flex alone will not let
+    // a text child shrink below its content width.
+    gymStatusDot: {
+        flexShrink: 0,
+    },
+    gymStatusText: {
+        flex: 1,
+        minWidth: 0,
+    },
     gymStatusName: {
         fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.bold,
@@ -1319,6 +1341,10 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes['2xl'],
         fontFamily: typography.fontFamily.bold,
         letterSpacing: typography.letterSpacing.tighter,
+        // Never give up width to the name on its left, and keep a gap so the
+        // two never touch even when the name is truncated.
+        flexShrink: 0,
+        marginLeft: spacing.md,
     },
     gymStatusBar: {
         height: 6,
