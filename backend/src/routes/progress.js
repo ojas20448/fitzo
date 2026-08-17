@@ -139,28 +139,79 @@ router.get('/volume', asyncHandler(async (req, res) => {
 
     const result = await query(sql, params);
 
-    // Also compute week-over-week change
+    // Session counts come from a SEPARATE query, deliberately.
+    //
+    // The aggregate above is grouped per muscle group, so its COUNT(DISTINCT
+    // ws.id) is "sessions that touched THIS muscle". Summing those across
+    // muscles counts one workout once per muscle it trained — a single
+    // push/pull/legs session hitting five groups was reported as five
+    // sessions, and a real week of six workouts came back as 22.
+    //
+    // This also picks up sessions with no working sets (all warm-ups, or
+    // logged but not filled in), which the volume join drops entirely.
+    const sessionCounts = await query(
+        `SELECT date_trunc('week', completed_at)::date AS week_start,
+                COUNT(*)::int AS sessions
+           FROM workout_sessions
+          WHERE user_id = $1
+            AND completed_at IS NOT NULL
+            AND completed_at >= NOW() - ($2::int || ' weeks')::interval
+          GROUP BY 1`,
+        [userId, parseInt(weeks)]
+    );
+
     const weeklyTotals = {};
+
+    // Seed from session counts first, so a week with workouts but no recorded
+    // volume still appears rather than vanishing from the series.
+    for (const row of sessionCounts.rows) {
+        weeklyTotals[row.week_start] = {
+            week_start: row.week_start,
+            total_volume: 0,
+            sessions: row.sessions,
+            total_sets: 0,
+            by_muscle: {},
+        };
+    }
+
     for (const row of result.rows) {
         const week = row.week_start;
         if (!weeklyTotals[week]) {
             weeklyTotals[week] = { week_start: week, total_volume: 0, sessions: 0, total_sets: 0, by_muscle: {} };
         }
         weeklyTotals[week].total_volume += parseFloat(row.total_volume) || 0;
-        weeklyTotals[week].sessions += parseInt(row.sessions);
         weeklyTotals[week].total_sets += parseInt(row.total_sets);
         weeklyTotals[week].by_muscle[row.muscle_group] = parseFloat(row.total_volume) || 0;
     }
 
-    const weeklyArray = Object.values(weeklyTotals);
+    // Chronological — the client reads the last entry as the current week.
+    const weeklyArray = Object.values(weeklyTotals)
+        .sort((a, b) => new Date(a.week_start) - new Date(b.week_start));
     for (let i = 1; i < weeklyArray.length; i++) {
         const prev = weeklyArray[i - 1].total_volume;
         const curr = weeklyArray[i].total_volume;
         weeklyArray[i].change_pct = prev > 0 ? Math.round(((curr - prev) / prev) * 100) : 0;
     }
 
+    // Rolling 7-day count, separate from the calendar-week buckets above.
+    //
+    // A calendar week is the wrong window for a headline figure: it resets to
+    // zero every Monday, so someone who trained six times in the last seven
+    // days reads "1 session" on a Monday morning. Rolling is also how lifters
+    // actually think about weekly volume, and it matches the "6 sets/week"
+    // target already shown on the same screen.
+    const rolling = await query(
+        `SELECT COUNT(*)::int AS sessions
+           FROM workout_sessions
+          WHERE user_id = $1
+            AND completed_at IS NOT NULL
+            AND completed_at >= NOW() - INTERVAL '7 days'`,
+        [userId]
+    );
+
     res.json({
         weeks: weeklyArray,
+        sessions_last_7d: rolling.rows[0].sessions,
         detailed: result.rows,
     });
 }));

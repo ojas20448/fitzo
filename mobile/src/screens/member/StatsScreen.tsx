@@ -31,6 +31,8 @@ const StatsScreen = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [weeklyRecap, setWeeklyRecap] = useState<any | null>(null);
+    // Live count for the current week, independent of the cron-generated recap.
+    const [sessionsThisWeek, setSessionsThisWeek] = useState<number>(0);
     const [recapLoading, setRecapLoading] = useState(true);
     const [volumeData, setVolumeData] = useState<Record<string, number>>({
         chest: 0,
@@ -94,6 +96,20 @@ const StatsScreen = () => {
 
             const weeksArray = volumeRes.data?.weeks || [];
             const detailedArray = volumeRes.data?.detailed || [];
+
+            // The headline used to read weeklyRecap.recap_data.workouts_count.
+            // That recap is LAST week's — getLatestWeeklyRecap() returns the
+            // most recent COMPLETED Mon–Sun window — so the figure was always
+            // a week stale under a "Weekly Workouts" label, and read 0 for
+            // anyone who started training this week. It also only existed once
+            // the Monday cron had run, so a new user saw 0 no matter what.
+            //
+            // Rolling 7 days rather than the calendar week, because a calendar
+            // week resets every Monday — someone who trained six times in the
+            // last seven days would read "1 session" on a Monday morning.
+            // The volume endpoint is already being fetched here, so this costs
+            // no extra request.
+            setSessionsThisWeek(volumeRes.data?.sessions_last_7d || 0);
 
             // Backend returns specific muscles (biceps, quads, lats…) when the
             // exercise matched the catalog — fold them into the six buckets.
@@ -380,10 +396,10 @@ const StatsScreen = () => {
                 {/* Score Card / Metric Top Banner */}
                 <View style={styles.scoreCard}>
                     <View>
-                        <Text style={styles.scoreLabel}>{activeTab === 'training' ? 'Weekly Workouts' : 'Daily Average'}</Text>
+                        <Text style={styles.scoreLabel}>{activeTab === 'training' ? 'Last 7 Days' : 'Daily Average'}</Text>
                         <Text style={styles.scoreValue}>
-                            {activeTab === 'training' 
-                                ? `${weeklyRecap?.recap_data?.workouts_count || 0} sessions` 
+                            {activeTab === 'training'
+                                ? `${sessionsThisWeek} ${sessionsThisWeek === 1 ? 'session' : 'sessions'}`
                                 : `${weeklyRecap?.recap_data?.avg_calories || 0} kcal`
                             }
                         </Text>
