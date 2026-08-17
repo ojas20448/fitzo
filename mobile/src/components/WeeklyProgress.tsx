@@ -67,10 +67,33 @@ const WeeklyProgress: React.FC<WeeklyProgressProps> = ({ history }) => {
         return d;
     });
 
-    const hasWorkout = (date: Date) => {
-        const dateStr = date.toISOString().split('T')[0];
-        return history.includes(dateStr);
+    /**
+     * A local calendar date as YYYY-MM-DD.
+     *
+     * NOT date.toISOString().split('T')[0], which converts to UTC first. For a
+     * user in IST, 01:00 on the 17th is 19:30 UTC on the 16th, so the whole
+     * strip silently shifted a day back during the early hours — marking today
+     * unworked and yesterday worked.
+     */
+    const localDay = (date: Date) => {
+        const m = `${date.getMonth() + 1}`.padStart(2, '0');
+        const d = `${date.getDate()}`.padStart(2, '0');
+        return `${date.getFullYear()}-${m}-${d}`;
     };
+
+    // Entries are normalised because the API has served both shapes: a plain
+    // "2026-08-17" and a full "2026-08-17T00:00:00.000Z" (node-pg turns a DATE
+    // column into a JS Date, which JSON serialises as a UTC timestamp). The
+    // strict includes() against the raw array therefore never matched, and
+    // this ring read 0 for every user regardless of how much they had trained.
+    // Slicing to 10 characters accepts either, so the component keeps working
+    // against older app or API builds.
+    const trainedDays = React.useMemo(
+        () => new Set((history || []).map((d) => String(d).slice(0, 10))),
+        [history],
+    );
+
+    const hasWorkout = (date: Date) => trainedDays.has(localDay(date));
 
     const { weeklyWorkoutGoal } = useNutrition();
     const workoutsThisWeek = weekDates.filter(d => hasWorkout(d)).length;

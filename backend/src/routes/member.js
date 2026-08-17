@@ -133,7 +133,13 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
         // who train at their gym without logging sets, and a logged session
         // covers everyone with no gym at all.
         query(
-            `SELECT DISTINCT training_date FROM (
+            // TO_CHAR, not a bare DATE. node-pg turns a DATE column into a JS
+            // Date at LOCAL midnight, which JSON then serialises as a full UTC
+            // timestamp — "2026-08-17T00:00:00.000Z". The client compares
+            // plain "YYYY-MM-DD" strings, so includes() never matched and the
+            // Weekly Progress ring read 0 for everyone, check-ins or not.
+            // Emitting a plain string keeps the contract unambiguous.
+            `SELECT DISTINCT TO_CHAR(training_date, 'YYYY-MM-DD') AS training_date FROM (
                  SELECT DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') AS training_date
                    FROM attendances
                   WHERE user_id = $1
