@@ -23,6 +23,7 @@
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const { query } = require('../src/config/database');
+const { inferMuscleGroup } = require('../src/utils/muscleGroup');
 
 const REVIEW_EMAIL = 'review@fitzo.app';
 const REVIEW_NAME = 'Aarav Kapoor';
@@ -173,12 +174,22 @@ async function seed() {
             // custom_exercise_name set counts as ZERO sets for every muscle
             // group. Seeding without this produced 282 logged sets and a
             // heatmap reading "UNTRAINED" across the board.
+            // muscle_group must be classified here too. This script writes
+            // straight to the database rather than through POST /sessions/
+            // :id/exercises, so it does not pick up the classifier the route
+            // applies. Omitting it silently reproduces the exact bug that was
+            // just fixed: exercises whose names are not in the catalogue get a
+            // NULL exercise_id AND a NULL muscle_group, land in the volume
+            // query's 'other' bucket, and vanish from the heatmap.
+            //
+            // Caught by checking production after deploy rather than assuming:
+            // a reseed had quietly undone the backfill.
             const e = await query(
                 `INSERT INTO exercise_logs
-                   (session_id, exercise_id, custom_exercise_name, order_index)
-                 VALUES ($1, (SELECT id FROM exercises WHERE name = $2 LIMIT 1), $2, $3)
+                   (session_id, exercise_id, custom_exercise_name, order_index, muscle_group)
+                 VALUES ($1, (SELECT id FROM exercises WHERE name = $2 LIMIT 1), $2, $3, $4)
                  RETURNING id`,
-                [sid, ex.name, i]
+                [sid, ex.name, i, inferMuscleGroup(ex.name)]
             );
             for (const [j, reps] of ex.reps.entries()) {
                 // Round to 2.5 kg so the plate calculator shows loadable weights.
