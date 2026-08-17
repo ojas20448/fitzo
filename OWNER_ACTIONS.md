@@ -96,18 +96,70 @@ eas build --profile development --platform android
 
 ---
 
-## 6. Google OAuth — the remaining piece
+## 6. Google OAuth SHA-1 fingerprints
 
-Backend audiences and the `eas.json` client IDs are fixed in code. If sign-in still
-fails on Android with `DEVELOPER_ERROR`, the SHA-1 isn't registered:
+Backend audiences and the `eas.json` client IDs are already fixed in code. What
+remains is registering signing fingerprints, and this is the step that most
+often gets done half-way.
 
-```bash
-cd mobile && eas credentials       # → Android → show the SHA-1 fingerprint
+### You need TWO fingerprints, not one
+
+Google Sign-In checks the signature of the **installed** app. With Play App
+Signing enabled — it is, since the app auto-submits to Play — Google **re-signs
+your app with its own key** before distributing it. So the app a tester installs
+from Play carries a different signature from the same build installed directly
+as an APK.
+
+Register both, or sign-in works in one channel and fails with `DEVELOPER_ERROR`
+in the other. This is the usual cause of "it worked in testing and broke in
+production".
+
+| # | Key | Applies to | Where it comes from |
+|---|-----|-----------|---------------------|
+| 1 | **EAS upload key** | Direct APK installs — `development` and `preview` builds | Retrieved below ✅ |
+| 2 | **Play app signing key** | Anything installed **from Google Play** | Play Console only — see below |
+
+### 1. EAS upload key — retrieved 2026-08-17
+
+For `com.fitzo.app`, the package in `app.json`:
+
+```
+AF:A3:C3:7D:49:29:8F:0D:09:C8:67:D6:1F:7D:FC:7A:62:D9:FD:97
 ```
 
-Paste that fingerprint into [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-→ your **Android** OAuth client. EAS signs with its own keystore, so its SHA-1 is
-different from your local debug key — both need to be registered.
+Two stale keystores also exist on the EAS project, from earlier package names.
+**Do not register these** — they correspond to no build you ship now:
+
+| Package | SHA-1 |
+|---|---|
+| `com.fiskerr.fitzo` | `EE:1F:3C:7A:58:5C:D3:AD:A4:BD:42:77:9F:0B:E3:7F:70:91:55:CA` |
+| `com.fitzo` | `8A:EA:86:A6:79:4A:58:0B:2C:D6:38:C6:21:CD:51:70:A3:D0:CE:E0` |
+
+To re-check at any time, `eas credentials` is interactive; this is the
+scriptable equivalent:
+
+```bash
+cd mobile && node scripts/print-android-sha1.mjs
+```
+
+### 2. Play app signing key — you have to fetch this one
+
+There is **no API** for it; the Android Publisher API does not expose signing
+certificates. It exists only in the Play Console UI:
+
+> Play Console → **Test and release** → **Setup** → **App integrity** →
+> **App signing** tab → *App signing key certificate* → copy the **SHA-1**
+
+### Then register both
+
+[Google Cloud Console](https://console.cloud.google.com/apis/credentials) →
+your **Android** OAuth client → add each SHA-1 as a separate fingerprint entry,
+package name `com.fitzo.app` for both.
+
+- [ ] EAS upload key registered (value above)
+- [ ] Play app signing key registered (from Play Console)
+- [ ] Local debug keystore registered, if you sign in during local development
+      (`GOOGLE_CLIENT_ID_ANDROID_DEBUG`)
 
 Also check, before publishing:
 
