@@ -244,8 +244,17 @@ screenshots at 2:1** — a single set cannot satisfy both. Upload only the 6.9"
 set to App Store Connect; it scales that down to every smaller iPhone shelf
 automatically.
 
-Regenerate with `node capture.mjs` from the website project while
-`npx expo start --web --port 8099` is running in `mobile/`.
+Regenerate:
+
+```bash
+cd backend && node scripts/seed_review_account.js     # 1. seed the account
+cd ../mobile && npx expo start --web --port 8099      # 2. serve the app
+# 3. in the website project:
+node scripts/capture-store-screenshots.mjs
+```
+
+Playwright lives in the website project's `node_modules`, which is why the
+capture script sits there rather than in `mobile/`.
 
 > **Caveat worth knowing:** these are captured from the Expo **web** build, so
 > they are the real UI with real data but rendered by the browser. Fonts and
