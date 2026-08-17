@@ -121,12 +121,32 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
             cache.TTL.USER_STREAK
         ).catch(() => 0),
 
-        // 6. Check-in history
+        // 6. Training-day history — gym check-ins UNION logged workouts.
+        //
+        // This used to read attendances alone, which meant a training day only
+        // counted if the user scanned a gym QR code. Anyone training at home,
+        // or at a gym not on Fitzo, has gym_id NULL and never checks in — so
+        // their Weekly Progress ring sat at 0/N forever no matter how much
+        // they logged. The app told them they had not trained all week.
+        //
+        // A day counts if EITHER signal is present: a check-in covers people
+        // who train at their gym without logging sets, and a logged session
+        // covers everyone with no gym at all.
         query(
-            `SELECT DISTINCT DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') as checkin_date
-             FROM attendances WHERE user_id = $1
-             AND checked_in_at >= DATE_TRUNC('month', CURRENT_DATE)
-             AND checked_in_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'`,
+            `SELECT DISTINCT training_date FROM (
+                 SELECT DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') AS training_date
+                   FROM attendances
+                  WHERE user_id = $1
+                    AND checked_in_at >= DATE_TRUNC('month', CURRENT_DATE)
+                    AND checked_in_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
+                 UNION
+                 SELECT DATE(completed_at AT TIME ZONE 'Asia/Kolkata') AS training_date
+                   FROM workout_sessions
+                  WHERE user_id = $1
+                    AND completed_at IS NOT NULL
+                    AND completed_at >= DATE_TRUNC('month', CURRENT_DATE)
+                    AND completed_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
+             ) t`,
             [userId]
         ).catch(() => ({ rows: [] })),
 
@@ -171,7 +191,7 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
     const crowd = crowdData || computeCrowd(0, hasGym ? gymResult.rows[0].capacity : null);
     const gymName = hasGym ? gymResult.rows[0].name : null;
     const streak = streakVal;
-    const history = historyResult.rows.map(r => r.checkin_date);
+    const history = historyResult.rows.map(r => r.training_date);
     const user = userResult.rows.length > 0 ? userResult.rows[0] : { name: 'Member', xp_points: 0, avatar_url: null };
 
     // Learning progress (needs a follow-up query for unit %)
