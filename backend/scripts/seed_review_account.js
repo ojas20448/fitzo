@@ -154,9 +154,14 @@ async function seed() {
         const weekIndex = Math.floor((20 - day) / 7);
         const progression = 1 + weekIndex * 0.015;
 
-        const started = new Date(date); started.setHours(18, 30, 0, 0);
+        // Anchor every session to a fixed offset BEFORE now, rather than to a
+        // wall-clock hour. setHours(18, 30) put today's session at 18:30 local,
+        // which is in the future on any run before the evening — and queries
+        // that filter completed_at <= NOW() then drop it, so a freshly seeded
+        // account reported "0 sessions" for the current week.
         const duration = 58 + (sessions % 5) * 3;
-        const completed = new Date(started.getTime() + duration * 60000);
+        const completed = new Date(Date.now() - day * 86400000 - 3 * 3600000);
+        const started = new Date(completed.getTime() - duration * 60000);
 
         const s = await query(
             `INSERT INTO workout_sessions
@@ -290,6 +295,29 @@ async function seed() {
             streak++;
         }
         console.log(`Seeded ${streak}-day check-in streak`);
+    }
+
+    // ── Weekly recap ────────────────────────────────────────────────────────
+    // The Stats screen's entire Training headline reads
+    // `weeklyRecap?.recap_data?.workouts_count || 0`, and the recap row is
+    // only ever written by the Monday cron. A freshly seeded account therefore
+    // reports "0 sessions" and an empty muscle heatmap no matter how much
+    // training history it has — the data is all there, but nothing has
+    // summarised it yet. Generating it here makes the account coherent
+    // immediately instead of waiting for the next cron window.
+    try {
+        const weeklyRecap = require('../src/services/weeklyRecap');
+        // LAST week's Monday, not this week's. getLatestWeeklyRecap() — which
+        // is what the Stats screen reads — looks for the most recent COMPLETED
+        // Mon–Sun window, so a recap generated for the current week would be
+        // written and then never found.
+        const lastWeek = new Date(Date.now() - 7 * 86400000);
+        await weeklyRecap.generateWeeklyRecap(uid, weeklyRecap.getStartOfWeek(lastWeek));
+        console.log('Generated weekly recap');
+    } catch (e) {
+        // Needs a working GEMINI_API_KEY. Not fatal — the account is still
+        // fully usable, the Stats headline just reads 0 until the cron runs.
+        console.log(`Weekly recap skipped (${e.message})`);
     }
 
     console.log(`\n  Reviewer account ready\n    ${REVIEW_EMAIL}\n    ${REVIEW_PASSWORD}\n`);

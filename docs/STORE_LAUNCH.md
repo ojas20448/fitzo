@@ -247,14 +247,24 @@ automatically.
 Regenerate:
 
 ```bash
-cd backend && node scripts/seed_review_account.js     # 1. seed the account
-cd ../mobile && npx expo start --web --port 8099      # 2. serve the app
-# 3. in the website project:
-node scripts/capture-store-screenshots.mjs
+# 1. seed the reviewer account
+cd backend && node scripts/seed_review_account.js
+
+# 2. serve the app POINTED AT PRODUCTION (see the trap below)
+cd ../mobile && EXPO_PUBLIC_API_URL=https://fitzo.onrender.com/api \
+  npx expo start --web --port 8100
+
+# 3. from the website project (Playwright lives in its node_modules)
+FITZO_WEB_URL=http://localhost:8100 node scripts/capture-store-screenshots.mjs
 ```
 
-Playwright lives in the website project's `node_modules`, which is why the
-capture script sits there rather than in `mobile/`.
+> **The trap.** `mobile/.env.local` points `EXPO_PUBLIC_API_URL` at
+> `http://localhost:3001/api` and **overrides** `mobile/.env`. With no local
+> backend running, every request fails with `ERR_CONNECTION_REFUSED`, the login
+> never completes, and the capture used to silently emit a full set of
+> logged-out screenshots — plausible-looking, showing "0 sessions" and an
+> untrained muscle map. The script now waits for a real post-login signal and
+> aborts loudly instead, but the env override is the actual fix.
 
 > **Caveat worth knowing:** these are captured from the Expo **web** build, so
 > they are the real UI with real data but rendered by the browser. Fonts and
