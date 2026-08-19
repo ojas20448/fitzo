@@ -142,22 +142,48 @@ scriptable equivalent:
 cd mobile && node scripts/print-android-sha1.mjs
 ```
 
-### 2. Play app signing key — you have to fetch this one
+### 2. Play app signing key — retrieved 2026-08-19
 
-There is **no API** for it; the Android Publisher API does not expose signing
-certificates. It exists only in the Play Console UI:
+```
+4C:87:84:9A:45:5C:50:0B:DB:06:E3:00:34:FE:BA:79:47:F7:53:BF
+```
+
+There is **no API** for this one; the Android Publisher API does not expose
+signing certificates. If it ever needs re-checking, it lives only in the Play
+Console UI:
 
 > Play Console → **Test and release** → **Setup** → **App integrity** →
-> **App signing** tab → *App signing key certificate* → copy the **SHA-1**
+> **App signing** tab → top-right box → click **SHA-1 certificate fingerprint**
 
-### Then register both
+Note the two halves of that page differ: the *Upload key certificate* section
+prints its fingerprints as plain text, while the *App signing key* section
+hides them behind copy buttons. It is easy to read the upload key twice and
+conclude the page only offers one SHA-1 — they are different keys and both are
+required.
 
-[Google Cloud Console](https://console.cloud.google.com/apis/credentials) →
-your **Android** OAuth client → add each SHA-1 as a separate fingerprint entry,
-package name `com.fitzo.app` for both.
+### Then register both — as TWO clients, not two fingerprints
 
-- [ ] EAS upload key registered (value above)
-- [ ] Play app signing key registered (from Play Console)
+A Google Cloud **Android OAuth client holds exactly one package-name + SHA-1
+pair**. There is no "add another fingerprint" field, so the second key needs its
+own client. Same package name on both is correct and permitted; what must be
+unique across all Google projects is the *pair*.
+
+[Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials),
+project `1030039443378`:
+
+1. Open the existing Android client (`...u3vdk2fq3ebu90sv2okvimbta1rs2d7v`) and
+   confirm its SHA-1 is the **upload** key above; set it if blank.
+2. **+ CREATE CREDENTIALS → OAuth client ID → Android**
+   - Package name: `com.fitzo.app`
+   - SHA-1: the **Play app signing** key above
+
+No code change is needed for the new client. `@react-native-google-signin`
+sends the **web** client ID as the ID token audience — the Android clients only
+authorise the package+signature pair at sign-in time — and the backend already
+verifies against `GOOGLE_CLIENT_ID_WEB`.
+
+- [ ] EAS upload key registered (existing Android client)
+- [ ] Play app signing key registered (new second Android client)
 - [ ] Local debug keystore registered, if you sign in during local development
       (`GOOGLE_CLIENT_ID_ANDROID_DEBUG`)
 
