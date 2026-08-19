@@ -237,14 +237,24 @@ Captured from the live app signed in as the reviewer account.
 | Apple 6.9" (iPhone 17 Pro Max class) | 1320 × 2868 (ratio 2.173) | `mobile/store-listing/app-store/` |
 | Google Play | 1080 × 2160 (ratio 2.000) | `mobile/store-listing/google-play/` |
 
-**Upload from `store-listing/`, not `store-screenshots/`.** The latter holds the
-raw app captures, which are the *input*. Raw captures alone read as cramped in
-a store listing: the screen renders small, nothing frames it, and nothing tells
-a browsing user what they are looking at.
+**Upload from `store-listing/`, not `store-screenshots/`.** The latter holds
+the raw app captures, which are the *input*.
 
-`store-listing/` holds the finished marketing panels — accent glow, eyebrow,
-headline, and the device bleeding off the bottom edge so the screen shows large
-rather than being shrunk whole into frame.
+**The device ratio is not the panel ratio.** An earlier version captured the
+app twice, sizing each viewport to the destination store's canvas — including
+360x720 (exactly 2.000) to respect Play's 2:1 cap. No phone is 2.000: a Pixel 8
+is 2.221, a Galaxy S24 2.167, an iPhone 17 Pro Max 2.173. Laying the app out in
+a 720pt-tall box crammed its vertical rhythm and looked squashed.
+
+There is now ONE capture set at a true phone shape (1320x2868, ratio 2.173),
+feeding both canvases. Each panel scales the device to width and lets it bleed
+off the bottom, so the screen shows large instead of a whole phone shrunk into
+frame. The status bar and dynamic island are drawn by the compositor, since the
+web build renders neither and the capture would otherwise read as a cropped
+rectangle rather than a phone.
+
+Each route is captured at the scroll position that shows the feature its
+headline names — Stats anchors on the muscle heatmap, which sits below the fold.
 
 Eight panels each: home, stats, coach, logger, nutrition, profile, learn,
 buddies.
