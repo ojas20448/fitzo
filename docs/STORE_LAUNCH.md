@@ -234,15 +234,20 @@ Captured from the live app signed in as the reviewer account.
 
 | Store | Size | Location |
 |---|---|---|
-| Apple 6.9" (iPhone 17 Pro Max class) | 1320 × 2868 (ratio 2.173) | `mobile/store-screenshots/app-store/` |
-| Google Play | 1080 × 2160 (ratio 2.000) | `mobile/store-screenshots/google-play/` |
+| Apple 6.9" (iPhone 17 Pro Max class) | 1320 × 2868 (ratio 2.173) | `mobile/store-listing/app-store/` |
+| Google Play | 1080 × 2160 (ratio 2.000) | `mobile/store-listing/google-play/` |
 
-Eight shots each: home, stats, coach, logger, nutrition, profile, learn, buddies.
+**Upload from `store-listing/`, not `store-screenshots/`.** The latter holds the
+raw app captures, which are the *input*. Raw captures alone read as cramped in
+a store listing: the screen renders small, nothing frames it, and nothing tells
+a browsing user what they are looking at.
 
-Two sets, deliberately. Apple's 6.9" slot is 2.17:1, and **Google Play caps
-screenshots at 2:1** — a single set cannot satisfy both. Upload only the 6.9"
-set to App Store Connect; it scales that down to every smaller iPhone shelf
-automatically.
+`store-listing/` holds the finished marketing panels — accent glow, eyebrow,
+headline, and the device bleeding off the bottom edge so the screen shows large
+rather than being shrunk whole into frame.
+
+Eight panels each: home, stats, coach, logger, nutrition, profile, learn,
+buddies.
 
 Regenerate:
 
@@ -256,6 +261,9 @@ cd ../mobile && EXPO_PUBLIC_API_URL=https://fitzo.onrender.com/api \
 
 # 3. from the website project (Playwright lives in its node_modules)
 FITZO_WEB_URL=http://localhost:8100 node scripts/capture-store-screenshots.mjs
+
+# 4. compose the raw captures into marketing panels
+node scripts/compose-store-panels.mjs
 ```
 
 > **The trap.** `mobile/.env.local` points `EXPO_PUBLIC_API_URL` at
