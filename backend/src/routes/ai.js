@@ -3,6 +3,7 @@ const router = express.Router();
 const geminiService = require('../services/gemini');
 const { authenticate } = require('../middleware/auth');
 const { aiQuota, getUsage } = require('../middleware/aiQuota');
+const transcriptionService = require('../services/transcription');
 const { asyncHandler, ValidationError } = require('../utils/errors');
 const { validate } = require('../middleware/validate');
 const { aiWorkoutPlanSchema, aiChatSchema, aiFormAnalysisSchema, aiTranscribeSchema, aiExtractSchema } = require('../schemas');
@@ -120,7 +121,10 @@ router.post('/analyze-form', aiQuota, validate({ body: aiFormAnalysisSchema }), 
 router.post('/transcribe', aiQuota, validate({ body: aiTranscribeSchema }), asyncHandler(async (req, res) => {
     const { audio, mimeType } = req.body;
 
-    const text = await geminiService.transcribeAudio(audio, mimeType);
+    // Routed rather than called directly: transcription is the highest-volume
+    // AI call in Fitzo, and the router lets it move between Groq Whisper and
+    // Gemini by env var, with the other as an automatic fallback.
+    const { text, provider } = await transcriptionService.transcribe(audio, mimeType);
 
     // Silence or a safety-blocked response comes back empty. Say so here rather
     // than letting the client call /extract-* with "" and get a confusing error
@@ -129,7 +133,10 @@ router.post('/transcribe', aiQuota, validate({ body: aiTranscribeSchema }), asyn
         throw new ValidationError("Didn't catch that — try again a bit closer to the mic");
     }
 
-    res.json({ success: true, text: text.trim() });
+    // `provider` is returned so the client and logs can attribute a bad
+    // transcript to the model that produced it — otherwise an ASR regression
+    // after a provider switch is indistinguishable from a user mumbling.
+    res.json({ success: true, text: text.trim(), provider });
 }));
 
 router.post('/extract-foods', aiQuota, validate({ body: aiExtractSchema }), asyncHandler(async (req, res) => {
