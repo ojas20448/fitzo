@@ -58,6 +58,38 @@ describe('isQuotaError — must NOT fire on unrelated failures', () => {
     });
 });
 
+// Mirrors the implementation. A timeout must be treated as transient because
+// an exhausted quota can PRESENT as one: observed in production, Flash stopped
+// returning 429s and simply hung, holding the connection for 150s.
+function isTransientError(error) {
+    if (isQuotaError(error)) return true;
+    if (!error) return false;
+    const name = String(error.name || '');
+    const text = String(error.message || '');
+    return /abort|timeout|timed out|ETIMEDOUT|ECONNRESET|socket hang up/i.test(name + ' ' + text);
+}
+
+describe('isTransientError — timeouts count, because a hung quota looks like one', () => {
+    test.each([
+        ['SDK abort error', { name: 'GoogleGenerativeAIAbortError', message: 'Request aborted' }],
+        ['explicit timeout', { message: 'Request timed out after 30000ms' }],
+        ['ETIMEDOUT', { message: 'connect ETIMEDOUT 142.250.0.1:443' }],
+        ['socket hang up', { message: 'socket hang up' }],
+        ['ECONNRESET', { message: 'read ECONNRESET' }],
+        ['still catches plain quota', { status: 429 }],
+    ])('treats %s as transient', (_label, err) => {
+        expect(isTransientError(err)).toBe(true);
+    });
+
+    test.each([
+        ['invalid API key', { status: 400, message: 'API key not valid' }],
+        ['safety block', { message: 'blocked due to SAFETY' }],
+        ['parse failure', new SyntaxError('Unexpected token')],
+    ])('does not claim %s', (_label, err) => {
+        expect(isTransientError(err)).toBe(false);
+    });
+});
+
 describe('AIUnavailableError', () => {
     test('is a 503, not a 429', () => {
         // 429 would mean "the client sent too much" and the app's own retry
