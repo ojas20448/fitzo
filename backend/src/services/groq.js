@@ -42,9 +42,20 @@ const TIMEOUT_MS = parseInt(process.env.GROQ_TIMEOUT_MS || '30000', 10);
  * neighbours, and the extraction step downstream then has nothing to match on.
  */
 const DOMAIN_PROMPT =
-    'Gym and Indian food vocabulary: reps, sets, kilos, drop set, RIR, bench press, ' +
-    'deadlift, squat, overhead press, lat pulldown, roti, chapati, dal, paneer, ' +
-    'bhurji, rajma, chawal, curd, dahi, sabzi, idli, dosa, poha, chana, whey protein.';
+    // Hindi NUMERALS come first because they are the highest-stakes words here.
+    // Measured before this was added: "das reps" (ten) transcribed as "dos
+    // reps". A mangled food name usually fails extraction visibly; a mangled
+    // number silently logs the wrong rep count, which is worse — the user sees
+    // a plausible entry and never knows it is wrong.
+    'Hindi numbers: ek, do, teen, chaar, paanch, chhe, saat, aath, nau, das, ' +
+    'gyarah, barah, pandrah, bees, pachees, tees, chalees, pachaas. ' +
+    // Quantity words: "ek bowl dal" degraded to "ek bol dal", losing the unit
+    // the extraction step needs to size the portion.
+    'Quantities: bowl, katori, plate, glass, cup, piece, half, aadha, thoda, poora. ' +
+    'Gym: reps, sets, kilos, drop set, RIR, bench press, deadlift, squat, ' +
+    'overhead press, lat pulldown, barbell, dumbbell. ' +
+    'Indian food: roti, chapati, dal, paneer, bhurji, rajma, chawal, curd, dahi, ' +
+    'sabzi, idli, dosa, poha, chana, whey protein.';
 
 function isTransientError(error) {
     if (!error) return false;

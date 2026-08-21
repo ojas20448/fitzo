@@ -29,6 +29,7 @@
 const groq = require('./groq');
 const gemini = require('./gemini');
 const { AIUnavailableError } = require('../utils/errors');
+const { normalizeTranscript } = require('./hinglish');
 
 const PROVIDER = (process.env.TRANSCRIPTION_PROVIDER || 'gemini').toLowerCase();
 
@@ -63,7 +64,13 @@ async function transcribe(base64Data, mimeType) {
     let lastError;
     for (const provider of order) {
         try {
-            const text = await provider.run(base64Data, mimeType);
+            const raw = await provider.run(base64Data, mimeType);
+            // Normalised here rather than inside a provider, so both benefit
+            // and a future provider inherits it for free. Hindi numerals are
+            // the reason: measured on Whisper, spoken "das reps" (ten) came
+            // back as "dos reps", and a wrong rep count logs silently wrong
+            // data instead of failing visibly.
+            const text = normalizeTranscript(raw);
             // An empty transcript is a legitimate outcome — silence, or audio
             // the model could not resolve — not a provider failure. Returning
             // it lets the route give its own "didn't catch that" message rather
