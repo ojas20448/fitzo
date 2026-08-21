@@ -38,6 +38,21 @@ class ValidationError extends AppError {
 }
 
 // Not Found Errors
+/**
+ * The upstream AI provider refused the request because a quota is exhausted.
+ *
+ * 503 rather than 429: a 429 from this API means "YOU are sending too much"
+ * and the client's own retry logic keys off it. This is the opposite — the
+ * user did nothing wrong, the shared project quota ran out. 503 with
+ * Retry-After is the honest signal, and it keeps this distinguishable from
+ * the per-user aiQuota limiter, which legitimately returns 429.
+ */
+class AIUnavailableError extends AppError {
+    constructor(message = 'Fitzo AI is busy right now. Try again in a moment.') {
+        super(message, 503, 'AI_UNAVAILABLE');
+    }
+}
+
 class NotFoundError extends AppError {
     constructor(message = "We couldn't find what you're looking for") {
         super(message, 404, 'NOT_FOUND');
@@ -152,6 +167,7 @@ const asyncHandler = (fn) => (req, res, next) => {
 };
 
 module.exports = {
+    AIUnavailableError,
     AppError,
     AuthError,
     ForbiddenError,

@@ -4,6 +4,7 @@ if (!process.env.GEMINI_API_KEY) {
     console.error('⚠️  GEMINI_API_KEY not set — AI features will fail');
 }
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const { AIUnavailableError } = require('../utils/errors');
 
 // The model name lives in ONE place, and is env-overridable.
 //
@@ -14,6 +15,39 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // died". The "-latest" alias tracks the current Flash generation so a future
 // retirement can't do that again. Set GEMINI_MODEL to pin an exact version.
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+
+/**
+ * A cheaper, higher-throughput model for the mechanical calls.
+ *
+ * Transcription and entity extraction are not reasoning tasks — they turn one
+ * representation into another with no judgement required. Flash-Lite handles
+ * them at a materially higher requests-per-day allowance and lower cost, which
+ * matters because free-tier limits are per PROJECT, not per user: every user
+ * shares one bucket, and voice logging costs two calls (transcribe, then
+ * extract). Those are far and away the highest-volume calls in the app.
+ *
+ * The coach, plan generation and photo analysis stay on Flash, where output
+ * quality is the point and volume is low.
+ */
+const GEMINI_FAST_MODEL = process.env.GEMINI_FAST_MODEL || 'gemini-flash-lite-latest';
+
+/**
+ * Did the provider refuse because a quota or rate limit is exhausted?
+ *
+ * Matched on shape rather than a single field: the SDK surfaces this
+ * inconsistently — sometimes an HTTP 429, sometimes a status string of
+ * RESOURCE_EXHAUSTED, sometimes only prose in the message. Treating a quota
+ * refusal as a generic failure is what produced the worst outcome: the caller
+ * fell through to a canned "AI service unavailable" reply, so a temporary and
+ * self-healing condition looked like a broken feature.
+ */
+function isQuotaError(error) {
+    if (!error) return false;
+    const status = error.status || error.code;
+    if (status === 429 || status === 'RESOURCE_EXHAUSTED') return true;
+    const text = String(error.message || '');
+    return /429|RESOURCE_EXHAUSTED|quota|rate limit/i.test(text);
+}
 
 // ===========================================
 // SHARED: Indian/Hinglish-aware system context
@@ -153,6 +187,9 @@ Format the response as JSON with this structure:
         const text = response.text();
         return JSON.parse(extractJSON(text));
     } catch (error) {
+        // A quota refusal is temporary and self-healing. Falling through to the
+        // canned fallback below would present it as a broken feature instead.
+        if (isQuotaError(error)) throw new AIUnavailableError();
         console.error('Gemini API error (Switching to MOCK):', error.message);
         return getMockWorkoutPlan(goal);
     }
@@ -195,6 +232,9 @@ Format as JSON:
         const text = response.text();
         return JSON.parse(extractJSON(text));
     } catch (error) {
+        // A quota refusal is temporary and self-healing. Falling through to the
+        // canned fallback below would present it as a broken feature instead.
+        if (isQuotaError(error)) throw new AIUnavailableError();
         console.error('Gemini API error (Switching to MOCK):', error.message);
         return getMockNutritionAdvice(goal);
     }
@@ -292,6 +332,9 @@ Provide your expert coaching advice:`;
         const response = await result.response;
         return response.text();
     } catch (error) {
+        // A quota refusal is temporary and self-healing. Falling through to the
+        // canned fallback below would present it as a broken feature instead.
+        if (isQuotaError(error)) throw new AIUnavailableError('The coach is busy right now. Try again in a moment.');
         console.error('Gemini API error (Switching to MOCK):', error.message);
         return `[AI Monitor]: The advanced AI service is currently unavailable. \n\nHowever, regarding "${question}", generally consistency is key. Please ensure you are eating enough protein and getting enough sleep. (This is a simplified offline response).`;
     }
@@ -317,6 +360,9 @@ Keep it brief and actionable.`;
         const response = await result.response;
         return response.text();
     } catch (error) {
+        // A quota refusal is temporary and self-healing. Falling through to the
+        // canned fallback below would present it as a broken feature instead.
+        if (isQuotaError(error)) throw new AIUnavailableError();
         console.error('Gemini API error (Switching to MOCK):', error.message);
         return `[AI Monitor]: Form analysis unavailable offline. Please check standard form guides for ${exerciseName}. Ensure your back is straight and movements are controlled.`;
     }
@@ -370,6 +416,9 @@ Return ONLY valid JSON (no markdown, no code fences) with this exact structure:
             serving_size: parsed.serving_size || '1 serving'
         };
     } catch (error) {
+        // A quota refusal is temporary and self-healing. Falling through to the
+        // canned fallback below would present it as a broken feature instead.
+        if (isQuotaError(error)) throw new AIUnavailableError();
         console.error('Gemini analyzeFoodFromText error:', error.message);
         throw new Error(`AI food analysis failed: ${error.message}`);
     }
@@ -449,6 +498,9 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
 
         return { items, total };
     } catch (error) {
+        // A quota refusal is temporary and self-healing. Falling through to the
+        // canned fallback below would present it as a broken feature instead.
+        if (isQuotaError(error)) throw new AIUnavailableError();
         console.error('Gemini Vision food analysis error:', error.message);
         throw new Error('Failed to analyze food image. Please try again or use text description instead.');
     }
@@ -465,7 +517,7 @@ async function transcribeAudio(base64Data, mimeType) {
     const prompt = "Transcribe the spoken audio in this file. Provide only the text transcription, matching the languages spoken (usually English or Hinglish). Do not add any introduction, greeting, or explanation.";
 
     try {
-        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+        const model = genAI.getGenerativeModel({ model: GEMINI_FAST_MODEL });
         const result = await model.generateContent([
             {
                 inlineData: {
@@ -478,6 +530,9 @@ async function transcribeAudio(base64Data, mimeType) {
         const response = await result.response;
         return response.text().trim();
     } catch (error) {
+        // A quota refusal is temporary and self-healing. Falling through to the
+        // canned fallback below would present it as a broken feature instead.
+        if (isQuotaError(error)) throw new AIUnavailableError();
         console.error('Gemini transcription service error:', error.message);
         throw new Error('Failed to transcribe audio. Please try again.');
     }
@@ -500,12 +555,15 @@ Text: ${JSON.stringify(text)}`;
     let responseText = '';
     try {
         const model = genAI.getGenerativeModel({
-            model: GEMINI_MODEL,
+            model: GEMINI_FAST_MODEL,
             generationConfig: { responseMimeType: 'application/json' },
         });
         const result = await model.generateContent(prompt);
         responseText = (await result.response).text();
     } catch (error) {
+        // A quota refusal is temporary and self-healing. Falling through to the
+        // canned fallback below would present it as a broken feature instead.
+        if (isQuotaError(error)) throw new AIUnavailableError();
         console.error('Gemini workout extraction call failed:', error.message);
         throw new Error('Could not reach the AI service. Please try again.');
     }
@@ -539,12 +597,15 @@ Text: ${JSON.stringify(text)}`;
     let responseText = '';
     try {
         const model = genAI.getGenerativeModel({
-            model: GEMINI_MODEL,
+            model: GEMINI_FAST_MODEL,
             generationConfig: { responseMimeType: 'application/json' },
         });
         const result = await model.generateContent(prompt);
         responseText = (await result.response).text();
     } catch (error) {
+        // A quota refusal is temporary and self-healing. Falling through to the
+        // canned fallback below would present it as a broken feature instead.
+        if (isQuotaError(error)) throw new AIUnavailableError();
         console.error('Gemini food extraction call failed:', error.message);
         throw new Error('Could not reach the AI service. Please try again.');
     }
