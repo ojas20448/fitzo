@@ -47,6 +47,41 @@ router.post('/nutrition-advice', aiQuota, asyncHandler(async (req, res) => {
 }));
 
 // Get chat history with AI coach (latest 50, returned oldest-first for rendering)
+/**
+ * GET /api/ai/context-summary
+ *
+ * What Spotter can actually see. Powers the "reading" strip above the chat,
+ * which turns an invisible advantage into a visible one: no competing app can
+ * show this line, because none of them has the data behind it.
+ *
+ * Deliberately NOT built from contextPack, which runs ~10 queries to assemble
+ * a full prompt. This is three cheap counts over the SAME 14-day window the
+ * coach uses, so the numbers are honest without paying for the whole pack on
+ * a screen open.
+ */
+router.get('/context-summary', asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    const [sessions, streak, profile] = await Promise.all([
+        query(
+            `SELECT COUNT(*)::int AS n FROM workout_sessions
+              WHERE user_id = $1 AND completed_at IS NOT NULL
+                AND completed_at >= NOW() - INTERVAL '14 days'`,
+            [userId],
+        ),
+        query(`SELECT get_user_streak($1) AS streak`, [userId]),
+        query(`SELECT target_calories FROM nutrition_profiles WHERE user_id = $1`, [userId]),
+    ]);
+
+    res.json({
+        success: true,
+        days: 14,
+        sessions: sessions.rows[0]?.n || 0,
+        streak: parseInt(streak.rows[0]?.streak, 10) || 0,
+        targetCalories: profile.rows[0]?.target_calories || null,
+    });
+}));
+
 router.get('/chat/history', asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const result = await query(

@@ -1004,6 +1004,12 @@ export const aiAPI = {
         return response.data;
     },
 
+    /** What Spotter can see — powers the "reading" strip above the chat. */
+    getContextSummary: async () => {
+        const response = await api.get('/ai/context-summary');
+        return response.data;
+    },
+
     getWeeklyRecap: async () => {
         const response = await api.get('/ai/weekly-recap');
         return response.data;

@@ -366,8 +366,22 @@ Provide your expert coaching advice:`;
         // A quota refusal is temporary and self-healing. Falling through to the
         // canned fallback below would present it as a broken feature instead.
         if (isTransientError(error)) throw new AIUnavailableError('The coach is busy right now. Try again in a moment.');
-        console.error('Gemini API error (Switching to MOCK):', error.message);
-        return `[AI Monitor]: The advanced AI service is currently unavailable. \n\nHowever, regarding "${question}", generally consistency is key. Please ensure you are eating enough protein and getting enough sleep. (This is a simplified offline response).`;
+        console.error('Coach call failed (non-transient):', error.message);
+        // A non-transient failure here is a real defect — a bad API key, a
+        // retired model, a safety block. It must NOT be answered with canned
+        // advice.
+        //
+        // The previous fallback returned "[AI Monitor]: The advanced AI service
+        // is currently unavailable... consistency is key, eat enough protein",
+        // and the route then PERSISTED that to coach_messages as though the
+        // coach had said it. Three problems, worst last: it leaked internal
+        // wording to users, it answered a specific question with generic
+        // filler, and it wrote that filler permanently into the user's history
+        // where it is indistinguishable from real coaching.
+        //
+        // Throwing keeps the history clean — the route's inserts run only after
+        // a successful reply — and tells the user the truth.
+        throw new AIUnavailableError('The coach could not answer that just now. Try again shortly.');
     }
 }
 
@@ -395,7 +409,10 @@ Keep it brief and actionable.`;
         // canned fallback below would present it as a broken feature instead.
         if (isTransientError(error)) throw new AIUnavailableError();
         console.error('Gemini API error (Switching to MOCK):', error.message);
-        return `[AI Monitor]: Form analysis unavailable offline. Please check standard form guides for ${exerciseName}. Ensure your back is straight and movements are controlled.`;
+        // Same reasoning as chatWithCoach: form advice the model did not
+        // actually produce is worse than no advice, because the user cannot
+        // tell it apart from a real answer.
+        throw new AIUnavailableError('Form analysis is unavailable right now. Try again shortly.');
     }
 }
 

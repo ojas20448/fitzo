@@ -53,6 +53,15 @@ export default function AICoachScreen() {
     // every render. See the FlatList below for why inverted.
     const feed = useMemo(() => [...messages].reverse(), [messages]);
 
+    // What Spotter can see. Fetched separately from the history so a slow or
+    // failed summary never delays the conversation loading.
+    const [context, setContext] = useState<{ sessions: number; streak: number; targetCalories: number | null } | null>(null);
+    useEffect(() => {
+        aiAPI.getContextSummary()
+            .then(setContext)
+            .catch(() => setContext(null));   // strip simply omits itself
+    }, []);
+
     const startRecording = async () => {
         try {
             const permission = await Audio.requestPermissionsAsync();
@@ -280,6 +289,28 @@ function TypingDots() {
                 </View>
             </View>
 
+            {/*
+              * The reading strip: states what Spotter has actually seen before
+              * the user asks anything. This is the app's least visible
+              * advantage made visible — no competing tracker can render this
+              * line, because none of them holds the data behind it. It also
+              * sets an honest expectation: the coach knows THIS much, no more.
+              *
+              * Rendered only when the summary loaded AND the user has training
+              * behind them. On an empty account it would read "0 sessions",
+              * advertising that the coach has nothing to work with.
+              */}
+            {context && context.sessions > 0 && (
+                <View style={styles.readingStrip}>
+                    <Text style={styles.readingLabel}>READING</Text>
+                    <Text style={styles.readingValue} numberOfLines={1}>
+                        {context.sessions} sessions
+                        {context.streak > 0 ? `  ·  ${context.streak}-day streak` : ''}
+                        {context.targetCalories ? `  ·  ${context.targetCalories.toLocaleString()} kcal target` : ''}
+                    </Text>
+                </View>
+            )}
+
             {historyLoading ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 }}>
                     <ActivityIndicator size="large" color={colors.primary} />
@@ -455,6 +486,27 @@ const styles = StyleSheet.create({
     },
     flex: {
         flex: 1,
+    },
+    readingStrip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.glass.border,
+    },
+    readingLabel: {
+        fontSize: 10,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.subtle,
+        letterSpacing: 2,
+    },
+    readingValue: {
+        flex: 1,
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
     },
     messagesList: {
         paddingHorizontal: spacing.xl,
