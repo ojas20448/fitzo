@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
@@ -22,6 +22,7 @@ import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { ToastProvider } from '../src/components/Toast';
 import { NutritionProvider } from '../src/context/NutritionContext';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import { BrandIntro } from '../src/components/BrandIntro';
 import { notificationsAPI, wakeBackend } from '../src/services/api';
 import { colors } from '../src/styles/theme';
 
@@ -124,7 +125,7 @@ function PushNotificationHandler() {
 }
 
 export default function RootLayout() {
-    const [fontsLoaded] = useFonts({
+    const [fontsLoaded, fontError] = useFonts({
         Lexend_300Light,
         Lexend_400Regular,
         Lexend_500Medium,
@@ -143,18 +144,29 @@ export default function RootLayout() {
     }, []);
 
     useEffect(() => {
-        if (fontsLoaded) {
-            setAppReady(true);
-            SplashScreen.hideAsync();
-        }
-    }, [fontsLoaded]);
+        // Fall through on font errors too — otherwise a failed font fetch leaves
+        // the app stuck on the native splash forever. System fonts are a far
+        // better outcome than a dead launch.
+        if (!fontsLoaded && !fontError) return;
+
+        setAppReady(true);
+
+        // BrandIntro lifts the splash itself, the moment it has measured its
+        // lockup and is ready to play its first frame. Both the native splash
+        // and the intro's opening frame are the F on black, so the handoff has
+        // no visible seam. This timer is only the safety net for the case where
+        // the intro never gets that far.
+        const failsafe = setTimeout(() => {
+            SplashScreen.hideAsync().catch(() => {});
+        }, 1500);
+        return () => clearTimeout(failsafe);
+    }, [fontsLoaded, fontError]);
 
     if (!appReady) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.primary} />
-            </View>
-        );
+        // Deliberately empty: the native splash is still covering this. Anything
+        // drawn here (a spinner, say) can only ever appear as a flash of chrome
+        // between the splash lifting and the intro's first frame.
+        return <View style={styles.loadingContainer} />;
     }
 
     return (
@@ -215,6 +227,11 @@ export default function RootLayout() {
                     </NutritionProvider>
                 </AuthProvider>
                 </ErrorBoundary>
+
+                {/* Sits outside ErrorBoundary and above everything else: the
+                    app boots, restores auth and wakes the backend underneath
+                    this curtain, so the intro costs the user no time at all. */}
+                <BrandIntro />
             </SafeAreaProvider>
         </GestureHandlerRootView>
     );

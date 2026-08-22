@@ -3,6 +3,7 @@ const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler, ValidationError, NotFoundError } = require('../utils/errors');
+const communityFoods = require('../services/communityFoods');
 const cache = require('../services/cache');
 const xpService = require('../services/xpService');
 const { IST_TODAY_SQL, isValidDateString } = require('../utils/dayBoundary');
@@ -16,7 +17,14 @@ router.use(authenticate);
 // ============================================
 router.post('/', asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const { calories, protein = 0, carbs = 0, fat = 0, meal_name, visibility = 'friends' } = req.body;
+    const { calories, protein = 0, carbs = 0, fat = 0, meal_name, visibility = 'friends', food_id = null } = req.body;
+
+    // Provenance for community-contributed foods. Optional and best-effort:
+    // the overwhelming majority of logs are free-text or curated-catalog and
+    // carry no food_id at all, so this must never be able to fail a log.
+    const communityFoodId = communityFoods.isCommunityId(food_id)
+        ? communityFoods.stripPrefix(food_id)
+        : null;
 
     // Validation
     if (!calories || calories < 0) {
@@ -33,11 +41,16 @@ router.post('/', asyncHandler(async (req, res) => {
     }
 
     const result = await query(
-        `INSERT INTO calorie_logs (user_id, calories, protein, carbs, fat, food_name, visibility, logged_date)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, ${IST_TODAY_SQL})
+        `INSERT INTO calorie_logs (user_id, calories, protein, carbs, fat, food_name, visibility, community_food_id, logged_date)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, ${IST_TODAY_SQL})
          RETURNING *`,
-        [userId, calories, protein, carbs, fat, meal_name || null, visibility]
+        [userId, calories, protein, carbs, fat, meal_name || null, visibility, communityFoodId]
     );
+
+    // Usage counter behind the CLI's --promote ranking. Deliberately not
+    // awaited into the response path and swallowing its own errors: a counter
+    // is not worth failing a member's food log over.
+    if (communityFoodId) communityFoods.recordLog(food_id);
 
     // Award XP for logging
     await xpService.awardXP(userId, 2, 'nutrition', result.rows[0].id);

@@ -3,11 +3,33 @@ require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const { errorHandler } = require('./utils/errors');
 const { initSentry, sentryErrorHandler } = require('./services/sentry');
 
 // Initialize express
 const app = express();
+
+// Trust Render's proxy so rate limiters see the real client IP
+// (X-Forwarded-For, one trusted hop). Without this every user shares a
+// single bucket and one heavy client would rate-limit everyone.
+app.set('trust proxy', 1);
+
+// Global rate limit — catches floods, scraping and replay abuse. Generous
+// enough for normal use on the free tier; per-route limiters handle the
+// tight spots (auth, AI quota, search).
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 min
+    max: 600,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: true, message: 'Too many requests. Please try again later.', code: 'RATE_LIMITED' },
+    skip: (req) => {
+        if (process.env.NODE_ENV === 'test') return true;
+        // The keep-alive self-ping and health checks must never be limited.
+        return req.path === '/health' || req.path === '/api/health';
+    },
+});
 
 // Sentry must be initialized before any other middleware
 initSentry(app);
@@ -59,6 +81,9 @@ LARGE_BODY_ROUTES.forEach((route) => {
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// Global rate limit (after CORS/parsing so limited responses are well-formed)
+app.use('/api', globalLimiter);
 
 // Request logging (development only)
 if (process.env.NODE_ENV === 'development') {

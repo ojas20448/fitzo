@@ -96,6 +96,26 @@ const analyzeFoodPhotoSchema = z.object({
     mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/heic']).default('image/jpeg'),
 });
 
+// Community food catalog submissions. Bounds mirror the CHECK constraints in
+// migrate_community_foods.sql so a bad payload is rejected with a readable
+// message here rather than as a raw 23514 from Postgres.
+const submitCommunityFoodSchema = z.object({
+    name: z.string().trim().min(2, 'Give the food a name').max(120),
+    serving_size: z.string().trim().min(1, 'Describe one serving, e.g. "1 bowl (150g)"').max(100),
+    category: z.string().trim().max(100).optional().default('Other'),
+    region: z.string().trim().max(100).optional().default('All India'),
+    calories: z.number().min(0).max(5000),
+    protein: z.number().min(0).max(500).optional().default(0),
+    carbs: z.number().min(0).max(500).optional().default(0),
+    fat: z.number().min(0).max(500).optional().default(0),
+    fiber: z.number().min(0).max(200).optional().default(0),
+});
+
+const flagCommunityFoodSchema = z.object({
+    reason: z.enum(['wrong_macros', 'duplicate', 'not_a_food', 'spam', 'other']).default('other'),
+    note: z.string().trim().max(280).optional().nullable(),
+});
+
 // ===========================================
 // INTENT SCHEMAS
 // ===========================================
@@ -201,6 +221,8 @@ module.exports = {
     logCaloriesSchema,
     analyzeFoodTextSchema,
     analyzeFoodPhotoSchema,
+    submitCommunityFoodSchema,
+    flagCommunityFoodSchema,
     // Intent
     setIntentSchema,
     // Profile

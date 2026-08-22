@@ -48,15 +48,6 @@ const authenticate = async (req, res, next) => {
         const authHeader = req.headers.authorization;
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            // BYPASS AUTH FOR TESTING (Dev only)
-            if (process.env.NODE_ENV === 'development' && req.headers['x-bypass-auth']) {
-                console.log('⚠️ Using Auth Bypass');
-                const demoUser = await query('SELECT * FROM users LIMIT 1');
-                if (demoUser.rows.length > 0) {
-                    req.user = demoUser.rows[0];
-                    return next();
-                }
-            }
             throw new AuthError('Please log in to continue', 'AUTH_REQUIRED');
         }
 

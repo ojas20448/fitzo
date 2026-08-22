@@ -5,6 +5,7 @@ const { query } = require('../config/database');
  */
 
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const indianFood = require('../services/indianFood');
 const ifct2017 = require('../services/ifct2017');
@@ -15,11 +16,30 @@ const geminiService = require('../services/gemini');
 const openFoodFacts = require('../services/openFoodFacts');
 const apiNinjas = require('../services/apiNinjas');
 const foodPrefs = require('../services/foodPrefs');
+const communityFoods = require('../services/communityFoods');
 const { asyncHandler } = require('../utils/errors');
 const { authenticate } = require('../middleware/auth');
 const { aiQuota } = require('../middleware/aiQuota');
 const { validate } = require('../middleware/validate');
-const { analyzeFoodTextSchema, analyzeFoodPhotoSchema } = require('../schemas');
+const {
+    analyzeFoodTextSchema,
+    analyzeFoodPhotoSchema,
+    submitCommunityFoodSchema,
+    flagCommunityFoodSchema,
+} = require('../schemas');
+
+// Per-user limiter for the search/detail/barcode surface — every hit fans out
+// to external providers (USDA/FatSecret/API Ninjas/OFF), so it must be capped
+// even though it isn't Gemini-backed. Runs after authenticate, keyed on user.
+const searchLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 min
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => `food-search:${req.user?.id || req.ip}`,
+    message: { error: true, message: 'Too many food searches. Please slow down.', code: 'RATE_LIMITED' },
+    skip: () => process.env.NODE_ENV === 'test',
+});
 
 /**
  * POST /api/food/analyze-text
@@ -99,7 +119,7 @@ const withTimeout = (promise, ms = 5000, name = 'API') => {
  * Search for foods - prioritizes MyFitnessPal via RapidAPI (TEST MODE)
  */
 // Aggregate Search Endpoint
-router.get('/search', authenticate, asyncHandler(async (req, res) => {
+router.get('/search', authenticate, searchLimiter, asyncHandler(async (req, res) => {
     const { q, page = 1 } = req.query;
 
     if (process.env.NODE_ENV !== 'production') console.log('🔍 Food search (Aggregated):', q);
@@ -111,7 +131,7 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
     const query = q.trim();
 
     // Run all searches in parallel with new APIs
-    const [indianRes, ifctRes, usdaRes, fatsecretRes, ninJasRes, offRes] = await Promise.allSettled([
+    const [indianRes, ifctRes, usdaRes, fatsecretRes, ninJasRes, offRes, communityRes] = await Promise.allSettled([
         // 1. Indian Food (Local) - No timeout needed
         new Promise(resolve => resolve(indianFood.searchFoods(query, 10))),
 
@@ -147,6 +167,15 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
                 console.error('Open Food Facts search failed:', err.message);
                 return { foods: [] };
             }),
+
+        // 7. Community submissions (member-contributed, auto-published).
+        //    Own database, so a short timeout — if this is slow the whole
+        //    search is already in trouble and the curated sources carry it.
+        withTimeout(communityFoods.searchFoods(query, 8), 2000, 'Community')
+            .catch(err => {
+                console.error('Community food search failed:', err.message);
+                return { foods: [] };
+            }),
     ]);
 
 
@@ -175,10 +204,18 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
         ? offRes.value.foods.map(f => ({ ...f, source: 'open_food_facts' }))
         : [];
 
+    const communityFoodsList = (communityRes.status === 'fulfilled' && communityRes.value?.foods)
+        ? communityRes.value.foods.map(f => ({ ...f, source: 'community' }))
+        : [];
+
     // Combine all results - prioritize Indian sources
     const combinedFoods = [
         ...indianFoods,     // Local Indian foods DB (home-cooked + restaurant chains)
         ...ifctFoods,       // IFCT2017 govt nutrition data (raw ingredients)
+        // Members' own additions rank above the foreign generic databases:
+        // a dish someone here bothered to add is usually the one someone here
+        // is looking for. Still below the curated sets, which are verified.
+        ...communityFoodsList,
         ...offFoods,        // Packaged products/brands
         ...ninjasFoods,     // Natural language nutrition
         ...usdaFoods,
@@ -186,7 +223,7 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
     ];
 
     if (process.env.NODE_ENV !== 'production') {
-        console.log(`📊 Aggregated Search: "${q}" -> ${combinedFoods.length} total. Indian=${indianFoods.length}, IFCT=${ifctFoods.length}, OFF=${offFoods.length}, Ninjas=${ninjasFoods.length}, USDA=${usdaFoods.length}, FS=${fatsecretFoods.length}`);
+        console.log(`📊 Aggregated Search: "${q}" -> ${combinedFoods.length} total. Indian=${indianFoods.length}, IFCT=${ifctFoods.length}, Community=${communityFoodsList.length}, OFF=${offFoods.length}, Ninjas=${ninjasFoods.length}, USDA=${usdaFoods.length}, FS=${fatsecretFoods.length}`);
     }
 
     return res.json({
@@ -196,6 +233,7 @@ router.get('/search', authenticate, asyncHandler(async (req, res) => {
         sources: {
             indian: indianFoods.length,
             ifct2017: ifctFoods.length,
+            community: communityFoodsList.length,
             open_food_facts: offFoods.length,
             api_ninjas: ninjasFoods.length,
             usda: usdaFoods.length,
@@ -247,17 +285,140 @@ router.get('/gym-foods', authenticate, asyncHandler(async (req, res) => {
     });
 }));
 
+// ===========================================
+// COMMUNITY FOOD CATALOG
+// The write path into the global database. Auto-publish + flag takedown;
+// see services/communityFoods.js and db/migrate_community_foods.sql.
+//
+// ORDERING: these MUST stay above `GET /:id`. Express matches in definition
+// order and `/:id` is greedy — declared first, it would capture
+// `GET /community/mine` and try to look up a food called "community".
+// ===========================================
+
+// Contributions are cheap to write and permanent for everyone, so this is the
+// tightest limit on the router. Keyed on user id only — `authenticate` runs
+// first and guarantees it, and falling back to req.ip would let IPv6 clients
+// rotate addresses to bypass the cap.
+const submitLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 15,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => `food-submit:${req.user.id}`,
+    message: {
+        error: true,
+        message: "You've added a lot of foods this hour. Try again a bit later.",
+        code: 'RATE_LIMITED',
+    },
+    skip: () => process.env.NODE_ENV === 'test',
+});
+
+/**
+ * POST /api/food/community
+ * Add a food to the global catalog. Live in search immediately.
+ *
+ * 409 carries `existing` when the food is already known, so the client can
+ * offer "log that one instead" rather than making the member start over.
+ */
+router.post(
+    '/community',
+    authenticate,
+    submitLimiter,
+    validate({ body: submitCommunityFoodSchema }),
+    asyncHandler(async (req, res) => {
+        try {
+            const food = await communityFoods.submitFood(req.user.id, req.body);
+            return res.status(201).json({ success: true, food, source: 'community' });
+        } catch (err) {
+            if (err.code === 'CONFLICT') {
+                return res.status(409).json({
+                    error: true,
+                    code: 'DUPLICATE_FOOD',
+                    message: err.message,
+                    existing: err.existing || null,
+                });
+            }
+            throw err;
+        }
+    })
+);
+
+/**
+ * GET /api/food/community/mine
+ * The member's own submissions, so they can review or withdraw them.
+ */
+router.get('/community/mine', authenticate, asyncHandler(async (req, res) => {
+    const { rows } = await query(
+        `SELECT id, name, category, serving_size, calories, protein, carbs, fat,
+                status, flag_count, log_count, created_at
+           FROM community_foods
+          WHERE submitted_by = $1 AND status <> 'removed'
+          ORDER BY created_at DESC
+          LIMIT 100`,
+        [req.user.id]
+    );
+    return res.json({
+        foods: rows.map((r) => ({
+            id: `${communityFoods.PREFIX}${r.id}`,
+            name: r.name,
+            category: r.category,
+            servingSize: r.serving_size,
+            calories: Number(r.calories),
+            protein: Number(r.protein),
+            carbs: Number(r.carbs),
+            fat: Number(r.fat),
+            status: r.status,
+            flagCount: r.flag_count,
+            logCount: r.log_count,
+            createdAt: r.created_at,
+        })),
+        total: rows.length,
+    });
+}));
+
+/**
+ * POST /api/food/community/:id/flag
+ * Report wrong macros. Auto-hides from global search at FLAG_THRESHOLD
+ * distinct members — this is the only takedown path members have.
+ */
+router.post(
+    '/community/:id/flag',
+    authenticate,
+    validate({ body: flagCommunityFoodSchema }),
+    asyncHandler(async (req, res) => {
+        const result = await communityFoods.flagFood(req.user.id, req.params.id, req.body);
+        return res.json({ success: true, ...result });
+    })
+);
+
+/**
+ * DELETE /api/food/community/:id
+ * Withdraw your own submission, while nobody else depends on it.
+ */
+router.delete('/community/:id', authenticate, asyncHandler(async (req, res) => {
+    const result = await communityFoods.withdrawFood(req.user.id, req.params.id);
+    return res.json({ success: true, ...result });
+}));
+
 /**
  * GET /api/food/:id
  * Get detailed food info with nutrition facts
  */
-router.get('/:id', authenticate, asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, searchLimiter, asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { source = 'indian' } = req.query;
 
     if (process.env.NODE_ENV !== 'production') console.log('📦 Food details:', id, source);
 
     try {
+        // Community foods first. `source` DEFAULTS to 'indian', so a plain
+        // GET /api/food/com_<uuid> with no query string would otherwise fall
+        // into the branch below and 404 against the curated catalog.
+        if (communityFoods.isCommunityId(id)) {
+            const food = await communityFoods.getFoodDetails(id);
+            return res.json({ ...food, source: 'community' });
+        }
+
         // Check if it's an Indian food ID
         if (id.startsWith('ind_') || source === 'indian') {
             const food = indianFood.getFoodDetails(id);
@@ -292,7 +453,7 @@ router.get('/:id', authenticate, asyncHandler(async (req, res) => {
  * POST /api/food/barcode
  * Look up food by barcode
  */
-router.post('/barcode', authenticate, asyncHandler(async (req, res) => {
+router.post('/barcode', authenticate, searchLimiter, asyncHandler(async (req, res) => {
     const { barcode } = req.body;
 
     if (process.env.NODE_ENV !== 'production') console.log('🔍 Barcode lookup:', barcode);

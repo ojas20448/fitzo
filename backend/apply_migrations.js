@@ -151,6 +151,12 @@ async function runMigrations() {
                 console.log(`✅ ${file}`);
                 applied++;
             } catch (err) {
+                try {
+                    await client.query('ROLLBACK');
+                } catch (e) {
+                    // ignore rollback errors
+                }
+                
                 if (ALREADY_APPLIED.has(err.code) || /already exists/i.test(err.message)) {
                     console.log(`⏭️  ${file} — already applied`);
                     skipped++;

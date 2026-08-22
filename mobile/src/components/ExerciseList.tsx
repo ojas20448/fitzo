@@ -112,7 +112,6 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter, a
             let baseExercises = [];
 
             if (cachedExercises && cachedExercises.length > 0 && !isStale && !searchQuery) {
-
                 baseExercises = cachedExercises;
             } else {
                 // If no cache or stale, start with default/local
@@ -121,13 +120,27 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter, a
 
             let results = [...baseExercises];
 
+            // Helper to map UI body parts to API body parts
+            const getApiBodyParts = (uiPart: string): string[] => {
+                const part = uiPart.toLowerCase();
+                if (part === 'arms') return ['upper arms', 'lower arms'];
+                if (part === 'legs') return ['upper legs', 'lower legs'];
+                if (part === 'core') return ['waist'];
+                return [part];
+            };
+
             // 1. Filter by Body Part (Local)
             if (selectedBodyPart) {
+                const mappedParts = new Set([selectedBodyPart.toLowerCase(), ...getApiBodyParts(selectedBodyPart)]);
                 results = results.filter((ex: any) =>
-                    ex.bodyPart?.toLowerCase() === selectedBodyPart.toLowerCase()
+                    mappedParts.has(ex.bodyPart?.toLowerCase())
                 );
             } else if (allowedBodyParts && allowedBodyParts.length > 0) {
-                const allowedSet = new Set(allowedBodyParts.map(b => b.toLowerCase()));
+                const allowedSet = new Set<string>();
+                allowedBodyParts.forEach(b => {
+                    allowedSet.add(b.toLowerCase());
+                    getApiBodyParts(b).forEach(apiPart => allowedSet.add(apiPart));
+                });
                 results = results.filter((ex: any) =>
                     allowedSet.has((ex.bodyPart || ex.category || '').toLowerCase())
                 );
@@ -160,26 +173,53 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter, a
                 } catch (e: any) {
                     // Silently handle - parent screen manages error state
                 }
-            } else if (!searchQuery && (!cachedExercises || cachedExercises.length === 0 || isStale)) {
+            } else if (!searchQuery && (!cachedExercises || cachedExercises.length === 0 || isStale || selectedBodyPart)) {
                 // Fetch from API and update list live (includes gifUrl)
                 try {
-                    const apiRes = selectedBodyPart
-                        ? await exerciseAPI.getByBodyPart(selectedBodyPart)
-                        : await exerciseAPI.getAll(PAGE_SIZE, 0);
-                    if (apiRes.exercises && apiRes.exercises.length > 0) {
-                        useOfflineStore.getState().cacheExercises(apiRes.exercises);
-                        results = apiRes.exercises;
-                        // A short page means the catalogue is exhausted. Filtering
-                        // by body part returns the whole group in one call, so
-                        // there is nothing further to page through either.
-                        setOffset(apiRes.exercises.length);
-                        setHasMore(!selectedBodyPart && apiRes.exercises.length >= PAGE_SIZE);
+                    let apiExercises: any[] = [];
+                    if (selectedBodyPart) {
+                        const apiParts = getApiBodyParts(selectedBodyPart);
+                        for (const p of apiParts) {
+                            try {
+                                const res = await exerciseAPI.getByBodyPart(p);
+                                if (res.exercises) apiExercises = [...apiExercises, ...res.exercises];
+                            } catch (e) {
+                                // Skip failing parts silently
+                            }
+                        }
+                    } else {
+                        const res = await exerciseAPI.getAll(PAGE_SIZE, 0);
+                        if (res.exercises) apiExercises = res.exercises;
+                    }
+
+                    if (apiExercises.length > 0) {
+                        if (!selectedBodyPart && (!allowedBodyParts || allowedBodyParts.length === 0)) {
+                            useOfflineStore.getState().cacheExercises(apiExercises);
+                        }
+                        
+                        let apiResults = apiExercises;
+                        // Apply allowedBodyParts if necessary
+                        if (allowedBodyParts && allowedBodyParts.length > 0) {
+                             const allowedSet = new Set(allowedBodyParts.map(b => b.toLowerCase()));
+                             apiResults = apiResults.filter((ex: any) =>
+                                 allowedSet.has((ex.bodyPart || ex.category || '').toLowerCase())
+                             );
+                        }
+
+                        results = apiResults;
+                        
+                        setOffset(apiExercises.length);
+                        setHasMore(!selectedBodyPart && apiExercises.length >= PAGE_SIZE);
                     } else {
                         setHasMore(false);
                     }
                 } catch (err: any) {
                     // Silently handle - parent screen manages error state
                 }
+            } else if (!searchQuery && !selectedBodyPart && cachedExercises && cachedExercises.length > 0) {
+                // If we are using cache and not fetching from API right now, set offset correctly
+                setOffset(cachedExercises.length);
+                setHasMore(cachedExercises.length >= PAGE_SIZE);
             }
 
             setExercises(results);
@@ -209,8 +249,19 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter, a
                     // The API paginates over a live dataset, so a page can repeat
                     // an item that already arrived. De-dupe on id before appending.
                     const seen = new Set(prev.map((e: any) => e.id));
-                    const merged = [...prev, ...next.filter((e: any) => !seen.has(e.id))];
-                    useOfflineStore.getState().cacheExercises(merged);
+                    let newItems = next.filter((e: any) => !seen.has(e.id));
+                    
+                    if (allowedBodyParts && allowedBodyParts.length > 0) {
+                        const allowedSet = new Set(allowedBodyParts.map(b => b.toLowerCase()));
+                        newItems = newItems.filter((ex: any) =>
+                            allowedSet.has((ex.bodyPart || ex.category || '').toLowerCase())
+                        );
+                    }
+                    
+                    const merged = [...prev, ...newItems];
+                    if (!allowedBodyParts || allowedBodyParts.length === 0) {
+                        useOfflineStore.getState().cacheExercises(merged);
+                    }
                     return merged;
                 });
                 setOffset(offset + next.length);
