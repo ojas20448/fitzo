@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
     View,
     Text,
@@ -8,6 +8,10 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     ScrollView,
+    KeyboardAvoidingView,
+    Platform,
+    Animated,
+    Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -33,7 +37,7 @@ export default function AICoachScreen() {
         {
             id: '1',
             role: 'assistant',
-            content: "Hi! I'm your AI fitness coach. Ask me anything about workouts, nutrition, or fitness!",
+            content: "I've read your last 14 days — training, food and recovery. Ask me anything.",
             timestamp: new Date(),
         },
     ]);
@@ -44,6 +48,10 @@ export default function AICoachScreen() {
     const [isRecording, setIsRecording] = useState(false);
     const [transcribing, setTranscribing] = useState(false);
     const toast = useToast();
+
+    // Inverted list, so the data is reversed once per change rather than on
+    // every render. See the FlatList below for why inverted.
+    const feed = useMemo(() => [...messages].reverse(), [messages]);
 
     const startRecording = async () => {
         try {
@@ -191,40 +199,84 @@ export default function AICoachScreen() {
         handleSend(message);
     };
 
-    const renderMessage = ({ item }: { item: Message }) => (
-        <View
-            style={[
-                styles.messageContainer,
-                item.role === 'user' ? styles.userMessage : styles.assistantMessage,
-            ]}
-        >
-            <View style={styles.messageAvatar}>
-                <MaterialIcons
-                    name={item.role === 'user' ? 'person' : 'smart-toy'}
-                    size={20}
-                    color={item.role === 'user' ? colors.primary : colors.primary}
-                />
-            </View>
-            <View style={styles.messageBubble}>
-                <Text style={styles.messageText}>{item.content}</Text>
-                <Text style={styles.messageTime}>
-                    {(item.timestamp instanceof Date ? item.timestamp : new Date(item.timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
+/**
+ * Three dots, staggered. Rendered as the first item of the inverted list so it
+ * appears exactly where the reply will land, instead of as a separate row that
+ * pushes the composer around every time Spotter is called.
+ */
+function TypingDots() {
+    const dots = [useRef(new Animated.Value(0.25)).current,
+                  useRef(new Animated.Value(0.25)).current,
+                  useRef(new Animated.Value(0.25)).current];
+
+    useEffect(() => {
+        const loops = dots.map((dot, i) =>
+            Animated.loop(
+                Animated.sequence([
+                    Animated.delay(i * 160),
+                    Animated.timing(dot, { toValue: 1, duration: 380, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+                    Animated.timing(dot, { toValue: 0.25, duration: 380, easing: Easing.in(Easing.ease), useNativeDriver: true }),
+                    Animated.delay((2 - i) * 160),
+                ]),
+            ),
+        );
+        loops.forEach((l) => l.start());
+        return () => loops.forEach((l) => l.stop());
+    }, []);
+
+    return (
+        <View style={[styles.row, styles.rowSpotter]}>
+            <Text style={styles.speaker}>SPOTTER</Text>
+            <View style={[styles.spotterBody, styles.typingRow]}>
+                {dots.map((dot, i) => (
+                    <Animated.View key={i} style={[styles.dot, { opacity: dot }]} />
+                ))}
             </View>
         </View>
     );
+}
+
+    const renderMessage = ({ item }: { item: Message }) => {
+        const isUser = item.role === 'user';
+        return (
+            <View style={[styles.row, isUser ? styles.rowUser : styles.rowSpotter]}>
+                <Text style={styles.speaker}>{isUser ? 'YOU' : 'SPOTTER'}</Text>
+                {/*
+                  * Only the user gets a bubble. Spotter speaks directly onto the
+                  * page behind a hairline rule — the coach is the app talking,
+                  * not a second party in a container. Two mirrored bubbles is
+                  * the generic messaging-app look and says nothing about Fitzo.
+                  */}
+                {isUser ? (
+                    <View style={styles.bubbleUser}>
+                        <Text style={styles.textUser}>{item.content}</Text>
+                    </View>
+                ) : (
+                    <View style={styles.spotterBody}>
+                        <Text style={styles.textSpotter}>{item.content}</Text>
+                    </View>
+                )}
+            </View>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+          <KeyboardAvoidingView
+            style={styles.flex}
+            // iOS needs padding; on Android the window already resizes, and
+            // applying padding there double-counts and leaves a dead gap.
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+          >
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton} accessibilityLabel="Go back">
                     <MaterialIcons name="chevron-left" size={32} color={colors.text.primary} />
                 </TouchableOpacity>
-                <MaterialIcons name="smart-toy" size={26} color={colors.primary} style={{ marginRight: spacing.sm }} />
                 <View style={styles.headerText}>
-                    <Text style={styles.headerTitle}>AI Coach</Text>
-                    <Text style={styles.headerSubtitle}>Powered by Fitzo</Text>
+                    <Text style={styles.headerTitle}>SPOTTER</Text>
+                    <Text style={styles.headerSubtitle}>Has read your last 14 days</Text>
                 </View>
             </View>
 
@@ -260,23 +312,34 @@ export default function AICoachScreen() {
                         </View>
                     )}
 
-                    {/* Messages */}
+                    {/*
+                      * INVERTED, deliberately.
+                      *
+                      * This list previously ran inverted={false} with no ref and
+                      * no scroll call anywhere, so handleSend appended a message
+                      * that rendered below the viewport and the list never
+                      * moved. The message appeared to vanish, and with no
+                      * KeyboardAvoidingView the keyboard covered what was left —
+                      * which is what "stuck, can't scroll back" actually was.
+                      *
+                      * Inverting fixes it structurally rather than by chasing
+                      * scrollToEnd: new messages land at the visual bottom by
+                      * construction, the scroll position anchors to that edge
+                      * natively, and scrolling back through history comes free.
+                      * No scroll call can race the render because there is none.
+                      */}
                     <FlatList
-                        data={messages}
+                        data={feed}
                         renderItem={renderMessage}
                         keyExtractor={(item) => item.id}
                         contentContainerStyle={styles.messagesList}
-                        inverted={false}
+                        inverted
+                        keyboardShouldPersistTaps="handled"
+                        keyboardDismissMode="interactive"
+                        showsVerticalScrollIndicator={false}
+                        ListHeaderComponent={loading ? <TypingDots /> : null}
                     />
                 </>
-            )}
-
-            {/* Loading Indicator */}
-            {loading && (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="small" color={colors.primary} />
-                    <Text style={styles.loadingText}>AI is thinking...</Text>
-                </View>
             )}
 
             {/* Input */}
@@ -323,6 +386,7 @@ export default function AICoachScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
+          </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
@@ -389,48 +453,80 @@ const styles = StyleSheet.create({
         color: colors.text.primary,
         textAlign: 'center',
     },
+    flex: {
+        flex: 1,
+    },
     messagesList: {
-        padding: spacing.xl,
-        gap: spacing.lg,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.xl,
+        gap: spacing.xl,
     },
-    messageContainer: {
-        flexDirection: 'row',
+
+    // ── Message rows ────────────────────────────────────────────────────────
+    // Speaker is carried by alignment plus a letterspaced label, reusing the
+    // app's own "CONSISTENCY MATTERS." idiom. No avatars: a robot glyph is the
+    // oldest AI tell and a sparkle is the current one, and neither says
+    // anything about a gym app.
+    row: {
         gap: spacing.sm,
+        maxWidth: '86%',
     },
-    userMessage: {
+    rowUser: {
         alignSelf: 'flex-end',
-        flexDirection: 'row-reverse',
+        alignItems: 'flex-end',
     },
-    assistantMessage: {
+    rowSpotter: {
         alignSelf: 'flex-start',
     },
-    messageAvatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: colors.glass.surface,
-        justifyContent: 'center',
-        alignItems: 'center',
+    speaker: {
+        fontSize: 11,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.subtle,
+        letterSpacing: 2,
     },
-    messageBubble: {
-        maxWidth: '75%',
-        backgroundColor: colors.glass.surface,
+
+    // The user gets a solid white bubble — the same inversion the primary
+    // action buttons use, so "what I said" reads as the committed thing.
+    bubbleUser: {
+        backgroundColor: colors.text.primary,
         borderRadius: borderRadius.lg,
-        padding: spacing.md,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
+        borderBottomRightRadius: 4,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
     },
-    messageText: {
+    textUser: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.dark,
+        lineHeight: 22,
+    },
+
+    // Spotter has no bubble. It speaks onto the page behind a hairline rule —
+    // the app talking, not a second party in a container. Two mirrored bubbles
+    // is the generic messaging look.
+    spotterBody: {
+        borderLeftWidth: 1,
+        borderLeftColor: colors.glass.borderLight,
+        paddingLeft: spacing.lg,
+    },
+    textSpotter: {
         fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.regular,
         color: colors.text.primary,
-        lineHeight: 20,
+        lineHeight: 24,
     },
-    messageTime: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.regular,
-        color: colors.text.muted,
-        marginTop: spacing.xs,
+
+    typingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingVertical: spacing.sm,
+    },
+    dot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: colors.text.primary,
     },
     loadingContainer: {
         flexDirection: 'row',
