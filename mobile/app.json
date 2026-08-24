@@ -65,6 +65,9 @@
             "BROWSABLE"
           ]
         }
+      ],
+      "blockedPermissions": [
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ]
     },
     "web": {
