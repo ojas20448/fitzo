@@ -7,7 +7,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
@@ -241,7 +241,7 @@ export default function WorkoutRecapScreen() {
                     <Image source={{ uri: photoUri }} style={StyleSheet.absoluteFill} />
                 ) : (
                     <LinearGradient
-                        colors={['#18181B', '#09090B']}
+                        colors={[colors.surfaceLighter, colors.backgroundAlt]}
                         style={StyleSheet.absoluteFill}
                     />
                 )}
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.full,
     },
     shareBtnText: {
-        color: '#FFFFFF',
+        color: colors.primary,
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.bold,
         letterSpacing: 1,
@@ -415,12 +415,12 @@ const styles = StyleSheet.create({
     doneBtn: {
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.primary,
         paddingVertical: 16,
         borderRadius: borderRadius.full,
     },
     doneBtnText: {
-        color: '#000000',
+        color: colors.background,
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.bold,
         letterSpacing: 1,
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.15)',
     },
     photoBtnText: {
-        color: '#FFFFFF',
+        color: colors.primary,
         fontSize: 11,
         fontFamily: typography.fontFamily.bold,
         letterSpacing: 1,
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
         gap: 16,
     },
     cameraHint: {
-        color: '#FFFFFF',
+        color: colors.primary,
         fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.semiBold,
         textShadowColor: 'rgba(0,0,0,0.6)',
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
         height: 72,
         borderRadius: 36,
         borderWidth: 4,
-        borderColor: '#FFFFFF',
+        borderColor: colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -504,6 +504,6 @@ const styles = StyleSheet.create({
         width: 58,
         height: 58,
         borderRadius: 29,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.primary,
     },
 });

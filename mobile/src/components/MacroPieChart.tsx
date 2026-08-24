@@ -71,9 +71,9 @@ const MacroPieChart: React.FC<MacroPieChartProps> = ({
     });
 
     // Colors for macros
-    const proteinColor = '#4ECDC4'; // Teal
-    const carbsColor = '#FFE66D';   // Yellow
-    const fatColor = '#FF6B6B';     // Coral
+    const proteinColor = colors.macro.protein;
+    const carbsColor = colors.macro.carbs;
+    const fatColor = colors.macro.fat;
 
     // Detail view data
     const detailData = {

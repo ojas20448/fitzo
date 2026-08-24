@@ -11,6 +11,8 @@ import {
     Modal,
     ScrollView,
     ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
     Dimensions,
     Alert,
 } from 'react-native';
@@ -19,7 +21,7 @@ import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../utils/haptics';
 import { foodAPI, caloriesAPI, nutritionAPI, settingsAPI, aiAPI, CalorieEntry } from '../../services/api';
 import Input from '../../components/Input';
 import VoiceCaptureSheet from '../../components/VoiceCaptureSheet';
@@ -709,6 +711,10 @@ const CalorieLogScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
             <Celebration
                 visible={showCelebration}
                 type="calories"
@@ -1463,6 +1469,7 @@ const CalorieLogScreen: React.FC = () => {
                     }
                 }}
             />
+            </KeyboardAvoidingView>
         </SafeAreaView >
     );
 };

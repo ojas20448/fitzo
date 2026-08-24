@@ -124,11 +124,11 @@ function getHealthGrade(data: {
 
     const pct = total > 0 ? (score / total) * 100 : 0;
 
-    if (pct >= 85) return { grade: 'A', color: '#22C55E', label: 'Excellent' };
-    if (pct >= 70) return { grade: 'B', color: '#4ADE80', label: 'Good' };
-    if (pct >= 55) return { grade: 'C', color: '#F59E0B', label: 'Average' };
-    if (pct >= 40) return { grade: 'D', color: '#FB923C', label: 'Below Average' };
-    return { grade: 'F', color: '#EF4444', label: 'Needs Work' };
+    if (pct >= 85) return { grade: 'A', color: colors.success, label: 'Excellent' };
+    if (pct >= 70) return { grade: 'B', color: colors.success, label: 'Good' };
+    if (pct >= 55) return { grade: 'C', color: colors.warning, label: 'Average' };
+    if (pct >= 40) return { grade: 'D', color: colors.warning, label: 'Below Average' };
+    return { grade: 'F', color: colors.error, label: 'Needs Work' };
 }
 
 const today = new Date();
@@ -315,7 +315,7 @@ export default function HealthReportScreen() {
                                 label="Steps"
                                 value={formatNumber(healthToday?.steps || 0)}
                                 target="8,000"
-                                color="#60A5FA"
+                                color={colors.accent.sky}
                             />
                             <VitalCard
                                 icon="local-fire-department"
@@ -323,7 +323,7 @@ export default function HealthReportScreen() {
                                 value={`${safeNum(healthToday?.active_calories)}`}
                                 target="300"
                                 unit="kcal"
-                                color="#F97316"
+                                color={colors.accent.orange}
                             />
                         </View>
                         <View style={[styles.vitalsRow, { marginTop: CARD_GAP }]}>
@@ -333,7 +333,7 @@ export default function HealthReportScreen() {
                                 value={healthToday?.sleep_hours != null ? healthToday.sleep_hours.toFixed(1) : '—'}
                                 target="7-9"
                                 unit={healthToday?.sleep_hours != null ? 'hrs' : ''}
-                                color="#A78BFA"
+                                color={colors.accent.lilac}
                             />
                             <VitalCard
                                 icon="favorite"
@@ -341,7 +341,7 @@ export default function HealthReportScreen() {
                                 value={healthToday?.resting_heart_rate != null ? `${healthToday.resting_heart_rate}` : '—'}
                                 target="50-70"
                                 unit={healthToday?.resting_heart_rate != null ? 'bpm' : ''}
-                                color="#F472B6"
+                                color={colors.accent.rose}
                             />
                         </View>
                     </Animated.View>
@@ -403,10 +403,10 @@ export default function HealthReportScreen() {
                             <Text style={styles.sectionTitle}>DAILY NUTRITION TARGETS</Text>
                             <GlassCard style={styles.innerCard}>
                                 <View style={styles.macroRow}>
-                                    <MacroStat label="Calories" value={safeNum(nutrition!.daily_calories)} unit="kcal" color="#F97316" />
-                                    <MacroStat label="Protein" value={safeNum(nutrition!.daily_protein)} unit="g" color="#60A5FA" />
-                                    <MacroStat label="Carbs" value={safeNum(nutrition!.daily_carbs)} unit="g" color="#4ADE80" />
-                                    <MacroStat label="Fat" value={safeNum(nutrition!.daily_fat)} unit="g" color="#F472B6" />
+                                    <MacroStat label="Calories" value={safeNum(nutrition!.daily_calories)} unit="kcal" color={colors.accent.orange} />
+                                    <MacroStat label="Protein" value={safeNum(nutrition!.daily_protein)} unit="g" color={colors.macro.protein} />
+                                    <MacroStat label="Carbs" value={safeNum(nutrition!.daily_carbs)} unit="g" color={colors.macro.carbs} />
+                                    <MacroStat label="Fat" value={safeNum(nutrition!.daily_fat)} unit="g" color={colors.macro.fat} />
                                 </View>
                             </GlassCard>
                         </Animated.View>
@@ -429,7 +429,7 @@ export default function HealthReportScreen() {
                                                     {pr.max_weight}kg x {pr.reps_at_max} reps
                                                 </Text>
                                             </View>
-                                            <MaterialIcons name="emoji-events" size={20} color="#F59E0B" />
+                                            <MaterialIcons name="emoji-events" size={20} color={colors.accent.gold} />
                                         </View>
                                         {i < prs.length - 1 && <View style={styles.prDivider} />}
                                     </View>
@@ -526,7 +526,7 @@ function MiniBarChart({ data, target }: {
                                         styles.bar,
                                         {
                                             height: `${Math.max(pct, 5)}%`,
-                                            backgroundColor: hit ? '#22C55E' : '#60A5FA',
+                                            backgroundColor: hit ? colors.success : colors.accent.sky,
                                             opacity: hit ? 1 : 0.6,
                                         },
                                     ]}

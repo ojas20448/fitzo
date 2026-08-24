@@ -13,7 +13,7 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../utils/haptics';
 
 import { useAuth } from '../../context/AuthContext';
 import { useNutrition } from '../../context/NutritionContext';
@@ -529,7 +529,12 @@ const HomeScreen: React.FC = () => {
                                         {settingIntent ? '...' : "Let's Go"}
                                     </Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={handleIntentPress} style={styles.intentChangeBtn}>
+                                <TouchableOpacity
+                                    onPress={handleIntentPress}
+                                    style={styles.intentChangeBtn}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Change workout split"
+                                >
                                     <MaterialIcons name="swap-horiz" size={18} color={colors.text.muted} />
                                 </TouchableOpacity>
                             </View>

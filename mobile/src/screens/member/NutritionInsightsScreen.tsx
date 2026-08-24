@@ -243,9 +243,9 @@ export default function NutritionInsightsScreen() {
                     <Text style={styles.macroSubtitle}>% of total calories from each macronutrient</Text>
 
                     <MacroPieChart slices={[
-                        { label: 'Protein', grams: logged.protein, percentage: pct(proteinCals, totalMacroCals), color: '#60A5FA' },
-                        { label: 'Carbs',   grams: logged.carbs,   percentage: pct(carbsCals,   totalMacroCals), color: '#FBBF24' },
-                        { label: 'Fat',     grams: logged.fat,     percentage: pct(fatCals,     totalMacroCals), color: '#F87171' },
+                        { label: 'Protein', grams: logged.protein, percentage: pct(proteinCals, totalMacroCals), color: colors.macro.protein },
+                        { label: 'Carbs',   grams: logged.carbs,   percentage: pct(carbsCals,   totalMacroCals), color: colors.macro.carbs },
+                        { label: 'Fat',     grams: logged.fat,     percentage: pct(fatCals,     totalMacroCals), color: colors.macro.fat },
                     ]} />
 
                     <View style={styles.divider} />

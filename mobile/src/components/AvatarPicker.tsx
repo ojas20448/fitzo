@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../utils/haptics';
 import Avatar, { AVATAR_PRESETS, AVATAR_LABELS } from './Avatar';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
 

@@ -11,6 +11,8 @@ import { isHealthAvailable, requestPermissions, getTodaysSummary } from '../../s
 import { healthAPI, settingsAPI, notificationsAPI } from '../../src/services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import * as Haptics from '../../src/utils/haptics';
+import { isHapticsEnabled, setHapticsEnabled } from '../../src/utils/haptics';
 
 const UNITS_STORAGE_KEY = 'fitzo_units';
 const version = Constants.expoConfig?.version || '1.3.0';
@@ -31,6 +33,7 @@ export default function SettingsScreen() {
     const [notifications, setNotifications] = useState(true);
     const [units, setUnits] = useState<'metric' | 'imperial'>('metric');
     const [shareLogs, setShareLogs] = useState(true);
+    const [hapticsOn, setHapticsOn] = useState(true);
 
     // Gym membership
     const [gym, setGym] = useState<GymInfo | null>(null);
@@ -76,9 +79,21 @@ export default function SettingsScreen() {
             } catch (e) {
                 // default to true
             }
+
+            // Reflect the live haptics gate (already loaded at boot)
+            setHapticsOn(isHapticsEnabled());
         };
         loadSettings();
     }, []);
+
+    const toggleHaptics = async (value: boolean) => {
+        setHapticsOn(value);
+        await setHapticsEnabled(value);
+        if (value) {
+            // Confirm with the very channel being re-enabled
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
+    };
 
     const toggleUnits = async () => {
         const next = units === 'metric' ? 'imperial' : 'metric';
@@ -375,6 +390,19 @@ export default function SettingsScreen() {
                         <Switch
                             value={notifications}
                             onValueChange={handleNotificationsToggle}
+                            trackColor={{ false: colors.glass.border, true: colors.primary }}
+                            thumbColor={colors.text.primary}
+                        />
+                    </View>
+                    <View style={styles.divider} />
+                    <View style={styles.row}>
+                        <View style={styles.rowLeft}>
+                            <MaterialIcons name="vibration" size={24} color={colors.text.secondary} />
+                            <Text style={styles.rowLabel}>Haptic Feedback</Text>
+                        </View>
+                        <Switch
+                            value={hapticsOn}
+                            onValueChange={toggleHaptics}
                             trackColor={{ false: colors.glass.border, true: colors.primary }}
                             thumbColor={colors.text.primary}
                         />

@@ -201,7 +201,12 @@ export default function ProfileScreen() {
                         <View style={styles.headerDot} />
                         <Text style={styles.headerSubtitle}>YOU</Text>
                     </View>
-                    <TouchableOpacity style={styles.settingsBtn} onPress={() => router.push('/member/settings' as any)}>
+                    <TouchableOpacity
+                        style={styles.settingsBtn}
+                        onPress={() => router.push('/member/settings' as any)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Open settings"
+                    >
                         <MaterialIcons name="settings" size={20} color={colors.text.muted} />
                     </TouchableOpacity>
                 </View>
@@ -230,7 +235,7 @@ export default function ProfileScreen() {
                     <View style={styles.headerDot} />
                     <Text style={styles.headerSubtitle}>YOU</Text>
                 </View>
-                <TouchableOpacity onPress={handleEditOpen}>
+                <TouchableOpacity onPress={handleEditOpen} accessibilityRole="button" accessibilityLabel="Edit profile">
                     <GlassCard style={styles.settingsBtn}>
                         <MaterialIcons name="edit" size={20} color={colors.text.primary} />
                     </GlassCard>
@@ -468,7 +473,7 @@ export default function ProfileScreen() {
                 <SafeAreaView style={styles.modalContainer}>
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>Edit Profile</Text>
-                        <TouchableOpacity onPress={() => setIsEditing(false)}>
+                        <TouchableOpacity onPress={() => setIsEditing(false)} accessibilityRole="button" accessibilityLabel="Close editor">
                             <GlassCard style={styles.closeBtn}>
                                 <MaterialIcons name="close" size={20} color={colors.text.primary} />
                             </GlassCard>

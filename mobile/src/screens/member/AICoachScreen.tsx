@@ -20,9 +20,14 @@ import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import GlassCard from '../../components/GlassCard';
 import Button from '../../components/Button';
 import { aiAPI } from '../../services/api';
-import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
-import * as Haptics from 'expo-haptics';
+import {
+    useAudioRecorder,
+    RecordingPresets,
+    requestRecordingPermissionsAsync,
+    setAudioModeAsync,
+} from 'expo-audio';
+import { File } from 'expo-file-system';
+import * as Haptics from '../../utils/haptics';
 import { useToast } from '../../components/Toast';
 
 type Message = {
@@ -44,7 +49,8 @@ export default function AICoachScreen() {
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(false);
     const [historyLoading, setHistoryLoading] = useState(true);
-    const [recording, setRecording] = useState<Audio.Recording | null>(null);
+    // expo-audio recorder — replaces the deprecated expo-av Recording API.
+    const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
     const [isRecording, setIsRecording] = useState(false);
     const [transcribing, setTranscribing] = useState(false);
     const toast = useToast();
@@ -64,22 +70,20 @@ export default function AICoachScreen() {
 
     const startRecording = async () => {
         try {
-            const permission = await Audio.requestPermissionsAsync();
-            if (permission.status !== 'granted') {
+            const permission = await requestRecordingPermissionsAsync();
+            if (!permission.granted) {
                 toast.error('Permission Denied', 'Microphone access is required to record audio');
                 return;
             }
 
-            await Audio.setAudioModeAsync({
-                allowsRecordingIOS: true,
-                playsInSilentModeIOS: true,
+            await setAudioModeAsync({
+                allowsRecording: true,
+                playsInSilentMode: true,
             });
 
-            const { recording: newRecording } = await Audio.Recording.createAsync(
-                Audio.RecordingOptionsPresets.HIGH_QUALITY
-            );
+            await recorder.prepareToRecordAsync();
+            recorder.record();
 
-            setRecording(newRecording);
             setIsRecording(true);
             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         } catch (err: any) {
@@ -89,25 +93,20 @@ export default function AICoachScreen() {
     };
 
     const stopRecording = async () => {
-        if (!recording) return;
+        if (!isRecording) return;
 
         setIsRecording(false);
         setTranscribing(true);
         try {
-            await recording.stopAndUnloadAsync();
-            const uri = recording.getURI();
-            setRecording(null);
+            await recorder.stop();
+            const uri = recorder.uri;
             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
             if (uri) {
-                const base64 = await FileSystem.readAsStringAsync(uri, {
-                    encoding: 'base64',
-                });
-
-                const extension = uri.split('.').pop() || 'm4a';
-                const mimeType = `audio/${extension === 'm4a' ? 'm4a' : extension}`;
-
-                const res = await aiAPI.transcribeAudio(base64, mimeType);
+                // .m4a recordings must be declared as audio/mp4 — Gemini rejects
+                // the commonly-guessed audio/m4a with a silent 400.
+                const base64 = await new File(uri).base64();
+                const res = await aiAPI.transcribeAudio(base64, 'audio/mp4');
                 if (res.success && res.text) {
                     setInputText(prev => (prev ? prev + ' ' : '') + res.text);
                     toast.success('Success', 'Audio transcribed!');

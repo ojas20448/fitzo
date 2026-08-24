@@ -7,7 +7,7 @@ import {
     setAudioModeAsync,
 } from 'expo-audio';
 import { File } from 'expo-file-system';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../utils/haptics';
 import { aiAPI } from '../services/api';
 
 /**

@@ -10,7 +10,7 @@ import {
     Platform,
     View,
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../utils/haptics';
 import { colors, typography, borderRadius, spacing, shadow } from '../styles/theme';
 
 interface ButtonProps {

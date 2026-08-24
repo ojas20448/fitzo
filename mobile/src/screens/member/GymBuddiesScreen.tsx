@@ -343,12 +343,16 @@ const GymBuddiesScreen: React.FC = () => {
                     <TouchableOpacity
                         style={styles.filterBtn}
                         onPress={() => router.push('/member/add-buddy?tab=scan' as any)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Add a buddy by QR code"
                     >
                         <MaterialIcons name="qr-code-scanner" size={22} color={colors.text.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.filterBtn}
                         onPress={() => setShowSearch(!showSearch)}
+                        accessibilityRole="button"
+                        accessibilityLabel={showSearch ? 'Close friend search' : 'Search friends'}
                     >
                         <MaterialIcons name={showSearch ? "close" : "person-add"} size={22} color={colors.text.primary} />
                     </TouchableOpacity>

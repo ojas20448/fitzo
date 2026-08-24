@@ -53,6 +53,28 @@ export const colors = {
     warning: '#F59E0B',
     error: '#EF4444',
     info: '#3B82F6',
+
+    // Accent hues — decorative/categorical only. These carry NO good-vs-bad
+    // meaning: if a value is a status or a judgement (grade, trend, difficulty,
+    // BMI band), use success/warning/error above instead. Five hues, each with
+    // a distinct job, and every one is legible on pure black.
+    accent: {
+        sky: '#60A5FA',    // protein, steps
+        gold: '#FBBF24',   // carbs, achievements, flame core
+        orange: '#F97316', // energy, streaks, active calories
+        lilac: '#A78BFA',  // sleep, percentile
+        rose: '#F472B6',   // fat, heart rate
+    },
+
+    // Semantic data colors — macros are the most-repeated concept in the app
+    // (pie chart, weekly bars, insights, health report, onboarding). They get
+    // ONE triad so protein is the same blue everywhere, not a different hue
+    // per screen. Always use these instead of picking an accent by hand.
+    macro: {
+        protein: '#60A5FA', // accent.sky
+        carbs: '#FBBF24',   // accent.gold
+        fat: '#F472B6',     // accent.rose
+    },
 };
 
 export const typography = {

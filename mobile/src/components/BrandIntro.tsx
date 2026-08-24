@@ -49,7 +49,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../utils/haptics';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { colors, shadow, typography } from '../styles/theme';

@@ -64,7 +64,7 @@ export default function PublishedSplitsScreen() {
             // Navigate back to intent screen with adopted split data so it jumps to day selection
             const adoptedDays = result.user_split?.days || Object.values(selectedSplit.program_structure);
             router.replace({
-                pathname: '/member/workout-intent',
+                pathname: '/workout-intent',
                 params: {
                     adoptedSplit: JSON.stringify({
                         id: result.user_split?.split_id || selectedSplit.id,
@@ -85,9 +85,9 @@ export default function PublishedSplitsScreen() {
 
     const getDifficultyColor = (level: string) => {
         switch (level) {
-            case 'beginner': return '#4ECDC4';
-            case 'intermediate': return '#FFE66D';
-            case 'advanced': return '#FF6B6B';
+            case 'beginner': return colors.success;
+            case 'intermediate': return colors.accent.gold;
+            case 'advanced': return colors.error;
             default: return colors.text.muted;
         }
     };

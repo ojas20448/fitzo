@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Markdown from 'react-native-markdown-display';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../src/utils/haptics';
 
 interface Question {
     question: string;

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions, Modal, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../utils/haptics';
+import { useReducedMotion } from 'react-native-reanimated';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
 
 const { width, height } = Dimensions.get('window');
@@ -27,6 +28,9 @@ const Celebration: React.FC<CelebrationProps> = ({
 }) => {
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
+    // Respect the OS "reduce motion" setting: the card still fades in so the
+    // moment is acknowledged, but no confetti falls and no spring pops.
+    const reduceMotion = useReducedMotion();
     const confettiAnims = useRef(
         Array.from({ length: 20 }, () => ({
             translateY: new Animated.Value(-50),
@@ -39,13 +43,13 @@ const Celebration: React.FC<CelebrationProps> = ({
     const getIcon = () => {
         switch (type) {
             case 'streak':
-                return { name: 'local-fire-department' as const, color: '#FF6B35' };
+                return { name: 'local-fire-department' as const, color: colors.accent.orange };
             case 'workout':
                 return { name: 'fitness-center' as const, color: colors.primary };
             case 'calories':
-                return { name: 'restaurant' as const, color: colors.crowd.low };
+                return { name: 'restaurant' as const, color: colors.accent.gold };
             case 'achievement':
-                return { name: 'emoji-events' as const, color: '#FFD700' };
+                return { name: 'emoji-events' as const, color: colors.accent.gold };
             default:
                 return { name: 'check-circle' as const, color: colors.primary };
         }
@@ -59,12 +63,18 @@ const Celebration: React.FC<CelebrationProps> = ({
             // Main element animation
             Animated.sequence([
                 Animated.parallel([
-                    Animated.spring(scaleAnim, {
-                        toValue: 1,
-                        tension: 50,
-                        friction: 3,
-                        useNativeDriver: true,
-                    }),
+                    reduceMotion
+                        ? Animated.timing(scaleAnim, {
+                              toValue: 1,
+                              duration: 200,
+                              useNativeDriver: true,
+                          })
+                        : Animated.spring(scaleAnim, {
+                              toValue: 1,
+                              tension: 50,
+                              friction: 3,
+                              useNativeDriver: true,
+                          }),
                     Animated.timing(opacityAnim, {
                         toValue: 1,
                         duration: 200,
@@ -90,8 +100,9 @@ const Celebration: React.FC<CelebrationProps> = ({
                 onComplete?.();
             });
 
-            // Confetti animation
-            confettiAnims.forEach((anim, index) => {
+            // Confetti animation — skipped entirely under reduced motion
+            if (!reduceMotion) {
+                confettiAnims.forEach((anim, index) => {
                 const randomX = (Math.random() - 0.5) * width;
                 const randomDelay = Math.random() * 200;
 
@@ -128,12 +139,20 @@ const Celebration: React.FC<CelebrationProps> = ({
                     anim.rotate.setValue(0);
                     anim.opacity.setValue(1);
                 });
-            });
+                });
+            }
         }
-    }, [visible]);
+    }, [visible, reduceMotion]);
 
     const iconConfig = getIcon();
-    const confettiColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', colors.primary];
+    const confettiColors = [
+        colors.accent.rose,
+        colors.accent.sky,
+        colors.accent.orange,
+        colors.accent.gold,
+        colors.accent.lilac,
+        colors.primary,
+    ];
 
     if (!visible) return null;
 
@@ -143,7 +162,7 @@ const Celebration: React.FC<CelebrationProps> = ({
                 onComplete?.();
             }}>
                 {/* Confetti */}
-                {confettiAnims.map((anim, index) => (
+                {!reduceMotion && confettiAnims.map((anim, index) => (
                     <Animated.View
                         key={index}
                         style={[
