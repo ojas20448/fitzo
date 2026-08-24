@@ -9,7 +9,7 @@
     "icon": "./assets/icon.png",
     "scheme": [
       "fitzo",
-      "com.googleusercontent.apps.1030039443378-k15ujl968cs24u1t6ln06oaapudt03e2"
+      "com.googleusercontent.apps.1030039443378-bjdf9b2f5hr6o10gth0jg64gqbn0imir"
     ],
     "userInterfaceStyle": "dark",
     "splash": {
@@ -109,7 +109,7 @@
       [
         "@react-native-google-signin/google-signin",
         {
-          "iosUrlScheme": "com.googleusercontent.apps.1030039443378-k15ujl968cs24u1t6ln06oaapudt03e2"
+          "iosUrlScheme": "com.googleusercontent.apps.1030039443378-bjdf9b2f5hr6o10gth0jg64gqbn0imir"
         }
       ],
       "expo-audio",
