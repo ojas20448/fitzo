@@ -13,3 +13,6 @@ dist/
 
 # Ignore environment files
 .env.local
+
+# Never upload the Play service-account key to EAS build servers
+google-services-key.json

@@ -21,6 +21,10 @@ mobile/dist/
 .env.production.local
 .env.development.local
 
+# Never upload the Play service-account key to EAS build servers
+google-services-key.json
+mobile/google-services-key.json
+
 # Ignore heavy media launch folders recursively
 brag-output/
 brag-output-new/

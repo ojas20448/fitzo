@@ -50,6 +50,9 @@
       "android": {
         "serviceAccountKeyPath": "./google-services-key.json",
         "track": "internal"
+      },
+      "ios": {
+        "ascAppId": "6804647531"
       }
     }
   }
