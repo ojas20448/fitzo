@@ -82,7 +82,11 @@ async function verifyAppleToken(identityToken) {
     // carries the Services ID. Empty entries are stripped so an unset env var
     // cannot widen the audience to `undefined` and match nothing safely.
     const audiences = [
-        process.env.APPLE_BUNDLE_ID || 'com.fitzo.app',
+        // iOS bundle, NOT the Android package. They deliberately differ:
+        // com.fitzo.app was already registered to another Apple developer
+        // account — bundle IDs are globally unique — while the Android package
+        // is live on Play and cannot move.
+        process.env.APPLE_BUNDLE_ID || 'in.fitzoapp.fitzo',
         process.env.APPLE_SERVICES_ID,
     ].filter(Boolean);
 
