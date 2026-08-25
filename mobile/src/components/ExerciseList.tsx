@@ -377,10 +377,17 @@ export default function ExerciseList({ mode = 'view', onSelect, initialFilter, a
             >
                 <TouchableOpacity
                     style={[styles.filterChip, !selectedBodyPart && styles.filterChipActive]}
+                    // Set state only, then let the debounced effect below do the
+                    // reload. This used to call loadExercises() inline, which ran
+                    // in the same tick as the setters and so still closed over the
+                    // *previous* selectedBodyPart: it refetched the body part the
+                    // user was leaving and, through `!selectedBodyPart && ...`,
+                    // wrote hasMore=false. That write raced ahead of the correct
+                    // reload and killed infinite scroll, capping "All" at a single
+                    // 50-exercise page instead of paging through the catalogue.
                     onPress={() => {
                         setSelectedBodyPart(null);
                         setSearchQuery('');
-                        loadExercises();
                     }}
                 >
                     <Text style={[styles.filterText, !selectedBodyPart && styles.filterTextActive]}>
