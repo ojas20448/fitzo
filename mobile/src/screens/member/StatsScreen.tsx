@@ -406,7 +406,13 @@ const StatsScreen = () => {
                     </View>
                     <View style={styles.scoreIcon}>
                         <MaterialIcons 
-                            name={activeTab === 'training' ? 'fitness-center' : 'restaurant-menu'} 
+                            // Not the dumbbell/cutlery pair: those are the app's
+                            // generic *category* glyphs (the dumbbell heads every
+                            // exercise row), so on a hero card they read as
+                            // decoration. Use the metric's own vocabulary — a bolt
+                            // for effort logged, and the flame this app already
+                            // uses for calories in Health Report and Calorie Log.
+                            name={activeTab === 'training' ? 'bolt' : 'local-fire-department'}
                             size={28} 
                             color={colors.primary} 
                         />
