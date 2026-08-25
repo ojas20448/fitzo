@@ -34,6 +34,7 @@ export default function SettingsScreen() {
     const [units, setUnits] = useState<'metric' | 'imperial'>('metric');
     const [shareLogs, setShareLogs] = useState(true);
     const [hapticsOn, setHapticsOn] = useState(true);
+    const [deleting, setDeleting] = useState(false);
 
     // Gym membership
     const [gym, setGym] = useState<GymInfo | null>(null);
@@ -242,6 +243,51 @@ export default function SettingsScreen() {
                         router.replace('/login' as any);
                     }
                 }
+            ]
+        );
+    };
+
+    // Apple 5.1.1(v) and Play policy both require in-app account deletion for
+    // any app that offers account creation. Two steps on purpose: the first
+    // alert explains what is lost, the second is the point of no return.
+    const handleDeleteAccount = () => {
+        Alert.alert(
+            'Delete Account',
+            'This permanently deletes your account and everything in it — workouts, nutrition logs, measurements, streaks and gym membership.\n\nThis cannot be undone.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Continue',
+                    style: 'destructive',
+                    onPress: () => {
+                        Alert.alert(
+                            'Are you absolutely sure?',
+                            `${user?.email || 'This account'} and all of its data will be erased immediately.`,
+                            [
+                                { text: 'Keep My Account', style: 'cancel' },
+                                {
+                                    text: 'Delete Forever',
+                                    style: 'destructive',
+                                    onPress: async () => {
+                                        setDeleting(true);
+                                        try {
+                                            await settingsAPI.deleteAccount();
+                                            await logout();
+                                            router.replace('/login' as any);
+                                        } catch (e: any) {
+                                            setDeleting(false);
+                                            toast.error(
+                                                'Could not delete account',
+                                                e?.response?.data?.message ||
+                                                    'Something went wrong. Please try again, or email contact@fitzoapp.in.'
+                                            );
+                                        }
+                                    },
+                                },
+                            ]
+                        );
+                    },
+                },
             ]
         );
     };
@@ -511,6 +557,29 @@ export default function SettingsScreen() {
                     </TouchableOpacity>
                 </GlassCard>
 
+                <Text style={styles.sectionTitle}>Account</Text>
+                <GlassCard style={styles.card}>
+                    <TouchableOpacity
+                        style={styles.rowSignOut}
+                        onPress={handleDeleteAccount}
+                        disabled={deleting}
+                        accessibilityRole="button"
+                        accessibilityLabel="Delete account permanently"
+                    >
+                        {deleting ? (
+                            <ActivityIndicator size="small" color={colors.error} />
+                        ) : (
+                            <MaterialIcons name="delete-forever" size={24} color={colors.error} />
+                        )}
+                        <Text style={styles.signOutText}>
+                            {deleting ? 'Deleting…' : 'Delete Account'}
+                        </Text>
+                    </TouchableOpacity>
+                    <Text style={styles.deleteHint}>
+                        Permanently erases your account and all of its data.
+                    </Text>
+                </GlassCard>
+
                 <Text style={styles.versionText}>Fitzo v{version}</Text>
                 <View style={{ height: 40 }} />
             </ScrollView>
@@ -643,6 +712,15 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.bold,
         color: colors.error,
+    },
+    deleteHint: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        textAlign: 'center',
+        paddingHorizontal: spacing.lg,
+        paddingBottom: spacing.lg,
+        marginTop: -spacing.sm,
     },
     versionText: {
         textAlign: 'center',
