@@ -16,3 +16,13 @@ dist/
 
 # Never upload the Play service-account key to EAS build servers
 google-services-key.json
+
+# Store marketing assets — needed for submission, never for compiling.
+store-listing/
+store-screenshots/
+feature-graphic.png
+
+# Scratch
+.icon-backup/
+.dtest/
+_w13.mjs
