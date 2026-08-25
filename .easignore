@@ -36,3 +36,30 @@ brag-output-*/
 .tdad/
 .idea/
 .vscode/
+
+# The .git directory is 124 MB and is not needed to build. EAS resolves the
+# commit hash client-side before upload, so nothing server-side reads this.
+# With a .easignore present EAS uploads the working tree rather than a git
+# archive, so .git is swept in unless it is named here.
+.git/
+
+# The backend is a separate service — the mobile build never imports from it.
+backend/
+
+# Local media scratch (851 MB) — gitignored, but name it here too since
+# .easignore governs the working-tree upload independently of .gitignore.
+Media/
+
+# Store marketing assets: needed for submission, never for compiling the app.
+mobile/store-listing/
+mobile/store-screenshots/
+mobile/feature-graphic.png
+
+# Docs, CI config, agent tooling and scratch output.
+.github/
+.gemini/
+.superpowers/
+.impeccable/
+docs/
+test_compile/
+temp.txt
