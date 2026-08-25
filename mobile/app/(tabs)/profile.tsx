@@ -368,9 +368,11 @@ export default function ProfileScreen() {
                         <TouchableOpacity
                             style={styles.settingItem}
                             onPress={() => router.push('/member/settings' as any)}
+                            accessibilityRole="button"
+                            accessibilityLabel="Open settings and account management"
                         >
-                            <MaterialIcons name="notifications" size={24} color={colors.text.secondary} />
-                            <Text style={styles.settingLabel}>Notifications</Text>
+                            <MaterialIcons name="settings" size={24} color={colors.text.secondary} />
+                            <Text style={styles.settingLabel}>Settings & Account</Text>
                             <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                         </TouchableOpacity>
                         <View style={styles.settingDivider} />
