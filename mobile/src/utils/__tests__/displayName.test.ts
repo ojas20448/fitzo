@@ -65,6 +65,23 @@ describe('firstName', () => {
     it('never returns an email fragment with an @', () => {
         expect(firstName({ name: 'ojas.narang@example.io' })).toBe('Ojas');
     });
+    it('cuts handle-shaped names at the first digit', () => {
+        // The case from the profile header: a username stored in `name`, with no
+        // space to split on.
+        expect(firstName({ name: 'Ojas4123narang' })).toBe('Ojas');
+        expect(firstName({ username: 'ojas4123' })).toBe('Ojas');
+        expect(firstName({ name: 'ojas4123narang' })).toBe('Ojas');
+    });
+
+    it('capitalises a lowercase handle', () => {
+        expect(firstName({ name: 'ojas' })).toBe('Ojas');
+    });
+
+    it('leaves a name whole when cutting would gut it', () => {
+        // Nothing plausible survives the cut, so do not mangle these.
+        expect(firstName({ name: '4123' })).toBe('4123');
+        expect(firstName({ name: 'J2' })).toBe('J2');
+    });
 
     it('falls back for an empty user', () => {
         expect(firstName(null)).toBe('there');
