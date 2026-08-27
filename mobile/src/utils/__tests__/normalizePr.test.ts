@@ -16,6 +16,11 @@ describe('normalizePr — two backend shapes, one output', () => {
             .toEqual({ exercise: 'Deadlift', current: '140 kg' });
     });
 
+    it('rounds decimal weights to avoid floating-point tail', () => {
+        expect(normalizePr({ exerciseName: 'Squat', newWeight: 60.3, improvement: 0.2 }))
+            .toEqual({ exercise: 'Squat', current: '60.3 kg', previous: '60.1 kg' });
+    });
+
     it('returns null rather than a card that says "PR"', () => {
         expect(normalizePr({})).toBeNull();
         expect(normalizePr(null)).toBeNull();

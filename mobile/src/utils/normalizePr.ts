@@ -28,7 +28,7 @@ export function normalizePr(raw: unknown): SharePr | null {
     const out: SharePr = { exercise, current: `${weight} kg` };
     const improvement = Number(r.improvement);
     if (Number.isFinite(improvement) && improvement > 0) {
-        out.previous = `${weight - improvement} kg`;
+        out.previous = `${Math.round((weight - improvement) * 100) / 100} kg`;
     }
     return out;
 }
