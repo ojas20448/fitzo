@@ -6,6 +6,7 @@ import {
     Platform, ScrollView
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInUp, FadeOutUp } from 'react-native-reanimated';
@@ -18,6 +19,7 @@ type Step = 'email' | 'otp' | 'success';
 
 export default function ForgotPasswordScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { forgotPassword, resetPassword } = useAuth();
     const toast = useToast();
 
@@ -101,7 +103,7 @@ export default function ForgotPasswordScreen() {
                 style={StyleSheet.absoluteFill}
             />
 
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
                 </TouchableOpacity>
@@ -242,7 +244,10 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1 },
     header: {
-        paddingTop: 60,
+        // paddingTop comes from the safe-area inset at the call site. Edge-to-edge
+        // is mandatory from Android 15 / Expo SDK 54, so the old hardcoded 60
+        // either clipped the back button under the status bar or floated it too
+        // low, depending on the device's cutout.
         paddingHorizontal: 20,
     },
     backButton: {
