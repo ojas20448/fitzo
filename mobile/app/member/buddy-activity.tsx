@@ -216,7 +216,12 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.md,
     },
     backBtn: {
-        padding: spacing.xs,
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 20,
+        backgroundColor: colors.glass.surface,
     },
     headerTitle: {
         fontSize: typography.sizes.lg,
