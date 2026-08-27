@@ -31,6 +31,12 @@
       "skillPath": "skills/brag/SKILL.md",
       "computedHash": "e409915237b4532746de39bc5f27a48cef83d8e6c1ee005be47a6c404c7acad5"
     },
+    "brainstorming": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/brainstorming/SKILL.md",
+      "computedHash": "0eb8e9ba100985eb4da20c46807268cafd72ec1c4ea58132edf9be6c469867fe"
+    },
     "browser-automation": {
       "source": "zhaoxuya520/reverse-skill",
       "sourceType": "github",
@@ -79,6 +85,12 @@
       "skillPath": "skills/digital-forensics/SKILL.md",
       "computedHash": "3c9100c4cf9949d19925aad5cd99eef324cb7c094a9e8da397c947aa7b06da2d"
     },
+    "dispatching-parallel-agents": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/dispatching-parallel-agents/SKILL.md",
+      "computedHash": "b011107f17188e0b2898bb1856b5bac8b49537cc86e737c82126558a235bd62a"
+    },
     "docs-generator": {
       "source": "zhaoxuya520/reverse-skill",
       "sourceType": "github",
@@ -102,6 +114,18 @@
       "sourceType": "github",
       "skillPath": "skills/email-security/SKILL.md",
       "computedHash": "1c4e35d05b416f0ba2bcd128b3f11a276fbc13843084918f51f6511f300d1ce7"
+    },
+    "executing-plans": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/executing-plans/SKILL.md",
+      "computedHash": "78a07800ee99a5861ae10be59d79fad085fdca10444e8aaeb2691597e357cff8"
+    },
+    "finishing-a-development-branch": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/finishing-a-development-branch/SKILL.md",
+      "computedHash": "4f571e7befb8b0946d9d7770232c818812412e9ab1dfb811f847edfba1fc6275"
     },
     "firmware-pentest": {
       "source": "zhaoxuya520/reverse-skill",
@@ -211,6 +235,18 @@
       "skillPath": "skills/radio-sdr/SKILL.md",
       "computedHash": "17cd1f3b04fc3c24ef85bace517aad1006774c796ccabf5ffecf28bd0615f69e"
     },
+    "receiving-code-review": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/receiving-code-review/SKILL.md",
+      "computedHash": "59361179fc9225173e0c145ffd9bafbf9fdbf8b43ce3dc308497a0b4f83a6063"
+    },
+    "requesting-code-review": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/requesting-code-review/SKILL.md",
+      "computedHash": "004f340ae65811095d6a9bb0a759c87d0a8085c5e705dbb019b011626293d2e9"
+    },
     "reverse-engineering": {
       "source": "zhaoxuya520/reverse-skill",
       "sourceType": "github",
@@ -223,11 +259,29 @@
       "skillPath": "skills/SKILL.md",
       "computedHash": "45dcd0a7a7af960e1bc3a1178208dbc8d06be86e77b027cf231c8b89edea040d"
     },
+    "subagent-driven-development": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/subagent-driven-development/SKILL.md",
+      "computedHash": "988e6ae6fa0e6a3ab7cba613662d75e80f193259576f2ede379461bfc40aa7d7"
+    },
     "supply-chain-security": {
       "source": "zhaoxuya520/reverse-skill",
       "sourceType": "github",
       "skillPath": "skills/supply-chain-security/SKILL.md",
       "computedHash": "cf244783c38690b4c6eab39e52a267e7e0c66ad40bf82e2812d22c5c0b6d3a6d"
+    },
+    "systematic-debugging": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/systematic-debugging/SKILL.md",
+      "computedHash": "a2750dfbaed1690da73b120254892c4f926b4576cb82eb16fc877783941fe39b"
+    },
+    "test-driven-development": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/test-driven-development/SKILL.md",
+      "computedHash": "a4126a9c5f17be3c228aa9e5755898ade283448b86099f56f40852e8c14532be"
     },
     "thick-client": {
       "source": "zhaoxuya520/reverse-skill",
@@ -241,6 +295,24 @@
       "skillPath": "skills/threat-hunting/SKILL.md",
       "computedHash": "e45ea15cfcff94afce333f740a6643af60a812c83a8b138419e79ef8d53d080d"
     },
+    "using-git-worktrees": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/using-git-worktrees/SKILL.md",
+      "computedHash": "48c8a1040e378e0cb7208107294e3afa9067b9370c3f33b49a443eb6b7528b0d"
+    },
+    "using-superpowers": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/using-superpowers/SKILL.md",
+      "computedHash": "c7abe8bdc2099bbe4f245454d32c7563ccd2bb41dcc218b02b461c2acc3c6ae6"
+    },
+    "verification-before-completion": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/verification-before-completion/SKILL.md",
+      "computedHash": "b529822bdac4b197b180fe12225cff86b930b65910435103c10622df7f041651"
+    },
     "wifi-wireless": {
       "source": "zhaoxuya520/reverse-skill",
       "sourceType": "github",
@@ -252,6 +324,18 @@
       "sourceType": "github",
       "skillPath": "skills/windows-ad/SKILL.md",
       "computedHash": "1767f3acfc855fa3b58272bc571e08e77f3ebfea0d363aa89a472bf74d615db3"
+    },
+    "writing-plans": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/writing-plans/SKILL.md",
+      "computedHash": "27c75044e444a4fc68798c3f799dc23eaff3a6bfabff32e6ad75bb20f881c094"
+    },
+    "writing-skills": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/writing-skills/SKILL.md",
+      "computedHash": "5f255b9c0d50d6d7eafa41b245b9308799321c5222bc68b1be2499f50ed82713"
     }
   }
 }
