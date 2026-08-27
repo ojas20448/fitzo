@@ -14,13 +14,14 @@ import {
     Animated,
     Dimensions,
     Platform,
+    KeyboardAvoidingView,
     LayoutAnimation,
     TextInput,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../utils/haptics';
 import { workoutsAPI, settingsAPI, aiAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import ExerciseList from '../../components/ExerciseList';
@@ -801,6 +802,10 @@ const WorkoutLogScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
             <VoiceCaptureSheet
                 visible={voiceSheetOpen}
                 stage={voice.stage}
@@ -1211,6 +1216,7 @@ const WorkoutLogScreen: React.FC = () => {
                     settingsAPI.updateWorkoutPreferences({ workout_prefs_seen: true }).catch(() => {});
                 }}
             />
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };

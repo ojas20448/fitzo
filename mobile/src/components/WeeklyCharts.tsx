@@ -190,7 +190,7 @@ export default function WeeklyCharts() {
                                         y={yP}
                                         width={BAR_WIDTH}
                                         height={Math.max(0, hP)}
-                                        fill="#8B5CF6"
+                                        fill={colors.macro.protein}
                                         rx={2}
                                     />
 
@@ -200,7 +200,7 @@ export default function WeeklyCharts() {
                                         y={yC}
                                         width={BAR_WIDTH}
                                         height={Math.max(0, hC)}
-                                        fill="#3B82F6"
+                                        fill={colors.macro.carbs}
                                         rx={2}
                                     />
 
@@ -210,7 +210,7 @@ export default function WeeklyCharts() {
                                         y={yF}
                                         width={BAR_WIDTH}
                                         height={Math.max(0, hF)}
-                                        fill="#F59E0B"
+                                        fill={colors.macro.fat}
                                         rx={2}
                                     />
 
@@ -239,15 +239,15 @@ export default function WeeklyCharts() {
                 {/* Legend */}
                 <View style={styles.legendRow}>
                     <View style={styles.legendItem}>
-                        <View style={[styles.legendDot, { backgroundColor: '#F59E0B' }]} />
+                        <View style={[styles.legendDot, { backgroundColor: colors.macro.fat }]} />
                         <Text style={styles.legendText}>Fat</Text>
                     </View>
                     <View style={styles.legendItem}>
-                        <View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} />
+                        <View style={[styles.legendDot, { backgroundColor: colors.macro.carbs }]} />
                         <Text style={styles.legendText}>Carbs</Text>
                     </View>
                     <View style={styles.legendItem}>
-                        <View style={[styles.legendDot, { backgroundColor: '#8B5CF6' }]} />
+                        <View style={[styles.legendDot, { backgroundColor: colors.macro.protein }]} />
                         <Text style={styles.legendText}>Protein</Text>
                     </View>
                 </View>
@@ -257,18 +257,18 @@ export default function WeeklyCharts() {
                     <View style={styles.avgRow}>
                         <Text style={styles.avgTitle}>DAILY AVG</Text>
                         <View style={{ flexDirection: 'row', gap: 12 }}>
-                            <View style={[styles.avgBadge, { backgroundColor: '#F59E0B20' }]}>
-                                <Text style={[styles.avgValue, { color: '#F59E0B' }]}>
+                            <View style={[styles.avgBadge, { backgroundColor: colors.macro.fat + '20' }]}>
+                                <Text style={[styles.avgValue, { color: colors.macro.fat }]}>
                                     {Math.round(history.reduce((a, b) => a + b.total_fat, 0) / 7)}g
                                 </Text>
                             </View>
-                            <View style={[styles.avgBadge, { backgroundColor: '#3B82F620' }]}>
-                                <Text style={[styles.avgValue, { color: '#3B82F6' }]}>
+                            <View style={[styles.avgBadge, { backgroundColor: colors.macro.carbs + '20' }]}>
+                                <Text style={[styles.avgValue, { color: colors.macro.carbs }]}>
                                     {Math.round(history.reduce((a, b) => a + b.total_carbs, 0) / 7)}g
                                 </Text>
                             </View>
-                            <View style={[styles.avgBadge, { backgroundColor: '#8B5CF620' }]}>
-                                <Text style={[styles.avgValue, { color: '#8B5CF6' }]}>
+                            <View style={[styles.avgBadge, { backgroundColor: colors.macro.protein + '20' }]}>
+                                <Text style={[styles.avgValue, { color: colors.macro.protein }]}>
                                     {Math.round(history.reduce((a, b) => a + b.total_protein, 0) / 7)}g
                                 </Text>
                             </View>

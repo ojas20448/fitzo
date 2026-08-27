@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { Pressable, Animated, StyleSheet, ViewStyle, Platform } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../utils/haptics';
 import { colors, borderRadius, spacing, shadow } from '../styles/theme';
 
 interface PressableCardProps {

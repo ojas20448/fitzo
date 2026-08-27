@@ -234,6 +234,7 @@ export default function LoginScreen() {
                             >
                                 <MaterialIcons name="g-translate" size={24} color={colors.text.primary} />
                                 <Text style={styles.googleBtnText}>Google</Text>
+                                <View style={{ width: 24 }} />
                             </TouchableOpacity>
 
                             {/*
@@ -253,6 +254,7 @@ export default function LoginScreen() {
                                 >
                                     <MaterialIcons name="apple" size={24} color={colors.text.dark} />
                                     <Text style={styles.appleBtnText}>Apple</Text>
+                                    <View style={{ width: 24 }} />
                                 </TouchableOpacity>
                             )}
                         </View>

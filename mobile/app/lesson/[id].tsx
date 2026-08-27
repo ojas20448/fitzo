@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Markdown from 'react-native-markdown-display';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../src/utils/haptics';
 
 interface Question {
     question: string;
@@ -497,7 +497,12 @@ const styles = StyleSheet.create({
         borderBottomColor: colors.glass.border,
     },
     backBtn: {
-        padding: spacing.xs,
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 20,
+        backgroundColor: colors.glass.surface,
     },
     headerTitle: {
         fontSize: typography.sizes.sm,

@@ -2,7 +2,7 @@ import { Tabs, router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { View, StyleSheet, TouchableOpacity, Modal, Text, Pressable } from 'react-native';
 import { useState } from 'react';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../src/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/styles/theme';
 import { AnimatedTabIcon } from '../../src/components/AnimatedTabIcon';

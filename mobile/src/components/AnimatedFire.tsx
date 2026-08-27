@@ -6,9 +6,12 @@ import Animated, {
     withRepeat,
     withTiming,
     withSequence,
+    withDelay,
     Easing,
+    useReducedMotion,
 } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
+import { colors } from '../styles/theme';
 
 interface AnimatedFireProps {
     size?: number;
@@ -17,14 +20,19 @@ interface AnimatedFireProps {
 
 const AnimatedFire: React.FC<AnimatedFireProps> = ({
     size = 24,
-    color = '#FF6B35'
+    color = colors.accent.orange
 }) => {
     // Animation shared values
     const scale = useSharedValue(1);
     const opacity = useSharedValue(0.8);
     const innerScale = useSharedValue(1);
+    // Honor the OS reduce-motion setting with a still flame — the streak
+    // stays legible, nothing loops.
+    const reduceMotion = useReducedMotion();
 
     useEffect(() => {
+        if (reduceMotion) return;
+
         // Breathing scale effect
         scale.value = withRepeat(
             withSequence(
@@ -48,15 +56,18 @@ const AnimatedFire: React.FC<AnimatedFireProps> = ({
         );
 
         // Inner fire varied pulsing
-        innerScale.value = withRepeat(
-            withSequence(
-                withTiming(0.8, { duration: 800 }),
-                withTiming(1, { duration: 800 })
-            ),
-            -1,
-            true
+        innerScale.value = withDelay(
+            150,
+            withRepeat(
+                withSequence(
+                    withTiming(0.8, { duration: 800 }),
+                    withTiming(1, { duration: 800 })
+                ),
+                -1,
+                true
+            )
         );
-    }, []);
+    }, [reduceMotion]);
 
     const animatedStyle = useAnimatedStyle(() => {
         return {
@@ -73,7 +84,11 @@ const AnimatedFire: React.FC<AnimatedFireProps> = ({
     });
 
     return (
-        <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+        <View
+            style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}
+            accessible
+            accessibilityLabel="Streak flame"
+        >
             {/* Main Fire */}
             <Animated.View style={[StyleSheet.absoluteFill, animatedStyle]}>
                 <MaterialIcons name="local-fire-department" size={size} color={color} />
@@ -81,7 +96,7 @@ const AnimatedFire: React.FC<AnimatedFireProps> = ({
 
             {/* Inner Core (Hotter/Yellow) */}
             <Animated.View style={[StyleSheet.absoluteFill, innerAnimatedStyle, { justifyContent: 'center', alignItems: 'center', marginTop: size * 0.1 }]}>
-                <MaterialIcons name="local-fire-department" size={size * 0.7} color="#FFD700" />
+                <MaterialIcons name="local-fire-department" size={size * 0.7} color={colors.accent.gold} />
             </Animated.View>
         </View>
     );

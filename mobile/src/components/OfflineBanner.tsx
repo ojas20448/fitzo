@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, typography, spacing } from '../styles/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, typography } from '../styles/theme';
 
 export const useOnlineStatus = () => {
     const [isOnline, setIsOnline] = useState(true);
@@ -17,69 +17,114 @@ export const useOnlineStatus = () => {
     return isOnline;
 };
 
+const BAR_HEIGHT = 28;
+
 const OfflineBanner: React.FC = () => {
     const isOnline = useOnlineStatus();
+    const insets = useSafeAreaInsets();
     const [visible, setVisible] = useState(false);
-    const heightAnim = useState(new Animated.Value(0))[0];
+    // Latch the reconnect message so the bar can say "Back online" on its way
+    // out instead of flipping to the offline copy mid-animation.
+    const [reconnected, setReconnected] = useState(false);
+
+    const total = BAR_HEIGHT + insets.top;
+    const slide = useRef(new Animated.Value(0)).current; // 0 = hidden, 1 = shown
+    const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const firstRun = useRef(true);
 
     useEffect(() => {
-        if (!isOnline) {
-            setVisible(true);
-            Animated.spring(heightAnim, {
-                toValue: 40,
-                useNativeDriver: false,
-                friction: 8
-            }).start();
-        } else {
-            // Wait a moment before hiding to prevent flickering
-            setTimeout(() => {
-                Animated.timing(heightAnim, {
-                    toValue: 0,
-                    duration: 300,
-                    useNativeDriver: false,
-                }).start(() => setVisible(false));
-            }, 2000);
+        // Don't flash "back online" on a cold start that was never offline.
+        if (firstRun.current) {
+            firstRun.current = false;
+            if (isOnline) return;
         }
-    }, [isOnline]);
+
+        // Any state change cancels a pending hide — going offline again inside
+        // the grace window must not collapse the bar we just re-opened.
+        if (hideTimer.current) {
+            clearTimeout(hideTimer.current);
+            hideTimer.current = null;
+        }
+
+        if (!isOnline) {
+            setReconnected(false);
+            setVisible(true);
+            Animated.timing(slide, {
+                toValue: 1,
+                duration: 220,
+                useNativeDriver: true,
+            }).start();
+            return;
+        }
+
+        setReconnected(true);
+        hideTimer.current = setTimeout(() => {
+            Animated.timing(slide, {
+                toValue: 0,
+                duration: 260,
+                useNativeDriver: true,
+            }).start(({ finished }) => {
+                if (finished) setVisible(false);
+            });
+        }, 1600);
+    }, [isOnline, slide]);
+
+    useEffect(() => () => {
+        if (hideTimer.current) clearTimeout(hideTimer.current);
+    }, []);
 
     if (!visible) return null;
 
     return (
-        <Animated.View style={[styles.container, { height: heightAnim }]}>
-            <SafeAreaView edges={['top']} style={{ flex: 1, justifyContent: 'center' }}>
-                <View style={styles.content}>
-                    <Text style={styles.text}>
-                        {isOnline ? 'Back Online' : 'No Internet Connection'}
-                    </Text>
-                </View>
-            </SafeAreaView>
+        <Animated.View
+            pointerEvents="none"
+            accessibilityLiveRegion="polite"
+            style={[
+                styles.container,
+                {
+                    height: total,
+                    paddingTop: insets.top,
+                    backgroundColor: reconnected ? colors.success : colors.error,
+                    transform: [
+                        {
+                            translateY: slide.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [-total, 0],
+                            }),
+                        },
+                    ],
+                },
+            ]}
+        >
+            <View style={styles.content}>
+                <Text style={styles.text} numberOfLines={1}>
+                    {reconnected ? 'Back online' : 'No internet connection'}
+                </Text>
+            </View>
         </Animated.View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: colors.error, // Red for offline
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
         zIndex: 9999,
-        overflow: 'hidden',
+        elevation: 9999,
     },
     content: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.error,
-        paddingTop: Platform.OS === 'ios' ? 0 : 0
     },
     text: {
-        color: 'white',
-        fontSize: typography.sizes.xs,
+        color: colors.text.dark,
+        fontSize: typography.sizes['2xs'],
         fontFamily: typography.fontFamily.bold,
         letterSpacing: 1,
-        textTransform: 'uppercase'
+        textTransform: 'uppercase',
     },
 });
 

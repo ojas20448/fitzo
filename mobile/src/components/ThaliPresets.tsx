@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../utils/haptics';
 import { nutritionAPI } from '../services/api';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
 import MealBuilderSheet, { Preset } from './MealBuilderSheet';

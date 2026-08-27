@@ -11,7 +11,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://192.168.1.5:3001/api",
+        "EXPO_PUBLIC_API_URL": "https://fitzo.onrender.com/api",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1030039443378-ek0r7ar68qfjga2dmj5inr7e715g5c1f.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "1030039443378-u3vdk2fq3ebu90sv2okvimbta1rs2d7v.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "1030039443378-bjdf9b2f5hr6o10gth0jg64gqbn0imir.apps.googleusercontent.com"
@@ -49,7 +49,12 @@
     "production": {
       "android": {
         "serviceAccountKeyPath": "./google-services-key.json",
-        "track": "internal"
+        "track": "production",
+        "releaseStatus": "inProgress",
+        "rollout": 0.2
+      },
+      "ios": {
+        "ascAppId": "6804647531"
       }
     }
   }

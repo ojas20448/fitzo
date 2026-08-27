@@ -343,12 +343,16 @@ const GymBuddiesScreen: React.FC = () => {
                     <TouchableOpacity
                         style={styles.filterBtn}
                         onPress={() => router.push('/member/add-buddy?tab=scan' as any)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Add a buddy by QR code"
                     >
                         <MaterialIcons name="qr-code-scanner" size={22} color={colors.text.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.filterBtn}
                         onPress={() => setShowSearch(!showSearch)}
+                        accessibilityRole="button"
+                        accessibilityLabel={showSearch ? 'Close friend search' : 'Search friends'}
                     >
                         <MaterialIcons name={showSearch ? "close" : "person-add"} size={22} color={colors.text.primary} />
                     </TouchableOpacity>
@@ -993,16 +997,22 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
     },
+    // Was a 6x2 box on an 8px corner: the word sat wedged against its own
+    // border and crowded the name beside it. Pill it, give the text room, and
+    // hold it off the name. overflow keeps Android clipping to the radius.
     sentTag: {
         fontSize: typography.sizes['2xs'],
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
         letterSpacing: 0.8,
+        lineHeight: 14,
         borderWidth: 1,
         borderColor: colors.glass.border,
-        borderRadius: borderRadius.sm,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
+        borderRadius: borderRadius.full,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        marginLeft: spacing.sm,
+        overflow: 'hidden',
     },
     declineBtn: {
         width: 40,

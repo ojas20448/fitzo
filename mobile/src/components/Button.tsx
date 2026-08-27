@@ -10,7 +10,7 @@ import {
     Platform,
     View,
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../utils/haptics';
 import { colors, typography, borderRadius, spacing, shadow } from '../styles/theme';
 
 interface ButtonProps {
@@ -213,9 +213,21 @@ const Button: React.FC<ButtonProps> = ({
                     </View>
                 ) : (
                     <View style={styles.contentContainer}>
-                        {icon && <View style={styles.iconLeft}>{icon}</View>}
+                        {/* Left Icon (or invisible right icon for balance) */}
+                        {icon ? (
+                            <View style={styles.iconLeft}>{icon}</View>
+                        ) : iconRight ? (
+                            <View style={[styles.iconLeft, { opacity: 0 }]} pointerEvents="none">{iconRight}</View>
+                        ) : null}
+
                         <Text style={getTextStyles()}>{title}</Text>
-                        {iconRight && <View style={styles.iconRight}>{iconRight}</View>}
+
+                        {/* Right Icon (or invisible left icon for balance) */}
+                        {iconRight ? (
+                            <View style={styles.iconRight}>{iconRight}</View>
+                        ) : icon ? (
+                            <View style={[styles.iconRight, { opacity: 0 }]} pointerEvents="none">{icon}</View>
+                        ) : null}
                     </View>
                 )}
             </Pressable>

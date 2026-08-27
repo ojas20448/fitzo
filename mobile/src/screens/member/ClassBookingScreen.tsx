@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../utils/haptics';
 import { classesAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import Button from '../../components/Button';
@@ -141,9 +141,6 @@ const ClassBookingScreen: React.FC = () => {
                     <View style={styles.headerDot} />
                     <Text style={styles.headerSubtitle}>BOOK</Text>
                 </View>
-                <TouchableOpacity style={styles.filterBtn}>
-                    <MaterialIcons name="tune" size={18} color={colors.text.muted} />
-                </TouchableOpacity>
             </View>
 
             {/* Date Selector */}

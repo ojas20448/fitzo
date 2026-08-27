@@ -60,9 +60,30 @@ export function displayName(user: NameSource | null | undefined, fallback = 'Mem
     return fallback;
 }
 
-/** First name only, for greetings ("Hey Ojas"). */
+/**
+ * First name only, for greetings ("Hey Ojas").
+ *
+ * Space is not the only seam. Registration takes `name` as free text, so plenty
+ * of accounts store a handle there — "Ojas4123narang" — which has no space to
+ * split on and would otherwise be greeted in full. Digits are the separator
+ * people actually type in handles, so cut at the first one:
+ *
+ *   firstName({ name: 'Ojas Narang' })     -> 'Ojas'
+ *   firstName({ name: 'Ojas4123narang' })  -> 'Ojas'
+ *   firstName({ username: 'ojas4123' })    -> 'Ojas'
+ */
 export function firstName(user: NameSource | null | undefined, fallback = 'there'): string {
     const full = displayName(user, '');
     if (!full) return fallback;
-    return full.split(' ')[0];
+
+    const first = full.split(/\s+/)[0];
+
+    // Only cut when a plausible name is left standing. "4123" leads with a
+    // digit and "J2" is too short to be the intended name, so both stay whole
+    // rather than being trimmed to nothing.
+    const leadingLetters = first.match(/^\p{L}+/u)?.[0] ?? '';
+    const token = leadingLetters.length >= 2 ? leadingLetters : first;
+
+    // Handles are typed lowercase; a greeting headline should not be.
+    return token.charAt(0).toUpperCase() + token.slice(1);
 }

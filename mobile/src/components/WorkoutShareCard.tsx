@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { typography } from '../styles/theme';
+import { colors, typography } from '../styles/theme';
 
 const { width: SW } = Dimensions.get('window');
 const CARD_W = SW;
@@ -135,14 +135,14 @@ const WorkoutShareCard = React.forwardRef<View, WorkoutShareCardProps>(
                     <View style={s.flexRow}>
                         {showPercentile && (
                             <View style={[s.flexCard, { backgroundColor: 'rgba(139,92,246,0.10)', borderColor: 'rgba(139,92,246,0.25)' }]}>
-                                <Text style={[s.flexValue, { color: '#A78BFA' }]}>TOP {gymPercentile}%</Text>
+                                <Text style={[s.flexValue, { color: colors.accent.lilac }]}>TOP {gymPercentile}%</Text>
                                 <Text style={s.flexLabel}>IN YOUR GYM</Text>
                             </View>
                         )}
                         {(workoutMilestone || volumeMilestone) ? (
                             <View style={[s.flexCard, { backgroundColor: 'rgba(251,191,36,0.10)', borderColor: 'rgba(251,191,36,0.25)' }]}>
-                                <MaterialIcons name="star" size={14} color="#FBBF24" />
-                                <Text style={[s.flexValue, { color: '#FBBF24' }]}>
+                                <MaterialIcons name="star" size={14} color={colors.accent.gold} />
+                                <Text style={[s.flexValue, { color: colors.accent.gold }]}>
                                     {workoutMilestone || volumeMilestone}
                                 </Text>
                             </View>
@@ -172,25 +172,25 @@ const WorkoutShareCard = React.forwardRef<View, WorkoutShareCardProps>(
                             <MaterialIcons
                                 name={up ? 'trending-up' : 'trending-down'}
                                 size={14}
-                                color={up ? '#22C55E' : '#EF4444'}
+                                color={up ? colors.success : colors.error}
                             />
-                            <Text style={[s.chipText, { color: up ? '#22C55E' : '#EF4444' }]}>
+                            <Text style={[s.chipText, { color: up ? colors.success : colors.error }]}>
                                 {sign}{Math.abs(progressPct!).toFixed(1)}%
                             </Text>
                         </View>
                     )}
                     {(recap.prs?.length ?? 0) > 0 && (
                         <View style={[s.chip, { backgroundColor: 'rgba(251,191,36,0.12)' }]}>
-                            <MaterialIcons name="emoji-events" size={14} color="#FBBF24" />
-                            <Text style={[s.chipText, { color: '#FBBF24' }]}>
+                            <MaterialIcons name="emoji-events" size={14} color={colors.accent.gold} />
+                            <Text style={[s.chipText, { color: colors.accent.gold }]}>
                                 {recap.prs!.length} PR{recap.prs!.length > 1 ? 's' : ''}
                             </Text>
                         </View>
                     )}
                     {streak > 0 && (
                         <View style={[s.chip, { backgroundColor: 'rgba(249,115,22,0.12)' }]}>
-                            <MaterialIcons name="local-fire-department" size={14} color="#F97316" />
-                            <Text style={[s.chipText, { color: '#F97316' }]}>
+                            <MaterialIcons name="local-fire-department" size={14} color={colors.accent.orange} />
+                            <Text style={[s.chipText, { color: colors.accent.orange }]}>
                                 {streak} day streak
                             </Text>
                         </View>
@@ -272,7 +272,7 @@ const s = StyleSheet.create({
     heroTitle: {
         fontSize: 64,
         fontFamily: typography.fontFamily.extraBold,
-        color: '#FFFFFF',
+        color: colors.primary,
         letterSpacing: -3,
         lineHeight: 68,
     },
@@ -296,7 +296,7 @@ const s = StyleSheet.create({
     glassValue: {
         fontSize: 22,
         fontFamily: typography.fontFamily.bold,
-        color: '#FFFFFF',
+        color: colors.primary,
     },
     glassLabel: {
         fontSize: 9,

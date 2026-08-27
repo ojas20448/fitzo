@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, router as expoRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -23,7 +23,9 @@ import { ToastProvider } from '../src/components/Toast';
 import { NutritionProvider } from '../src/context/NutritionContext';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { BrandIntro } from '../src/components/BrandIntro';
+import OfflineBanner from '../src/components/OfflineBanner';
 import { notificationsAPI, wakeBackend } from '../src/services/api';
+import { loadHapticsSetting } from '../src/utils/haptics';
 import { colors } from '../src/styles/theme';
 
 // Configure how notifications are handled when app is in foreground
@@ -69,7 +71,7 @@ async function registerForPushNotificationsAsync(): Promise<string | undefined> 
             name: 'Default',
             importance: Notifications.AndroidImportance.MAX,
             vibrationPattern: [0, 250, 250, 250],
-            lightColor: '#FF6B35',
+            lightColor: '#FFFFFF',
         });
     }
 
@@ -78,6 +80,34 @@ async function registerForPushNotificationsAsync(): Promise<string | undefined> 
 
 // Keep splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
+
+// Map a push payload to the screen it is about. The backend sends either an
+// explicit `screen` field (friends.js, workout-sessions.js) or a `type` from
+// the pushNotifications templates (buildMessage merges it into data);
+// anything unrecognized lands on Home rather than being dropped.
+function routeFromNotification(data: Record<string, unknown>) {
+    const screen = typeof data.screen === 'string' ? data.screen : undefined;
+    const type = typeof data.type === 'string' ? data.type : undefined;
+
+    switch (screen ?? type) {
+        case 'friends':
+        case 'friend_activity':
+            expoRouter.push('/(tabs)/buddies');
+            break;
+        case 'workout_reminder':
+            expoRouter.push('/log/workout');
+            break;
+        case 'class_reminder':
+            expoRouter.push('/classes');
+            break;
+        case 'achievement':
+            expoRouter.push('/(tabs)/stats');
+            break;
+        case 'home':
+        default:
+            expoRouter.push('/(tabs)');
+    }
+}
 
 // Component that handles push notification registration once user is authenticated
 function PushNotificationHandler() {
@@ -108,11 +138,12 @@ function PushNotificationHandler() {
             console.log('Notification received:', notification.request.content.title);
         });
 
-        // Listen for user tapping on a notification
+        // Listen for user tapping on a notification and route to the screen it
+        // is about. expo-notifications replays the launch notification after a
+        // cold start, so this also covers taps that opened the app from quit.
         responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-            const data = response.notification.request.content.data;
-            console.log('Notification tapped, data:', data);
-            // Navigation based on notification type can be handled here
+            const data = (response.notification.request.content.data || {}) as Record<string, unknown>;
+            routeFromNotification(data);
         });
 
         return () => {
@@ -141,6 +172,8 @@ export default function RootLayout() {
         // Fire backend wake-up immediately — runs in parallel with font loading
         // so the server is warm by the time the user reaches the home screen
         wakeBackend();
+        // Restore the haptics preference before the first tab press
+        loadHapticsSetting();
     }, []);
 
     useEffect(() => {
@@ -177,6 +210,7 @@ export default function RootLayout() {
                     <NutritionProvider>
                         <ToastProvider>
                             <PushNotificationHandler />
+                            <OfflineBanner />
                             <StatusBar style="light" />
                             <Stack
                                 screenOptions={{
@@ -195,7 +229,6 @@ export default function RootLayout() {
                                 <Stack.Screen name="manager-dashboard" options={{ animation: 'fade' }} />
                                 <Stack.Screen name="qr-checkin" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="workout-intent" />
-                                <Stack.Screen name="workout-videos" />
                                 <Stack.Screen name="food-scanner" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="classes" />
                                 <Stack.Screen name="ai-coach" />
@@ -204,7 +237,6 @@ export default function RootLayout() {
                                 <Stack.Screen name="trainer" />
                                 <Stack.Screen name="manager/people" />
                                 <Stack.Screen name="member/curated-workouts" />
-                                <Stack.Screen name="member/active-workout" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="member/add-buddy" />
                                 <Stack.Screen name="member/fitness-profile" />
                                 <Stack.Screen name="member/measurements" />
@@ -213,7 +245,6 @@ export default function RootLayout() {
                                 <Stack.Screen name="member/recipes" />
                                 <Stack.Screen name="member/settings" />
                                 <Stack.Screen name="member/workout-recap" />
-                                <Stack.Screen name="member/readiness-checkin" options={{ animation: 'slide_from_bottom' }} />
                                 <Stack.Screen name="member/nutrition-insights" />
                                 <Stack.Screen name="member/health-report" />
                                 <Stack.Screen name="member/user-profile" />

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, Platform,
+    View, Text, StyleSheet, TouchableOpacity, Platform, KeyboardAvoidingView,
     ScrollView, TextInput, Dimensions, ActivityIndicator, Pressable
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -64,10 +64,10 @@ function computeBMI(weight: number, height: number) {
 }
 
 function bmiCategory(bmi: number) {
-    if (bmi < 18.5) return { label: 'Underweight', color: '#3B82F6' };
-    if (bmi < 25) return { label: 'Normal Weight', color: '#22C55E' };
-    if (bmi < 30) return { label: 'Overweight', color: '#F59E0B' };
-    return { label: 'Obese', color: '#EF4444' };
+    if (bmi < 18.5) return { label: 'Underweight', color: colors.info };
+    if (bmi < 25) return { label: 'Normal Weight', color: colors.success };
+    if (bmi < 30) return { label: 'Overweight', color: colors.warning };
+    return { label: 'Obese', color: colors.error };
 }
 
 /**
@@ -946,9 +946,9 @@ export default function OnboardingWizard() {
             <Animated.View entering={FadeInDown.delay(350).duration(600).springify()}>
                 <Text style={s.sectionLabel}>Macro Targets</Text>
                 <View style={s.macroCard}>
-                    <MacroBar label="Protein" g={macros.protein} cal={macros.protein * 4} color="#6366f1" pct={proteinPct} />
-                    <MacroBar label="Carbs" g={macros.carbs} cal={macros.carbs * 4} color="#f59e0b" pct={carbsPct} />
-                    <MacroBar label="Fat" g={macros.fat} cal={macros.fat * 9} color="#ec4899" pct={fatPct} />
+                    <MacroBar label="Protein" g={macros.protein} cal={macros.protein * 4} color={colors.macro.protein} pct={proteinPct} />
+                    <MacroBar label="Carbs" g={macros.carbs} cal={macros.carbs * 4} color={colors.macro.carbs} pct={carbsPct} />
+                    <MacroBar label="Fat" g={macros.fat} cal={macros.fat * 9} color={colors.macro.fat} pct={fatPct} />
                 </View>
             </Animated.View>
 
@@ -975,21 +975,21 @@ export default function OnboardingWizard() {
                     <MacroSlider
                         label="Protein"
                         grams={macros.protein}
-                        color="#6366f1"
+                        color={colors.macro.protein}
                         onIncrease={() => handleMacroAdjust('protein', 5)}
                         onDecrease={() => handleMacroAdjust('protein', -5)}
                     />
                     <MacroSlider
                         label="Carbs"
                         grams={macros.carbs}
-                        color="#f59e0b"
+                        color={colors.macro.carbs}
                         onIncrease={() => handleMacroAdjust('carbs', 5)}
                         onDecrease={() => handleMacroAdjust('carbs', -5)}
                     />
                     <MacroSlider
                         label="Fat"
                         grams={macros.fat}
-                        color="#ec4899"
+                        color={colors.macro.fat}
                         onIncrease={() => handleMacroAdjust('fat', 5)}
                         onDecrease={() => handleMacroAdjust('fat', -5)}
                     />
@@ -1092,6 +1092,10 @@ export default function OnboardingWizard() {
 
     return (
         <SafeAreaView style={s.container}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
             {/* Premium progress bar with glow */}
             <View style={s.progressArea}>
                 <View style={s.progressHeader}>
@@ -1171,6 +1175,7 @@ export default function OnboardingWizard() {
                     </TouchableOpacity>
                 </View>
             </Animated.View>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
@@ -1214,7 +1219,7 @@ const s = StyleSheet.create({
         // Was: shadowRadius 8 + elevation 4 with no shadowOpacity — that is a
         // no-op on iOS (opacity defaults to 0) but drew a white Material halo
         // on Android. Now identical on both.
-        ...shadow({ blur: 8, color: '#FFFFFF', opacity: 0.5 }),
+        ...shadow({ blur: 8, color: colors.primary, opacity: 0.5 }),
     },
 
     // ── Scroll / layout ──────────────────────────────────────────
