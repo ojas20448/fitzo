@@ -44,6 +44,8 @@ import {
     REST_PRESETS,
 } from '../../components/workout';
 import type { ExerciseSet, UserExercise, PickerConfig } from '../../components/workout';
+import { useLastSessionStore } from '../../stores/lastSessionStore';
+import { normalizePrs } from '../../utils/normalizePr';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -174,6 +176,10 @@ const WorkoutLogScreen: React.FC = () => {
         await voice.cancel();
         setVoiceSheetOpen(false);
     };
+
+    // A previous session must not survive into a new one. This is the primary
+    // guard; the store's staleness window only covers a crash between screens.
+    useEffect(() => { useLastSessionStore.getState().clearSession(); }, []);
 
     // First visit only: point out that the whole workout can be dictated. The
     // mic is otherwise just another icon in a busy header.
@@ -623,6 +629,43 @@ const WorkoutLogScreen: React.FC = () => {
                 sets: totalSets,
                 prs: result.prs || [],
             };
+
+            useLastSessionStore.getState().setSession({
+                completedAt: Date.now(),
+                title: sessionTitle || workoutType || 'Workout',
+                durationMin: Math.max(durationMinutes, 1),
+                volumeKg: Math.round(totalVolume),
+                setCount: totalSets,
+                prs: normalizePrs(result.prs),
+                exercises: userExercises.map((ex) => {
+                    // RULING R10: counted exactly like the session-total loop above
+                    // (w > 0 && r > 0), NOT by `s.completed`. If these two predicates
+                    // disagree, the per-exercise rows on a card stop summing to the
+                    // headline volume on that same card.
+                    const done = ex.sets.filter((s) => {
+                        const w = parseFloat(String(s.weight_kg || 0));
+                        const r = parseFloat(String(s.reps || 0));
+                        return w > 0 && r > 0;
+                    });
+                    const vol = done.reduce((sum, s) => {
+                        const w = parseFloat(String(s.weight_kg || 0));
+                        const r = parseFloat(String(s.reps || 0));
+                        return sum + w * r * (ex.is_unilateral ? 2 : 1);
+                    }, 0);
+                    const top = done.reduce<typeof done[0] | undefined>(
+                        (best, s) => (parseFloat(String(s.weight_kg || 0))) > (parseFloat(String(best?.weight_kg || 0))) ? s : best,
+                        undefined,
+                    );
+                    return {
+                        id: ex.id,
+                        name: ex.name,
+                        target: ex.target,
+                        volumeKg: Math.round(vol),
+                        setCount: done.length,
+                        topSet: top ? { weight_kg: parseFloat(String(top.weight_kg || 0)), reps: parseFloat(String(top.reps || 0)) } : undefined,
+                    };
+                }).filter((e) => e.setCount > 0),
+            });
 
             router.replace({
                 pathname: '/member/workout-recap',
