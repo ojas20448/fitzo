@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CARD_W, CARD_H } from '../SharePayload';
-import type { SharePayload, ShareExercise, ShareSet } from '../SharePayload';
+import type { SharePayload, ShareExercise } from '../SharePayload';
+import { formatDate, formatTopSet, formatVolumeKg } from '../format';
 import { typography } from '../../../styles/theme';
 
 /**
@@ -14,6 +15,11 @@ import { typography } from '../../../styles/theme';
  * differ in structure, not just palette, and a table is the structural
  * opposite of a receipt: crisp hairline borders instead of hand-drawn SVG
  * dashes, a fixed-width numeric grid instead of a single stacked column.
+ *
+ * formatDate/formatTopSet/formatVolumeKg live in ../format (R19) — Receipt
+ * needs formatDate too, and duplicating pure formatting logic across the two
+ * theme files is the same defect class R16 already named for InkCircle and
+ * DashedLine.
  */
 
 const RULE = 'rgba(255,255,255,0.12)';
@@ -27,28 +33,6 @@ const H_PADDING = 72;
 // in 8 rows; beyond that, further rows collapse into a single "+N more" line
 // instead of growing past the bottom of the card.
 const MAX_EXERCISE_ROWS = 8;
-
-/**
- * ex.topSet is only ever fully populated or fully absent (buildShareExercises
- * builds it as `top ? { weight_kg, reps } : undefined`), but ShareSet's
- * fields are individually optional at the type level, so this stays
- * defensive about a partial value rather than assuming both are present.
- */
-function formatTopSet(topSet: ShareSet | undefined): string | null {
-    if (!topSet) return null;
-    const w = topSet.weight_kg;
-    const r = topSet.reps;
-    if (w != null && r != null) return `${Math.round(w * 10) / 10}×${r}`;
-    if (w != null) return `${Math.round(w * 10) / 10} kg`;
-    if (r != null) return `${r} reps`;
-    return null;
-}
-
-function formatDate(d: Date): string {
-    return `${String(d.getDate()).padStart(2, '0')} ${d
-        .toLocaleString('en', { month: 'short' })
-        .toUpperCase()} ${d.getFullYear()}`;
-}
 
 export default function Spec({ payload }: { payload: SharePayload }) {
     const eyebrow = (payload.subtitle || formatDate(payload.date)).toUpperCase();
@@ -83,7 +67,7 @@ export default function Spec({ payload }: { payload: SharePayload }) {
                                         {topSet || '—'}
                                     </Text>
                                     <Text style={[styles.value, styles.volumeCol]} numberOfLines={1}>
-                                        {Math.round(ex.volumeKg).toLocaleString()} KG
+                                        {formatVolumeKg(ex.volumeKg)} KG
                                     </Text>
                                 </View>
                             );

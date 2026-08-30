@@ -5,6 +5,7 @@ import type { SharePayload } from '../SharePayload';
 import { DITHER_BY_MUSCLE, ditherForExercise } from '../../../utils/ditherForExercise';
 import { weightEquivalence } from '../../ReceiptShareCard';
 import { InkCircle, DashedLine } from '../ink';
+import { formatDate } from '../format';
 import { shadow } from '../../../styles/theme';
 
 /**
@@ -27,6 +28,13 @@ const MONO = 'VT323_400Regular';
 // larger canvas.
 const SCALE = CARD_W / 360;
 const s = (n: number) => Math.round(n * SCALE);
+// RULING R20: every VT323 text style gets an EXPLICIT lineHeight instead of
+// leaving line height to the font's own (unmeasured, bitmap-style) metrics.
+// This makes each line's allocated box height a fixed, known number instead
+// of something that depends on how VT323 happens to report its ascent/
+// descent — the vertical budget below is computed from these exact numbers,
+// not a guess about them. 1.2x is a standard, modestly tight leading ratio.
+const sl = (n: number) => Math.round(s(n) * 1.2);
 
 const PAPER_MARGIN = s(24);
 const PAPER_W = CARD_W - PAPER_MARGIN * 2;
@@ -37,18 +45,22 @@ const PAPER_W = CARD_W - PAPER_MARGIN * 2;
 // capping keeps a pathological payload from pushing the circled total off
 // the bottom of the frame instead of silently cropping it mid-row.
 //
-// MAX_PRS=3 is deliberately tight: the worst case is every PR carrying a
-// "Previous" sub-line plus a dashed divider, which by hand-measured estimate
-// (row height x count) lands close to the 1920px ceiling at 4 and clears it
-// with margin at 3.
+// MAX_PRS=3 is deliberately tight. Worst case is every PR carrying a
+// "Previous" sub-line plus a dashed divider between entries. With lineHeight
+// now pinned (see `sl` above), that worst case is an exact sum, not an
+// estimate: paddingTop 54 + header 82 + title bar 97 + art block 594 +
+// stats bar 97 + 3 PR entries-with-previous (145 each = 435) + 2 dividers
+// (53 each = 106) + rows paddingTop 18 + closing dashed line 53 + circled
+// total row 120 + footer 102 + paddingBottom 78 = 1836 of 1920 (~4% margin).
+// At MAX_PRS=4 the same arithmetic adds one more entry (145) and divider
+// (53), landing at 2034 — over budget — which is why the cap stays at 3
+// rather than 4.
 const MAX_PRS = 3;
 const MAX_ROWS = 5;
 
 export default function Receipt({ payload }: { payload: SharePayload }) {
+    const dateStr = formatDate(payload.date);
     const d = payload.date;
-    const dateStr = `${String(d.getDate()).padStart(2, '0')} ${d
-        .toLocaleString('en', { month: 'short' })
-        .toUpperCase()} ${d.getFullYear()}`;
     const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
     const prs = payload.prs.slice(0, MAX_PRS);
@@ -178,7 +190,7 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
         marginBottom: s(14),
     },
-    tsText: { fontFamily: MONO, fontSize: s(11), color: '#141414' },
+    tsText: { fontFamily: MONO, fontSize: s(11), lineHeight: sl(11), color: '#141414' },
     bar: {
         backgroundColor: '#1A1A1A',
         paddingVertical: s(4),
@@ -190,6 +202,7 @@ const styles = StyleSheet.create({
     barText: {
         fontFamily: MONO,
         fontSize: s(12),
+        lineHeight: sl(12),
         color: '#F1EEE6',
         letterSpacing: s(2),
     },
@@ -201,6 +214,7 @@ const styles = StyleSheet.create({
     headline: {
         fontFamily: MONO,
         fontSize: s(34),
+        lineHeight: sl(34),
         color: '#141414',
         marginTop: s(10),
         letterSpacing: s(1),
@@ -208,6 +222,7 @@ const styles = StyleSheet.create({
     caption: {
         fontFamily: MONO,
         fontSize: s(14),
+        lineHeight: sl(14),
         color: '#141414',
         marginTop: s(6),
         textAlign: 'center',
@@ -220,9 +235,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: s(4),
     },
-    rowLabel: { fontFamily: MONO, fontSize: s(15), color: '#141414', flexShrink: 1, paddingRight: s(8) },
-    rowValue: { fontFamily: MONO, fontSize: s(15), color: '#141414' },
-    rowSub: { fontFamily: MONO, fontSize: s(12), color: '#5A5850' },
+    rowLabel: { fontFamily: MONO, fontSize: s(15), lineHeight: sl(15), color: '#141414', flexShrink: 1, paddingRight: s(8) },
+    rowValue: { fontFamily: MONO, fontSize: s(15), lineHeight: sl(15), color: '#141414' },
+    rowSub: { fontFamily: MONO, fontSize: s(12), lineHeight: sl(12), color: '#5A5850' },
     circledWrap: {
         paddingHorizontal: s(18),
         paddingVertical: s(7),
@@ -236,6 +251,7 @@ const styles = StyleSheet.create({
     footerMark: {
         fontFamily: MONO,
         fontSize: s(15),
+        lineHeight: sl(15),
         color: '#141414',
         opacity: 0.5,
         letterSpacing: s(3),
