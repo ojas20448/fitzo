@@ -46,6 +46,7 @@ import {
 import type { ExerciseSet, UserExercise, PickerConfig } from '../../components/workout';
 import { useLastSessionStore } from '../../stores/lastSessionStore';
 import { normalizePrs } from '../../utils/normalizePr';
+import { buildShareExercises } from '../../utils/buildShareExercises';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -637,34 +638,7 @@ const WorkoutLogScreen: React.FC = () => {
                 volumeKg: Math.round(totalVolume),
                 setCount: totalSets,
                 prs: normalizePrs(result.prs),
-                exercises: userExercises.map((ex) => {
-                    // RULING R10: counted exactly like the session-total loop above
-                    // (w > 0 && r > 0), NOT by `s.completed`. If these two predicates
-                    // disagree, the per-exercise rows on a card stop summing to the
-                    // headline volume on that same card.
-                    const done = ex.sets.filter((s) => {
-                        const w = parseFloat(String(s.weight_kg || 0));
-                        const r = parseFloat(String(s.reps || 0));
-                        return w > 0 && r > 0;
-                    });
-                    const vol = done.reduce((sum, s) => {
-                        const w = parseFloat(String(s.weight_kg || 0));
-                        const r = parseFloat(String(s.reps || 0));
-                        return sum + w * r * (ex.is_unilateral ? 2 : 1);
-                    }, 0);
-                    const top = done.reduce<typeof done[0] | undefined>(
-                        (best, s) => (parseFloat(String(s.weight_kg || 0))) > (parseFloat(String(best?.weight_kg || 0))) ? s : best,
-                        undefined,
-                    );
-                    return {
-                        id: ex.id,
-                        name: ex.name,
-                        target: ex.target,
-                        volumeKg: Math.round(vol),
-                        setCount: done.length,
-                        topSet: top ? { weight_kg: parseFloat(String(top.weight_kg || 0)), reps: parseFloat(String(top.reps || 0)) } : undefined,
-                    };
-                }).filter((e) => e.setCount > 0),
+                exercises: buildShareExercises(userExercises),
             });
 
             router.replace({
