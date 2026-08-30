@@ -1,8 +1,9 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { Share } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+import { logger } from '../utils/logger';
 
 /**
  * One capture+share path, replacing three near-duplicates.
@@ -15,13 +16,15 @@ import * as Sharing from 'expo-sharing';
 const PAINT_SETTLE_MS = 180;
 
 export function useShareCapture() {
+    const isSharingRef = useRef(false);
     const [isSharing, setIsSharing] = useState(false);
 
     const captureAndShare = useCallback(async (
         ref: RefObject<any>,
         opts?: { dialogTitle?: string; fallbackMessage?: string },
     ) => {
-        if (!ref.current || isSharing) return;
+        if (!ref.current || isSharingRef.current) return;
+        isSharingRef.current = true;
         setIsSharing(true);
         try {
             await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
@@ -38,16 +41,18 @@ export function useShareCapture() {
                 return;
             }
             throw new Error('sharing unavailable');
-        } catch {
+        } catch (err) {
+            logger.error('[useShareCapture] capture or share failed', err);
             // Sharing is unavailable on some Android builds and on web. Text is
             // a worse share but a better outcome than a dead button.
             if (opts?.fallbackMessage) {
                 await Share.share({ message: opts.fallbackMessage }).catch(() => {});
             }
         } finally {
+            isSharingRef.current = false;
             setIsSharing(false);
         }
-    }, [isSharing]);
+    }, []);
 
     return { captureAndShare, isSharing };
 }
