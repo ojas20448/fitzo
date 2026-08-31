@@ -245,6 +245,7 @@ export default function RootLayout() {
                                 <Stack.Screen name="member/recipes" />
                                 <Stack.Screen name="member/settings" />
                                 <Stack.Screen name="member/workout-recap" />
+                                <Stack.Screen name="member/share" />
                                 <Stack.Screen name="member/nutrition-insights" />
                                 <Stack.Screen name="member/health-report" />
                                 <Stack.Screen name="member/user-profile" />
