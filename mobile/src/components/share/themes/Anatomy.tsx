@@ -23,14 +23,28 @@ import AnatomyHeatmap, { MUSCLE_COLORS } from '../../AnatomyHeatmap';
  * directly (e.g. bodyWidth=400) would enlarge only the SVG figures; the
  * labels would stay a fixed 10px, i.e. comically small next to a
  * 1080-wide card. Instead this file renders AnatomyHeatmap at its OWN
- * default size (bodyWidth/bodyHeight omitted -> 130/230, the exact
- * configuration StatsScreen.tsx already uses successfully) inside a fixed
- * pre-scale box, then scales that ENTIRE box — SVGs and labels together —
- * with `transform: [{ scale: HERO_SCALE }]`. This is the same technique
- * Receipt.tsx already uses to port a small-designed component onto the
- * 1080-wide card (its `SCALE = CARD_W / 360` constant), so the precedent is
- * established, not invented here. AnatomyHeatmap.tsx itself is untouched —
- * it still has a live consumer in StatsScreen.tsx.
+ * default size (bodyWidth/bodyHeight omitted -> 130/230, AnatomyHeatmap's
+ * own default parameter values) inside a fixed pre-scale box, then scales
+ * that ENTIRE box — SVGs and labels together — with
+ * `transform: [{ scale: HERO_SCALE }]`. StatsScreen.tsx, the component's
+ * only other consumer, does not actually use those defaults either — it
+ * passes bodyWidth=120/bodyHeight=220 explicitly
+ * (StatsScreen.tsx:211-212,221) — but that pair sits close enough to
+ * 130/230 that both call sites are evidence the component is meant to be
+ * driven somewhere in this size range, not tuned to one exact number.
+ *
+ * `transform: scale` is a NEW technique for this codebase, not one carried
+ * over from Receipt.tsx: Receipt ports its own small-designed component by
+ * arithmetic pre-multiplication instead — `SCALE = CARD_W / 360` then
+ * `s = n => Math.round(n * SCALE)` applied to every measurement before
+ * render (Receipt.tsx:29-30) — and its only `transform` is an unrelated
+ * `rotate: '-0.6deg'` for the paper-tilt effect (Receipt.tsx:184), not a
+ * scale. That arithmetic approach isn't available here: AnatomyHeatmap's
+ * internal paddings/gaps/label size are opaque from outside (unlike
+ * Receipt's own JSX, which this codebase's author could multiply measurement
+ * by measurement), so the only lever from outside the component is scaling
+ * its whole rendered subtree as one visual unit. AnatomyHeatmap.tsx itself
+ * is untouched — it still has a live consumer in StatsScreen.tsx.
  *
  * Because a component tree cannot be rendered in this repo's test setup,
  * HEATMAP_NATURAL_W/H below are a reasoned-from-source estimate (see their

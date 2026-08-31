@@ -183,7 +183,18 @@ describe('pickSummaryRows', () => {
     });
 
     it('clamps a negative max to zero instead of slicing from the end (Array.slice(0, -1) would otherwise return all-but-the-last row)', () => {
-        const payload = basePayload({ prs: [{ exercise: 'A', current: '1' }] });
+        // Needs >= 2 entries to actually discriminate: with a single-entry
+        // array, ['A'].slice(0, -1) and ['A'].slice(0, 0) both happen to be
+        // [], so a 1-entry fixture would pass whether or not the clamp
+        // exists. With 2 entries, the clamped read is [] but the unclamped
+        // (buggy) read would be [{label:'A', value:'1'}] — verified by
+        // temporarily removing the clamp, see task-6-report.md fix log.
+        const payload = basePayload({
+            prs: [
+                { exercise: 'A', current: '1' },
+                { exercise: 'B', current: '2' },
+            ],
+        });
         expect(pickSummaryRows(payload, -1)).toEqual([]);
     });
 });
