@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator, Alert, Image } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -308,13 +308,31 @@ export default function WorkoutRecapScreen() {
                     </View>
 
                     {/*
-                     * Opens the themed composer (5 layouts, pick-your-lifts) instead
-                     * of capturing this screen directly. handleShare/sharing (above,
-                     * near the top of this component) are intentionally left defined
-                     * but no longer wired to any control — the photo+receipt
-                     * compositing UI above (camera, drag/pinch/rotate, ReceiptShareCard)
-                     * is a separate, still-fully-working feature that this change does
-                     * not touch or remove; only this button's destination changes.
+                     * Ruling R24 — secondary, visually subordinate control for the
+                     * photo+receipt composite above (camera selfie, drag/pinch/rotate
+                     * placement). It belongs to that UI, not to the primary share path
+                     * below: the composer has no concept of a user photo (SharePayload
+                     * carries none), so without this the composite would have no way
+                     * to ever be shared. Wired to the pre-existing, untouched
+                     * handleShare/sharing declared near the top of this component.
+                     */}
+                    <TouchableOpacity
+                        style={styles.altShareBtn}
+                        onPress={handleShare}
+                        disabled={sharing}
+                        accessibilityRole="button"
+                        accessibilityLabel="Share this photo card"
+                    >
+                        {sharing ? (
+                            <ActivityIndicator color="rgba(255,255,255,0.55)" size="small" />
+                        ) : (
+                            <Text style={styles.altShareBtnText}>SHARE PHOTO CARD</Text>
+                        )}
+                    </TouchableOpacity>
+
+                    {/*
+                     * Primary path: opens the themed composer (5 layouts,
+                     * pick-your-lifts) rather than capturing this screen directly.
                      */}
                     <TouchableOpacity style={styles.shareBtn} onPress={() => router.push('/member/share' as any)}>
                         <MaterialIcons name="share" size={20} color="#fff" />
@@ -411,6 +429,17 @@ const styles = StyleSheet.create({
     shareBtnText: {
         color: colors.primary,
         fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        letterSpacing: 1,
+    },
+    altShareBtn: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+    },
+    altShareBtnText: {
+        color: 'rgba(255,255,255,0.55)',
+        fontSize: 12,
         fontFamily: typography.fontFamily.bold,
         letterSpacing: 1,
     },

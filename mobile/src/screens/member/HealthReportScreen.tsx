@@ -201,8 +201,15 @@ export default function HealthReportScreen() {
 
     // viewShotRef is a ViewShot component ref (not a plain View ref) — captureRef
     // (used inside useShareCapture) accepts that too, so no ref change is needed.
+    // Ruling R25: fallbackMessage is required, not optional decoration -- with
+    // none, useShareCapture.ts's catch branch only logs via logger.error and
+    // returns, so a capture/share failure would stop the button's spinner with
+    // zero feedback to the user. Tone matches StatsScreen's fallback string.
     const handleShare = () => {
-        captureAndShare(viewShotRef, { dialogTitle: 'Share Health Report' });
+        captureAndShare(viewShotRef, {
+            dialogTitle: 'Share Health Report',
+            fallbackMessage: `My Fitzo Health Report — ${reportDate}`,
+        });
     };
 
     const gradeData = healthToday
