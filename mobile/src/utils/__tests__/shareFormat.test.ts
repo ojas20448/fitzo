@@ -1,4 +1,17 @@
-import { CARD_LOCALE, formatVolumeKg, formatDate, formatTopSet } from '../../components/share/format';
+import { CARD_LOCALE, formatVolumeKg, formatDate, formatTopSet, hasMuscleVolume, pickSummaryRows } from '../../components/share/format';
+import type { SharePayload } from '../../components/share/SharePayload';
+
+/** Minimal valid SharePayload — every optional field starts absent/empty so each test only sets what it needs. */
+function basePayload(overrides: Partial<SharePayload> = {}): SharePayload {
+    return {
+        headline: '1,240 KG',
+        rows: [],
+        prs: [],
+        exercises: [],
+        date: new Date(2026, 7, 31),
+        ...overrides,
+    };
+}
 
 describe('CARD_LOCALE', () => {
     it('is pinned to en-IN — the product already speaks in Indian units (auto-rickshaws, Royal Enfields)', () => {
@@ -72,5 +85,105 @@ describe('formatTopSet', () => {
 
     it('returns null when neither field is present', () => {
         expect(formatTopSet({})).toBeNull();
+    });
+});
+
+describe('hasMuscleVolume', () => {
+    // ANATOMY's degrade-gracefully rule: an all-untrained figure must never
+    // render, because it looks like a bug rather than a design choice. This
+    // predicate is the gate that decides that — see format.ts doc comment.
+    it('is false for an undefined volume record', () => {
+        expect(hasMuscleVolume(undefined)).toBe(false);
+    });
+
+    it('is false for an empty volume record', () => {
+        expect(hasMuscleVolume({})).toBe(false);
+    });
+
+    it('is false when every entry is zero', () => {
+        expect(hasMuscleVolume({ chest: 0, back: 0, legs: 0 })).toBe(false);
+    });
+
+    it('is false when every entry is negative (defensive — sets are never negative in practice)', () => {
+        expect(hasMuscleVolume({ chest: -1 })).toBe(false);
+    });
+
+    it('is true when at least one entry is positive', () => {
+        expect(hasMuscleVolume({ chest: 0, back: 3 })).toBe(true);
+    });
+
+    it('is true for a single positive entry', () => {
+        expect(hasMuscleVolume({ legs: 6 })).toBe(true);
+    });
+
+    // Ruling R4 regression: AnatomyHeatmap's Vol type is Record<string,
+    // number>, so a key it doesn't recognize is not a type error — it is
+    // silently never read, and the figure renders all-untrained anyway. A
+    // volume record populated only with such a key must NOT be treated as
+    // "has data," or the degrade-gracefully guarantee is defeated.
+    it('is false when the only positive entry is under a key AnatomyHeatmap does not read', () => {
+        expect(hasMuscleVolume({ cardio: 5 })).toBe(false);
+    });
+
+    it('is true when a recognized key is positive alongside an unrecognized one', () => {
+        expect(hasMuscleVolume({ cardio: 5, chest: 2 })).toBe(true);
+    });
+
+    it('recognizes the multi-word "lower back" key', () => {
+        expect(hasMuscleVolume({ 'lower back': 1 })).toBe(true);
+    });
+});
+
+describe('pickSummaryRows', () => {
+    it('prefers PRs over everything else when present', () => {
+        const payload = basePayload({
+            prs: [{ exercise: 'Bench Press', current: '100 kg x 5', previous: '95 kg x 5' }],
+            exercises: [{ id: 'e1', name: 'Squat', volumeKg: 500, setCount: 4 }],
+            rows: [{ label: 'Sets', value: '12' }],
+        });
+        expect(pickSummaryRows(payload, 5)).toEqual([
+            { label: 'Bench Press', value: '100 kg x 5' },
+        ]);
+    });
+
+    it('falls back to exercises when there are no PRs, preferring topSet over volume', () => {
+        const payload = basePayload({
+            exercises: [
+                { id: 'e1', name: 'Squat', volumeKg: 500, setCount: 4, topSet: { weight_kg: 100, reps: 5 } },
+            ],
+        });
+        expect(pickSummaryRows(payload, 5)).toEqual([{ label: 'Squat', value: '100×5' }]);
+    });
+
+    it('falls back to formatted volume when an exercise has no topSet', () => {
+        const payload = basePayload({
+            exercises: [{ id: 'e1', name: 'Farmer Carry', volumeKg: 123456, setCount: 3 }],
+        });
+        expect(pickSummaryRows(payload, 5)).toEqual([{ label: 'Farmer Carry', value: '1,23,456 KG' }]);
+    });
+
+    it('falls back to rows when there are no PRs and no exercises', () => {
+        const payload = basePayload({ rows: [{ label: 'Duration', value: '42 min' }] });
+        expect(pickSummaryRows(payload, 5)).toEqual([{ label: 'Duration', value: '42 min' }]);
+    });
+
+    it('returns an empty array when prs, exercises, and rows are all empty — never throws, never fabricates a row', () => {
+        expect(pickSummaryRows(basePayload(), 5)).toEqual([]);
+    });
+
+    it('caps the result at max', () => {
+        const payload = basePayload({
+            prs: [
+                { exercise: 'A', current: '1' },
+                { exercise: 'B', current: '2' },
+                { exercise: 'C', current: '3' },
+            ],
+        });
+        expect(pickSummaryRows(payload, 2)).toHaveLength(2);
+    });
+
+    it('clamps a negative max to zero instead of slicing from the end (Array.slice(0, -1) would otherwise return all-but-the-last row)', () => {
+        const payload = basePayload({ prs: [{ exercise: 'A', current: '1' }] });
+        expect(pickSummaryRows(payload, -1)).toEqual([]);
     });
 });
