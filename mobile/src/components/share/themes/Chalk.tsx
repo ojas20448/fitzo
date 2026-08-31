@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CARD_W, CARD_H } from '../SharePayload';
 import type { SharePayload } from '../SharePayload';
-import { formatDate, pickSummaryRows } from '../format';
+import { formatDate, pickSummaryRows, fitFontSize, HERO_CHAR_WIDTH_RATIO } from '../format';
 import { InkCircle } from '../ink';
 
 /**
@@ -22,6 +22,20 @@ import { InkCircle } from '../ink';
  * Only one VT323 weight is registered app-wide (VT323_400Regular — see
  * app/_layout.tsx), so hierarchy here comes from size/opacity, never a bold
  * variant that doesn't exist.
+ *
+ * HORIZONTAL FIT (fix round 2): a sibling review finding measured
+ * Scoreboard's hero overflowing horizontally on react-native-web despite
+ * having `numberOfLines={1}` + `adjustsFontSizeToFit` — that RN prop's web
+ * support is weaker than native's. This file's hero was not itself
+ * measured overflowing, but the arithmetic here is worse than Scoreboard's
+ * ever was: at the literal HERO_SIZE=200 with HERO_CHAR_WIDTH_RATIO's
+ * calibration, an 11-character "1,23,456 KG"-style headline needs roughly
+ * 1360px of width against this box's ~820px — VT323 is a different,
+ * monospace font with NO real measured data point (unlike Scoreboard's
+ * Lexend, which has one — see format.ts), so this is a padded estimate,
+ * not a verified one, but the shortfall is large enough (~40%) that
+ * treating it as "probably fine because it wasn't caught" would be the
+ * wrong call. `heroFontSize` is computed the same way as Scoreboard's.
  */
 
 const MONO = 'VT323_400Regular';
@@ -33,19 +47,28 @@ const SLATE = '#1B2A22';
 const MAX_CHALK_ROWS = 6;
 
 // Hero circle sized comfortably larger than the hero TEXT's own capped
-// width/height (760x~210 at most) so the hand-drawn ellipse always encloses
-// the number with margin, regardless of headline length — adjustsFontSizeToFit
-// only ever shrinks the text to fit inside 760, never grows past it, so the
-// circle can never end up smaller than the text it is meant to frame.
-const HERO_TEXT_W = 760;
+// width/height (820x~230 at most) so the hand-drawn ellipse always encloses
+// the number with margin, regardless of headline length — the text's width
+// is capped at HERO_TEXT_W by construction (both the fitFontSize call below
+// AND the Text's own `width` style), never exceeds it, so the circle can
+// never end up smaller than the text it is meant to frame.
+const HERO_TEXT_W = 820; // widened from 760 (fix round 2) — still a clear 40px margin inside HERO_CIRCLE_W.
 const HERO_SIZE = 200;
-const HERO_LH = 210;
+const HERO_LH_RATIO = 1.05;
+const HERO_LH = 210; // round(HERO_SIZE * HERO_LH_RATIO) — fixed outer heroBox height, unaffected by dynamic shrinking below.
 const HERO_CIRCLE_W = 860;
 const HERO_CIRCLE_H = 230;
+// Floor comfortably below the ~120px fitFontSize computes for "1,23,456 KG"
+// at this box width (see the file doc comment's arithmetic).
+const HERO_MIN_SIZE = 90;
 
 export default function Chalk({ payload }: { payload: SharePayload }) {
     const eyebrowText = (payload.subtitle || formatDate(payload.date)).toUpperCase();
     const rows = pickSummaryRows(payload, MAX_CHALK_ROWS);
+
+    // See "HORIZONTAL FIT" in the file doc comment above.
+    const heroFontSize = fitFontSize(payload.headline, HERO_TEXT_W, HERO_SIZE, HERO_MIN_SIZE, HERO_CHAR_WIDTH_RATIO);
+    const heroLineHeight = Math.round(heroFontSize * HERO_LH_RATIO);
 
     return (
         <View style={styles.frame}>
@@ -53,7 +76,12 @@ export default function Chalk({ payload }: { payload: SharePayload }) {
 
             <View style={styles.heroBox}>
                 <InkCircle width={HERO_CIRCLE_W} height={HERO_CIRCLE_H} color={CHALK} />
-                <Text style={styles.hero} numberOfLines={1} adjustsFontSizeToFit>
+                <Text
+                    style={[styles.hero, { fontSize: heroFontSize, lineHeight: heroLineHeight }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.4}
+                >
                     {payload.headline}
                 </Text>
             </View>
@@ -92,6 +120,13 @@ export default function Chalk({ payload }: { payload: SharePayload }) {
  * of sitting directly under a 6-row list. Fewer rows (or none — the
  * checklist block is omitted entirely when pickSummaryRows returns empty)
  * only shrinks the fixed total further.
+ *
+ * Fix round 2 widened HERO_TEXT_W (760->820, a WIDTH) and made
+ * heroFontSize/heroLineHeight dynamic, but heroBox's own `height:
+ * HERO_CIRCLE_H` (230, unchanged) still bounds the vertical budget —
+ * heroFontSize can only ever be <= HERO_SIZE by construction, so
+ * heroLineHeight can only ever be <= HERO_LH (210) too. The 990 total
+ * above remains a valid exact worst case.
  */
 const styles = StyleSheet.create({
     frame: {

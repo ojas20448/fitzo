@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CARD_W, CARD_H } from '../SharePayload';
 import type { SharePayload } from '../SharePayload';
-import { formatDate } from '../format';
+import { formatDate, fitFontSize, HERO_CHAR_WIDTH_RATIO } from '../format';
 import { colors, typography } from '../../../styles/theme';
 
 /**
@@ -26,6 +26,19 @@ import { colors, typography } from '../../../styles/theme';
  * plain date/subtitle eyebrow and an optional caption line when
  * `payload.prs` is empty, so it stays correct if a future composer selection
  * (e.g. "total") is ever pointed at this theme.
+ *
+ * HORIZONTAL FIT (fix round 2): the hero already had `numberOfLines={1}` +
+ * `adjustsFontSizeToFit`, but a real react-native-web render measurement
+ * showed the literal `fontSize: 320` being used un-shrunk regardless —
+ * "12,480 KG" measured `scrollWidth: 1654` against the box's (then) 800px
+ * `clientWidth`, clipped to "12,...". `adjustsFontSizeToFit`'s support in
+ * react-native-web is weaker than native's, so the fix does not rely on it
+ * alone: `heroFontSize` below is computed by `fitFontSize` (`../format`),
+ * a pure width/length calculation that guarantees the LITERAL starting
+ * fontSize already fits `HERO_BOX_W`, before either RN prop ever runs.
+ * `numberOfLines={1}` + `adjustsFontSizeToFit` + `minimumFontScale` stay on
+ * the Text as a secondary, native-only refinement layer, not the primary
+ * guarantee.
  */
 
 const MICRO = 11;
@@ -35,8 +48,19 @@ const MICRO = 11;
 const MICRO_LH = 16;
 
 const HERO_SIZE = 320;
-const HERO_LH = 336; // round(320 * 1.05) — headroom so the glyph's ascent/descent never clips the fixed box.
-const HERO_BOX_W = 800;
+const HERO_LH_RATIO = 1.05; // headroom so the glyph's ascent/descent never clips the fixed box.
+const HERO_LH = 336; // round(HERO_SIZE * HERO_LH_RATIO) — the FIXED outer box height (heroBox), unaffected by dynamic shrinking below.
+// Widened from 800 (fix round 2) — see "HORIZONTAL FIT" above. Still well
+// inside the panel: panel width = HERO_BOX_W + PANEL_PADDING*2 = 916,
+// against a 936px frame content width (CARD_W - paddingHorizontal*2), a
+// 20px margin that keeps the panel off the frame's own padding edge.
+const HERO_BOX_W = 860;
+// Fit parameters for `fitFontSize` — see its doc comment in format.ts for
+// what HERO_CHAR_WIDTH_RATIO is calibrated from. 100 is a floor comfortably
+// below the ~126px `fitFontSize` computes for "1,23,456 KG" (11 chars,
+// the longest realistic en-IN-grouped headline) at this box width, so
+// there is real headroom for something even longer before the floor bites.
+const HERO_MIN_SIZE = 100;
 
 const PANEL_PADDING = 28;
 const BRACKET = 28;
@@ -55,6 +79,10 @@ export default function Scoreboard({ payload }: { payload: SharePayload }) {
     const eyebrowText = (hasPr && pr ? pr.exercise : payload.subtitle || formatDate(payload.date)).toUpperCase();
     const belowText = hasPr && pr ? (pr.previous ? `PREV ${pr.previous}` : null) : payload.caption || null;
 
+    // See "HORIZONTAL FIT" in the file doc comment above.
+    const heroFontSize = fitFontSize(payload.headline, HERO_BOX_W, HERO_SIZE, HERO_MIN_SIZE, HERO_CHAR_WIDTH_RATIO);
+    const heroLineHeight = Math.round(heroFontSize * HERO_LH_RATIO);
+
     return (
         <View style={styles.frame}>
             <Text style={styles.eyebrow} numberOfLines={1}>{eyebrowText}</Text>
@@ -72,7 +100,12 @@ export default function Scoreboard({ payload }: { payload: SharePayload }) {
                     <View style={[styles.corner, styles.cornerBL]} />
                     <View style={[styles.corner, styles.cornerBR]} />
                     <View style={styles.heroBox}>
-                        <Text style={styles.hero} numberOfLines={1} adjustsFontSizeToFit>
+                        <Text
+                            style={[styles.hero, { fontSize: heroFontSize, lineHeight: heroLineHeight }]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.4}
+                        >
                             {payload.headline}
                         </Text>
                     </View>
@@ -106,6 +139,16 @@ export default function Scoreboard({ payload }: { payload: SharePayload }) {
  * content never exceeds ~34% of the frame, the spacers can never be pushed
  * to zero and overflow is structurally impossible regardless of which
  * optional lines render.
+ *
+ * Fix round 2 (horizontal fit) changed HERO_BOX_W (800->860, a WIDTH) and
+ * made heroFontSize/heroLineHeight dynamic, but did not touch heroBox's
+ * own `height: HERO_LH` (still the fixed 336 constant) — heroFontSize can
+ * only ever be <= HERO_SIZE by construction (fitFontSize's own bound), so
+ * heroLineHeight can only ever be <= HERO_LH too. This budget's 392-height
+ * panel figure, and the 656 total, are therefore still valid as an exact
+ * WORST case (reached when the string is short enough to need no
+ * shrinking), not merely an estimate that fix round 2 could have
+ * invalidated.
  */
 const styles = StyleSheet.create({
     frame: {

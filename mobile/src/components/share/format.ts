@@ -155,3 +155,64 @@ export function pickSummaryRows(
     }
     return [];
 }
+
+/**
+ * Hand-calibrated average character-advance-width, as a fraction of
+ * fontSize, for a hero numeral in this card's fonts (Lexend ExtraBold/
+ * SemiBold, and VT323).
+ *
+ * Calibrated from one real react-native-web measurement: Scoreboard's hero
+ * ("12,480 KG", 9 characters) at a literal fontSize of 320 measured
+ * `scrollWidth: 1654` in a rendered DOM (Expo web harness) — a ratio of
+ * 1654 / 320 / 9 ≈ 0.574. Rounded up to 0.62 for safety margin, because a
+ * single string's measured ratio can't capture character-mix variance
+ * (digits vs letters vs punctuation all differ), and because VT323 (Chalk's
+ * font) has NO measured data point at all — it is a different, monospace
+ * font, so this ratio is reused there as a conservative estimate, not a
+ * verified one. Shared here so the same calibration doesn't drift into
+ * three slightly-different copies across Scoreboard/Anatomy/Chalk.
+ */
+export const HERO_CHAR_WIDTH_RATIO = 0.62;
+
+/**
+ * Deterministic, platform-independent fontSize for a single-line hero
+ * numeral to fit inside `maxWidth`.
+ *
+ * WHY THIS EXISTS instead of relying on `adjustsFontSizeToFit` alone:
+ * Scoreboard.tsx's hero already had `numberOfLines={1}` and
+ * `adjustsFontSizeToFit` before this function existed, but a rendered
+ * measurement (Expo web / react-native-web) showed the LITERAL fontSize
+ * being used unshrunk regardless — react-native-web's support for
+ * `adjustsFontSizeToFit`/`minimumFontScale` is known to be weaker than
+ * native's, so a fix that relies on that prop alone cannot be verified to
+ * hold on every platform from a web-only render. This function computes a
+ * fontSize that fits `maxWidth` by construction, BEFORE either RN prop
+ * ever runs, so the guarantee holds even on a platform where those props
+ * are a no-op. Callers should still keep `numberOfLines={1}` +
+ * `adjustsFontSizeToFit` + a `minimumFontScale` on the Text as a secondary,
+ * native-only refinement layer — not the primary safety mechanism.
+ *
+ * This does NOT measure real text — RN offers no synchronous text
+ * measurement in this environment without a native module, and none may be
+ * added (no new dependencies). `charWidthRatio` is a caller-supplied,
+ * hand-calibrated estimate (see HERO_CHAR_WIDTH_RATIO); this function is
+ * pure arithmetic over it, which is exactly what makes it unit-testable
+ * where the actual rendered text never can be in this repo.
+ *
+ * Monotonic and bounded by construction: never exceeds `maxFontSize`
+ * (a short string renders at full size, no shrink applied), never drops
+ * below `minFontSize` (a readable floor for pathological input —
+ * `numberOfLines={1}` still truncates gracefully beyond that rather than
+ * breaking layout), and scales inversely with `text.length` in between.
+ */
+export function fitFontSize(
+    text: string,
+    maxWidth: number,
+    maxFontSize: number,
+    minFontSize: number,
+    charWidthRatio: number
+): number {
+    const len = Math.max(1, text.length);
+    const rawFit = maxWidth / (len * charWidthRatio);
+    return Math.min(maxFontSize, Math.max(minFontSize, rawFit));
+}

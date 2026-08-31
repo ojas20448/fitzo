@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CARD_W, CARD_H } from '../SharePayload';
 import type { SharePayload } from '../SharePayload';
-import { formatDate, hasMuscleVolume, pickSummaryRows } from '../format';
+import { formatDate, hasMuscleVolume, pickSummaryRows, fitFontSize, HERO_CHAR_WIDTH_RATIO } from '../format';
 import { typography } from '../../../styles/theme';
 import AnatomyHeatmap, { MUSCLE_COLORS } from '../../AnatomyHeatmap';
 
@@ -52,6 +52,20 @@ import AnatomyHeatmap, { MUSCLE_COLORS } from '../../AnatomyHeatmap';
  * than that estimate and `overflow: 'hidden'`, so an estimate that runs a
  * little short clips a sliver of decorative margin rather than colliding
  * with the headline above or the legend below.
+ *
+ * HORIZONTAL FIT (fix round 2): a sibling review finding on Scoreboard.tsx
+ * showed `adjustsFontSizeToFit` failing to shrink a literal fontSize on
+ * react-native-web, overflowing its box. Both headlines here already fit a
+ * long "1,23,456 KG"-style string comfortably at their literal max sizes
+ * against this file's own frame width (108px headline: ~736px needed of
+ * 936px available; 140px fallbackHeadline: borderline, ~947px needed of
+ * 936px using a deliberately padded estimate, likely fits under the real
+ * character width but close enough to be worth not trusting) — see
+ * `fitFontSize`'s calibration comment in format.ts for where that estimate
+ * comes from. Both now go through `fitFontSize` anyway, for the same
+ * platform-independent guarantee Scoreboard needed and for consistency
+ * across every hero-scale headline in this feature, not because either was
+ * proven to overflow the way Scoreboard's did.
  */
 
 // AnatomyHeatmap's own default props (bodyWidth=130, bodyHeight=230) are
@@ -66,10 +80,24 @@ const MAX_FALLBACK_ROWS = 6;
 
 const MUTED = 'rgba(255,255,255,0.55)';
 
+// Named (not a literal 72 inline in styles.frame below) specifically so the
+// fitFontSize width calculation below can't silently drift from the frame's
+// actual padding.
+const H_PADDING = 72;
+const HEADLINE_BOX_W = CARD_W - H_PADDING * 2; // 936
+// One shared floor for both headlines (see "HORIZONTAL FIT" above) —
+// comfortably below either target (108, 140) while staying clearly the
+// most prominent text on the card whenever it has to shrink.
+const HEADLINE_MIN_SIZE = 72;
+
 export default function Anatomy({ payload }: { payload: SharePayload }) {
     const { muscleVolume } = payload;
     const hasVolume = hasMuscleVolume(muscleVolume);
     const eyebrowText = (payload.subtitle || formatDate(payload.date)).toUpperCase();
+
+    // See "HORIZONTAL FIT" in the file doc comment above.
+    const headlineFontSize = fitFontSize(payload.headline, HEADLINE_BOX_W, 108, HEADLINE_MIN_SIZE, HERO_CHAR_WIDTH_RATIO);
+    const headlineLineHeight = Math.round(headlineFontSize * (118 / 108));
 
     return (
         <View style={styles.frame}>
@@ -77,7 +105,12 @@ export default function Anatomy({ payload }: { payload: SharePayload }) {
 
             {hasVolume ? (
                 <>
-                    <Text style={styles.headline} numberOfLines={1} adjustsFontSizeToFit>
+                    <Text
+                        style={[styles.headline, { fontSize: headlineFontSize, lineHeight: headlineLineHeight }]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.4}
+                    >
                         {payload.headline}
                     </Text>
 
@@ -115,9 +148,17 @@ export default function Anatomy({ payload }: { payload: SharePayload }) {
  */
 function FallbackBody({ payload }: { payload: SharePayload }) {
     const rows = pickSummaryRows(payload, MAX_FALLBACK_ROWS);
+    // See "HORIZONTAL FIT" in the file doc comment above.
+    const fontSize = fitFontSize(payload.headline, HEADLINE_BOX_W, 140, HEADLINE_MIN_SIZE, HERO_CHAR_WIDTH_RATIO);
+    const lineHeight = Math.round(fontSize * (152 / 140));
     return (
         <>
-            <Text style={styles.fallbackHeadline} numberOfLines={1} adjustsFontSizeToFit>
+            <Text
+                style={[styles.fallbackHeadline, { fontSize, lineHeight }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.4}
+            >
                 {payload.headline}
             </Text>
             {rows.length > 0 && (
@@ -171,6 +212,12 @@ const LegendItem: React.FC<{ color: string; label: string }> = ({ color, label }
  *   the primary path, so if primary fits (it does, by 636px), every
  *   sparser combination inside the fallback (fewer than 6 rows, or zero)
  *   fits by an even larger margin.
+ *
+ * Fix round 2 made both headlines' fontSize/lineHeight dynamic (see
+ * "HORIZONTAL FIT" above), but `fitFontSize` never exceeds the maxFontSize
+ * it's called with (108 / 140 respectively), so headlineLineHeight and
+ * fallbackHeadline's lineHeight can only ever be <= the 118 / 152 this
+ * budget already used. Both totals above remain valid exact worst cases.
  */
 const styles = StyleSheet.create({
     frame: {
@@ -179,7 +226,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#000000',
         paddingTop: 84,
         paddingBottom: 56,
-        paddingHorizontal: 72,
+        paddingHorizontal: H_PADDING,
         overflow: 'hidden',
     },
     spacer: { flex: 1 },

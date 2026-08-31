@@ -1,4 +1,4 @@
-import { CARD_LOCALE, formatVolumeKg, formatDate, formatTopSet, hasMuscleVolume, pickSummaryRows } from '../../components/share/format';
+import { CARD_LOCALE, formatVolumeKg, formatDate, formatTopSet, hasMuscleVolume, pickSummaryRows, fitFontSize, HERO_CHAR_WIDTH_RATIO } from '../../components/share/format';
 import type { SharePayload } from '../../components/share/SharePayload';
 
 /** Minimal valid SharePayload — every optional field starts absent/empty so each test only sets what it needs. */
@@ -196,5 +196,56 @@ describe('pickSummaryRows', () => {
             ],
         });
         expect(pickSummaryRows(payload, -1)).toEqual([]);
+    });
+});
+
+describe('fitFontSize', () => {
+    // Regression coverage for the review finding: Scoreboard's hero had
+    // numberOfLines={1} + adjustsFontSizeToFit already, but a rendered
+    // react-native-web measurement showed the LITERAL fontSize (320) being
+    // used unshrunk — "12,480 KG" measured scrollWidth 1654 against an
+    // 800px box, clipped to "12,...". fitFontSize exists to guarantee a
+    // fit by arithmetic, independent of whether that RN prop does anything
+    // on a given platform — these tests are the only real coverage this
+    // repo can provide for the fix, since the component tree itself still
+    // cannot be rendered here.
+
+    it('returns maxFontSize when the string already fits at full size', () => {
+        // 1 char at ratio 0.5 needs width 0.5*fontSize; way under maxWidth 200 even at fontSize 100.
+        expect(fitFontSize('A', 200, 100, 20, 0.5)).toBe(100);
+    });
+
+    it('shrinks proportionally when the literal size would overflow maxWidth', () => {
+        // 10 chars at ratio 0.5 need width 5*fontSize; solving 5*fontSize = 300 -> fontSize = 60 exactly.
+        expect(fitFontSize('AAAAAAAAAA', 300, 200, 20, 0.5)).toBe(60);
+    });
+
+    it('clamps to minFontSize for a pathologically long string rather than continuing to shrink', () => {
+        const longText = 'A'.repeat(200);
+        expect(fitFontSize(longText, 300, 200, 40, 0.5)).toBe(40);
+    });
+
+    it('is monotonically non-increasing as the string gets longer, all else equal', () => {
+        const shortFit = fitFontSize('AB', 400, 200, 20, 0.5);
+        const longFit = fitFontSize('ABCDEFGH', 400, 200, 20, 0.5);
+        expect(longFit).toBeLessThanOrEqual(shortFit);
+    });
+
+    it('never returns less than minFontSize even for an empty string', () => {
+        expect(fitFontSize('', 300, 200, 40, 0.5)).toBeGreaterThanOrEqual(40);
+    });
+
+    it('closes the loop on the real review measurement: the fitted size fits maxWidth even judged by the ACTUAL measured ratio, not the padded one', () => {
+        const text = '12,480 KG';
+        // The real ratio the review harness's measurement implies, independent of HERO_CHAR_WIDTH_RATIO's padding.
+        const measuredRatio = 1654 / 320 / text.length;
+        const fitted = fitFontSize(text, 860, 320, 100, HERO_CHAR_WIDTH_RATIO);
+        expect(fitted).toBeLessThan(320); // must actually shrink from the literal size that measured as overflowing
+        expect(fitted * measuredRatio * text.length).toBeLessThanOrEqual(860);
+    });
+
+    it('HERO_CHAR_WIDTH_RATIO is padded above the real measured ratio (~0.574), not equal to or below it', () => {
+        const measuredRatio = 1654 / 320 / '12,480 KG'.length;
+        expect(HERO_CHAR_WIDTH_RATIO).toBeGreaterThan(measuredRatio);
     });
 });
