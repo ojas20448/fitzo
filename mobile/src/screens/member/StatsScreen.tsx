@@ -2,17 +2,16 @@ import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, ActivityIndicator, TouchableOpacity } from 'react-native';
 import * as Haptics from '../../utils/haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Svg, Rect, G, Text as SvgText } from 'react-native-svg';
-import ViewShot from 'react-native-view-shot';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import api, { aiAPI } from '../../services/api';
 import { useToast } from '../../components/Toast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNutrition } from '../../context/NutritionContext';
 import AnatomyHeatmap, { getMuscleColors } from '../../components/AnatomyHeatmap';
-import ReceiptShareCard from '../../components/ReceiptShareCard';
-import { useShareCapture } from '../../hooks/useShareCapture';
+import { useShareComposerStore } from '../../stores/shareComposerStore';
+import type { SharePayload } from '../../components/share/SharePayload';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -149,22 +148,54 @@ const StatsScreen = () => {
         }
     };
 
-    const recapShotRef = useRef<View>(null);
-    const { captureAndShare, isSharing } = useShareCapture();
+    // Task 9: Stats no longer captures its own off-screen ReceiptShareCard —
+    // it builds a static SharePayload and routes through the same themed
+    // composer WorkoutRecapScreen uses (ShareComposerScreen, 5 themes,
+    // theme picker). buildWeeklyRecapPayload maps the fields the old
+    // ReceiptShareCard rendered (title/headlineValue/headlineCaption/rows/
+    // total) onto SharePayload's shape — see that function's own comment for
+    // the field-by-field mapping and why `total` (Streak) becomes a `rows`
+    // entry instead of staying separate.
+    const buildWeeklyRecapPayload = (recap: any): SharePayload => ({
+        headline: `${recap.recap_data.workouts_count} WORKOUTS`,
+        caption: `${recap.recap_data.checkin_count} gym check-ins this week`,
+        subtitle: 'WEEKLY RECAP',
+        // Receipt's BREAKDOWN section renders a visibly blank block on an
+        // empty rows array — this literal, fixed-length list can never be
+        // empty regardless of what the API returns. `|| 0` / `|| 'stable'`
+        // preserved exactly as the old ReceiptShareCard props had them
+        // (recap_data fields can be missing); workouts_count, checkin_count
+        // and streak_days had no such fallback before and get none here.
+        rows: [
+            { label: 'Streak', value: `${recap.recap_data.streak_days} days` },
+            { label: 'Avg calories', value: `${recap.recap_data.avg_calories || 0} kcal` },
+            { label: 'Avg protein', value: `${recap.recap_data.avg_protein || 0} g` },
+            { label: 'Weight trend', value: `${recap.recap_data.weight_trend || 'stable'}` },
+        ],
+        // A weekly aggregate has no selectable lifts or PRs of its own —
+        // every theme already renders these as empty (task-9 brief).
+        prs: [],
+        exercises: [],
+        date: new Date(),
+    });
 
     const handleShareRecap = () => {
         if (!weeklyRecap) return;
-        // Capture the receipt-style card as an image (matches workout recap
-        // sharing). On failure (e.g. sharing unavailable on this device/web),
-        // useShareCapture falls back to this exact text message — same content
-        // as before the swap, just routed through the shared hook. Note:
-        // useShareCapture's fallback only accepts a message, not a title, so
-        // the old Share.share(...) call's `title: 'My Fitzo Weekly AI Recap'`
-        // field has no equivalent here and is dropped.
-        captureAndShare(recapShotRef, {
-            dialogTitle: 'Share your week',
+        useShareComposerStore.getState().setSource({
+            kind: 'static',
+            payload: buildWeeklyRecapPayload(weeklyRecap),
+            // Preserves the exact user-facing failure message that used to
+            // fire when useShareCapture's own fallback kicked in (sharing
+            // unavailable, or the capture threw) — see ShareComposerScreen's
+            // handleShare, which prefers this over its own generic fallback
+            // for a static source. Referencing summary_text/workouts_count/
+            // streak_days the way it always did; none of those are part of
+            // SharePayload, so without carrying the string itself here this
+            // message would simply stop existing once Stats stopped calling
+            // captureAndShare directly.
             fallbackMessage: `🔥 Fitzo Weekly AI Recap:\n\n"${weeklyRecap.summary_text}"\n\n💪 Workouts: ${weeklyRecap.recap_data.workouts_count} | 🎯 Streak: ${weeklyRecap.recap_data.streak_days} days!`,
         });
+        router.push('/member/share' as any);
     };
 
     const fillMissingDays = (data: any[]) => {
@@ -361,34 +392,6 @@ const StatsScreen = () => {
 
     return (
         <View style={styles.outer}>
-            {/*
-             * Off-screen receipt for weekly recap sharing (captured by ViewShot).
-             * Same captureHost technique as ShareComposerScreen: absolute +
-             * negative zIndex/elevation, sitting behind the opaque screenBody
-             * below. NOT opacity:0 (Android skips rendering it entirely and
-             * captureRef returns a blank image) and NOT display:'none' (the
-             * tree never lays out). This replaces a `left: -4000` off-screen
-             * render, which produces blank captures on Android for large trees.
-             */}
-            {weeklyRecap && (
-                <View style={styles.captureHost} pointerEvents="none">
-                    <ViewShot ref={recapShotRef} options={{ format: 'png', quality: 1 }}>
-                        <ReceiptShareCard
-                            title="Weekly Recap"
-                            headlineValue={`${weeklyRecap.recap_data.workouts_count} WORKOUTS`}
-                            headlineCaption={`${weeklyRecap.recap_data.checkin_count} gym check-ins this week`}
-                            rows={[
-                                { label: 'Avg calories', value: `${weeklyRecap.recap_data.avg_calories || 0} kcal` },
-                                { label: 'Avg protein', value: `${weeklyRecap.recap_data.avg_protein || 0} g` },
-                                { label: 'Weight trend', value: `${weeklyRecap.recap_data.weight_trend || 'stable'}` },
-                            ]}
-                            total={{ label: 'Streak', value: `${weeklyRecap.recap_data.streak_days} days` }}
-                            date={new Date()}
-                        />
-                    </ViewShot>
-                </View>
-            )}
-
             <SafeAreaView style={styles.screenBody} edges={['top']}>
                 {/* Header Tabs */}
                 <View style={styles.header}>
@@ -454,7 +457,7 @@ const StatsScreen = () => {
                                     <MaterialIcons name="auto-awesome" size={16} color={colors.primary} />
                                     <Text style={styles.recapTitle}>WEEKLY REPORT</Text>
                                 </View>
-                                <TouchableOpacity onPress={handleShareRecap} style={styles.shareBtn} disabled={isSharing} accessibilityLabel="Share recap">
+                                <TouchableOpacity onPress={handleShareRecap} style={styles.shareBtn} accessibilityLabel="Share recap">
                                     <MaterialIcons name="share" size={18} color={colors.text.muted} />
                                 </TouchableOpacity>
                             </View>
@@ -489,18 +492,9 @@ const styles = StyleSheet.create({
     outer: {
         flex: 1,
     },
-    // The fragile part — see the JSX comment above captureHost's usage for
-    // why these exact properties, not opacity/display.
-    captureHost: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        zIndex: -1,
-        elevation: -1, // Android draws by elevation, not zIndex
-    },
     screenBody: {
         flex: 1,
-        backgroundColor: colors.background, // opaque, covers the capture host
+        backgroundColor: colors.background,
         zIndex: 1,
         elevation: 1,
     },

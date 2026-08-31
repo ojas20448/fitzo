@@ -14,6 +14,8 @@ import { colors, typography, spacing, borderRadius, shadows } from '../../styles
 import ReceiptShareCard, { weightEquivalence } from '../../components/ReceiptShareCard';
 import { memberAPI, workoutsAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { useLastSessionStore } from '../../stores/lastSessionStore';
+import { useShareComposerStore } from '../../stores/shareComposerStore';
 
 const { width, height } = Dimensions.get('window');
 
@@ -165,6 +167,30 @@ export default function WorkoutRecapScreen() {
         } finally {
             setSharing(false);
         }
+    };
+
+    // Task 9: the composer no longer reaches into lastSessionStore itself —
+    // it reads only shareComposerStore now (see ShareComposerScreen.tsx and
+    // shareComposerStore.ts). This is the one place that bridges the two:
+    // lastSessionStore still gets its data from WorkoutLogScreen.handleFinish
+    // (unchanged), and this reads it once, right before navigating, and
+    // repackages it as a `{ kind: 'session' }` ComposerSource.
+    //
+    // The isStale() check reproduces exactly what ShareComposerScreen used
+    // to check at mount time — the composer opens synchronously after this,
+    // so "checked here" and "checked at the old mount site" are the same
+    // moment. A missing/stale session means don't overwrite whatever is
+    // already in shareComposerStore with bad data — clear it instead, so the
+    // composer's own isStale()/absence guard bounces back exactly as the
+    // old direct-lastSessionStore read did for the same case.
+    const handleShareToStory = () => {
+        const { session, isStale } = useLastSessionStore.getState();
+        if (session && !isStale()) {
+            useShareComposerStore.getState().setSource({ kind: 'session', session });
+        } else {
+            useShareComposerStore.getState().clearSource();
+        }
+        router.push('/member/share' as any);
     };
 
     const handleOpenCamera = async () => {
@@ -334,7 +360,7 @@ export default function WorkoutRecapScreen() {
                      * Primary path: opens the themed composer (5 layouts,
                      * pick-your-lifts) rather than capturing this screen directly.
                      */}
-                    <TouchableOpacity style={styles.shareBtn} onPress={() => router.push('/member/share' as any)}>
+                    <TouchableOpacity style={styles.shareBtn} onPress={handleShareToStory}>
                         <MaterialIcons name="share" size={20} color="#fff" />
                         <Text style={styles.shareBtnText}>SHARE TO STORY</Text>
                     </TouchableOpacity>

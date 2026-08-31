@@ -5,7 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import ViewShot from 'react-native-view-shot';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
-import { useLastSessionStore } from '../../stores/lastSessionStore';
+import { useShareComposerStore } from '../../stores/shareComposerStore';
 import { pickMoment } from '../../utils/shareMoment';
 import type { ThemeId } from '../../utils/shareMoment';
 import { THEMES, THEME_ORDER } from '../../components/share/themes';
@@ -31,8 +31,10 @@ interface Chip {
  * capture target are two SEPARATE renders of the active theme, not one.
  */
 export default function ShareComposerScreen() {
-    const session = useLastSessionStore((s) => s.session);
-    const isStale = useLastSessionStore((s) => s.isStale);
+    const source = useShareComposerStore((s) => s.source);
+    const isStale = useShareComposerStore((s) => s.isStale);
+    const isSession = source?.kind === 'session';
+    const session = source && source.kind === 'session' ? source.session : null;
 
     const [selection, setSelection] = useState<string[]>([]);
     const [theme, setTheme] = useState<ThemeId | null>(null);
@@ -41,17 +43,29 @@ export default function ShareComposerScreen() {
     const cardRef = useRef<View>(null);
     const { captureAndShare, isSharing } = useShareCapture();
 
-    // Open on the detected moment. No session, or one too old to trust (see
-    // STALE_AFTER_MS in lastSessionStore.ts), bounces back rather than
-    // showing a composer with nothing — or stale, wrong — content.
+    // Open on the detected moment for a session source; a static source has
+    // no "moment" to pick from a payload that already carries fixed content,
+    // so it opens straight onto RECEIPT — the same theme pickMoment itself
+    // falls back to when a session carries nothing chip-worthy either. No
+    // source, or one too old to trust (see STALE_AFTER_MS in
+    // shareComposerStore.ts), bounces back rather than showing a composer
+    // with nothing — or stale, wrong — content. That staleness check is the
+    // composer STORE's own clock (time since setSource), not the session's
+    // own completedAt — see shareComposerStore.ts's doc comment for why
+    // those are different checks, and WorkoutRecapScreen.tsx for where a
+    // session's own freshness is verified before it ever reaches this store.
     useEffect(() => {
-        if (!session || isStale()) {
+        if (!source || isStale()) {
             router.back();
             return;
         }
-        const m = pickMoment(session);
-        setSelection(m.selection);
-        setTheme(m.theme);
+        if (source.kind === 'session') {
+            const m = pickMoment(source.session);
+            setSelection(m.selection);
+            setTheme(m.theme);
+        } else {
+            setTheme('receipt');
+        }
     }, []);
 
     // R3/R4: derived locally from the WHOLE session, independent of which
@@ -59,12 +73,17 @@ export default function ShareComposerScreen() {
     // shrink because the card happens to feature one exercise. The actual
     // reduction (and its lowercase-key correctness) lives in
     // deriveMuscleVolume, which has test coverage this screen cannot.
+    // A static source has no session to derive from, so this is always {}
+    // for one — same as any workout with no muscle-tagged exercises.
     const muscleVolume = useMemo(
         () => deriveMuscleVolume(session?.exercises ?? []),
         [session],
     );
     const showMusclesChip = hasMuscleVolume(muscleVolume);
 
+    // Empty for a static source — and the chip row that maps this is hidden
+    // entirely below — there is nothing in a finished SharePayload to select
+    // between.
     const chips: Chip[] = useMemo(() => {
         if (!session) return [];
         const list: Chip[] = [{ id: 'total', label: 'Total', isPr: false }];
@@ -80,16 +99,22 @@ export default function ShareComposerScreen() {
         return list;
     }, [session, showMusclesChip]);
 
-    // The one place selection + session become what a theme renders.
+    // The one place selection + session become what a theme renders — for a
+    // session source. A static source has no selection to derive from: it
+    // renders source.payload exactly as handed to the composer (the chip
+    // row that would mutate selection is hidden for it below, so selection
+    // can never move out of the [] it starts at).
     // muscleVolume is spread on AFTER buildSharePayload, not passed into
     // it — see buildSharePayload.ts's own doc comment for why that field
     // stays outside its 2-argument (session, selection) contract.
     const payload: SharePayload | null = useMemo(() => {
-        if (!session || !theme || selection.length === 0) return null;
+        if (!source || !theme) return null;
+        if (source.kind === 'static') return source.payload;
+        if (!session || selection.length === 0) return null;
         return { ...buildSharePayload(session, selection), muscleVolume };
-    }, [session, theme, selection, muscleVolume]);
+    }, [source, session, theme, selection, muscleVolume]);
 
-    if (!session || !theme || !payload) {
+    if (!source || !theme || !payload) {
         // Either the effect above is about to call router.back(), or the
         // moment hasn't been seeded yet (a single tick after mount) — both
         // are momentary, so a bare background avoids flashing a zeroed-out
@@ -105,9 +130,14 @@ export default function ShareComposerScreen() {
     // with more than one chip selected collapses to the first; adding a
     // second chip while it's already active moves the theme to SPEC, the
     // layout built to handle a list, rather than silently dropping the chip.
+    // Gated on isSession: a static source's selection can never grow past
+    // the [] it starts at (its chip row is never rendered, so nothing can
+    // ever push into it), so this collapse is a no-op for it either way —
+    // the guard makes that explicit rather than relying on selection
+    // happening to stay empty.
     const onSelectTheme = (id: ThemeId) => {
         Haptics.selectionAsync();
-        if (THEMES[id].singleSelectOnly && selection.length > 1) {
+        if (isSession && THEMES[id].singleSelectOnly && selection.length > 1) {
             setSelection([selection[0]]);
         }
         setTheme(id);
@@ -122,9 +152,17 @@ export default function ShareComposerScreen() {
     };
 
     const handleShare = () => {
+        // A static source can hand the composer a purpose-built fallback
+        // (Stats' weekly-recap text references summary_text / streak_days —
+        // fields no SharePayload carries); the session path keeps the same
+        // generic message it has always used.
+        const fallbackMessage =
+            source.kind === 'static' && source.fallbackMessage
+                ? source.fallbackMessage
+                : `${payload.headline} — shared from Fitzo`;
         captureAndShare(cardRef, {
             dialogTitle: 'Share your workout',
-            fallbackMessage: `${payload.headline} — shared from Fitzo`,
+            fallbackMessage,
         });
     };
 
@@ -159,34 +197,43 @@ export default function ShareComposerScreen() {
                 </View>
 
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                    {/* Content chips */}
-                    <Text style={styles.sectionLabel}>WHAT TO FEATURE</Text>
-                    <View style={styles.chipRow}>
-                        {chips.map((chip) => {
-                            const active = selection.includes(chip.id);
-                            return (
-                                <TouchableOpacity
-                                    key={chip.id}
-                                    style={[styles.chip, active && styles.chipActive]}
-                                    onPress={() => onToggleChip(chip.id)}
-                                    accessibilityRole="button"
-                                    accessibilityState={{ selected: active }}
-                                >
-                                    {chip.isPr && (
-                                        <MaterialIcons
-                                            name="emoji-events"
-                                            size={14}
-                                            color={active ? colors.background : colors.accent.gold}
-                                            style={styles.chipIcon}
-                                        />
-                                    )}
-                                    <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
-                                        {chip.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
+                    {/*
+                     * Content chips — session source only. A static source
+                     * (e.g. Stats' weekly recap) has no selectable content to
+                     * chip between, so the whole section — label included —
+                     * is hidden rather than left showing an empty row.
+                     */}
+                    {isSession && (
+                        <>
+                            <Text style={styles.sectionLabel}>WHAT TO FEATURE</Text>
+                            <View style={styles.chipRow}>
+                                {chips.map((chip) => {
+                                    const active = selection.includes(chip.id);
+                                    return (
+                                        <TouchableOpacity
+                                            key={chip.id}
+                                            style={[styles.chip, active && styles.chipActive]}
+                                            onPress={() => onToggleChip(chip.id)}
+                                            accessibilityRole="button"
+                                            accessibilityState={{ selected: active }}
+                                        >
+                                            {chip.isPr && (
+                                                <MaterialIcons
+                                                    name="emoji-events"
+                                                    size={14}
+                                                    color={active ? colors.background : colors.accent.gold}
+                                                    style={styles.chipIcon}
+                                                />
+                                            )}
+                                            <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
+                                                {chip.label}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        </>
+                    )}
 
                     {/*
                      * Hero preview — the active theme rendered ONCE at
