@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Alert, Image } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,7 +11,6 @@ import * as Haptics from '../../utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
-import WorkoutShareCard from '../../components/WorkoutShareCard';
 import ReceiptShareCard, { weightEquivalence } from '../../components/ReceiptShareCard';
 import { memberAPI, workoutsAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -308,15 +307,18 @@ export default function WorkoutRecapScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity style={styles.shareBtn} onPress={handleShare} disabled={sharing}>
-                        {sharing ? (
-                            <ActivityIndicator color="#fff" size="small" />
-                        ) : (
-                            <>
-                                <MaterialIcons name="share" size={20} color="#fff" />
-                                <Text style={styles.shareBtnText}>SHARE TO STORY</Text>
-                            </>
-                        )}
+                    {/*
+                     * Opens the themed composer (5 layouts, pick-your-lifts) instead
+                     * of capturing this screen directly. handleShare/sharing (above,
+                     * near the top of this component) are intentionally left defined
+                     * but no longer wired to any control — the photo+receipt
+                     * compositing UI above (camera, drag/pinch/rotate, ReceiptShareCard)
+                     * is a separate, still-fully-working feature that this change does
+                     * not touch or remove; only this button's destination changes.
+                     */}
+                    <TouchableOpacity style={styles.shareBtn} onPress={() => router.push('/member/share' as any)}>
+                        <MaterialIcons name="share" size={20} color="#fff" />
+                        <Text style={styles.shareBtnText}>SHARE TO STORY</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity

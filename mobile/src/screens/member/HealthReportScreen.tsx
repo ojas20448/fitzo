@@ -13,12 +13,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import ViewShot from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
 import { healthAPI, progressAPI, nutritionAPI, measurementsAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { isHealthAvailable, getTodaysSummary } from '../../services/healthService';
+import { useShareCapture } from '../../hooks/useShareCapture';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_GAP = 10;
@@ -146,7 +146,7 @@ export default function HealthReportScreen() {
     const toast = useToast();
     const viewShotRef = useRef<ViewShot>(null);
     const [loading, setLoading] = useState(true);
-    const [sharing, setSharing] = useState(false);
+    const { captureAndShare, isSharing } = useShareCapture();
 
     const [healthToday, setHealthToday] = useState<HealthData | null>(null);
     const [healthHistory, setHealthHistory] = useState<HealthHistory | null>(null);
@@ -199,25 +199,10 @@ export default function HealthReportScreen() {
         loadData();
     }, [loadData]);
 
-    const handleShare = async () => {
-        if (!viewShotRef.current?.capture) return;
-        setSharing(true);
-        try {
-            const uri = await viewShotRef.current.capture();
-            const canShare = await Sharing.isAvailableAsync();
-            if (canShare) {
-                await Sharing.shareAsync(uri, {
-                    mimeType: 'image/png',
-                    dialogTitle: 'Share Health Report',
-                });
-            } else {
-                toast.error('Sharing not available', 'Sharing not available on this device');
-            }
-        } catch (e) {
-            toast.error('Share Failed', 'Failed to share report');
-        } finally {
-            setSharing(false);
-        }
+    // viewShotRef is a ViewShot component ref (not a plain View ref) — captureRef
+    // (used inside useShareCapture) accepts that too, so no ref change is needed.
+    const handleShare = () => {
+        captureAndShare(viewShotRef, { dialogTitle: 'Share Health Report' });
     };
 
     const gradeData = healthToday
@@ -257,8 +242,8 @@ export default function HealthReportScreen() {
                     <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Health Report</Text>
-                <TouchableOpacity onPress={handleShare} style={styles.shareBtn} disabled={sharing}>
-                    {sharing ? (
+                <TouchableOpacity onPress={handleShare} style={styles.shareBtn} disabled={isSharing}>
+                    {isSharing ? (
                         <ActivityIndicator size="small" color={colors.primary} />
                     ) : (
                         <MaterialIcons name="share" size={22} color={colors.text.primary} />

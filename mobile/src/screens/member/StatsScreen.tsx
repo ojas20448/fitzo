@@ -1,11 +1,10 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, Share, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, ActivityIndicator, TouchableOpacity } from 'react-native';
 import * as Haptics from '../../utils/haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { Svg, Rect, G, Text as SvgText } from 'react-native-svg';
-import ViewShot, { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
+import ViewShot from 'react-native-view-shot';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import api, { aiAPI } from '../../services/api';
 import { useToast } from '../../components/Toast';
@@ -13,6 +12,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useNutrition } from '../../context/NutritionContext';
 import AnatomyHeatmap, { getMuscleColors } from '../../components/AnatomyHeatmap';
 import ReceiptShareCard from '../../components/ReceiptShareCard';
+import { useShareCapture } from '../../hooks/useShareCapture';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -150,28 +150,21 @@ const StatsScreen = () => {
     };
 
     const recapShotRef = useRef<View>(null);
+    const { captureAndShare, isSharing } = useShareCapture();
 
-    const handleShareRecap = async () => {
+    const handleShareRecap = () => {
         if (!weeklyRecap) return;
-        try {
-            // Capture the receipt-style card as an image (matches workout recap sharing)
-            const uri = await captureRef(recapShotRef, { format: 'png', quality: 1, result: 'tmpfile' });
-            if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share your week' });
-                return;
-            }
-            throw new Error('sharing unavailable');
-        } catch {
-            // Fallback: plain text share
-            try {
-                await Share.share({
-                    title: 'My Fitzo Weekly AI Recap',
-                    message: `🔥 Fitzo Weekly AI Recap:\n\n"${weeklyRecap.summary_text}"\n\n💪 Workouts: ${weeklyRecap.recap_data.workouts_count} | 🎯 Streak: ${weeklyRecap.recap_data.streak_days} days!`,
-                });
-            } catch {
-                toast.error('Error', 'Could not share recap');
-            }
-        }
+        // Capture the receipt-style card as an image (matches workout recap
+        // sharing). On failure (e.g. sharing unavailable on this device/web),
+        // useShareCapture falls back to this exact text message — same content
+        // as before the swap, just routed through the shared hook. Note:
+        // useShareCapture's fallback only accepts a message, not a title, so
+        // the old Share.share(...) call's `title: 'My Fitzo Weekly AI Recap'`
+        // field has no equivalent here and is dropped.
+        captureAndShare(recapShotRef, {
+            dialogTitle: 'Share your week',
+            fallbackMessage: `🔥 Fitzo Weekly AI Recap:\n\n"${weeklyRecap.summary_text}"\n\n💪 Workouts: ${weeklyRecap.recap_data.workouts_count} | 🎯 Streak: ${weeklyRecap.recap_data.streak_days} days!`,
+        });
     };
 
     const fillMissingDays = (data: any[]) => {
@@ -367,101 +360,18 @@ const StatsScreen = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header Tabs */}
-            <View style={styles.header}>
-                <View style={styles.tabsWrapper}>
-                    <TouchableOpacity 
-                        style={[styles.tabButton, activeTab === 'training' && styles.tabActive]}
-                        onPress={() => setActiveTab('training')}
-                    >
-                        <Text style={[styles.tabText, activeTab === 'training' && styles.tabTextActive]}>Training</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                        style={[styles.tabButton, activeTab === 'nutrition' && styles.tabActive]}
-                        onPress={() => setActiveTab('nutrition')}
-                    >
-                        <Text style={[styles.tabText, activeTab === 'nutrition' && styles.tabTextActive]}>Nutrition</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            <ScrollView
-                ref={scrollRef}
-                contentContainerStyle={styles.content}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
-                }
-            >
-                {/* Score Card / Metric Top Banner */}
-                <View style={styles.scoreCard}>
-                    <View>
-                        <Text style={styles.scoreLabel}>{activeTab === 'training' ? 'Last 7 Days' : 'Daily Average'}</Text>
-                        <Text style={styles.scoreValue}>
-                            {activeTab === 'training'
-                                ? `${sessionsThisWeek} ${sessionsThisWeek === 1 ? 'session' : 'sessions'}`
-                                : `${weeklyRecap?.recap_data?.avg_calories || 0} kcal`
-                            }
-                        </Text>
-                    </View>
-                    <View style={styles.scoreIcon}>
-                        <MaterialIcons 
-                            // Not the dumbbell/cutlery pair: those are the app's
-                            // generic *category* glyphs (the dumbbell heads every
-                            // exercise row), so on a hero card they read as
-                            // decoration. Use the metric's own vocabulary — a bolt
-                            // for effort logged, and the flame this app already
-                            // uses for calories in Health Report and Calorie Log.
-                            name={activeTab === 'training' ? 'bolt' : 'local-fire-department'}
-                            size={28} 
-                            color={colors.primary} 
-                        />
-                    </View>
-                </View>
-
-                {/* Weekly AI Recap */}
-                {recapLoading ? (
-                    <View style={styles.section}>
-                        <ActivityIndicator size="small" color={colors.primary} />
-                        <Text style={[styles.recapMessage, { textAlign: 'center', marginTop: 8 }]}>Parsing progress history...</Text>
-                    </View>
-                ) : weeklyRecap ? (
-                    <View style={styles.section}>
-                        <View style={styles.recapHeader}>
-                            <View style={styles.recapHeaderLeft}>
-                                <MaterialIcons name="auto-awesome" size={16} color={colors.primary} />
-                                <Text style={styles.recapTitle}>WEEKLY REPORT</Text>
-                            </View>
-                            <TouchableOpacity onPress={handleShareRecap} style={styles.shareBtn} accessibilityLabel="Share recap">
-                                <MaterialIcons name="share" size={18} color={colors.text.muted} />
-                            </TouchableOpacity>
-                        </View>
-                        <Text style={styles.recapMessage}>{weeklyRecap.summary_text}</Text>
-                        <View style={styles.recapMetrics}>
-                            <View style={styles.metricItem}>
-                                <Text style={styles.metricLabel}>Workout Load</Text>
-                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.workouts_count} workouts</Text>
-                            </View>
-                            <View style={styles.metricItem}>
-                                <Text style={styles.metricLabel}>Gym Attendance</Text>
-                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.checkin_count} days</Text>
-                            </View>
-                            <View style={styles.metricItem}>
-                                <Text style={styles.metricLabel}>Streak Size</Text>
-                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.streak_days} days</Text>
-                            </View>
-                        </View>
-                    </View>
-                ) : null}
-
-                {/* Render Selected View */}
-                {activeTab === 'training' ? renderAnatomySection() : renderWeeklyChart()}
-
-            </ScrollView>
-
-            {/* Off-screen receipt for weekly recap sharing (captured by ViewShot) */}
+        <View style={styles.outer}>
+            {/*
+             * Off-screen receipt for weekly recap sharing (captured by ViewShot).
+             * Same captureHost technique as ShareComposerScreen: absolute +
+             * negative zIndex/elevation, sitting behind the opaque screenBody
+             * below. NOT opacity:0 (Android skips rendering it entirely and
+             * captureRef returns a blank image) and NOT display:'none' (the
+             * tree never lays out). This replaces a `left: -4000` off-screen
+             * render, which produces blank captures on Android for large trees.
+             */}
             {weeklyRecap && (
-                <View style={{ position: 'absolute', left: -4000, top: 0 }} pointerEvents="none">
+                <View style={styles.captureHost} pointerEvents="none">
                     <ViewShot ref={recapShotRef} options={{ format: 'png', quality: 1 }}>
                         <ReceiptShareCard
                             title="Weekly Recap"
@@ -478,14 +388,121 @@ const StatsScreen = () => {
                     </ViewShot>
                 </View>
             )}
-        </SafeAreaView>
+
+            <SafeAreaView style={styles.screenBody} edges={['top']}>
+                {/* Header Tabs */}
+                <View style={styles.header}>
+                    <View style={styles.tabsWrapper}>
+                        <TouchableOpacity
+                            style={[styles.tabButton, activeTab === 'training' && styles.tabActive]}
+                            onPress={() => setActiveTab('training')}
+                        >
+                            <Text style={[styles.tabText, activeTab === 'training' && styles.tabTextActive]}>Training</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.tabButton, activeTab === 'nutrition' && styles.tabActive]}
+                            onPress={() => setActiveTab('nutrition')}
+                        >
+                            <Text style={[styles.tabText, activeTab === 'nutrition' && styles.tabTextActive]}>Nutrition</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                <ScrollView
+                    ref={scrollRef}
+                    contentContainerStyle={styles.content}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+                    }
+                >
+                    {/* Score Card / Metric Top Banner */}
+                    <View style={styles.scoreCard}>
+                        <View>
+                            <Text style={styles.scoreLabel}>{activeTab === 'training' ? 'Last 7 Days' : 'Daily Average'}</Text>
+                            <Text style={styles.scoreValue}>
+                                {activeTab === 'training'
+                                    ? `${sessionsThisWeek} ${sessionsThisWeek === 1 ? 'session' : 'sessions'}`
+                                    : `${weeklyRecap?.recap_data?.avg_calories || 0} kcal`
+                                }
+                            </Text>
+                        </View>
+                        <View style={styles.scoreIcon}>
+                            <MaterialIcons
+                                // Not the dumbbell/cutlery pair: those are the app's
+                                // generic *category* glyphs (the dumbbell heads every
+                                // exercise row), so on a hero card they read as
+                                // decoration. Use the metric's own vocabulary — a bolt
+                                // for effort logged, and the flame this app already
+                                // uses for calories in Health Report and Calorie Log.
+                                name={activeTab === 'training' ? 'bolt' : 'local-fire-department'}
+                                size={28}
+                                color={colors.primary}
+                            />
+                        </View>
+                    </View>
+
+                    {/* Weekly AI Recap */}
+                    {recapLoading ? (
+                        <View style={styles.section}>
+                            <ActivityIndicator size="small" color={colors.primary} />
+                            <Text style={[styles.recapMessage, { textAlign: 'center', marginTop: 8 }]}>Parsing progress history...</Text>
+                        </View>
+                    ) : weeklyRecap ? (
+                        <View style={styles.section}>
+                            <View style={styles.recapHeader}>
+                                <View style={styles.recapHeaderLeft}>
+                                    <MaterialIcons name="auto-awesome" size={16} color={colors.primary} />
+                                    <Text style={styles.recapTitle}>WEEKLY REPORT</Text>
+                                </View>
+                                <TouchableOpacity onPress={handleShareRecap} style={styles.shareBtn} disabled={isSharing} accessibilityLabel="Share recap">
+                                    <MaterialIcons name="share" size={18} color={colors.text.muted} />
+                                </TouchableOpacity>
+                            </View>
+                            <Text style={styles.recapMessage}>{weeklyRecap.summary_text}</Text>
+                            <View style={styles.recapMetrics}>
+                                <View style={styles.metricItem}>
+                                    <Text style={styles.metricLabel}>Workout Load</Text>
+                                    <Text style={styles.metricValue}>{weeklyRecap.recap_data.workouts_count} workouts</Text>
+                                </View>
+                                <View style={styles.metricItem}>
+                                    <Text style={styles.metricLabel}>Gym Attendance</Text>
+                                    <Text style={styles.metricValue}>{weeklyRecap.recap_data.checkin_count} days</Text>
+                                </View>
+                                <View style={styles.metricItem}>
+                                    <Text style={styles.metricLabel}>Streak Size</Text>
+                                    <Text style={styles.metricValue}>{weeklyRecap.recap_data.streak_days} days</Text>
+                                </View>
+                            </View>
+                        </View>
+                    ) : null}
+
+                    {/* Render Selected View */}
+                    {activeTab === 'training' ? renderAnatomySection() : renderWeeklyChart()}
+
+                </ScrollView>
+            </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    outer: {
         flex: 1,
-        backgroundColor: colors.background,
+    },
+    // The fragile part — see the JSX comment above captureHost's usage for
+    // why these exact properties, not opacity/display.
+    captureHost: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        zIndex: -1,
+        elevation: -1, // Android draws by elevation, not zIndex
+    },
+    screenBody: {
+        flex: 1,
+        backgroundColor: colors.background, // opaque, covers the capture host
+        zIndex: 1,
+        elevation: 1,
     },
     header: {
         paddingVertical: spacing.md,
