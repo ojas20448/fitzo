@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CARD_W, CARD_H } from '../SharePayload';
 import type { SharePayload } from '../SharePayload';
-import { formatDate, hasMuscleVolume, pickSummaryRows, fitFontSize, HERO_CHAR_WIDTH_RATIO } from '../format';
+import { formatDate, hasMuscleVolume, pickSummaryRows, fitFontSize } from '../format';
 import { typography } from '../../../styles/theme';
 import AnatomyHeatmap, { MUSCLE_COLORS } from '../../AnatomyHeatmap';
 import type { ShareThemeProps } from './index';
@@ -130,7 +130,7 @@ export default function Anatomy({ payload }: ShareThemeProps) {
     const eyebrowText = (payload.subtitle || formatDate(payload.date)).toUpperCase();
 
     // See "HORIZONTAL FIT" in the file doc comment above.
-    const headlineFontSize = fitFontSize(payload.headline, HEADLINE_BOX_W, 108, HEADLINE_MIN_SIZE, HERO_CHAR_WIDTH_RATIO);
+    const headlineFontSize = fitFontSize(payload.headline, HEADLINE_BOX_W, 108, HEADLINE_MIN_SIZE);
     const headlineLineHeight = Math.round(headlineFontSize * (118 / 108));
 
     return (
@@ -183,7 +183,7 @@ export default function Anatomy({ payload }: ShareThemeProps) {
 function FallbackBody({ payload }: { payload: SharePayload }) {
     const rows = pickSummaryRows(payload, MAX_FALLBACK_ROWS);
     // See "HORIZONTAL FIT" in the file doc comment above.
-    const fontSize = fitFontSize(payload.headline, HEADLINE_BOX_W, 140, HEADLINE_MIN_SIZE, HERO_CHAR_WIDTH_RATIO);
+    const fontSize = fitFontSize(payload.headline, HEADLINE_BOX_W, 140, HEADLINE_MIN_SIZE);
     const lineHeight = Math.round(fontSize * (152 / 140));
     return (
         <>

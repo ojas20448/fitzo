@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CARD_W, CARD_H } from '../SharePayload';
-import { formatDate, pickSummaryRows, fitFontSize, HERO_CHAR_WIDTH_RATIO } from '../format';
+import { formatDate, pickSummaryRows, fitFontSize } from '../format';
 import { InkCircle } from '../ink';
 import CardBackground from '../CardBackground';
 import type { ShareThemeProps } from './index';
@@ -29,8 +29,8 @@ import type { ShareThemeProps } from './index';
  * having `numberOfLines={1}` + `adjustsFontSizeToFit` — that RN prop's web
  * support is weaker than native's. This file's hero was not itself
  * measured overflowing, but the arithmetic here is worse than Scoreboard's
- * ever was: at the literal HERO_SIZE=200 with HERO_CHAR_WIDTH_RATIO's
- * calibration, an 11-character "1,23,456 KG"-style headline needs roughly
+ * ever was: at the literal HERO_SIZE=200, under the per-character width
+ * model (ruling R31), an 11-character "1,23,456 KG"-style headline needs roughly
  * 1360px of width against this box's ~820px — VT323 is a different,
  * monospace font with NO real measured data point (unlike Scoreboard's
  * Lexend, which has one — see format.ts), so this is a padded estimate,
@@ -68,7 +68,7 @@ export default function Chalk({ payload, onBackgroundLoad }: ShareThemeProps) {
     const rows = pickSummaryRows(payload, MAX_CHALK_ROWS);
 
     // See "HORIZONTAL FIT" in the file doc comment above.
-    const heroFontSize = fitFontSize(payload.headline, HERO_TEXT_W, HERO_SIZE, HERO_MIN_SIZE, HERO_CHAR_WIDTH_RATIO);
+    const heroFontSize = fitFontSize(payload.headline, HERO_TEXT_W, HERO_SIZE, HERO_MIN_SIZE);
     const heroLineHeight = Math.round(heroFontSize * HERO_LH_RATIO);
 
     return (

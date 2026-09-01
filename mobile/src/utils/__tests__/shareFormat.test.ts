@@ -1,4 +1,4 @@
-import { CARD_LOCALE, formatVolumeKg, formatDate, formatTopSet, hasMuscleVolume, pickSummaryRows, fitFontSize, HERO_CHAR_WIDTH_RATIO } from '../../components/share/format';
+import { CARD_LOCALE, formatVolumeKg, formatDate, formatTopSet, hasMuscleVolume, pickSummaryRows, fitFontSize, estimateTextWidthEm, HERO_CHAR_WIDTH_RATIO } from '../../components/share/format';
 import type { SharePayload } from '../../components/share/SharePayload';
 
 /** Minimal valid SharePayload — every optional field starts absent/empty so each test only sets what it needs. */
@@ -247,5 +247,95 @@ describe('fitFontSize', () => {
     it('HERO_CHAR_WIDTH_RATIO is padded above the real measured ratio (~0.574), not equal to or below it', () => {
         const measuredRatio = 1654 / 320 / '12,480 KG'.length;
         expect(HERO_CHAR_WIDTH_RATIO).toBeGreaterThan(measuredRatio);
+    });
+});
+
+/**
+ * RULING R31 regression suite.
+ *
+ * A single average character-width ratio (0.62) was calibrated on the
+ * DIGIT-heavy headline "12,480 KG" and under-estimated the LETTER-heavy Stats
+ * weekly headline "4 WORKOUTS", which truncated in three themes at once.
+ * Measured in a real react-native-web render:
+ *   Spec       156px    needed 1097px, box 936px
+ *   Scoreboard 138.71px needed  974px, box 860px
+ *   Anatomy    140px    needed  983px, box 936px
+ * Back-solving each gives ~0.702, against the 0.62 assumed.
+ */
+describe('estimateTextWidthEm — per-character width model (R31)', () => {
+    // The two strings with real measured widths, expressed in em.
+    // measuredEm = measuredPx / fontSizePx.
+    const MEASURED = [
+        { text: '12,480 KG', em: 1654 / 320 },   // 5.169
+        { text: '4 WORKOUTS', em: 974 / 138.71 }, // 7.022
+    ];
+
+    it.each(MEASURED)('never under-estimates the real measured width of "$text"', ({ text, em }) => {
+        // Erring HIGH is safe (slightly smaller font). Erring low is the bug.
+        expect(estimateTextWidthEm(text)).toBeGreaterThanOrEqual(em);
+    });
+
+    it('does not wildly over-estimate either — within 25% of measured', () => {
+        for (const { text, em } of MEASURED) {
+            expect(estimateTextWidthEm(text)).toBeLessThan(em * 1.25);
+        }
+    });
+
+    it('rates a letter-heavy string wider than a digit-heavy one of equal length', () => {
+        // This is the whole defect in one assertion: the old uniform ratio
+        // rated these two identically, because it only counted characters.
+        expect(estimateTextWidthEm('WORKOUTSXX')).toBeGreaterThan(estimateTextWidthEm('1234567890'));
+    });
+
+    it('rates an all-wide-caps worst case far above any uniform-ratio estimate', () => {
+        // A single ratio of even 0.72 would say 7.2em for this. It is not enough.
+        expect(estimateTextWidthEm('WWWWWWWWWW')).toBeGreaterThan(10 * 0.72);
+    });
+});
+
+describe('fitFontSize fits real theme headline boxes (R31)', () => {
+    // The actual box widths the themes pass, read from their source.
+    const BOXES = [
+        { theme: 'Spec', box: 936, max: 156, min: 80 },
+        { theme: 'Scoreboard', box: 860, max: 320, min: 100 },
+        { theme: 'Anatomy', box: 936, max: 140, min: 72 },
+    ];
+    // Every headline the app can actually produce today.
+    const HEADLINES = ['12,480 KG', '4 WORKOUTS', '1,23,456 KG', '8 WORKOUTS'];
+
+    it.each(BOXES)('$theme: every real headline fits its $box px box', ({ box, max, min }) => {
+        for (const text of HEADLINES) {
+            const size = fitFontSize(text, box, max, min);
+            const widthPx = estimateTextWidthEm(text) * size;
+            // Only the min-clamp may legitimately exceed the box; none of
+            // these headlines should be anywhere near that floor.
+            expect(size).toBeGreaterThan(min);
+            expect(widthPx).toBeLessThanOrEqual(box + 0.5);
+        }
+    });
+
+    it('does NOT needlessly shrink a digit headline versus the old uniform ratio', () => {
+        // Guards against over-correcting. "12,480 KG" already fit before R31,
+        // so the per-character model must not size it SMALLER than the old
+        // uniform 0.62 did. (320 here is the max, not the expected result —
+        // a 9-character headline never reaches it in an 860px box.)
+        const underOldRatio = fitFontSize('12,480 KG', 860, 320, 100, HERO_CHAR_WIDTH_RATIO);
+        const underNewModel = fitFontSize('12,480 KG', 860, 320, 100);
+        expect(underNewModel).toBeGreaterThanOrEqual(underOldRatio);
+    });
+
+    it('DOES shrink the letter-heavy headline that used to overflow', () => {
+        // The defect, inverted into an assertion: under the old ratio
+        // "4 WORKOUTS" was sized too large for Spec's 936px box and truncated.
+        const underOldRatio = fitFontSize('4 WORKOUTS', 936, 156, 80, HERO_CHAR_WIDTH_RATIO);
+        const underNewModel = fitFontSize('4 WORKOUTS', 936, 156, 80);
+        expect(underNewModel).toBeLessThan(underOldRatio);
+        expect(estimateTextWidthEm('4 WORKOUTS') * underNewModel).toBeLessThanOrEqual(936.5);
+    });
+
+    it('an explicit ratio still uses the old uniform arithmetic', () => {
+        // The escape hatch for a caller with a real measured ratio, and what
+        // the arithmetic-shape tests above rely on.
+        expect(fitFontSize('AAAAAAAAAA', 300, 200, 20, 0.5)).toBe(60);
     });
 });

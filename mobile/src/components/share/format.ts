@@ -175,6 +175,62 @@ export function pickSummaryRows(
 export const HERO_CHAR_WIDTH_RATIO = 0.62;
 
 /**
+ * RULING R31 — per-character width model, replacing the single ratio above.
+ *
+ * WHY the single ratio was not enough. HERO_CHAR_WIDTH_RATIO was calibrated
+ * from ONE measurement, of a DIGIT-heavy string ("12,480 KG"). Digits are
+ * narrow and usually tabular; `,` and space are narrower still. A rendered
+ * measurement of the Stats weekly headline "4 WORKOUTS" — which is dominated
+ * by wide capitals — back-solved to 0.702 across three independent themes
+ * (Spec 1097/936px, Scoreboard 974/860px, Anatomy 983/936px, all TRUNCATED).
+ * One number cannot describe both character mixes.
+ *
+ * Raising the constant to 0.72 would only re-calibrate to a different single
+ * string: it would shrink every digit headline needlessly AND still overflow
+ * on an all-caps worst case ("WWWWWWWWWW" needs ~10.3em, not 7.2em). Summing
+ * a per-character estimate removes the assumption instead of re-tuning it.
+ *
+ * Buckets are approximate advance widths for a geometric sans (Lexend), and
+ * are reused for VT323 as a conservative estimate. Validated against both
+ * real measurements with margin to spare:
+ *   "12,480 KG"  model 5.465em >= measured 5.166em  (+5.8%)
+ *   "4 WORKOUTS" model 7.549em >= measured 7.020em  (+7.5%)
+ * Erring HIGH is the safe direction — it yields a slightly smaller font.
+ * Erring low is the bug this replaces.
+ */
+const THIN_CHARS = " .,':;!|il";
+const WIDE_UPPER = 'WM';
+const ROUND_UPPER = 'OQGDC';
+const NARROW_UPPER = 'IJ';
+
+/** Safety margin over the raw bucket sum. See the calibration above. */
+const WIDTH_SAFETY = 1.08;
+
+function charWidthEm(ch: string): number {
+    if (THIN_CHARS.includes(ch)) return 0.28;
+    if (NARROW_UPPER.includes(ch)) return 0.32;
+    if (ch >= '0' && ch <= '9') return 0.60;
+    if (WIDE_UPPER.includes(ch)) return 0.95;
+    if (ROUND_UPPER.includes(ch)) return 0.78;
+    if (ch >= 'a' && ch <= 'z') return 0.55;
+    return 0.72;
+}
+
+/**
+ * Estimated rendered width of `text`, in multiples of fontSize (em).
+ *
+ * Pure and deterministic, which is the point: RN offers no synchronous text
+ * measurement here without a native module, and no new dependencies may be
+ * added — so this is the only layer of the sizing logic that CAN be tested in
+ * this repo, where the rendered text itself never can.
+ */
+export function estimateTextWidthEm(text: string): number {
+    let sum = 0;
+    for (const ch of text) sum += charWidthEm(ch);
+    return sum * WIDTH_SAFETY;
+}
+
+/**
  * Deterministic, platform-independent fontSize for a single-line hero
  * numeral to fit inside `maxWidth`.
  *
@@ -210,9 +266,17 @@ export function fitFontSize(
     maxWidth: number,
     maxFontSize: number,
     minFontSize: number,
-    charWidthRatio: number
+    charWidthRatio?: number
 ): number {
-    const len = Math.max(1, text.length);
-    const rawFit = maxWidth / (len * charWidthRatio);
+    // R31: with no explicit ratio, use the per-character model, which handles
+    // digit-heavy and letter-heavy headlines correctly. An explicit ratio
+    // remains supported as an escape hatch for a caller that has a real
+    // measured ratio for a specific font, and keeps the arithmetic-shape
+    // tests (monotonicity, clamping) able to use a synthetic value.
+    const widthEm =
+        charWidthRatio === undefined
+            ? Math.max(estimateTextWidthEm(text), charWidthEm('0'))
+            : Math.max(1, text.length) * charWidthRatio;
+    const rawFit = maxWidth / widthEm;
     return Math.min(maxFontSize, Math.max(minFontSize, rawFit));
 }

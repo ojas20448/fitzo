@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CARD_W, CARD_H } from '../SharePayload';
 import type { ShareExercise } from '../SharePayload';
-import { formatDate, formatTopSet, formatVolumeKg } from '../format';
+import { formatDate, formatTopSet, formatVolumeKg, fitFontSize } from '../format';
 import { typography } from '../../../styles/theme';
 import CardBackground from '../CardBackground';
 import type { ShareThemeProps } from './index';
@@ -30,6 +30,18 @@ const DIM = 'rgba(255,255,255,0.34)';
 
 const H_PADDING = 72;
 
+/**
+ * RULING R31. This theme was the one hero that never went through
+ * `fitFontSize` — it relied solely on `numberOfLines={1}` +
+ * `adjustsFontSizeToFit`, which react-native-web does not honour. A rendered
+ * measurement of the Stats weekly headline "4 WORKOUTS" showed it needing
+ * 1097px against this box's 936px and truncating. `fitFontSize` computes a
+ * size that fits by construction, before either RN prop runs.
+ */
+const HEADLINE_BOX_W = CARD_W - H_PADDING * 2; // 936
+const HEADLINE_MAX_SIZE = 156;
+const HEADLINE_MIN_SIZE = 80;
+
 // Nothing bounds payload.exercises.length, and this card renders at a fixed
 // 1920px-tall frame with no scroll. A full workout session comfortably fits
 // in 8 rows; beyond that, further rows collapse into a single "+N more" line
@@ -41,6 +53,13 @@ export default function Spec({ payload, onBackgroundLoad }: ShareThemeProps) {
     const exercises = payload.exercises.slice(0, MAX_EXERCISE_ROWS);
     const overflowCount = payload.exercises.length - exercises.length;
     const hasExercises = payload.exercises.length > 0;
+    // R31 — sized to fit by construction; see HEADLINE_BOX_W above.
+    const headlineFontSize = fitFontSize(
+        payload.headline,
+        HEADLINE_BOX_W,
+        HEADLINE_MAX_SIZE,
+        HEADLINE_MIN_SIZE
+    );
 
     return (
         <View style={styles.frame}>
@@ -55,7 +74,11 @@ export default function Spec({ payload, onBackgroundLoad }: ShareThemeProps) {
                 <Text style={styles.eyebrow} numberOfLines={1}>{eyebrow}</Text>
 
                 <View style={styles.hero}>
-                    <Text style={styles.headline} numberOfLines={1} adjustsFontSizeToFit>
+                    <Text
+                        style={[styles.headline, { fontSize: headlineFontSize }]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                    >
                         {payload.headline}
                     </Text>
                 </View>
@@ -119,7 +142,9 @@ const styles = StyleSheet.create({
     },
     headline: {
         fontFamily: typography.fontFamily.extraBold,
-        fontSize: 156,
+        // Always overridden inline by fitFontSize (R31); kept as the documented
+        // upper bound so the two cannot drift to different numbers.
+        fontSize: HEADLINE_MAX_SIZE,
         letterSpacing: -2,
         color: '#FFFFFF',
     },

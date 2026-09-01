@@ -31,6 +31,8 @@
 - **R13 — the session -> ShareExercise[] mapping is a pure exported helper, not inline in the screen.** `mobile/src/utils/buildShareExercises.ts`. This project's testing constraint is pure-logic-only (no component render tests are possible), so logic left inline inside `handleFinish` is permanently untestable — which is how the R12 rounding bug reached review. Extracting it also removes an eightfold repetition of `parseFloat(String(x || 0))`.
 - **R14 — `useShareCapture` guards re-entrancy with a ref, and logs the caught error.** The plan's original hook guarded on `isSharing` state read from a `useCallback` closure, which only updates after React commits the re-render — a second call arriving before that commit passes the guard, yielding two concurrent captures and two share sheets. It also used a bare `catch {}`, discarding the error. That is self-defeating: this hook's stated purpose is to make blank/half-painted captures tractable, and a swallowed error makes them untraceable while masking a real capture failure as a successful text share. Guard on `useRef`, keep `isSharing` state for UI only, and log via the repo's existing `src/utils/logger.ts`.
 - **R26 — the composer takes a `ComposerSource` discriminated union, not a bare `SharePayload`.** A finished payload leaves the content chips nothing to re-derive from, and a weekly aggregate has nothing meaningful to chip anyway. `{kind:'session'}` keeps chips and per-selection derivation; `{kind:'static'}` renders a payload as given with chips hidden. This is what unblocks any non-session producer (weekly recap, digests, milestones) from using the five themes.
+- **R29 — a background photo's transform is stored NORMALIZED (fractions of card size), never in pixels.** The composer renders the theme twice at different scales — a hero preview at `heroWidth / CARD_W` and a hidden 1:1 capture at 1080x1920. Pixel deltas captured from the preview are wrong in the export by `1/heroScale`, about 3x. Preview looks right, shared PNG is wrong.
+- **R30 — capture waits for the background image to DECODE, gated on `onLoad`, not on a timer.** `PAINT_SETTLE_MS` is 180ms, tuned for fonts and SVG. An image decode can exceed it, yielding a card with an empty background that reads as a scrim bug rather than a timing one.
 - **R6 — backend route paths are `backend/src/routes/`,** not `backend/routes/`.
 
 ## File Structure
@@ -914,6 +916,92 @@ what it is handed, with the theme picker still fully live.
   `captureHost` block if nothing else uses it.
 
 - [ ] **Step 5: gates.** `npx tsc --noEmit` clean; `npx jest` — 11 suites / 126 tests plus the new store suite.
+
+---
+
+### Task 10: Camera background photo, gesture-positioned, behind any theme
+
+Restores a capability the deleted `WorkoutShareCard.tsx` had (`backgroundImage` + an
+`rgba(0,0,0,0.55)` scrim, see commit 60eb49c) and extends it: the photo is positionable and
+resizable, and it works behind every theme rather than one card.
+
+This also answers a real design problem. Scoreboard fills only 656px of its 1920px canvas (34%)
+and Chalk 990px (52%). That dead space reads as unfinished. A gym photo is the content that
+fills it — a better answer than redesigning two themes.
+
+**Everything needed is already installed. No new dependencies.**
+`expo-camera ~17.0.10` (already used by `WorkoutRecapScreen`), `react-native-gesture-handler ~2.28.0`,
+`react-native-reanimated ~4.1.1`.
+
+**BINDING R29 — the transform is stored NORMALIZED, never in pixels.**
+The composer renders the active theme TWICE: a hero preview at
+`heroScale = heroWidth / CARD_W` (`ShareComposerScreen.tsx:133`, device-dependent, ~0.35 on a
+phone) and a separate hidden capture target at true `CARD_W x CARD_H`
+(`ShareComposerScreen.tsx:192`). A gesture that writes raw pixel deltas from the preview would be
+wrong in the export by a factor of `1/heroScale` — roughly 3x. The preview would look correct and
+the shared PNG would have the photo mispositioned and mis-scaled. Store offsets as fractions of
+card width/height and a unitless scale multiplier; resolve to pixels per render.
+
+**BINDING R30 — capture must wait for the image to DECODE, not just for a timer.**
+`useShareCapture` waits two frames plus `PAINT_SETTLE_MS` (180ms), tuned for font and SVG paint.
+An image decoded from a `uri` can easily exceed that. Capturing early yields a card with an empty
+background where the gym should be — which reads as a scrim bug, not a timing one. Gate on the
+image's `onLoad`, and do not enable sharing until it has fired.
+
+**Files:**
+- Modify: `mobile/src/components/share/SharePayload.ts` (add the background field)
+- Create: `mobile/src/utils/backgroundTransform.ts` + tests (the pure normalized<->pixel math)
+- Create: `mobile/src/components/share/CardBackground.tsx` (image + scrim, one implementation)
+- Modify: `mobile/src/screens/member/ShareComposerScreen.tsx` (camera entry, gesture layer, onLoad gate)
+- Modify: the five theme files (opt in, each with its own scrim strength)
+
+- [ ] **Step 1: the type.**
+
+```ts
+export interface ShareBackground {
+    uri: string;
+    /** Offset as a FRACTION of card width/height. 0 = centred. R29. */
+    offsetX: number;
+    offsetY: number;
+    /** Unitless multiplier over cover-fit. 1 = exactly covers. */
+    scale: number;
+    /** Radians. */
+    rotation: number;
+}
+```
+`SharePayload` gains `background?: ShareBackground | null`.
+
+- [ ] **Step 2: the pure math, TDD first.** `resolveBackgroundTransform(bg, cardW, cardH)` returns
+  the absolute pixel transform for a given render size. Tests must prove the SAME normalized
+  background resolves proportionally at preview scale and at 1080x1920 — i.e. that a photo
+  centred in the preview is centred in the export, and one scaled 1.5x is 1.5x in both. This is
+  the R29 regression test and it is the whole point of the task.
+
+- [ ] **Step 3: `CardBackground.tsx`.** One component: `<Image resizeMode="cover">` under a scrim
+  `View`, both `StyleSheet.absoluteFill`, transform from Step 2, `onLoad` forwarded. Scrim opacity
+  is a prop so each theme sets its own. Renders nothing when `background` is absent, so every
+  theme's existing look is untouched by default.
+
+- [ ] **Step 4: themes opt in.** Per-theme, because the right answer differs:
+  - **Scoreboard, Chalk, Spec** — full-bleed dark grounds; photo + scrim drops straight in. Start at
+    the proven `0.55` and adjust per theme for legibility.
+  - **Receipt** — it is *paper*. The photo goes BEHIND the slip (the frame ground), not through it.
+    The cream receipt floats over the gym; the paper itself stays opaque.
+  - **Anatomy** — the heatmap needs contrast to read. Use a heavier scrim, or omit the background
+    for this theme. Decide and say which in your report.
+
+- [ ] **Step 5: camera + gestures in the composer.** Reuse the `CameraView` / `useCameraPermissions`
+  pattern already in `WorkoutRecapScreen.tsx` (lines ~12, 32, 330). Add
+  `Gesture.Simultaneous(Pan, Pinch, Rotation)` over the hero preview, writing NORMALIZED values per
+  R29. Clamp scale as the recap already does (`MIN_SCALE`/`MAX_SCALE`) so the photo can never be
+  scaled to nothing. Note the recap's gestures move the CARD over a fixed photo; here the subject
+  inverts — the photo moves behind a fixed card.
+
+- [ ] **Step 6: the onLoad gate (R30).** Sharing stays disabled until the background image reports
+  loaded. No background = no gate.
+
+- [ ] **Step 7: gates.** `npx tsc --noEmit` clean; `npx jest` — 12 suites / 146 tests plus the new
+  transform suite.
 
 ## Verification
 

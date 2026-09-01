@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CARD_W, CARD_H } from '../SharePayload';
-import { formatDate, fitFontSize, HERO_CHAR_WIDTH_RATIO } from '../format';
+import { formatDate, fitFontSize } from '../format';
 import { colors, typography } from '../../../styles/theme';
 import CardBackground from '../CardBackground';
 import type { ShareThemeProps } from './index';
@@ -56,8 +56,9 @@ const HERO_LH = 336; // round(HERO_SIZE * HERO_LH_RATIO) — the FIXED outer box
 // against a 936px frame content width (CARD_W - paddingHorizontal*2), a
 // 20px margin that keeps the panel off the frame's own padding edge.
 const HERO_BOX_W = 860;
-// Fit parameters for `fitFontSize` — see its doc comment in format.ts for
-// what HERO_CHAR_WIDTH_RATIO is calibrated from. 100 is a floor comfortably
+// Fit parameters for `fitFontSize`, which now sums a PER-CHARACTER width
+// estimate (ruling R31) rather than applying one average ratio — see
+// estimateTextWidthEm in format.ts. 100 is a floor comfortably
 // below the ~126px `fitFontSize` computes for "1,23,456 KG" (11 chars,
 // the longest realistic en-IN-grouped headline) at this box width, so
 // there is real headroom for something even longer before the floor bites.
@@ -81,7 +82,7 @@ export default function Scoreboard({ payload, onBackgroundLoad }: ShareThemeProp
     const belowText = hasPr && pr ? (pr.previous ? `PREV ${pr.previous}` : null) : payload.caption || null;
 
     // See "HORIZONTAL FIT" in the file doc comment above.
-    const heroFontSize = fitFontSize(payload.headline, HERO_BOX_W, HERO_SIZE, HERO_MIN_SIZE, HERO_CHAR_WIDTH_RATIO);
+    const heroFontSize = fitFontSize(payload.headline, HERO_BOX_W, HERO_SIZE, HERO_MIN_SIZE);
     const heroLineHeight = Math.round(heroFontSize * HERO_LH_RATIO);
 
     return (
