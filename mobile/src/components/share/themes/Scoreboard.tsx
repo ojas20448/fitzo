@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CARD_W, CARD_H } from '../SharePayload';
-import type { SharePayload } from '../SharePayload';
 import { formatDate, fitFontSize, HERO_CHAR_WIDTH_RATIO } from '../format';
 import { colors, typography } from '../../../styles/theme';
+import CardBackground from '../CardBackground';
+import type { ShareThemeProps } from './index';
 
 /**
  * SCOREBOARD — the single-stat jumbotron theme.
@@ -69,7 +70,7 @@ const BRACKET_COLOR = colors.accent.gold; // "achievements" hue in the design sy
 
 const MUTED = 'rgba(255,255,255,0.55)';
 
-export default function Scoreboard({ payload }: { payload: SharePayload }) {
+export default function Scoreboard({ payload, onBackgroundLoad }: ShareThemeProps) {
     const hasPr = payload.prs.length > 0;
     const pr = hasPr ? payload.prs[0] : undefined;
 
@@ -85,6 +86,11 @@ export default function Scoreboard({ payload }: { payload: SharePayload }) {
 
     return (
         <View style={styles.frame}>
+            {/* Task 10: full-bleed dark ground, photo + scrim drops straight
+             * in — first child so the frame's own #000 background paints
+             * first and every other node below stacks on top of it. */}
+            <CardBackground background={payload.background} scrimOpacity={0.55} onLoad={onBackgroundLoad} />
+
             <Text style={styles.eyebrow} numberOfLines={1}>{eyebrowText}</Text>
 
             <View style={styles.spacer} />

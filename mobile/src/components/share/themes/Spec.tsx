@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CARD_W, CARD_H } from '../SharePayload';
-import type { SharePayload, ShareExercise } from '../SharePayload';
+import type { ShareExercise } from '../SharePayload';
 import { formatDate, formatTopSet, formatVolumeKg } from '../format';
 import { typography } from '../../../styles/theme';
+import CardBackground from '../CardBackground';
+import type { ShareThemeProps } from './index';
 
 /**
  * SPEC — the technical spec-sheet theme.
@@ -34,7 +36,7 @@ const H_PADDING = 72;
 // instead of growing past the bottom of the card.
 const MAX_EXERCISE_ROWS = 8;
 
-export default function Spec({ payload }: { payload: SharePayload }) {
+export default function Spec({ payload, onBackgroundLoad }: ShareThemeProps) {
     const eyebrow = (payload.subtitle || formatDate(payload.date)).toUpperCase();
     const exercises = payload.exercises.slice(0, MAX_EXERCISE_ROWS);
     const overflowCount = payload.exercises.length - exercises.length;
@@ -42,6 +44,13 @@ export default function Spec({ payload }: { payload: SharePayload }) {
 
     return (
         <View style={styles.frame}>
+            {/* Task 10: full-bleed black ground, photo + scrim drops
+             * straight in. Scrim is heavier than Scoreboard's 0.55 — the
+             * column headers (DIM, 34% white alpha) and hairline rules
+             * (12% alpha) are the lowest-contrast text/lines of any theme
+             * here and need the extra margin to stay legible over a photo. */}
+            <CardBackground background={payload.background} scrimOpacity={0.6} onLoad={onBackgroundLoad} />
+
             <View>
                 <Text style={styles.eyebrow} numberOfLines={1}>{eyebrow}</Text>
 

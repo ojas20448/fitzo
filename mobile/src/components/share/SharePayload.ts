@@ -19,6 +19,32 @@ export interface ShareExercise {
     topSet?: ShareSet;
 }
 
+/**
+ * A camera photo placed behind a card, positioned and sized by gesture in
+ * the composer — Task 10.
+ *
+ * RULING R29 — every field here is NORMALIZED, never a pixel value. The
+ * composer renders the active theme TWICE, at two different physical sizes:
+ * a hero preview scaled to `heroWidth` (device-dependent, ~0.35x on a phone)
+ * and a separate hidden capture target at the true CARD_W x CARD_H. A pixel
+ * offset that looks right at one size is wrong at the other by whatever
+ * ratio separates them. Normalized values sidestep that: the same fraction
+ * resolves correctly at ANY render size. See utils/backgroundTransform.ts
+ * for the pure math that resolves this to pixels, and its test suite for
+ * the proof that the same ShareBackground resolves proportionally at both
+ * sizes — that test is the actual R29 guarantee, not this comment.
+ */
+export interface ShareBackground {
+    uri: string;
+    /** Offset as a FRACTION of card width/height. 0 = centred. R29. */
+    offsetX: number;
+    offsetY: number;
+    /** Unitless multiplier over cover-fit. 1 = exactly covers. */
+    scale: number;
+    /** Radians. */
+    rotation: number;
+}
+
 /** Everything a theme may render. Themes read from this and nothing else. */
 export interface SharePayload {
     headline: string;           // "1,240 KG"
@@ -29,6 +55,8 @@ export interface SharePayload {
     exercises: ShareExercise[];
     /** Per-muscle set counts, for the ANATOMY theme. Lowercase keys only. */
     muscleVolume?: Record<string, number>;
+    /** Camera photo behind the card — Task 10. Absent/null renders nothing (CardBackground.tsx). */
+    background?: ShareBackground | null;
     date: Date;
 }
 

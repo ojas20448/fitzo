@@ -5,6 +5,7 @@ import type { SharePayload } from '../SharePayload';
 import { formatDate, hasMuscleVolume, pickSummaryRows, fitFontSize, HERO_CHAR_WIDTH_RATIO } from '../format';
 import { typography } from '../../../styles/theme';
 import AnatomyHeatmap, { MUSCLE_COLORS } from '../../AnatomyHeatmap';
+import type { ShareThemeProps } from './index';
 
 /**
  * ANATOMY — the body-heatmap theme.
@@ -90,7 +91,40 @@ const HEADLINE_BOX_W = CARD_W - H_PADDING * 2; // 936
 // most prominent text on the card whenever it has to shrink.
 const HEADLINE_MIN_SIZE = 72;
 
-export default function Anatomy({ payload }: { payload: SharePayload }) {
+/**
+ * TASK 10 DECISION: Anatomy does NOT opt into a camera background — the
+ * only one of the five themes that doesn't. `payload.background` is simply
+ * never read below.
+ *
+ * Verified directly against AnatomyHeatmap.tsx before making this call (the
+ * task brief's own standing accuracy warning): `MUSCLE_COLORS.untrained` is
+ * `{ fill: 'rgba(255,255,255,0.05)', stroke: 'rgba(255,255,255,0.14)' }`
+ * (AnatomyHeatmap.tsx:18), and the neutral head/neck/pelvis shapes use an
+ * even fainter `NEUTRAL = { fill: 'rgba(255,255,255,0.035)', stroke:
+ * 'rgba(255,255,255,0.10)' }` (AnatomyHeatmap.tsx:29). Both are calibrated
+ * to read as a faint silhouette against this theme's pure #000000 ground.
+ * A 5%-alpha fill and a 14%-alpha stroke do not survive being placed over
+ * photographic detail at any scrim short of one heavy enough to make the
+ * photo itself unrecognisable — at that point the photo is no longer
+ * serving the task's own motivating purpose (filling dead space with
+ * visible content), so a heavier scrim is not actually the safer option it
+ * looks like on paper. Every UNTRAINED muscle (routinely most of the
+ * figure, for any one session) would render as a gap in the silhouette
+ * rather than a deliberate "untrained" indication — reading as a broken
+ * image, not a design choice. THE OTHER four themes all reach at least 50%
+ * white/cream opacity on their most prominent text, which a scrim can
+ * protect; Anatomy's hero content cannot be protected the same way without
+ * defeating the photo entirely, so it is left out rather than shipped
+ * half-working.
+ *
+ * `onBackgroundLoad` is accepted (ShareThemeProps, for structural
+ * compatibility with the shared theme registry type) but never called —
+ * correct, not an oversight: ShareComposerScreen's R30 share-gate checks
+ * `THEMES[theme].supportsBackground` (themes/index.ts) before ever waiting
+ * on this callback, specifically so a background staying set while the
+ * user is on THIS theme can never disable sharing forever.
+ */
+export default function Anatomy({ payload }: ShareThemeProps) {
     const { muscleVolume } = payload;
     const hasVolume = hasMuscleVolume(muscleVolume);
     const eyebrowText = (payload.subtitle || formatDate(payload.date)).toUpperCase();

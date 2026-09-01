@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CARD_W, CARD_H } from '../SharePayload';
-import type { SharePayload } from '../SharePayload';
 import { formatDate, pickSummaryRows, fitFontSize, HERO_CHAR_WIDTH_RATIO } from '../format';
 import { InkCircle } from '../ink';
+import CardBackground from '../CardBackground';
+import type { ShareThemeProps } from './index';
 
 /**
  * CHALK — the hand-drawn slate theme.
@@ -62,7 +63,7 @@ const HERO_CIRCLE_H = 230;
 // at this box width (see the file doc comment's arithmetic).
 const HERO_MIN_SIZE = 90;
 
-export default function Chalk({ payload }: { payload: SharePayload }) {
+export default function Chalk({ payload, onBackgroundLoad }: ShareThemeProps) {
     const eyebrowText = (payload.subtitle || formatDate(payload.date)).toUpperCase();
     const rows = pickSummaryRows(payload, MAX_CHALK_ROWS);
 
@@ -72,6 +73,14 @@ export default function Chalk({ payload }: { payload: SharePayload }) {
 
     return (
         <View style={styles.frame}>
+            {/* Task 10: full-bleed slate ground, photo + scrim drops
+             * straight in. Scrim is heavier than Scoreboard's 0.55 —
+             * CHALK_DIM/CHALK_FAINT text here sits at 60%/40% alpha over a
+             * cream rgb(241,238,230), vs Scoreboard's 55%-alpha pure-white
+             * MUTED — so this theme has more low-contrast text at stake and
+             * needs the extra margin. */}
+            <CardBackground background={payload.background} scrimOpacity={0.62} onLoad={onBackgroundLoad} />
+
             <Text style={styles.header} numberOfLines={1}>{eyebrowText}</Text>
 
             <View style={styles.heroBox}>

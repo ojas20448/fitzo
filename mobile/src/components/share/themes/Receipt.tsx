@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { CARD_W, CARD_H } from '../SharePayload';
-import type { SharePayload } from '../SharePayload';
 import { DITHER_BY_MUSCLE, ditherForExercise } from '../../../utils/ditherForExercise';
 import { weightEquivalence } from '../../ReceiptShareCard';
 import { InkCircle, DashedLine } from '../ink';
 import { formatDate } from '../format';
 import { shadow } from '../../../styles/theme';
+import CardBackground from '../CardBackground';
+import type { ShareThemeProps } from './index';
 
 /**
  * RECEIPT — the thermal-receipt theme (PUSH-inspired).
@@ -58,7 +59,7 @@ const PAPER_W = CARD_W - PAPER_MARGIN * 2;
 const MAX_PRS = 3;
 const MAX_ROWS = 5;
 
-export default function Receipt({ payload }: { payload: SharePayload }) {
+export default function Receipt({ payload, onBackgroundLoad }: ShareThemeProps) {
     const dateStr = formatDate(payload.date);
     const d = payload.date;
     const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -86,6 +87,19 @@ export default function Receipt({ payload }: { payload: SharePayload }) {
 
     return (
         <View style={styles.frame}>
+            {/*
+             * Task 10: it is PAPER. The photo goes BEHIND the slip (this
+             * frame's own ground), not through it — placed before `paper`
+             * so the opaque cream `paper` View paints over it completely;
+             * only the margin around the tilted receipt ever shows the
+             * photo. Because nothing here is text laid directly over the
+             * image (the paper is 100% opaque, unlike every other theme's
+             * scrim-protected text), the scrim's only job is keeping the
+             * exposed margin from looking blown out — a much lighter value
+             * than the full-bleed themes need for legibility.
+             */}
+            <CardBackground background={payload.background} scrimOpacity={0.35} onLoad={onBackgroundLoad} />
+
             <View style={styles.paper}>
                 {/* Header: timestamp only — the wordmark lives in the footer */}
                 <View style={styles.headerRow}>
