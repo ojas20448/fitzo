@@ -1,4 +1,5 @@
 import { buildSharePayload, deriveMuscleVolume } from '../buildSharePayload';
+import { TOTAL_ID, EX_PREFIX, PR_PREFIX, MUSCLES_ID } from '../shareMoment';
 import type { LastSession } from '../../stores/lastSessionStore';
 import type { ShareExercise } from '../../components/share/SharePayload';
 
@@ -195,5 +196,81 @@ describe('deriveMuscleVolume — R3/R4: lowercase keys, summed setCount, whole-s
             exercise({ id: 'b', target: 'back', setCount: 3 }),
         ];
         expect(deriveMuscleVolume(exercises)).toEqual({ chest: 4, back: 3 });
+    });
+});
+
+describe('buildSharePayload — parses the shareMoment.ts id constants it imports, not a local copy', () => {
+    // These ids are built from TOTAL_ID/EX_PREFIX/PR_PREFIX/MUSCLES_ID
+    // (imported from '../shareMoment', the same module ShareComposerScreen
+    // generates chip ids from) rather than hand-typed literals like 'ex:a'.
+    // The point isn't just "these strings work" — the tests above already
+    // cover that — it's that buildSharePayload's parsing is provably wired
+    // to the SAME exported bindings the rest of the feature uses, so a
+    // change to any one constant's value can't silently desync chip
+    // generation from payload derivation without also breaking this file's
+    // own assertions.
+    it('TOTAL_ID selects every exercise in the session', () => {
+        const session = baseSession({
+            exercises: [
+                exercise({ id: 'a', volumeKg: 100 }),
+                exercise({ id: 'b', volumeKg: 200 }),
+            ],
+        });
+
+        const payload = buildSharePayload(session, [TOTAL_ID]);
+
+        expect(payload.headline).toBe('300 KG');
+        expect(payload.exercises).toHaveLength(2);
+    });
+
+    it('EX_PREFIX + an exercise id selects exactly that exercise', () => {
+        const session = baseSession({
+            exercises: [
+                exercise({ id: 'a', volumeKg: 135 }),
+                exercise({ id: 'b', volumeKg: 200 }),
+            ],
+        });
+
+        const payload = buildSharePayload(session, [`${EX_PREFIX}a`]);
+
+        expect(payload.exercises).toHaveLength(1);
+        expect(payload.exercises[0].id).toBe('a');
+        expect(payload.headline).toBe('135 KG');
+    });
+
+    it('PR_PREFIX + an exercise name selects exactly that PR', () => {
+        const session = baseSession({
+            prs: [
+                { exercise: 'Bench Press', current: '82.5 kg x 3', previous: '80 kg x 3' },
+                { exercise: 'Squat', current: '120 kg x 1' },
+            ],
+        });
+
+        const payload = buildSharePayload(session, [`${PR_PREFIX}Bench Press`]);
+
+        expect(payload.prs).toEqual([{ exercise: 'Bench Press', current: '82.5 kg x 3', previous: '80 kg x 3' }]);
+        expect(payload.headline).toBe('82.5 kg x 3');
+    });
+
+    it('MUSCLES_ID alone carries no volume/PR content, so the headline falls back to the session total', () => {
+        const session = baseSession({ volumeKg: 12345, exercises: [exercise({ id: 'a', volumeKg: 500 })] });
+
+        const payload = buildSharePayload(session, [MUSCLES_ID]);
+
+        expect(payload.headline).toBe('12,345 KG');
+        expect(payload.exercises).toEqual([]);
+    });
+
+    it('mixes cleanly in one selection array, same as the hand-typed-literal case', () => {
+        const session = baseSession({
+            exercises: [exercise({ id: 'a', volumeKg: 100 }), exercise({ id: 'b', volumeKg: 200 })],
+            prs: [{ exercise: 'Bench Press', current: '82.5 kg x 3' }],
+        });
+
+        const payload = buildSharePayload(session, [`${EX_PREFIX}a`, `${PR_PREFIX}Bench Press`, MUSCLES_ID]);
+
+        expect(payload.exercises.map((e) => e.id)).toEqual(['a']);
+        expect(payload.prs).toHaveLength(1);
+        expect(payload.headline).toBe('100 KG'); // exercise content still wins headline precedence
     });
 });

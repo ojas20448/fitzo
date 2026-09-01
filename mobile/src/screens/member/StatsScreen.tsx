@@ -391,112 +391,105 @@ const StatsScreen = () => {
     };
 
     return (
-        <View style={styles.outer}>
-            <SafeAreaView style={styles.screenBody} edges={['top']}>
-                {/* Header Tabs */}
-                <View style={styles.header}>
-                    <View style={styles.tabsWrapper}>
-                        <TouchableOpacity
-                            style={[styles.tabButton, activeTab === 'training' && styles.tabActive]}
-                            onPress={() => setActiveTab('training')}
-                        >
-                            <Text style={[styles.tabText, activeTab === 'training' && styles.tabTextActive]}>Training</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.tabButton, activeTab === 'nutrition' && styles.tabActive]}
-                            onPress={() => setActiveTab('nutrition')}
-                        >
-                            <Text style={[styles.tabText, activeTab === 'nutrition' && styles.tabTextActive]}>Nutrition</Text>
-                        </TouchableOpacity>
+        <SafeAreaView style={styles.container} edges={['top']}>
+            {/* Header Tabs */}
+            <View style={styles.header}>
+                <View style={styles.tabsWrapper}>
+                    <TouchableOpacity
+                        style={[styles.tabButton, activeTab === 'training' && styles.tabActive]}
+                        onPress={() => setActiveTab('training')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'training' && styles.tabTextActive]}>Training</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tabButton, activeTab === 'nutrition' && styles.tabActive]}
+                        onPress={() => setActiveTab('nutrition')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'nutrition' && styles.tabTextActive]}>Nutrition</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            <ScrollView
+                ref={scrollRef}
+                contentContainerStyle={styles.content}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+                }
+            >
+                {/* Score Card / Metric Top Banner */}
+                <View style={styles.scoreCard}>
+                    <View>
+                        <Text style={styles.scoreLabel}>{activeTab === 'training' ? 'Last 7 Days' : 'Daily Average'}</Text>
+                        <Text style={styles.scoreValue}>
+                            {activeTab === 'training'
+                                ? `${sessionsThisWeek} ${sessionsThisWeek === 1 ? 'session' : 'sessions'}`
+                                : `${weeklyRecap?.recap_data?.avg_calories || 0} kcal`
+                            }
+                        </Text>
+                    </View>
+                    <View style={styles.scoreIcon}>
+                        <MaterialIcons
+                            // Not the dumbbell/cutlery pair: those are the app's
+                            // generic *category* glyphs (the dumbbell heads every
+                            // exercise row), so on a hero card they read as
+                            // decoration. Use the metric's own vocabulary — a bolt
+                            // for effort logged, and the flame this app already
+                            // uses for calories in Health Report and Calorie Log.
+                            name={activeTab === 'training' ? 'bolt' : 'local-fire-department'}
+                            size={28}
+                            color={colors.primary}
+                        />
                     </View>
                 </View>
 
-                <ScrollView
-                    ref={scrollRef}
-                    contentContainerStyle={styles.content}
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
-                    }
-                >
-                    {/* Score Card / Metric Top Banner */}
-                    <View style={styles.scoreCard}>
-                        <View>
-                            <Text style={styles.scoreLabel}>{activeTab === 'training' ? 'Last 7 Days' : 'Daily Average'}</Text>
-                            <Text style={styles.scoreValue}>
-                                {activeTab === 'training'
-                                    ? `${sessionsThisWeek} ${sessionsThisWeek === 1 ? 'session' : 'sessions'}`
-                                    : `${weeklyRecap?.recap_data?.avg_calories || 0} kcal`
-                                }
-                            </Text>
+                {/* Weekly AI Recap */}
+                {recapLoading ? (
+                    <View style={styles.section}>
+                        <ActivityIndicator size="small" color={colors.primary} />
+                        <Text style={[styles.recapMessage, { textAlign: 'center', marginTop: 8 }]}>Parsing progress history...</Text>
+                    </View>
+                ) : weeklyRecap ? (
+                    <View style={styles.section}>
+                        <View style={styles.recapHeader}>
+                            <View style={styles.recapHeaderLeft}>
+                                <MaterialIcons name="auto-awesome" size={16} color={colors.primary} />
+                                <Text style={styles.recapTitle}>WEEKLY REPORT</Text>
+                            </View>
+                            <TouchableOpacity onPress={handleShareRecap} style={styles.shareBtn} accessibilityLabel="Share recap">
+                                <MaterialIcons name="share" size={18} color={colors.text.muted} />
+                            </TouchableOpacity>
                         </View>
-                        <View style={styles.scoreIcon}>
-                            <MaterialIcons
-                                // Not the dumbbell/cutlery pair: those are the app's
-                                // generic *category* glyphs (the dumbbell heads every
-                                // exercise row), so on a hero card they read as
-                                // decoration. Use the metric's own vocabulary — a bolt
-                                // for effort logged, and the flame this app already
-                                // uses for calories in Health Report and Calorie Log.
-                                name={activeTab === 'training' ? 'bolt' : 'local-fire-department'}
-                                size={28}
-                                color={colors.primary}
-                            />
+                        <Text style={styles.recapMessage}>{weeklyRecap.summary_text}</Text>
+                        <View style={styles.recapMetrics}>
+                            <View style={styles.metricItem}>
+                                <Text style={styles.metricLabel}>Workout Load</Text>
+                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.workouts_count} workouts</Text>
+                            </View>
+                            <View style={styles.metricItem}>
+                                <Text style={styles.metricLabel}>Gym Attendance</Text>
+                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.checkin_count} days</Text>
+                            </View>
+                            <View style={styles.metricItem}>
+                                <Text style={styles.metricLabel}>Streak Size</Text>
+                                <Text style={styles.metricValue}>{weeklyRecap.recap_data.streak_days} days</Text>
+                            </View>
                         </View>
                     </View>
+                ) : null}
 
-                    {/* Weekly AI Recap */}
-                    {recapLoading ? (
-                        <View style={styles.section}>
-                            <ActivityIndicator size="small" color={colors.primary} />
-                            <Text style={[styles.recapMessage, { textAlign: 'center', marginTop: 8 }]}>Parsing progress history...</Text>
-                        </View>
-                    ) : weeklyRecap ? (
-                        <View style={styles.section}>
-                            <View style={styles.recapHeader}>
-                                <View style={styles.recapHeaderLeft}>
-                                    <MaterialIcons name="auto-awesome" size={16} color={colors.primary} />
-                                    <Text style={styles.recapTitle}>WEEKLY REPORT</Text>
-                                </View>
-                                <TouchableOpacity onPress={handleShareRecap} style={styles.shareBtn} accessibilityLabel="Share recap">
-                                    <MaterialIcons name="share" size={18} color={colors.text.muted} />
-                                </TouchableOpacity>
-                            </View>
-                            <Text style={styles.recapMessage}>{weeklyRecap.summary_text}</Text>
-                            <View style={styles.recapMetrics}>
-                                <View style={styles.metricItem}>
-                                    <Text style={styles.metricLabel}>Workout Load</Text>
-                                    <Text style={styles.metricValue}>{weeklyRecap.recap_data.workouts_count} workouts</Text>
-                                </View>
-                                <View style={styles.metricItem}>
-                                    <Text style={styles.metricLabel}>Gym Attendance</Text>
-                                    <Text style={styles.metricValue}>{weeklyRecap.recap_data.checkin_count} days</Text>
-                                </View>
-                                <View style={styles.metricItem}>
-                                    <Text style={styles.metricLabel}>Streak Size</Text>
-                                    <Text style={styles.metricValue}>{weeklyRecap.recap_data.streak_days} days</Text>
-                                </View>
-                            </View>
-                        </View>
-                    ) : null}
+                {/* Render Selected View */}
+                {activeTab === 'training' ? renderAnatomySection() : renderWeeklyChart()}
 
-                    {/* Render Selected View */}
-                    {activeTab === 'training' ? renderAnatomySection() : renderWeeklyChart()}
-
-                </ScrollView>
-            </SafeAreaView>
-        </View>
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    outer: {
-        flex: 1,
-    },
-    screenBody: {
+    container: {
         flex: 1,
         backgroundColor: colors.background,
-        zIndex: 1,
-        elevation: 1,
     },
     header: {
         paddingVertical: spacing.md,

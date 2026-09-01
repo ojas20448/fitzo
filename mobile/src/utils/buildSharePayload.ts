@@ -2,21 +2,24 @@ import type { LastSession } from '../stores/lastSessionStore';
 import type { SharePayload, ShareExercise, SharePr } from '../components/share/SharePayload';
 import { formatDate, formatVolumeKg } from '../components/share/format';
 import { weightEquivalence } from '../components/ReceiptShareCard';
-
-const EX_PREFIX = 'ex:';
-const PR_PREFIX = 'pr:';
-const TOTAL_ID = 'total';
+import { TOTAL_ID, EX_PREFIX, PR_PREFIX } from './shareMoment';
 
 /**
  * Turns a composer chip selection into the payload a theme renders.
  *
- * Selection ids are the namespaced scheme shareMoment.ts defines:
- *   'total' | 'ex:<exerciseId>' | 'pr:<exerciseName>' | 'muscles'
- * ('muscles' carries no volume/PR content of its own — it is a no-op here.
- * ShareComposerScreen derives `muscleVolume` separately, via
- * `deriveMuscleVolume` below, from the WHOLE session and independent of
- * selection, then attaches it to this function's output — see that
- * function's own doc comment for why.)
+ * Selection ids are the namespaced scheme shareMoment.ts defines and
+ * exports (TOTAL_ID, EX_PREFIX, PR_PREFIX — imported above rather than
+ * re-declared here, so this file can't silently drift from the ids
+ * ShareComposerScreen actually generates). shareMoment.ts also exports a
+ * fourth id, MUSCLES_ID ('muscles'), which this function does not import:
+ * it carries no volume/PR content of its own, so it is a no-op here by
+ * construction — nothing below ever needs to test for it. (Not used means
+ * unimported, not "still hand-written" — there is no 'muscles' literal
+ * anywhere in this file for it to replace.) ShareComposerScreen derives
+ * `muscleVolume` separately, via `deriveMuscleVolume` below, from the WHOLE
+ * session and independent of selection, then attaches it to this
+ * function's output only when MUSCLES_ID is itself selected — see that
+ * function's own doc comment for why.
  *
  * RULING R12: `session.exercises[].volumeKg` is RAW/unrounded (see
  * buildShareExercises.ts). Every total below is summed from exactly the

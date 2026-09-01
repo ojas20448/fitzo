@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import ViewShot from 'react-native-view-shot';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { useShareComposerStore } from '../../stores/shareComposerStore';
-import { pickMoment } from '../../utils/shareMoment';
+import { pickMoment, TOTAL_ID, EX_PREFIX, PR_PREFIX, MUSCLES_ID } from '../../utils/shareMoment';
 import type { ThemeId } from '../../utils/shareMoment';
 import { THEMES, THEME_ORDER } from '../../components/share/themes';
 import { buildSharePayload, deriveMuscleVolume } from '../../utils/buildSharePayload';
@@ -86,15 +86,15 @@ export default function ShareComposerScreen() {
     // between.
     const chips: Chip[] = useMemo(() => {
         if (!session) return [];
-        const list: Chip[] = [{ id: 'total', label: 'Total', isPr: false }];
+        const list: Chip[] = [{ id: TOTAL_ID, label: 'Total', isPr: false }];
         for (const pr of session.prs) {
-            list.push({ id: `pr:${pr.exercise}`, label: pr.exercise, isPr: true });
+            list.push({ id: `${PR_PREFIX}${pr.exercise}`, label: pr.exercise, isPr: true });
         }
         for (const ex of session.exercises) {
-            list.push({ id: `ex:${ex.id}`, label: ex.name, isPr: false });
+            list.push({ id: `${EX_PREFIX}${ex.id}`, label: ex.name, isPr: false });
         }
         if (showMusclesChip) {
-            list.push({ id: 'muscles', label: 'Muscles', isPr: false });
+            list.push({ id: MUSCLES_ID, label: 'Muscles', isPr: false });
         }
         return list;
     }, [session, showMusclesChip]);
@@ -107,11 +107,18 @@ export default function ShareComposerScreen() {
     // muscleVolume is spread on AFTER buildSharePayload, not passed into
     // it — see buildSharePayload.ts's own doc comment for why that field
     // stays outside its 2-argument (session, selection) contract.
+    // Gated on the MUSCLES_ID chip being in `selection` (not spread
+    // unconditionally): Anatomy's hasMuscleVolume check treats an absent
+    // muscleVolume the same as an empty one and falls back to its own
+    // designed FallbackBody, so leaving the chip OFF has to actually mean
+    // something — otherwise toggling "Muscles" would produce no observable
+    // change in any theme.
     const payload: SharePayload | null = useMemo(() => {
         if (!source || !theme) return null;
         if (source.kind === 'static') return source.payload;
         if (!session || selection.length === 0) return null;
-        return { ...buildSharePayload(session, selection), muscleVolume };
+        const base = buildSharePayload(session, selection);
+        return selection.includes(MUSCLES_ID) ? { ...base, muscleVolume } : base;
     }, [source, session, theme, selection, muscleVolume]);
 
     if (!source || !theme || !payload) {

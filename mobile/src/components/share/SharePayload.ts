@@ -17,7 +17,6 @@ export interface ShareExercise {
     volumeKg: number;
     setCount: number;
     topSet?: ShareSet;
-    isPr?: boolean;
 }
 
 /** Everything a theme may render. Themes read from this and nothing else. */
