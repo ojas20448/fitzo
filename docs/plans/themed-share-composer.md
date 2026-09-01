@@ -30,6 +30,7 @@
 - **R12 — the store holds RAW per-exercise `volumeKg`; rounding happens ONCE at render, over exactly the selected set.** Storing `Math.round(vol)` per exercise makes "sum of rounded parts" diverge from "round of the sum" (verified: 135.0 + 82.5 + 87.5 rounds to 305, but the rounded parts sum to 306). A store-level allocation scheme cannot fix this, because the user selects an ARBITRARY SUBSET and no pre-allocation satisfies every subset (verified: the {82.5, 87.5} subset mismatches 170 vs 171). Therefore: per-exercise `volumeKg` is unrounded. Session-level `LastSession.volumeKg` stays `Math.round(totalVolume)` so it continues to equal the shipped `recap.volume`. **Task 7 must derive any displayed total by summing the exact `volumeKg` values it is rendering and rounding once**, never by summing pre-rounded parts.
 - **R13 — the session -> ShareExercise[] mapping is a pure exported helper, not inline in the screen.** `mobile/src/utils/buildShareExercises.ts`. This project's testing constraint is pure-logic-only (no component render tests are possible), so logic left inline inside `handleFinish` is permanently untestable — which is how the R12 rounding bug reached review. Extracting it also removes an eightfold repetition of `parseFloat(String(x || 0))`.
 - **R14 — `useShareCapture` guards re-entrancy with a ref, and logs the caught error.** The plan's original hook guarded on `isSharing` state read from a `useCallback` closure, which only updates after React commits the re-render — a second call arriving before that commit passes the guard, yielding two concurrent captures and two share sheets. It also used a bare `catch {}`, discarding the error. That is self-defeating: this hook's stated purpose is to make blank/half-painted captures tractable, and a swallowed error makes them untraceable while masking a real capture failure as a successful text share. Guard on `useRef`, keep `isSharing` state for UI only, and log via the repo's existing `src/utils/logger.ts`.
+- **R26 — the composer takes a `ComposerSource` discriminated union, not a bare `SharePayload`.** A finished payload leaves the content chips nothing to re-derive from, and a weekly aggregate has nothing meaningful to chip anyway. `{kind:'session'}` keeps chips and per-selection derivation; `{kind:'static'}` renders a payload as given with chips hidden. This is what unblocks any non-session producer (weekly recap, digests, milestones) from using the five themes.
 - **R6 — backend route paths are `backend/src/routes/`,** not `backend/routes/`.
 
 ## File Structure
@@ -844,6 +845,75 @@ const muscleVolume = useMemo(() => (session?.exercises ?? []).reduce((acc, ex) =
 - [ ] **Step 5: Full verification and commit.** `cd mobile && npx tsc --noEmit && npx jest`. Stage explicitly scoped paths only — the repo has many untracked files outside `mobile/`, so never use a bare `git add -A`.
 
 ---
+
+---
+
+### Task 9: Decouple the composer from LastSession so any source can use the themes
+
+Added after the original 8 tasks, from a user audit. Task 8 step 2 asked to "route the Stats weekly share
+through the composer" and that did not happen: `StatsScreen.tsx:376` still renders the legacy
+`ReceiptShareCard` and `:164` captures its own ref, never navigating to `/member/share`.
+
+The cause is a real architectural coupling. `ShareComposerScreen` reads `useLastSessionStore`, whose
+`LastSession` shape (`exercises`, `durationMin`, `prs`, `setCount`) describes ONE finished workout. A weekly
+recap is a different shape entirely — a workout count, a streak, nutrition averages — and cannot be
+expressed as a `LastSession` without inventing fake exercises.
+
+**Design note — why this is NOT simply "put a SharePayload in a store".** The audit proposed a store holding
+a pre-built `SharePayload` that the composer renders blindly. That breaks the content chips: the chips exist
+to re-derive the payload when the user picks different lifts, so a finished payload leaves nothing to
+re-derive from. The two sources also differ genuinely — a session has selectable exercises and PRs, a weekly
+aggregate has nothing meaningful to chip. Model that difference explicitly rather than flattening it.
+
+**Files:**
+- Create: `mobile/src/stores/shareComposerStore.ts`
+- Test: `mobile/src/utils/__tests__/shareComposerStore.test.ts`
+- Modify: `mobile/src/screens/member/ShareComposerScreen.tsx`
+- Modify: `mobile/src/screens/member/StatsScreen.tsx`
+- Modify: `mobile/src/screens/member/WorkoutRecapScreen.tsx` (set the source before navigating)
+
+**The source type — a discriminated union, not a bare payload:**
+
+```ts
+export type ComposerSource =
+    | { kind: 'session'; session: LastSession }   // chips ON, payload derived per selection
+    | { kind: 'static'; payload: SharePayload };  // chips OFF, payload rendered as given
+```
+
+`'session'` preserves everything Task 7 built: `pickMoment` seeds the selection, chips re-derive through
+`buildSharePayload`, `deriveMuscleVolume` populates the heatmap. `'static'` is the escape hatch for any
+producer with its own shape — Stats today, a weekly digest or a PR milestone later — and simply renders
+what it is handed, with the theme picker still fully live.
+
+- [ ] **Step 1: the store, TDD first.** `useShareComposerStore` with `{ source, setSource, clearSource }`.
+  Carry the same staleness discipline as `lastSessionStore`: a `setAt` timestamp and an `isStale()`, so a
+  source set on Monday cannot open the composer on Wednesday. Reuse `STALE_AFTER_MS`. Tests cover: holds a
+  session source; holds a static source; `clearSource` empties it; stale after the window; absent counts as
+  stale.
+
+- [ ] **Step 2: composer consumes `ComposerSource`.** Replace the direct `useLastSessionStore` read. When
+  `kind === 'session'`, behaviour is exactly as today — chips, `pickMoment` seeding, `buildSharePayload`,
+  `muscleVolume`. When `kind === 'static'`, hide the chip row entirely and render `source.payload`; the
+  theme picker, hero preview and hidden 1:1 capture target all stay unchanged.
+  **`singleSelectOnly` still applies** to a static source: `Scoreboard` renders one figure, so it remains
+  offerable, but there is no selection to collapse — make sure the collapse logic does not run on a source
+  that has no selection.
+
+- [ ] **Step 3: recap sets a session source.** `WorkoutRecapScreen`'s "SHARE TO STORY" sets
+  `{ kind: 'session', session }` before `router.push('/member/share')`, rather than the composer reaching
+  into `lastSessionStore` itself. `lastSessionStore` remains the carrier from `WorkoutLogScreen`; this task
+  only changes who reads it.
+
+- [ ] **Step 4: Stats builds a static payload and routes through the composer.** Construct a `SharePayload`
+  for the weekly recap — headline the workout count, subtitle "WEEKLY RECAP", rows for streak / volume /
+  whatever Stats already displays — set `{ kind: 'static', payload }`, then `router.push('/member/share')`.
+  **Constraints:** `rows` must be non-empty (Receipt's BREAKDOWN renders a blank block otherwise);
+  all numeric formatting goes through `format.ts` (R18 — never a bare `toLocaleString()`); `prs` and
+  `exercises` may be empty arrays and every theme already handles that.
+  Then retire the now-unused off-screen `ReceiptShareCard` capture target in `StatsScreen`, including the
+  `captureHost` block if nothing else uses it.
+
+- [ ] **Step 5: gates.** `npx tsc --noEmit` clean; `npx jest` — 11 suites / 126 tests plus the new store suite.
 
 ## Verification
 
