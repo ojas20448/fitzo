@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -145,6 +145,20 @@ export default function FitnessProfileScreen() {
                     <Text style={styles.bmiLabel}>Your BMI</Text>
                     <Text style={[styles.bmiValue, { color: bmiColor }]}>{bmi.toFixed(1)}</Text>
                     <Text style={[styles.bmiCategory, { color: bmiColor }]}>{bmiCategory}</Text>
+                    <View style={styles.bmiCitationContainer}>
+                        <Text style={styles.bmiCitationText}>
+                            Source:{' '}
+                            <Text
+                                style={styles.bmiCitationLink}
+                                onPress={() => Linking.openURL('https://www.who.int/data/gho/data/themes/topics/topic-details/GHO/body-mass-index')}
+                            >
+                                World Health Organization (WHO) BMI Standards
+                            </Text>
+                        </Text>
+                        <Text style={styles.bmiDisclaimerText}>
+                            For informational and fitness tracking purposes only. Not medical advice.
+                        </Text>
+                    </View>
                 </View>
 
                 {/* Physical Stats */}
@@ -412,6 +426,30 @@ const styles = StyleSheet.create({
     bmiCategory: {
         fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.semiBold,
+    },
+    bmiCitationContainer: {
+        marginTop: spacing.md,
+        paddingTop: spacing.sm,
+        borderTopWidth: 1,
+        borderTopColor: colors.glass.border,
+        alignItems: 'center',
+        gap: 4,
+    },
+    bmiCitationText: {
+        fontSize: typography.sizes.xs,
+        color: colors.text.muted,
+        textAlign: 'center',
+    },
+    bmiCitationLink: {
+        color: colors.primary,
+        textDecorationLine: 'underline',
+    },
+    bmiDisclaimerText: {
+        fontSize: 10,
+        color: colors.text.muted,
+        textAlign: 'center',
+        fontStyle: 'italic',
+        marginTop: 2,
     },
 
     // Section

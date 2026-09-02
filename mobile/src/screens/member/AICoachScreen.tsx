@@ -12,7 +12,9 @@ import {
     Platform,
     Animated,
     Easing,
+    Linking,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -53,7 +55,14 @@ export default function AICoachScreen() {
     const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
     const [isRecording, setIsRecording] = useState(false);
     const [transcribing, setTranscribing] = useState(false);
+    const [hasConsented, setHasConsented] = useState<boolean | null>(null);
     const toast = useToast();
+
+    useEffect(() => {
+        AsyncStorage.getItem('@fitzo_ai_data_consent')
+            .then(val => setHasConsented(val === 'true'))
+            .catch(() => setHasConsented(false));
+    }, []);
 
     // Inverted list, so the data is reversed once per change rather than on
     // every render. See the FlatList below for why inverted.
@@ -268,6 +277,94 @@ function TypingDots() {
         );
     };
 
+    if (hasConsented === false) {
+        return (
+            <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton} accessibilityLabel="Go back">
+                        <MaterialIcons name="chevron-left" size={32} color={colors.text.primary} />
+                    </TouchableOpacity>
+                    <View style={styles.headerText}>
+                        <Text style={styles.headerTitle}>SPOTTER</Text>
+                        <Text style={styles.headerSubtitle}>AI Coach Privacy & Data Consent</Text>
+                    </View>
+                </View>
+
+                <ScrollView style={styles.consentContent} contentContainerStyle={styles.consentScroll}>
+                    <View style={styles.consentIconWrap}>
+                        <MaterialIcons name="psychology" size={44} color={colors.primary} />
+                    </View>
+
+                    <Text style={styles.consentHeading}>AI Coach & Data Sharing Disclosure</Text>
+                    <Text style={styles.consentDescription}>
+                        Fitzo uses artificial intelligence to analyze your workout and nutrition logs to provide personalized coaching. In accordance with Apple Guidelines 5.1.1(i) and 5.1.2(i), please review what data is shared:
+                    </Text>
+
+                    <View style={styles.consentCard}>
+                        <View style={styles.consentCardHeader}>
+                            <MaterialIcons name="data-usage" size={18} color={colors.primary} />
+                            <Text style={styles.consentCardTitle}>Data Sent to AI</Text>
+                        </View>
+                        <Text style={styles.consentCardText}>
+                            Only relevant fitness context is processed: your logged exercises, set volume, calorie targets, and dietary goal summaries.
+                        </Text>
+                        <Text style={styles.consentCardSubtext}>
+                            Personal identity information (name, email address, passwords, or payment details) is NEVER transmitted to the AI.
+                        </Text>
+                    </View>
+
+                    <View style={styles.consentCard}>
+                        <View style={styles.consentCardHeader}>
+                            <MaterialIcons name="cloud" size={18} color={colors.primary} />
+                            <Text style={styles.consentCardTitle}>Third-Party AI Service Provider</Text>
+                        </View>
+                        <Text style={styles.consentCardText}>
+                            Data is processed by <Text style={{ color: colors.text.primary, fontFamily: typography.fontFamily.bold }}>Google Cloud (Google Gemini AI API)</Text> for real-time text analysis.
+                        </Text>
+                        <Text style={styles.consentCardSubtext}>
+                            Under Google Cloud enterprise terms, your personal data is encrypted in transit and at rest, and is NOT used to train AI models.
+                        </Text>
+                    </View>
+
+                    <View style={styles.consentCard}>
+                        <View style={styles.consentCardHeader}>
+                            <MaterialIcons name="medical-services" size={18} color={colors.primary} />
+                            <Text style={styles.consentCardTitle}>Safety & Medical Disclaimer</Text>
+                        </View>
+                        <Text style={styles.consentCardText}>
+                            Spotter is an AI coach designed strictly for fitness motivation and informational purposes. It does NOT provide medical advice, diagnosis, or clinical treatment.
+                        </Text>
+                    </View>
+
+                    <TouchableOpacity
+                        style={styles.consentPolicyLink}
+                        onPress={() => Linking.openURL('https://www.fitzoapp.in/privacy-policy')}
+                    >
+                        <MaterialIcons name="open-in-new" size={16} color={colors.primary} />
+                        <Text style={styles.consentPolicyText}>Read our full Privacy Policy</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.consentAcceptBtn}
+                        onPress={async () => {
+                            await AsyncStorage.setItem('@fitzo_ai_data_consent', 'true');
+                            setHasConsented(true);
+                        }}
+                    >
+                        <Text style={styles.consentAcceptText}>I Consent & Continue</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.consentCancelBtn}
+                        onPress={() => router.back()}
+                    >
+                        <Text style={styles.consentCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                </ScrollView>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
           <KeyboardAvoidingView
@@ -374,6 +471,18 @@ function TypingDots() {
 
             {/* Input */}
             <View style={styles.inputContainer}>
+                <View style={styles.aiPrivacyBadge}>
+                    <MaterialIcons name="lock" size={11} color={colors.text.muted} />
+                    <Text style={styles.aiPrivacyBadgeText}>
+                        Powered by Google Gemini AI · Private & Encrypted ·{' '}
+                        <Text
+                            style={styles.aiPrivacyBadgeLink}
+                            onPress={() => Linking.openURL('https://www.fitzoapp.in/privacy-policy')}
+                        >
+                            Privacy Policy
+                        </Text>
+                    </Text>
+                </View>
                 <View style={styles.inputRow}>
                     <TextInput
                         style={styles.input}
@@ -624,5 +733,117 @@ const styles = StyleSheet.create({
     },
     sendButtonDisabled: {
         backgroundColor: colors.glass.surface,
+    },
+    aiPrivacyBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        marginBottom: spacing.sm,
+    },
+    aiPrivacyBadgeText: {
+        fontSize: 11,
+        color: colors.text.muted,
+    },
+    aiPrivacyBadgeLink: {
+        color: colors.primary,
+        textDecorationLine: 'underline',
+    },
+    // Consent Screen Styles
+    consentContent: {
+        flex: 1,
+    },
+    consentScroll: {
+        padding: spacing.xl,
+        gap: spacing.md,
+        paddingBottom: spacing['2xl'],
+    },
+    consentIconWrap: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        justifyContent: 'center',
+        alignItems: 'center',
+        alignSelf: 'center',
+        marginVertical: spacing.md,
+    },
+    consentHeading: {
+        fontSize: typography.sizes.xl,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+        textAlign: 'center',
+    },
+    consentDescription: {
+        fontSize: typography.sizes.sm,
+        color: colors.text.muted,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: spacing.sm,
+    },
+    consentCard: {
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        padding: spacing.lg,
+        gap: 6,
+    },
+    consentCardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    consentCardTitle: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+    },
+    consentCardText: {
+        fontSize: typography.sizes.xs,
+        color: colors.text.secondary,
+        lineHeight: 18,
+    },
+    consentCardSubtext: {
+        fontSize: 11,
+        color: colors.text.muted,
+        lineHeight: 16,
+        fontStyle: 'italic',
+    },
+    consentPolicyLink: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: spacing.sm,
+    },
+    consentPolicyText: {
+        fontSize: typography.sizes.sm,
+        color: colors.primary,
+        fontFamily: typography.fontFamily.medium,
+        textDecorationLine: 'underline',
+    },
+    consentAcceptBtn: {
+        backgroundColor: colors.primary,
+        paddingVertical: spacing.lg,
+        borderRadius: borderRadius.lg,
+        alignItems: 'center',
+        marginTop: spacing.sm,
+    },
+    consentAcceptText: {
+        color: colors.text.dark,
+        fontFamily: typography.fontFamily.bold,
+        fontSize: typography.sizes.base,
+    },
+    consentCancelBtn: {
+        paddingVertical: spacing.md,
+        alignItems: 'center',
+    },
+    consentCancelText: {
+        color: colors.text.muted,
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
     },
 });

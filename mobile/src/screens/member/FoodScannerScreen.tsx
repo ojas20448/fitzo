@@ -32,7 +32,7 @@ export default function FoodScannerScreen() {
                     <Text style={styles.permissionText}>
                         We need access to your camera to scan food items
                     </Text>
-                    <Button title="Grant Permission" onPress={requestPermission} />
+                    <Button title="Continue" onPress={requestPermission} />
                 </View>
             </SafeAreaView>
         );

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, Platform, KeyboardAvoidingView,
-    ScrollView, TextInput, Dimensions, ActivityIndicator, Pressable
+    ScrollView, TextInput, Dimensions, ActivityIndicator, Pressable, Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -713,6 +713,32 @@ export default function OnboardingWizard() {
                         <Text style={s.previewLabel}>Est. Maintenance</Text>
                         <Text style={s.previewVal}>{tdee} kcal</Text>
                     </View>
+
+                    {/* Scientific Citations & Medical Disclaimer (Guideline 1.4.1) */}
+                    <View style={s.citationBox}>
+                        <Text style={s.citationTitle}>SOURCES & MEDICAL DISCLAIMER</Text>
+                        <Text style={s.citationText}>
+                            • BMI categories:{' '}
+                            <Text
+                                style={s.citationLink}
+                                onPress={() => Linking.openURL('https://www.who.int/data/gho/data/themes/topics/topic-details/GHO/body-mass-index')}
+                            >
+                                World Health Organization (WHO)
+                            </Text>
+                        </Text>
+                        <Text style={s.citationText}>
+                            • Calorie calculations:{' '}
+                            <Text
+                                style={s.citationLink}
+                                onPress={() => Linking.openURL('https://pubmed.ncbi.nlm.nih.gov/2305711/')}
+                            >
+                                Mifflin-St Jeor Equation (Mifflin et al., 1990)
+                            </Text>
+                        </Text>
+                        <Text style={s.disclaimerText}>
+                            Fitzo calculations are for informational/fitness tracking only and do not provide medical diagnosis or advice. Always consult a physician before starting any diet or training program.
+                        </Text>
+                    </View>
                 </Animated.View>
             )}
         </View>
@@ -1288,6 +1314,38 @@ const s = StyleSheet.create({
     previewRow: { flexDirection: 'row', justifyContent: 'space-between' },
     previewLabel: { fontSize: 13, color: colors.text.muted },
     previewVal: { fontSize: 13, fontFamily: typography.fontFamily.bold, color: colors.text.primary },
+    citationBox: {
+        marginTop: spacing.md,
+        paddingTop: spacing.sm,
+        borderTopWidth: 1,
+        borderTopColor: colors.glass.border,
+        gap: 4,
+    },
+    citationTitle: {
+        fontSize: 10,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.muted,
+        letterSpacing: 0.8,
+        textTransform: 'uppercase',
+        marginBottom: 2,
+    },
+    citationText: {
+        fontSize: 11,
+        color: colors.text.muted,
+        lineHeight: 16,
+    },
+    citationLink: {
+        color: colors.primary,
+        textDecorationLine: 'underline',
+        fontFamily: typography.fontFamily.medium,
+    },
+    disclaimerText: {
+        fontSize: 10,
+        color: colors.text.muted,
+        fontStyle: 'italic',
+        lineHeight: 14,
+        marginTop: 4,
+    },
 
     // ── Mini preview ─────────────────────────────────────────────
     miniPreview: {

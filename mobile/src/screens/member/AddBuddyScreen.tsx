@@ -190,7 +190,7 @@ export default function AddBuddyScreen() {
             return (
                 <View style={styles.centerContent}>
                     <Text style={styles.permissionText}>We need your permission to verify using QR code</Text>
-                    <Button title="Grant Permission" onPress={requestPermission} />
+                    <Button title="Continue" onPress={requestPermission} />
                 </View>
             );
         }
