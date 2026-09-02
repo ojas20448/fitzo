@@ -1,18 +1,15 @@
 import { Tabs, router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { View, StyleSheet, TouchableOpacity, Modal, Text, Pressable } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Modal, Text, Pressable, Platform } from 'react-native';
 import { useState } from 'react';
 import * as Haptics from '../../src/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius, shadows } from '../../src/styles/theme';
 import { AnimatedTabIcon } from '../../src/components/AnimatedTabIcon';
 
-// Expo SDK 54 forces edge-to-edge on Android and offers no way to opt out, so
-// the app draws underneath the gesture pill / 3-button nav bar. A fixed tab bar
-// height therefore puts the tabs *behind* the system buttons. Grow the bar by
-// the bottom inset and pad the content up out of it. On devices with no bottom
-// inset (older Android, most iPhones with a home button) this is a no-op.
-const TAB_BAR_HEIGHT = 90;
+// Standard native tab bar content height (50px on iOS, 58px on Android)
+// + the safe area bottom inset for home indicator / gesture navigation.
+const TAB_BAR_CONTENT_HEIGHT = Platform.OS === 'ios' ? 50 : 58;
 
 export default function TabLayout() {
     const [showLogModal, setShowLogModal] = useState(false);
@@ -31,8 +28,9 @@ export default function TabLayout() {
                     tabBarStyle: [
                         styles.tabBar,
                         {
-                            height: TAB_BAR_HEIGHT + insets.bottom,
-                            paddingBottom: insets.bottom,
+                            height: TAB_BAR_CONTENT_HEIGHT + insets.bottom,
+                            paddingBottom: insets.bottom > 0 ? insets.bottom - 4 : 4,
+                            paddingTop: 4,
                         },
                     ],
                     tabBarActiveTintColor: colors.primary,
@@ -196,16 +194,15 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface,
         borderTopWidth: 1,
         borderTopColor: colors.glass.border,
-        // height / paddingBottom are applied inline from the safe-area inset.
-        paddingTop: 8,
+        paddingTop: 4,
         elevation: 0,
         shadowOpacity: 0,
     },
     tabLabel: {
-        fontSize: 9,
+        fontSize: 10,
         fontFamily: typography.fontFamily.medium,
         letterSpacing: 0.5,
-        marginTop: -2,
+        marginTop: 0,
     },
     activeIcon: {
         shadowColor: '#FFFFFF',
@@ -214,15 +211,15 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
     },
     logButton: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 48,
+        height: 48,
+        borderRadius: 24,
         backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 4, // Slight lift
-        borderWidth: 4,
-        borderColor: colors.surface, // Match tab bar background
+        marginBottom: 2,
+        borderWidth: 3,
+        borderColor: colors.surface,
         ...shadows.glow,
     },
     modalOverlay: {

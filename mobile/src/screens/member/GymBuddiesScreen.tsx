@@ -434,6 +434,7 @@ const GymBuddiesScreen: React.FC = () => {
 
             <ScrollView
                 style={styles.content}
+                contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
@@ -904,6 +905,10 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: spacing.xl,
     },
+    scrollContent: {
+        paddingTop: spacing.xs,
+        paddingBottom: spacing['4xl'],
+    },
     section: {
         marginBottom: spacing.xl,
     },
@@ -1095,6 +1100,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         paddingHorizontal: spacing.xl,
         paddingTop: spacing.md,
+        paddingBottom: spacing.lg,
         gap: spacing.md,
     },
     tabButton: {

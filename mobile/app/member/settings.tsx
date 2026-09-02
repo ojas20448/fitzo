@@ -407,9 +407,9 @@ export default function SettingsScreen() {
                     <View style={styles.row}>
                         <View style={styles.rowLeft}>
                             <MaterialIcons name="people" size={24} color={colors.text.secondary} />
-                            <View style={{ flex: 1, paddingRight: spacing.md }}>
+                            <View style={{ flex: 1 }}>
                                 <Text style={styles.rowLabel}>Share with Gym Buddies</Text>
-                                <Text style={[styles.rowSub, { flexWrap: 'wrap' }]}>
+                                <Text style={styles.rowSub}>
                                     {shareLogs
                                         ? 'Buddies can see your workouts & meals'
                                         : 'Your logs are private to buddies'}
@@ -419,8 +419,9 @@ export default function SettingsScreen() {
                         <Switch
                             value={shareLogs}
                             onValueChange={handleShareLogsToggle}
-                            trackColor={{ false: colors.glass.border, true: colors.primary }}
-                            thumbColor={colors.text.primary}
+                            trackColor={{ false: '#2A2A2A', true: colors.primary }}
+                            thumbColor={Platform.OS === 'ios' ? undefined : (shareLogs ? colors.text.dark : colors.text.muted)}
+                            ios_backgroundColor="#2A2A2A"
                         />
                     </View>
                 </GlassCard>
@@ -436,8 +437,9 @@ export default function SettingsScreen() {
                         <Switch
                             value={notifications}
                             onValueChange={handleNotificationsToggle}
-                            trackColor={{ false: colors.glass.border, true: colors.primary }}
-                            thumbColor={colors.text.primary}
+                            trackColor={{ false: '#2A2A2A', true: colors.primary }}
+                            thumbColor={Platform.OS === 'ios' ? undefined : (notifications ? colors.text.dark : colors.text.muted)}
+                            ios_backgroundColor="#2A2A2A"
                         />
                     </View>
                     <View style={styles.divider} />
@@ -449,8 +451,9 @@ export default function SettingsScreen() {
                         <Switch
                             value={hapticsOn}
                             onValueChange={toggleHaptics}
-                            trackColor={{ false: colors.glass.border, true: colors.primary }}
-                            thumbColor={colors.text.primary}
+                            trackColor={{ false: '#2A2A2A', true: colors.primary }}
+                            thumbColor={Platform.OS === 'ios' ? undefined : (hapticsOn ? colors.text.dark : colors.text.muted)}
+                            ios_backgroundColor="#2A2A2A"
                         />
                     </View>
                     <View style={styles.divider} />
@@ -635,12 +638,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: spacing.lg,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
     },
     rowLeft: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.md,
+        marginRight: spacing.md,
     },
     rowLabel: {
         fontSize: typography.sizes.base,
