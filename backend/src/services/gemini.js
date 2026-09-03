@@ -4,7 +4,7 @@ if (!process.env.GEMINI_API_KEY) {
     console.error('⚠️  GEMINI_API_KEY not set — AI features will fail');
 }
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const { AIUnavailableError } = require('../utils/errors');
+const { AIUnavailableError, ValidationError } = require('../utils/errors');
 
 // The model name lives in ONE place, and is env-overridable.
 //
@@ -521,7 +521,14 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
             model: GEMINI_MODEL,
             generationConfig: {
                 responseMimeType: 'application/json',
-                maxOutputTokens: 2048,
+                // Generous on purpose. GEMINI_MODEL resolves to gemini-flash-latest,
+                // which is a 2.5-series thinking model, and thinking tokens are billed
+                // against maxOutputTokens before a single character of JSON is emitted.
+                // A busy plate reasons for longer, so a tight cap starved the actual
+                // answer and truncated it mid-object — which is why this failed on real
+                // meals and passed on an empty plate. SDK 0.24.1 has no thinkingConfig
+                // to turn it off, so the budget has to absorb it.
+                maxOutputTokens: 8192,
             },
         }, REQUEST_OPTIONS);
 
@@ -549,10 +556,14 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
                 blockReason: response.promptFeedback?.blockReason,
                 preview: String(responseText).slice(0, 300),
             });
-            throw new Error(
+            // ValidationError, not a bare Error: only operational errors keep their
+            // message through the error handler. A bare Error reached the user as
+            // "Something went wrong. Please try again." — which is exactly what made
+            // this bug so hard to place from the outside.
+            throw new ValidationError(
                 finishReason === 'MAX_TOKENS'
-                    ? 'That photo had too many items to read at once. Try a tighter shot.'
-                    : 'Could not read the food in that photo. Please try again.',
+                    ? 'That photo had too much going on to read in one pass. Try a closer shot of fewer items.'
+                    : 'Could not read the food in that photo. Please try a clearer photo, or describe it in text.',
             );
         }
 
@@ -580,8 +591,11 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
         // A quota refusal is temporary and self-healing. Falling through to the
         // canned fallback below would present it as a broken feature instead.
         if (isTransientError(error)) throw new AIUnavailableError();
+        // The parse branch above already classified itself; without this it would be
+        // caught here and flattened back into a generic non-operational Error.
+        if (error.isOperational) throw error;
         console.error('Gemini Vision food analysis error:', error.message);
-        throw new Error('Failed to analyze food image. Please try again or use text description instead.');
+        throw new ValidationError('Failed to analyze food image. Please try again, or describe it in text.');
     }
 }
 
