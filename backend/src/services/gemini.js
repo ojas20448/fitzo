@@ -80,6 +80,18 @@ function isTransientError(error) {
     if (!error) return false;
     const name = String(error.name || '');
     const text = String(error.message || '');
+    const status = error.status || error.code;
+
+    // Upstream capacity, not the caller's fault. Gemini answers overload with
+    // 503 "This model is currently experiencing high demand", which matched
+    // neither the quota check (429 only) nor the abort/timeout regex below. It
+    // therefore fell through to a generic 400 telling the user their photo could
+    // not be read — blaming their picture for Google's load, and hiding a
+    // self-healing outage behind a permanent-sounding error. Observed in the
+    // production logs against both food photos and daily insights.
+    if (status === 503 || status === 'UNAVAILABLE') return true;
+    if (/\b503\b|Service Unavailable|high demand|overloaded|UNAVAILABLE/i.test(text)) return true;
+
     return /abort|timeout|timed out|ETIMEDOUT|ECONNRESET|socket hang up/i.test(name + ' ' + text);
 }
 
