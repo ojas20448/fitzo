@@ -66,6 +66,9 @@ function isTransientError(error) {
     if (!error) return false;
     const name = String(error.name || '');
     const text = String(error.message || '');
+    const status = error.status || error.code;
+    if (status === 503 || status === 'UNAVAILABLE') return true;
+    if (/\b503\b|Service Unavailable|high demand|overloaded|UNAVAILABLE/i.test(text)) return true;
     return /abort|timeout|timed out|ETIMEDOUT|ECONNRESET|socket hang up/i.test(name + ' ' + text);
 }
 
@@ -77,6 +80,19 @@ describe('isTransientError — timeouts count, because a hung quota looks like o
         ['socket hang up', { message: 'socket hang up' }],
         ['ECONNRESET', { message: 'read ECONNRESET' }],
         ['still catches plain quota', { status: 429 }],
+        // Verbatim from the production Render logs. This was previously
+        // unmatched, so Google being overloaded reached the user as a 400
+        // saying their photo could not be read — a self-healing outage
+        // reported as a permanent fault with their input.
+        ['Gemini overload prose', {
+            message: '[GoogleGenerativeAI Error]: Error fetching from '
+                + 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent: '
+                + '[503 Service Unavailable] This model is currently experiencing high demand. '
+                + 'Spikes in demand are usually temporary. Please try again later.',
+        }],
+        ['503 numeric status', { status: 503 }],
+        ['UNAVAILABLE status string', { status: 'UNAVAILABLE' }],
+        ['overloaded wording', { message: 'The model is overloaded. Please try again.' }],
     ])('treats %s as transient', (_label, err) => {
         expect(isTransientError(err)).toBe(true);
     });
