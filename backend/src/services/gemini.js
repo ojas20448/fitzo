@@ -57,14 +57,21 @@ const REQUEST_TIMEOUT_MS = parseInt(process.env.GEMINI_TIMEOUT_MS || '30000', 10
 const REQUEST_OPTIONS = { timeout: REQUEST_TIMEOUT_MS };
 
 /**
- * Vision gets its own, longer budget. Measured against production, a real meal
- * photo takes 13-30s to come back where the text calls take 6-7s, so sharing the
- * 30s text timeout meant a photo that was still being analysed was aborted and
- * reported to the user as "Fitzo AI is busy right now" — a timeout dressed up as
- * a quota problem. Kept under the mobile client's own 60s ceiling so the server
- * always loses the race and can return a real message.
+ * Vision gets its own budget because it is legitimately a little slower than the
+ * text calls, but not by much.
+ *
+ * This was briefly set to 55s, sized from observed 13-30s failures. That was the
+ * wrong measurement to size a success timeout from: those slow runs were Gemini
+ * returning 503 under load, not analysis genuinely taking that long. Every photo
+ * that actually succeeded came back in 6-10s. A 55s ceiling therefore did nothing
+ * for success and left the user watching a spinner for the better part of a
+ * minute before being told the AI was busy.
+ *
+ * 35s is ~3.5x the observed success ceiling and still well inside the mobile
+ * client's own 60s limit, so the server loses the race and can return an honest
+ * message while the user still has the patience to retry.
  */
-const VISION_TIMEOUT_MS = parseInt(process.env.GEMINI_VISION_TIMEOUT_MS || '55000', 10);
+const VISION_TIMEOUT_MS = parseInt(process.env.GEMINI_VISION_TIMEOUT_MS || '35000', 10);
 const VISION_REQUEST_OPTIONS = { timeout: VISION_TIMEOUT_MS };
 
 /**
