@@ -33,7 +33,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "usesAppleSignIn": true,
-      "buildNumber": "9"
+      "buildNumber": "10"
     },
     "android": {
       "adaptiveIcon": {
@@ -42,7 +42,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.fitzo.app",
-      "versionCode": 18,
+      "versionCode": 19,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
