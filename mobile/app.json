@@ -3,7 +3,7 @@
     "name": "Fitzo",
     "slug": "fitzo",
     "owner": "fiskerr",
-    "version": "1.3.5",
+    "version": "1.3.6",
     "sdkVersion": "54.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -33,7 +33,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "usesAppleSignIn": true,
-      "buildNumber": "7"
+      "buildNumber": "9"
     },
     "android": {
       "adaptiveIcon": {
@@ -42,7 +42,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.fitzo.app",
-      "versionCode": 17,
+      "versionCode": 18,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",

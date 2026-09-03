@@ -40,9 +40,14 @@ export default function FoodScannerScreen() {
 
     // A phone camera shoots ~12MP. Base64 of that JPEG is 2-4MB, which is far
     // more than Gemini Vision needs and slow/flaky to upload on mobile data.
-    // Downscaling the long edge to 1024px puts the payload at roughly 100-200KB
-    // with no measurable loss in recognition quality.
-    const MAX_EDGE = 1024;
+    //
+    // 768 rather than 1024: measured against production, every food photo at or
+    // below ~700px came back in 6-8s with full multi-item breakdowns (salmon,
+    // tomatoes, slaw and glaze each itemised separately), so the larger edge was
+    // buying upload time and model latency rather than recognition quality. A
+    // smaller payload also shortens the window in which an upstream hiccup can
+    // land on the request.
+    const MAX_EDGE = 768;
 
     const takePicture = async () => {
         if (!cameraRef.current) return;
