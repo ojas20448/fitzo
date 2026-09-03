@@ -510,7 +510,20 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
 }`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL }, REQUEST_OPTIONS);
+        // responseMimeType forces valid JSON out of the model — the same thing the
+        // text-extraction calls below already do. This call was the odd one out, and
+        // it showed: a photo with no food returned `{"items":[]}` fine, but a real
+        // meal produced a long response that arrived fenced or truncated, so
+        // JSON.parse threw and the user got a 500. It broke precisely when it found
+        // food, which is every real use. maxOutputTokens gives a multi-item thali
+        // room to finish rather than being cut mid-object.
+        const model = genAI.getGenerativeModel({
+            model: GEMINI_MODEL,
+            generationConfig: {
+                responseMimeType: 'application/json',
+                maxOutputTokens: 2048,
+            },
+        }, REQUEST_OPTIONS);
 
         const imagePart = {
             inlineData: {
@@ -523,7 +536,25 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
         const response = await result.response;
         const responseText = response.text();
 
-        const parsed = JSON.parse(extractJSON(responseText));
+        let parsed;
+        try {
+            parsed = JSON.parse(extractJSON(responseText));
+        } catch (parseError) {
+            // A parse failure used to surface as an unexplained 500. Log what the
+            // model actually returned (and why it stopped) so the next one is
+            // diagnosable from the Render logs alone.
+            const finishReason = response.candidates?.[0]?.finishReason;
+            console.error('Gemini Vision returned unparseable JSON:', {
+                finishReason,
+                blockReason: response.promptFeedback?.blockReason,
+                preview: String(responseText).slice(0, 300),
+            });
+            throw new Error(
+                finishReason === 'MAX_TOKENS'
+                    ? 'That photo had too many items to read at once. Try a tighter shot.'
+                    : 'Could not read the food in that photo. Please try again.',
+            );
+        }
 
         // Ensure consistent structure
         const items = (parsed.items || [parsed]).map(item => ({
