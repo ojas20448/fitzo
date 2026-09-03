@@ -595,7 +595,13 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
         // caught here and flattened back into a generic non-operational Error.
         if (error.isOperational) throw error;
         console.error('Gemini Vision food analysis error:', error.message);
-        throw new ValidationError('Failed to analyze food image. Please try again, or describe it in text.');
+        // TEMPORARY DIAGNOSTIC: the underlying reason is echoed to the caller
+        // because Render's logs are not reachable from here and this failure only
+        // reproduces against production. Trim back to a clean message once the
+        // cause is known.
+        throw new ValidationError(
+            `Failed to analyze food image. [diag: ${String(error.message).slice(0, 180)}]`,
+        );
     }
 }
 
