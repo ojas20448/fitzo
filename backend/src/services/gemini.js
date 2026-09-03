@@ -57,6 +57,17 @@ const REQUEST_TIMEOUT_MS = parseInt(process.env.GEMINI_TIMEOUT_MS || '30000', 10
 const REQUEST_OPTIONS = { timeout: REQUEST_TIMEOUT_MS };
 
 /**
+ * Vision gets its own, longer budget. Measured against production, a real meal
+ * photo takes 13-30s to come back where the text calls take 6-7s, so sharing the
+ * 30s text timeout meant a photo that was still being analysed was aborted and
+ * reported to the user as "Fitzo AI is busy right now" — a timeout dressed up as
+ * a quota problem. Kept under the mobile client's own 60s ceiling so the server
+ * always loses the race and can return a real message.
+ */
+const VISION_TIMEOUT_MS = parseInt(process.env.GEMINI_VISION_TIMEOUT_MS || '55000', 10);
+const VISION_REQUEST_OPTIONS = { timeout: VISION_TIMEOUT_MS };
+
+/**
  * Did the call fail in a way that is temporary and worth retrying?
  *
  * Covers both an exhausted quota and a timeout. They are indistinguishable to
@@ -530,7 +541,7 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
                 // to turn it off, so the budget has to absorb it.
                 maxOutputTokens: 8192,
             },
-        }, REQUEST_OPTIONS);
+        }, VISION_REQUEST_OPTIONS);
 
         const imagePart = {
             inlineData: {
@@ -595,13 +606,7 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
         // caught here and flattened back into a generic non-operational Error.
         if (error.isOperational) throw error;
         console.error('Gemini Vision food analysis error:', error.message);
-        // TEMPORARY DIAGNOSTIC: the underlying reason is echoed to the caller
-        // because Render's logs are not reachable from here and this failure only
-        // reproduces against production. Trim back to a clean message once the
-        // cause is known.
-        throw new ValidationError(
-            `Failed to analyze food image. [diag: ${String(error.message).slice(0, 180)}]`,
-        );
+        throw new ValidationError('Failed to analyze food image. Please try again, or describe it in text.');
     }
 }
 
