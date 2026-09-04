@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     Dimensions,
+    Platform,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -283,6 +284,29 @@ export default function HealthReportScreen() {
                         <View style={styles.reportDivider} />
                     </Animated.View>
 
+                    {/* ── Apple Health / HealthKit Integration Banner ── */}
+                    <Animated.View entering={FadeInDown.delay(50).duration(600).springify()} style={styles.healthKitBanner}>
+                        <View style={styles.healthKitBannerIcon}>
+                            <MaterialIcons name="favorite" size={20} color={colors.accent.rose} />
+                        </View>
+                        <View style={styles.healthKitBannerContent}>
+                            <View style={styles.healthKitBannerTitleRow}>
+                                <Text style={styles.healthKitBannerTitle}>
+                                    {Platform.OS === 'ios' ? 'Apple Health Integration' : 'Health Connect Integration'}
+                                </Text>
+                                <View style={styles.healthKitPill}>
+                                    <MaterialIcons name="check-circle" size={11} color={colors.success} />
+                                    <Text style={styles.healthKitPillText}>Active</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.healthKitBannerDesc}>
+                                {Platform.OS === 'ios'
+                                    ? 'Daily steps, active calories, resting heart rate, and sleep duration are integrated directly from Apple Health (HealthKit).'
+                                    : 'Daily steps, active calories, resting heart rate, and sleep duration are integrated directly from Health Connect.'}
+                            </Text>
+                        </View>
+                    </Animated.View>
+
                     {/* ── Overall Grade ── */}
                     <Animated.View entering={FadeInDown.delay(100).duration(600).springify()} style={styles.gradeSection}>
                         <View style={[styles.gradeBadge, { borderColor: gradeData.color }]}>
@@ -300,7 +324,15 @@ export default function HealthReportScreen() {
 
                     {/* ── Today's Vitals (2x2 Grid) ── */}
                     <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} style={styles.sectionBlock}>
-                        <Text style={styles.sectionTitle}>TODAY'S VITALS</Text>
+                        <View style={styles.sectionHeaderRow}>
+                            <Text style={styles.sectionTitle}>TODAY'S VITALS</Text>
+                            <View style={styles.sectionBadge}>
+                                <MaterialIcons name="sync" size={11} color={colors.text.muted} />
+                                <Text style={styles.sectionBadgeText}>
+                                    {Platform.OS === 'ios' ? 'Apple Health' : 'Health Connect'}
+                                </Text>
+                            </View>
+                        </View>
                         <View style={styles.vitalsRow}>
                             <VitalCard
                                 icon="directions-walk"
@@ -341,7 +373,15 @@ export default function HealthReportScreen() {
                     {/* ── 7-Day Averages ── */}
                     {healthHistory?.averages && (
                         <Animated.View entering={FadeInDown.delay(300).duration(600).springify()} style={styles.sectionBlock}>
-                            <Text style={styles.sectionTitle}>7-DAY AVERAGES</Text>
+                            <View style={styles.sectionHeaderRow}>
+                                <Text style={styles.sectionTitle}>7-DAY AVERAGES</Text>
+                                <View style={styles.sectionBadge}>
+                                    <MaterialIcons name="sync" size={11} color={colors.text.muted} />
+                                    <Text style={styles.sectionBadgeText}>
+                                        {Platform.OS === 'ios' ? 'Apple Health' : 'Health Connect'}
+                                    </Text>
+                                </View>
+                            </View>
                             <GlassCard style={styles.innerCard}>
                                 <View style={styles.avgRow}>
                                     <AvgStat label="Steps" value={formatNumber(safeNum(healthHistory.averages.avg_steps))} icon="directions-walk" />
@@ -429,6 +469,16 @@ export default function HealthReportScreen() {
                             </GlassCard>
                         </Animated.View>
                     )}
+
+                    {/* ── HealthKit Transparency & Privacy Disclosure ── */}
+                    <Animated.View entering={FadeInDown.delay(750).duration(600).springify()} style={styles.healthKitDisclaimer}>
+                        <MaterialIcons name="health-and-safety" size={18} color={colors.text.muted} />
+                        <Text style={styles.healthKitDisclaimerText}>
+                            {Platform.OS === 'ios'
+                                ? 'Fitzo integrates with Apple Health (HealthKit) to read your daily steps, active calories burned, resting heart rate, and sleep analysis. Health data remains private on your device and is never shared, sold, or used for advertising.'
+                                : 'Fitzo integrates with Health Connect to read your daily steps, active calories burned, resting heart rate, and sleep analysis. Health data remains private on your device and is never shared, sold, or used for advertising.'}
+                        </Text>
+                    </Animated.View>
 
                     {/* ── Footer ── */}
                     <Animated.View entering={FadeInDown.delay(800).duration(600).springify()} style={styles.reportFooter}>
@@ -595,11 +645,109 @@ const styles = StyleSheet.create({
     gradeLabel: { fontSize: typography.sizes.lg, fontFamily: typography.fontFamily.semiBold, color: colors.text.primary },
     gradeDescription: { fontSize: typography.sizes.xs, fontFamily: typography.fontFamily.regular, color: colors.text.muted, marginTop: 2 },
 
+    // HealthKit Banner
+    healthKitBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        marginBottom: spacing.xl,
+    },
+    healthKitBannerIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(244, 63, 94, 0.15)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    healthKitBannerContent: { flex: 1 },
+    healthKitBannerTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 2,
+    },
+    healthKitBannerTitle: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.text.primary,
+    },
+    healthKitPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        backgroundColor: 'rgba(34, 197, 94, 0.15)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: borderRadius.full,
+    },
+    healthKitPillText: {
+        fontSize: 10,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.success,
+    },
+    healthKitBannerDesc: {
+        fontSize: typography.sizes['2xs'],
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        lineHeight: 14,
+    },
+
     // Section
     sectionBlock: { marginBottom: spacing.xl },
+    sectionHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: spacing.sm,
+    },
     sectionTitle: {
-        fontSize: typography.sizes['2xs'], fontFamily: typography.fontFamily.semiBold,
-        color: colors.text.muted, letterSpacing: 2, marginBottom: spacing.sm,
+        fontSize: typography.sizes['2xs'],
+        fontFamily: typography.fontFamily.semiBold,
+        color: colors.text.muted,
+        letterSpacing: 2,
+    },
+    sectionBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: borderRadius.sm,
+    },
+    sectionBadgeText: {
+        fontSize: 10,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+    },
+
+    // HealthKit Disclaimer
+    healthKitDisclaimer: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: spacing.sm,
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        marginTop: spacing.sm,
+        marginBottom: spacing.md,
+    },
+    healthKitDisclaimerText: {
+        flex: 1,
+        fontSize: typography.sizes['2xs'],
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        lineHeight: 15,
     },
 
     // Vitals — explicit 2-column rows

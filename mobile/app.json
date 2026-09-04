@@ -26,7 +26,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Fitzo uses your camera to scan gym QR codes, photograph meals for nutritional logging, and capture workout progress photos",
         "NSMicrophoneUsageDescription": "Fitzo uses your microphone so you can speak to the AI coach and log meals by voice instead of typing",
-        "NSHealthShareUsageDescription": "Fitzo reads your health data (steps, heart rate, sleep) to give you a complete fitness picture",
+        "NSHealthShareUsageDescription": "Fitzo integrates with Apple Health to read and display your daily steps, active energy burned, resting heart rate, and sleep analysis in your fitness summary and Health Report",
+        "NSHealthUpdateUsageDescription": "Fitzo writes your completed workout sessions and calories burned to Apple Health to keep your fitness data unified",
         "UIBackgroundModes": [
           "remote-notification"
         ],
@@ -98,8 +99,8 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Fitzo reads your health data (steps, heart rate, sleep) to give you a complete fitness picture",
-          "NSHealthUpdateUsageDescription": "Fitzo saves your workout data to Apple Health"
+          "NSHealthShareUsageDescription": "Fitzo integrates with Apple Health to read and display your daily steps, active energy burned, resting heart rate, and sleep analysis in your fitness summary and Health Report",
+          "NSHealthUpdateUsageDescription": "Fitzo writes your completed workout sessions and calories burned to Apple Health to keep your fitness data unified"
         }
       ],
       "react-native-health-connect",

@@ -117,7 +117,7 @@ const QRCheckinScreen: React.FC = () => {
                         We need camera access to scan the gym's QR code for check-in.
                     </Text>
                     <Button
-                        title="Enable Camera"
+                        title="Continue"
                         onPress={requestPermission}
                         style={{ marginTop: spacing['2xl'] }}
                     />

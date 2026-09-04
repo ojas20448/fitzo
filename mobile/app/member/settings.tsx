@@ -470,75 +470,76 @@ export default function SettingsScreen() {
                 </GlassCard>
 
                 {/* Health Section */}
-                {healthAvailable && (
-                    <>
-                        <Text style={styles.sectionTitle}>Health</Text>
-                        <GlassCard style={styles.card}>
+                <Text style={styles.sectionTitle}>Health & Fitness Data</Text>
+                <GlassCard style={styles.card}>
+                    <TouchableOpacity
+                        style={styles.row}
+                        onPress={healthConnected ? undefined : handleConnectHealth}
+                        disabled={healthSyncing}
+                        activeOpacity={healthConnected ? 1 : 0.7}
+                    >
+                        <View style={styles.rowLeft}>
+                            <MaterialIcons
+                                name="favorite"
+                                size={24}
+                                color={healthConnected ? colors.accent.rose : colors.text.secondary}
+                            />
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.rowLabel}>
+                                    {Platform.OS === 'ios' ? 'Apple Health (HealthKit)' : 'Health Connect'}
+                                </Text>
+                                <Text style={styles.rowSub}>
+                                    {healthConnected
+                                        ? 'Connected • Syncing steps, calories & sleep'
+                                        : 'Tap to connect Apple Health to Fitzo'}
+                                </Text>
+                            </View>
+                        </View>
+                        {healthSyncing ? (
+                            <ActivityIndicator size="small" color={colors.text.primary} />
+                        ) : healthConnected ? (
+                            <MaterialIcons name="check-circle" size={22} color={colors.success} />
+                        ) : (
+                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                        )}
+                    </TouchableOpacity>
+                    {healthConnected && (
+                        <>
+                            <View style={styles.divider} />
                             <TouchableOpacity
                                 style={styles.row}
-                                onPress={healthConnected ? undefined : handleConnectHealth}
+                                onPress={async () => {
+                                    setHealthSyncing(true);
+                                    try {
+                                        const summary = await getTodaysSummary();
+                                        await healthAPI.sync({
+                                            steps: summary.steps,
+                                            active_calories: summary.activeCalories,
+                                            resting_heart_rate: summary.restingHeartRate,
+                                            sleep_hours: summary.sleepHours,
+                                            source: 'wearable',
+                                        });
+                                        toast.success('Synced!', 'Health data updated from Apple Health');
+                                    } catch {
+                                        toast.error('Sync Failed', 'Could not sync health data');
+                                    } finally {
+                                        setHealthSyncing(false);
+                                    }
+                                }}
                                 disabled={healthSyncing}
-                                activeOpacity={healthConnected ? 1 : 0.7}
                             >
                                 <View style={styles.rowLeft}>
-                                    <MaterialIcons
-                                        name="watch"
-                                        size={24}
-                                        color={healthConnected ? colors.crowd.low : colors.text.secondary}
-                                    />
-                                    <View>
-                                        <Text style={styles.rowLabel}>
-                                            {Platform.OS === 'ios' ? 'Apple Health' : 'Health Connect'}
-                                        </Text>
-                                        <Text style={styles.rowSub}>
-                                            {healthConnected ? 'Connected' : 'Tap to connect'}
-                                        </Text>
-                                    </View>
+                                    <MaterialIcons name="sync" size={24} color={colors.text.secondary} />
+                                    <Text style={styles.rowLabel}>Sync Apple Health Now</Text>
                                 </View>
-                                {healthSyncing ? (
-                                    <ActivityIndicator size="small" color={colors.text.primary} />
-                                ) : healthConnected ? (
-                                    <MaterialIcons name="check-circle" size={22} color={colors.crowd.low} />
-                                ) : (
-                                    <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
-                                )}
+                                {healthSyncing && <ActivityIndicator size="small" color={colors.text.primary} />}
                             </TouchableOpacity>
-                            {healthConnected && (
-                                <>
-                                    <View style={styles.divider} />
-                                    <TouchableOpacity
-                                        style={styles.row}
-                                        onPress={async () => {
-                                            setHealthSyncing(true);
-                                            try {
-                                                const summary = await getTodaysSummary();
-                                                await healthAPI.sync({
-                                                    steps: summary.steps,
-                                                    active_calories: summary.activeCalories,
-                                                    resting_heart_rate: summary.restingHeartRate,
-                                                    sleep_hours: summary.sleepHours,
-                                                    source: 'wearable',
-                                                });
-                                                toast.success('Synced!', 'Health data updated');
-                                            } catch {
-                                                toast.error('Sync Failed', 'Could not sync health data');
-                                            } finally {
-                                                setHealthSyncing(false);
-                                            }
-                                        }}
-                                        disabled={healthSyncing}
-                                    >
-                                        <View style={styles.rowLeft}>
-                                            <MaterialIcons name="sync" size={24} color={colors.text.secondary} />
-                                            <Text style={styles.rowLabel}>Sync Now</Text>
-                                        </View>
-                                        {healthSyncing && <ActivityIndicator size="small" color={colors.text.primary} />}
-                                    </TouchableOpacity>
-                                </>
-                            )}
-                        </GlassCard>
-                    </>
-                )}
+                        </>
+                    )}
+                </GlassCard>
+                <Text style={styles.healthExplanationText}>
+                    Fitzo integrates with Apple Health (HealthKit) to sync daily steps, active calories burned, resting heart rate, and sleep duration.
+                </Text>
 
                 {/* System Section */}
                 <Text style={styles.sectionTitle}>System</Text>
@@ -727,6 +728,15 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.lg,
         paddingBottom: spacing.lg,
         marginTop: -spacing.sm,
+    },
+    healthExplanationText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        marginTop: spacing.xs,
+        marginBottom: spacing.md,
+        paddingHorizontal: spacing.xs,
+        lineHeight: 16,
     },
     versionText: {
         textAlign: 'center',
