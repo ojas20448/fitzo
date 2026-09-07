@@ -6,6 +6,7 @@ const { query } = require('../config/database');
 
 const express = require('express');
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 const router = express.Router();
 const indianFood = require('../services/indianFood');
 const ifct2017 = require('../services/ifct2017');
@@ -36,7 +37,16 @@ const searchLimiter = rateLimit({
     max: 30,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => `food-search:${req.user?.id || req.ip}`,
+    // ipKeyGenerator, not a raw req.ip. express-rate-limit v8 refuses a bare IP
+    // here and logs ERR_ERL_KEY_GEN_IPV6 on every boot (visible in the Render
+    // startup logs), because a single IPv6 client owns a whole /64 and could
+    // walk through addresses in it to reset the counter at will. The helper
+    // normalises to that /64 so the limit means something.
+    //
+    // In practice authenticate runs before this on all three routes, so the
+    // fallback is unreachable today — but it stops being dead code the moment
+    // one of them is opened up, and it should not be wrong when that happens.
+    keyGenerator: (req) => `food-search:${req.user?.id || ipKeyGenerator(req.ip)}`,
     message: { error: true, message: 'Too many food searches. Please slow down.', code: 'RATE_LIMITED' },
     skip: () => process.env.NODE_ENV === 'test',
 });
