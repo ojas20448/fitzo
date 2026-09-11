@@ -27,14 +27,14 @@
         "NSCameraUsageDescription": "Fitzo uses your camera to scan gym QR codes, photograph meals for nutritional logging, and capture workout progress photos",
         "NSMicrophoneUsageDescription": "Fitzo uses your microphone so you can speak to the AI coach and log meals by voice instead of typing",
         "NSHealthShareUsageDescription": "Fitzo integrates with Apple Health to read and display your daily steps, active energy burned, resting heart rate, and sleep analysis in your fitness summary and Health Report",
-        "NSHealthUpdateUsageDescription": "Fitzo writes your completed workout sessions and calories burned to Apple Health to keep your fitness data unified",
+        "NSHealthUpdateUsageDescription": "Fitzo currently reads health data only and does not write to Apple Health",
         "UIBackgroundModes": [
           "remote-notification"
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
       "usesAppleSignIn": true,
-      "buildNumber": "11"
+      "buildNumber": "12"
     },
     "android": {
       "adaptiveIcon": {
@@ -48,7 +48,7 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.health.READ_STEPS",
-        "android.permission.health.READ_HEART_RATE",
+        "android.permission.health.READ_RESTING_HEART_RATE",
         "android.permission.health.READ_SLEEP",
         "android.permission.health.READ_ACTIVE_CALORIES_BURNED"
       ],
@@ -100,7 +100,7 @@
         "@kingstinct/react-native-healthkit",
         {
           "NSHealthShareUsageDescription": "Fitzo integrates with Apple Health to read and display your daily steps, active energy burned, resting heart rate, and sleep analysis in your fitness summary and Health Report",
-          "NSHealthUpdateUsageDescription": "Fitzo writes your completed workout sessions and calories burned to Apple Health to keep your fitness data unified"
+          "NSHealthUpdateUsageDescription": "Fitzo currently reads health data only and does not write to Apple Health"
         }
       ],
       "react-native-health-connect",

@@ -3,31 +3,19 @@ const { AuthError } = require('../utils/errors');
 const { query } = require('../config/database');
 const cache = require('../services/cache');
 
-// Cache key builder & TTL for user auth data
-const USER_AUTH_TTL = 5 * 60; // 5 minutes
+// Security state must be fresh: cached principals survive password resets/deletion.
 const userAuthKey = (userId) => `user:${userId}:auth`;
-
-/**
- * Fetch user by ID — cached in Redis to avoid DB hit on every request.
- * Returns null if user not found.
- */
-async function getCachedUser(userId) {
-    // Try cache first
-    const cached = await cache.get(userAuthKey(userId));
-    if (cached) return cached;
-
-    // Cache miss — query DB
+async function getCurrentUser(userId) {
     const result = await query(
-        'SELECT id, email, name, role, gym_id, trainer_id, xp_points, avatar_url FROM users WHERE id = $1',
+        'SELECT id, email, name, role, gym_id, trainer_id, xp_points, avatar_url, token_version FROM users WHERE id = $1',
         [userId]
     );
-
-    if (result.rows.length === 0) return null;
-
-    const user = result.rows[0];
-    // Store in cache
-    await cache.set(userAuthKey(userId), user, USER_AUTH_TTL);
-    return user;
+    return result.rows[0] || null;
+}
+function assertCurrentSession(user, decoded) {
+    if (!user || (decoded.tokenVersion || 0) !== (user.token_version || 0)) {
+        throw new AuthError('Please log in again', 'SESSION_REVOKED');
+    }
 }
 
 /**
@@ -40,7 +28,7 @@ async function invalidateUserCache(userId) {
 /**
  * JWT Authentication Middleware
  * Extracts and verifies JWT from Authorization header.
- * User data is cached in Redis for 5 min to avoid a DB query per request.
+ * Security state is read fresh so revocation and deletion take effect immediately.
  */
 const authenticate = async (req, res, next) => {
     try {
@@ -65,13 +53,14 @@ const authenticate = async (req, res, next) => {
         }
 
         // Get user (from cache or DB)
-        const user = await getCachedUser(decoded.userId);
+        const user = await getCurrentUser(decoded.userId);
 
         if (!user) {
             throw new AuthError('User not found. Please log in again', 'USER_NOT_FOUND');
         }
 
         // Attach user to request
+        assertCurrentSession(user, decoded);
         req.user = user;
         next();
     } catch (error) {
@@ -96,7 +85,8 @@ const optionalAuth = async (req, res, next) => {
 
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = await getCachedUser(decoded.userId);
+            req.user = await getCurrentUser(decoded.userId);
+            assertCurrentSession(req.user, decoded);
         } catch {
             req.user = null;
         }
@@ -110,9 +100,12 @@ const optionalAuth = async (req, res, next) => {
 /**
  * Generate JWT Token
  */
-const generateToken = (userId) => {
+const generateToken = async (userId, expectedVersion) => {
+    const user = await getCurrentUser(userId);
+    if (!user) throw new AuthError();
+    if (expectedVersion !== undefined && expectedVersion !== user.token_version) throw new AuthError('Please log in again', 'SESSION_REVOKED');
     return jwt.sign(
-        { userId },
+        { userId, tokenVersion: user.token_version || 0 },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN || '90d' }
     );
@@ -143,7 +136,7 @@ const authenticateAdmin = async (req, res, next) => {
             throw new AuthError('Please log in again', 'INVALID_TOKEN');
         }
 
-        const user = await getCachedUser(decoded.userId);
+        const user = await getCurrentUser(decoded.userId);
 
         if (!user) {
             throw new AuthError('User not found. Please log in again', 'USER_NOT_FOUND');
@@ -154,6 +147,7 @@ const authenticateAdmin = async (req, res, next) => {
             throw new AuthError('Admin access required', 'ADMIN_REQUIRED');
         }
 
+        assertCurrentSession(user, decoded);
         req.user = user;
         next();
     } catch (error) {

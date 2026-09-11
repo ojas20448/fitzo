@@ -72,10 +72,12 @@ export default function AICoachScreen() {
     // failed summary never delays the conversation loading.
     const [context, setContext] = useState<{ sessions: number; streak: number; targetCalories: number | null } | null>(null);
     useEffect(() => {
-        aiAPI.getContextSummary()
-            .then(setContext)
-            .catch(() => setContext(null));   // strip simply omits itself
-    }, []);
+        if (hasConsented) {
+            aiAPI.getContextSummary()
+                .then(setContext)
+                .catch(() => setContext(null));   // strip simply omits itself
+        }
+    }, [hasConsented]);
 
     const startRecording = async () => {
         try {
@@ -132,6 +134,10 @@ export default function AICoachScreen() {
     };
 
     useEffect(() => {
+        if (!hasConsented) {
+            setHistoryLoading(false);
+            return;
+        }
         const loadHistory = async () => {
             try {
                 const response = await aiAPI.getChatHistory();
@@ -151,7 +157,7 @@ export default function AICoachScreen() {
             }
         };
         loadHistory();
-    }, []);
+    }, [hasConsented]);
 
     // Prompts phrased to hit the context pack — the coach answers from YOUR
     // data (volume, skipped muscles, streak, macros), not generic advice.

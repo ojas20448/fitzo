@@ -101,6 +101,13 @@ export default function VoiceCaptureSheet({
 
                     <Text style={styles.hint}>{recording ? hint : 'Hang tight — no need to hold the phone.'}</Text>
 
+                    <View style={styles.aiBadgeRow}>
+                        <MaterialIcons name="auto-awesome" size={13} color={colors.text.muted} />
+                        <Text style={styles.aiBadgeText}>
+                            Powered by Google Gemini AI · Audio is transcribed and never stored
+                        </Text>
+                    </View>
+
                     {/* Two exits, always visible while recording */}
                     <View style={styles.actions}>
                         <TouchableOpacity
@@ -255,5 +262,19 @@ const styles = StyleSheet.create({
     },
     disabledText: {
         opacity: 0.5,
+    },
+    aiBadgeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        marginTop: spacing.md,
+        paddingHorizontal: spacing.sm,
+    },
+    aiBadgeText: {
+        fontSize: 11,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        textAlign: 'center',
     },
 });

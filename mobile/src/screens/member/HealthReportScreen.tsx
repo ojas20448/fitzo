@@ -1,3 +1,5 @@
+import { useAuth } from '../../context/AuthContext';
+import { isHealthImportEnabled } from '../../utils/healthImportPreference';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View,
@@ -18,7 +20,8 @@ import { healthAPI, progressAPI, nutritionAPI, measurementsAPI } from '../../ser
 import GlassCard from '../../components/GlassCard';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
-import { isHealthAvailable, getTodaysSummary } from '../../services/healthService';
+import { isHealthAvailable, hasHealthData, healthSyncPayload, getTodaysSummary } from '../../services/healthService';
+import { healthReportData } from '../../utils/healthReportData';
 import { useShareCapture } from '../../hooks/useShareCapture';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -30,8 +33,8 @@ const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 2 - CARD_GAP) / 2;
 // ─────────────────────────────────────────────
 
 interface HealthData {
-    steps: number;
-    active_calories: number;
+    steps: number | null;
+    active_calories: number | null;
     resting_heart_rate: number | null;
     sleep_hours: number | null;
 }
@@ -60,14 +63,14 @@ interface MeasurementData {
 interface HealthHistory {
     daily: Array<{
         date: string;
-        steps: number;
-        active_calories: number;
+        steps: number | null;
+        active_calories: number | null;
         resting_heart_rate: number | null;
         sleep_hours: number | null;
     }>;
     averages: {
-        avg_steps: number;
-        avg_calories: number;
+        avg_steps: number | null;
+        avg_calories: number | null;
         avg_heart_rate: number | null;
         avg_sleep: number | null;
     };
@@ -77,7 +80,8 @@ interface HealthHistory {
 // HELPERS
 // ─────────────────────────────────────────────
 
-function formatNumber(n: number): string {
+function formatNumber(n: number | null | undefined): string {
+    if (n == null) return '—';
     if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
     return Math.round(n).toString();
 }
@@ -88,14 +92,15 @@ function safeNum(v: any): number {
 }
 
 function getHealthGrade(data: {
-    steps: number;
-    calories: number;
+    steps: number | null;
+    calories: number | null;
     sleep: number | null;
     hr: number | null;
 }): { grade: string; color: string; label: string } {
     let score = 0;
     let total = 0;
 
+    if (data.steps !== null) {
     total += 25;
     if (data.steps >= 10000) score += 25;
     else if (data.steps >= 8000) score += 20;
@@ -103,12 +108,15 @@ function getHealthGrade(data: {
     else if (data.steps >= 3000) score += 10;
     else score += 5;
 
+    }
+    if (data.calories !== null) {
     total += 25;
     if (data.calories >= 500) score += 25;
     else if (data.calories >= 300) score += 20;
     else if (data.calories >= 150) score += 15;
     else score += 5;
 
+    }
     if (data.sleep !== null) {
         total += 25;
         if (data.sleep >= 7 && data.sleep <= 9) score += 25;
@@ -123,6 +131,7 @@ function getHealthGrade(data: {
         else score += 8;
     }
 
+    if (!total) return { grade: '—', color: colors.text.muted, label: 'No readable health data yet' };
     const pct = total > 0 ? (score / total) * 100 : 0;
 
     if (pct >= 85) return { grade: 'A', color: colors.success, label: 'Excellent' };
@@ -144,6 +153,7 @@ const reportDate = today.toLocaleDateString('en-IN', {
 // ─────────────────────────────────────────────
 
 export default function HealthReportScreen() {
+    const { user } = useAuth();
     const toast = useToast();
     const viewShotRef = useRef<ViewShot>(null);
     const [loading, setLoading] = useState(true);
@@ -159,17 +169,11 @@ export default function HealthReportScreen() {
         setLoading(true);
         try {
             // Auto-sync from device health services if available
-            if (isHealthAvailable()) {
+            if (isHealthAvailable() && await isHealthImportEnabled(user?.id)) {
                 try {
                     const summary = await getTodaysSummary();
-                    if (summary.steps > 0 || summary.activeCalories > 0) {
-                        await healthAPI.sync({
-                            steps: summary.steps,
-                            active_calories: summary.activeCalories,
-                            resting_heart_rate: summary.restingHeartRate,
-                            sleep_hours: summary.sleepHours,
-                            source: 'wearable',
-                        });
+                    if (hasHealthData(summary)) {
+                        await healthAPI.sync(healthSyncPayload(summary));
                     }
                 } catch {
                     // Sync failed silently — still load from backend
@@ -184,8 +188,9 @@ export default function HealthReportScreen() {
                 measurementsAPI.getLatest().catch(() => ({ measurement: null })),
             ]);
 
-            setHealthToday(healthRes?.data || null);
-            setHealthHistory(historyRes?.data || null);
+            const report = healthReportData(healthRes, historyRes);
+            setHealthToday(report.today);
+            setHealthHistory(report.history);
             setPrs((prsRes?.prs || []).slice(0, 5));
             setNutrition(nutritionRes?.profile || null);
             setMeasurements(measureRes?.measurement || null);
@@ -194,7 +199,7 @@ export default function HealthReportScreen() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user?.id]);
 
     useEffect(() => {
         loadData();
@@ -215,8 +220,8 @@ export default function HealthReportScreen() {
 
     const gradeData = healthToday
         ? getHealthGrade({
-              steps: healthToday.steps || 0,
-              calories: healthToday.active_calories || 0,
+              steps: healthToday.steps,
+              calories: healthToday.active_calories,
               sleep: healthToday.sleep_hours,
               hr: healthToday.resting_heart_rate,
           })
@@ -337,7 +342,7 @@ export default function HealthReportScreen() {
                             <VitalCard
                                 icon="directions-walk"
                                 label="Steps"
-                                value={formatNumber(healthToday?.steps || 0)}
+                                value={formatNumber(healthToday?.steps)}
                                 target="8,000"
                                 color={colors.accent.sky}
                             />
@@ -384,9 +389,9 @@ export default function HealthReportScreen() {
                             </View>
                             <GlassCard style={styles.innerCard}>
                                 <View style={styles.avgRow}>
-                                    <AvgStat label="Steps" value={formatNumber(safeNum(healthHistory.averages.avg_steps))} icon="directions-walk" />
+                                    <AvgStat label="Steps" value={formatNumber(healthHistory.averages.avg_steps)} icon="directions-walk" />
                                     <View style={styles.avgDivider} />
-                                    <AvgStat label="Calories" value={`${Math.round(safeNum(healthHistory.averages.avg_calories))}`} icon="local-fire-department" />
+                                    <AvgStat label="Calories" value={healthHistory.averages.avg_calories == null ? '—' : `${Math.round(healthHistory.averages.avg_calories)}`} icon="local-fire-department" />
                                 </View>
                                 <View style={styles.avgRowDivider} />
                                 <View style={styles.avgRow}>
@@ -404,7 +409,7 @@ export default function HealthReportScreen() {
                             <Text style={styles.sectionTitle}>STEPS THIS WEEK</Text>
                             <GlassCard style={styles.innerCard}>
                                 <MiniBarChart
-                                    data={healthHistory.daily.map((d) => ({
+                                    data={healthHistory.daily.filter(d => d.steps != null).map((d) => ({
                                         label: new Date(d.date).toLocaleDateString('en', { weekday: 'short' }).charAt(0),
                                         value: d.steps || 0,
                                     }))}
@@ -475,8 +480,8 @@ export default function HealthReportScreen() {
                         <MaterialIcons name="health-and-safety" size={18} color={colors.text.muted} />
                         <Text style={styles.healthKitDisclaimerText}>
                             {Platform.OS === 'ios'
-                                ? 'Fitzo integrates with Apple Health (HealthKit) to read your daily steps, active calories burned, resting heart rate, and sleep analysis. Health data remains private on your device and is never shared, sold, or used for advertising.'
-                                : 'Fitzo integrates with Health Connect to read your daily steps, active calories burned, resting heart rate, and sleep analysis. Health data remains private on your device and is never shared, sold, or used for advertising.'}
+                                ? 'Fitzo integrates with Apple Health (HealthKit) to read your daily steps, active calories burned, resting heart rate, and sleep analysis. When connected, available readings are imported into your Fitzo account for your report and AI coach. Manage read access in your device health settings.'
+                                : 'Fitzo integrates with Health Connect to read your daily steps, active calories burned, resting heart rate, and sleep analysis. When connected, available readings are imported into your Fitzo account for your report and AI coach. Manage read access in your device health settings.'}
                         </Text>
                     </Animated.View>
 

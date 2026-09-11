@@ -9,38 +9,21 @@ const express = require('express');
 const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
-const { asyncHandler } = require('../utils/errors');
+const { asyncHandler, ValidationError } = require('../utils/errors');
 const { validate } = require('../middleware/validate');
 const { invalidateContextPack } = require('../services/contextPack');
 const { z } = require('zod');
+const { isValidDateString, istDateString } = require('../utils/dayBoundary');
 
 const syncHealthSchema = z.object({
-    steps: z.number().int().min(0).max(999999),
-    active_calories: z.number().min(0).max(99999),
+    steps: z.number().int().min(0).max(999999).nullable().optional(),
+    active_calories: z.number().min(0).max(99999).nullable().optional(),
     resting_heart_rate: z.number().min(20).max(250).nullable().optional(),
     sleep_hours: z.number().min(0).max(24).nullable().optional(),
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD format').optional(),
-});
+    date: z.string().refine(isValidDateString, 'Date must be a valid YYYY-MM-DD date').optional(),
+}).refine(v => [v.steps, v.active_calories, v.resting_heart_rate, v.sleep_hours].some(n => n != null), 'No health measurements supplied');
 
 router.use(authenticate);
-
-// ===========================================
-// ENSURE TABLE EXISTS
-// ===========================================
-query(`
-    CREATE TABLE IF NOT EXISTS health_data (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL REFERENCES users(id),
-        date DATE NOT NULL DEFAULT CURRENT_DATE,
-        steps INTEGER DEFAULT 0,
-        active_calories INTEGER DEFAULT 0,
-        resting_heart_rate SMALLINT,
-        sleep_hours NUMERIC(3,1),
-        source TEXT DEFAULT 'manual',
-        synced_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(user_id, date)
-    )
-`).catch(err => console.error('Could not create health_data table:', err.message));
 
 // ===========================================
 // POST /api/health/sync
@@ -49,22 +32,22 @@ query(`
 router.post('/sync', validate({ body: syncHealthSchema }), asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const {
-        steps,
-        active_calories,
+        steps = null,
+        active_calories = null,
         resting_heart_rate = null,
         sleep_hours = null,
         date,
     } = req.body;
 
-    const targetDate = date || new Date().toISOString().split('T')[0];
+    const targetDate = date || istDateString();
 
     const result = await query(
         `INSERT INTO health_data (user_id, date, steps, active_calories, resting_heart_rate, sleep_hours, source, synced_at)
          VALUES ($1, $2, $3, $4, $5, $6, 'wearable', NOW())
          ON CONFLICT (user_id, date)
          DO UPDATE SET
-            steps = GREATEST(health_data.steps, EXCLUDED.steps),
-            active_calories = GREATEST(health_data.active_calories, EXCLUDED.active_calories),
+            steps = COALESCE(EXCLUDED.steps, health_data.steps),
+            active_calories = COALESCE(EXCLUDED.active_calories, health_data.active_calories),
             resting_heart_rate = COALESCE(EXCLUDED.resting_heart_rate, health_data.resting_heart_rate),
             sleep_hours = COALESCE(EXCLUDED.sleep_hours, health_data.sleep_hours),
             synced_at = NOW()
@@ -84,16 +67,18 @@ router.post('/sync', validate({ body: syncHealthSchema }), asyncHandler(async (r
 // ===========================================
 router.get('/today', asyncHandler(async (req, res) => {
     const userId = req.user.id;
+    const date = req.query.date || istDateString();
+    if (!isValidDateString(date)) throw new ValidationError('Invalid date');
 
     const result = await query(
-        `SELECT * FROM health_data WHERE user_id = $1 AND date = CURRENT_DATE`,
-        [userId]
+        `SELECT * FROM health_data WHERE user_id = $1 AND date = $2::date`,
+        [userId, date]
     );
 
     res.json({
         health: result.rows[0] || {
-            steps: 0,
-            active_calories: 0,
+            steps: null,
+            active_calories: null,
             resting_heart_rate: null,
             sleep_hours: null,
         }
@@ -106,14 +91,16 @@ router.get('/today', asyncHandler(async (req, res) => {
 // ===========================================
 router.get('/history', asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const days = parseInt(req.query.days) || 30;
+    const days = Math.max(1, Math.min(365, parseInt(req.query.days) || 30));
+    const date = req.query.date || istDateString();
+    if (!isValidDateString(date)) throw new ValidationError('Invalid date');
 
     const result = await query(
         `SELECT date, steps, active_calories, resting_heart_rate, sleep_hours
          FROM health_data
-         WHERE user_id = $1 AND date >= CURRENT_DATE - $2::int
+         WHERE user_id = $1 AND date BETWEEN $3::date - ($2::int - 1) AND $3::date
          ORDER BY date DESC`,
-        [userId, days]
+        [userId, days, date]
     );
 
     // Weekly averages
@@ -125,10 +112,10 @@ router.get('/history', asyncHandler(async (req, res) => {
             ROUND(AVG(resting_heart_rate)) as avg_resting_hr,
             ROUND(AVG(sleep_hours)::numeric, 1) as avg_sleep_hours
          FROM health_data
-         WHERE user_id = $1 AND date >= CURRENT_DATE - $2::int
+         WHERE user_id = $1 AND date BETWEEN $3::date - ($2::int - 1) AND $3::date
          GROUP BY week_start
          ORDER BY week_start DESC`,
-        [userId, days]
+        [userId, days, date]
     );
 
     res.json({

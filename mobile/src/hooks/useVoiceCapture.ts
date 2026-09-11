@@ -9,6 +9,7 @@ import {
 import { File } from 'expo-file-system';
 import * as Haptics from '../utils/haptics';
 import { aiAPI } from '../services/api';
+import { getAIConsent } from '../components/AIConsentModal';
 
 /**
  * useVoiceCapture — one voice pipeline for the whole app.
@@ -50,9 +51,15 @@ export function useVoiceCapture({ mode, onResult, onError }: UseVoiceCaptureOpti
 
     const start = useCallback(async () => {
         try {
+            const consented = await getAIConsent();
+            if (!consented) {
+                onError('AI Consent Needed', 'Please review and accept our AI data privacy terms before using voice logging.');
+                return;
+            }
+
             const perm = await requestRecordingPermissionsAsync();
             if (!perm.granted) {
-                onError('Microphone needed', 'Enable mic access in Settings to log by voice.');
+                onError('Microphone needed', 'Microphone permission was not granted to record audio.');
                 return;
             }
 
@@ -103,6 +110,13 @@ export function useVoiceCapture({ mode, onResult, onError }: UseVoiceCaptureOpti
                 return;
             }
             if (!uri) throw new Error('no-uri');
+
+            const consented = await getAIConsent();
+            if (!consented) {
+                setStage('idle');
+                onError('AI Consent Needed', 'Please review and accept our AI data privacy terms before using voice logging.');
+                return;
+            }
 
             const base64 = await new File(uri).base64();
 

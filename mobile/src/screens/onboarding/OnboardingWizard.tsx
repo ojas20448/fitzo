@@ -16,7 +16,7 @@ import { colors, typography, spacing, borderRadius, shadows, shadow } from '../.
 import { nutritionAPI, workoutsAPI, healthAPI } from '../../services/api';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../context/AuthContext';
-import { isHealthAvailable, requestPermissions, getTodaysSummary } from '../../services/healthService';
+import { isHealthAvailable } from '../../services/healthService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -1077,39 +1077,6 @@ export default function OnboardingWizard() {
             preview: [],
         },
     ], []);
-
-    // Training split (old step 5) and Health Connect (old step 6) were removed
-    // from onboarding. Both are set later: split via Workouts -> Today's
-    // Training, Health Connect via Settings -> Health.
-    //
-    // handleConnectHealth is kept below: the Health Connect prompt shown after
-    // onboarding reuses it.
-    const handleConnectHealth = async () => {
-        setHealthSyncing(true);
-        try {
-            const granted = await requestPermissions();
-            if (granted) {
-                setHealthConnected(true);
-                // Sync initial data
-                const summary = await getTodaysSummary();
-                await healthAPI.sync({
-                    steps: summary.steps,
-                    active_calories: summary.activeCalories,
-                    resting_heart_rate: summary.restingHeartRate,
-                    sleep_hours: summary.sleepHours,
-                    source: 'wearable',
-                });
-                toast.success('Connected!', 'Health data synced successfully');
-            } else {
-                toast.error('Permission Denied', 'Please allow health access in your device settings');
-            }
-        } catch {
-            toast.error('Error', 'Could not connect to health services');
-        } finally {
-            setHealthSyncing(false);
-        }
-    };
-
 
     // ─────────────────────────────────────────────────────────────
     // RENDER

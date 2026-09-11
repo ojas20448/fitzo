@@ -30,7 +30,7 @@ interface NutritionContextType {
 
 const NutritionContext = createContext<NutritionContextType | undefined>(undefined);
 
-export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const AccountNutritionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     const [todayMacros, setTodayMacros] = useState<Macros>({ calories: 0, protein: 0, carbs: 0, fat: 0 });
     const [calorieGoal, setCalorieGoal] = useState<number>(2000);
@@ -188,4 +188,11 @@ export const useNutrition = () => {
         throw new Error('useNutrition must be used within a NutritionProvider');
     }
     return context;
+};
+
+// Remount all account-specific state on an identity change. Late promises from
+// the previous provider cannot update the new account's totals or goals.
+export const NutritionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user } = useAuth();
+    return <AccountNutritionProvider key={user?.id ?? 'signed-out'}>{children}</AccountNutritionProvider>;
 };

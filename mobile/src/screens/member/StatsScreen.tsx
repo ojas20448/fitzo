@@ -12,6 +12,7 @@ import { useNutrition } from '../../context/NutritionContext';
 import AnatomyHeatmap, { getMuscleColors } from '../../components/AnatomyHeatmap';
 import { useShareComposerStore } from '../../stores/shareComposerStore';
 import type { SharePayload } from '../../components/share/SharePayload';
+import { getAIConsent } from '../../components/AIConsentModal';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -66,9 +67,12 @@ const StatsScreen = () => {
     const loadData = async () => {
         setRecapLoading(true);
         try {
+            const consented = await getAIConsent();
             const [nutritionRes, recapRes, volumeRes] = await Promise.all([
                 api.get('/nutrition/weekly'),
-                aiAPI.getWeeklyRecap().catch(() => ({ success: false, recap: null })),
+                consented
+                    ? aiAPI.getWeeklyRecap().catch(() => ({ success: false, recap: null }))
+                    : Promise.resolve({ success: false, recap: null }),
                 api.get('/progress/volume?weeks=1').catch(() => ({ data: { weeks: [], detailed: [] } }))
             ]);
 

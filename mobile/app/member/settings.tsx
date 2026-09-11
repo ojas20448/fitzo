@@ -1,3 +1,4 @@
+import { enableHealthImport } from '../../src/utils/healthImportPreference';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, Linking, ActivityIndicator, Platform, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,12 +8,13 @@ import { useAuth } from '../../src/context/AuthContext';
 import { colors, typography, spacing, borderRadius } from '../../src/styles/theme';
 import GlassCard from '../../src/components/GlassCard';
 import { useToast } from '../../src/components/Toast';
-import { isHealthAvailable, requestPermissions, getTodaysSummary } from '../../src/services/healthService';
+import { isHealthAvailable, hasHealthData, healthSyncPayload, requestPermissions, getTodaysSummary } from '../../src/services/healthService';
 import { healthAPI, settingsAPI, notificationsAPI } from '../../src/services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Haptics from '../../src/utils/haptics';
 import { isHapticsEnabled, setHapticsEnabled } from '../../src/utils/haptics';
+import AIConsentModal, { getAIConsent } from '../../src/components/AIConsentModal';
 
 const UNITS_STORAGE_KEY = 'fitzo_units';
 const version = Constants.expoConfig?.version || '1.3.0';
@@ -127,7 +129,7 @@ export default function SettingsScreen() {
                     const { status: newStatus } = await import('expo-notifications').then(m => m.requestPermissionsAsync());
                     if (newStatus !== 'granted') {
                         setNotifications(false);
-                        toast.warning('Permissions Required', 'Enable notifications in your device settings');
+                        toast.warning('Notifications Disabled', 'Notification permission was not granted');
                         return;
                     }
                 }
@@ -189,38 +191,64 @@ export default function SettingsScreen() {
         );
     };
 
-    // Health Connect
+    // Health Connect / Apple Health
     const [healthAvailable, setHealthAvailable] = useState(false);
     const [healthConnected, setHealthConnected] = useState(false);
     const [healthSyncing, setHealthSyncing] = useState(false);
 
+    // AI Data Privacy
+    const [aiConsentGranted, setAiConsentGranted] = useState(false);
+    const [aiModalVisible, setAiModalVisible] = useState(false);
+
     useEffect(() => {
         setHealthAvailable(isHealthAvailable());
+        getAIConsent().then(setAiConsentGranted);
         // Check if already connected by trying to get today's data
         if (isHealthAvailable()) {
             healthAPI.getToday().then(res => {
-                if (res?.health?.steps > 0) setHealthConnected(true);
+                if ([res?.health?.steps, res?.health?.active_calories, res?.health?.sleep_hours, res?.health?.resting_heart_rate].some(v => v != null)) setHealthConnected(true);
             }).catch(() => {});
         }
     }, []);
 
-    const handleConnectHealth = async () => {
+    const promptConnectHealth = () => {
+        if (Platform.OS === 'ios' && !healthAvailable) {
+            Alert.alert('Apple Health Unavailable', 'Apple Health is not supported on this device.');
+            return;
+        }
+
+        Alert.alert(
+            Platform.OS === 'ios' ? 'Connect Apple Health' : 'Connect Health Services',
+            Platform.OS === 'ios'
+                ? 'Fitzo can read your daily steps, active energy burned, resting heart rate, and sleep duration from Apple Health to display in your fitness dashboard and Health Report.\n\nFitzo only reads this data and never writes to or modifies your Apple Health data.'
+                : 'Fitzo reads your daily steps, calories, heart rate, and sleep duration to display in your fitness dashboard.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Continue',
+                    onPress: () => executeConnectHealth(),
+                },
+            ]
+        );
+    };
+
+    const executeConnectHealth = async () => {
+        if (!user) return;
         setHealthSyncing(true);
         try {
             const granted = await requestPermissions();
             if (granted) {
-                setHealthConnected(true);
+                await enableHealthImport(user.id);
                 const summary = await getTodaysSummary();
-                await healthAPI.sync({
-                    steps: summary.steps,
-                    active_calories: summary.activeCalories,
-                    resting_heart_rate: summary.restingHeartRate,
-                    sleep_hours: summary.sleepHours,
-                    source: 'wearable',
-                });
-                toast.success('Connected!', 'Health data synced successfully');
+                setHealthConnected(hasHealthData(summary));
+                if (hasHealthData(summary)) {
+                    await healthAPI.sync(healthSyncPayload(summary));
+                    toast.success('Connected!', 'Available health data imported');
+                } else {
+                    toast.info('Health Access Requested', 'You can update sharing categories in the Apple Health app.');
+                }
             } else {
-                toast.error('Permission Denied', 'Please allow health access in your device settings');
+                toast.info('Health Access', 'Health sync was not connected.');
             }
         } catch {
             toast.error('Error', 'Could not connect to health services');
@@ -474,9 +502,9 @@ export default function SettingsScreen() {
                 <GlassCard style={styles.card}>
                     <TouchableOpacity
                         style={styles.row}
-                        onPress={healthConnected ? undefined : handleConnectHealth}
-                        disabled={healthSyncing}
-                        activeOpacity={healthConnected ? 1 : 0.7}
+                        onPress={healthConnected ? undefined : promptConnectHealth}
+                        disabled={healthSyncing || (Platform.OS === 'ios' && !healthAvailable)}
+                        activeOpacity={healthConnected || (Platform.OS === 'ios' && !healthAvailable) ? 1 : 0.7}
                     >
                         <View style={styles.rowLeft}>
                             <MaterialIcons
@@ -489,7 +517,9 @@ export default function SettingsScreen() {
                                     {Platform.OS === 'ios' ? 'Apple Health (HealthKit)' : 'Health Connect'}
                                 </Text>
                                 <Text style={styles.rowSub}>
-                                    {healthConnected
+                                    {Platform.OS === 'ios' && !healthAvailable
+                                        ? 'Apple Health is not supported on this device'
+                                        : healthConnected
                                         ? 'Connected • Syncing steps, calories & sleep'
                                         : 'Tap to connect Apple Health to Fitzo'}
                                 </Text>
@@ -499,7 +529,7 @@ export default function SettingsScreen() {
                             <ActivityIndicator size="small" color={colors.text.primary} />
                         ) : healthConnected ? (
                             <MaterialIcons name="check-circle" size={22} color={colors.success} />
-                        ) : (
+                        ) : Platform.OS === 'ios' && !healthAvailable ? null : (
                             <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                         )}
                     </TouchableOpacity>
@@ -512,13 +542,8 @@ export default function SettingsScreen() {
                                     setHealthSyncing(true);
                                     try {
                                         const summary = await getTodaysSummary();
-                                        await healthAPI.sync({
-                                            steps: summary.steps,
-                                            active_calories: summary.activeCalories,
-                                            resting_heart_rate: summary.restingHeartRate,
-                                            sleep_hours: summary.sleepHours,
-                                            source: 'wearable',
-                                        });
+                                        setHealthConnected(hasHealthData(summary));
+                                        await healthAPI.sync(healthSyncPayload(summary));
                                         toast.success('Synced!', 'Health data updated from Apple Health');
                                     } catch {
                                         toast.error('Sync Failed', 'Could not sync health data');
@@ -539,6 +564,36 @@ export default function SettingsScreen() {
                 </GlassCard>
                 <Text style={styles.healthExplanationText}>
                     Fitzo integrates with Apple Health (HealthKit) to sync daily steps, active calories burned, resting heart rate, and sleep duration.
+                </Text>
+
+                {/* AI Features & Privacy */}
+                <Text style={styles.sectionTitle}>AI Features & Privacy</Text>
+                <GlassCard style={styles.card}>
+                    <TouchableOpacity
+                        style={styles.row}
+                        onPress={() => setAiModalVisible(true)}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.rowLeft}>
+                            <MaterialIcons
+                                name="auto-awesome"
+                                size={24}
+                                color={aiConsentGranted ? colors.primary : colors.text.secondary}
+                            />
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.rowLabel}>AI Data Sharing & Privacy</Text>
+                                <Text style={styles.rowSub}>
+                                    {aiConsentGranted
+                                        ? 'Enabled • Google Gemini API (Private & Encrypted)'
+                                        : 'Disabled • Tap to review AI privacy & data sharing'}
+                                </Text>
+                            </View>
+                        </View>
+                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                    </TouchableOpacity>
+                </GlassCard>
+                <Text style={styles.healthExplanationText}>
+                    Fitzo uses Google Cloud (Google Gemini AI API) for personalized coaching, photo meal scanning, and voice logging. Data is encrypted, never sold, and never used to train models.
                 </Text>
 
                 {/* System Section */}
@@ -587,6 +642,21 @@ export default function SettingsScreen() {
                 <Text style={styles.versionText}>Fitzo v{version}</Text>
                 <View style={{ height: 40 }} />
             </ScrollView>
+
+            <AIConsentModal
+                visible={aiModalVisible}
+                featureTitle="AI Data Sharing"
+                onAccept={() => {
+                    setAiConsentGranted(true);
+                    setAiModalVisible(false);
+                    toast.success('AI Features Enabled', 'Your AI preferences have been updated.');
+                }}
+                onDecline={() => {
+                    setAiConsentGranted(false);
+                    setAiModalVisible(false);
+                    toast.info('AI Features Disabled', 'AI features will remain off.');
+                }}
+            />
         </SafeAreaView>
     );
 }

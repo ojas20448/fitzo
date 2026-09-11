@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool, query } = require('../config/database');
+const { pool, query, getClient } = require('../config/database');
 const { authenticate, authenticateAdmin } = require('../middleware/auth');
 const { asyncHandler } = require('../utils/errors');
 const pushNotifications = require('../services/pushNotifications');
@@ -29,7 +29,7 @@ router.post('/register', authenticate, asyncHandler(async (req, res) => {
     const { token, platform, deviceName } = req.body;
     const userId = req.user.id;
 
-    if (!token) {
+    if (!token || typeof token !== 'string') {
         return res.status(400).json({ message: 'Token is required' });
     }
 
@@ -38,8 +38,15 @@ router.post('/register', authenticate, asyncHandler(async (req, res) => {
         return res.status(400).json({ message: 'Invalid push token format' });
     }
 
+    const client = await getClient();
+    try {
+        await client.query('BEGIN');
+        // Serialize registration of a device across accounts, including retries.
+        await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [token]);
+        await client.query('UPDATE users SET push_token = NULL, push_registered_at = NULL WHERE push_token = $1 AND id <> $2', [token, userId]);
+        await client.query('DELETE FROM push_tokens WHERE token = $1 AND user_id <> $2', [token, userId]);
     // Store on users table (used by pushNotifications service)
-    await query(
+    await client.query(
         `UPDATE users
          SET push_token = $1,
              push_platform = $2,
@@ -50,12 +57,18 @@ router.post('/register', authenticate, asyncHandler(async (req, res) => {
     );
 
     // Also upsert into push_tokens table for multi-device support
-    await query(`
+    await client.query(`
         INSERT INTO push_tokens (user_id, token, platform, updated_at)
         VALUES ($1, $2, $3, NOW())
         ON CONFLICT (user_id, token)
         DO UPDATE SET platform = $3, updated_at = NOW()
     `, [userId, token, platform || 'unknown']);
+
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally { client.release(); }
 
     res.json({ success: true, message: 'Push token registered successfully' });
 }));
@@ -69,6 +82,7 @@ router.delete('/unregister', authenticate, asyncHandler(async (req, res) => {
         [userId]
     );
 
+    await query('DELETE FROM push_tokens WHERE user_id = $1', [userId]);
     res.json({ message: 'Push token unregistered successfully' });
 }));
 

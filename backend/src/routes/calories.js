@@ -206,7 +206,7 @@ router.get('/feed', asyncHandler(async (req, res) => {
          AND (
              c.visibility = 'public'
              OR 
-             (c.visibility = 'friends' AND EXISTS (
+             (c.visibility = 'friends' AND u.share_logs_default IS TRUE AND EXISTS (
                  SELECT 1 FROM friendships f 
                  WHERE f.status = 'accepted'
                  AND ((f.user_id = $1 AND f.friend_id = c.user_id)

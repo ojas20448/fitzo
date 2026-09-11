@@ -9,11 +9,13 @@ import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import GlassCard from '../../components/GlassCard';
 import Button from '../../components/Button';
 import { foodPhotoAPI } from '../../services/api';
+import AIConsentModal, { getAIConsent } from '../../components/AIConsentModal';
 
 export default function FoodScannerScreen() {
     const [permission, requestPermission] = useCameraPermissions();
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [analyzing, setAnalyzing] = useState(false);
+    const [consentModalVisible, setConsentModalVisible] = useState(false);
     const [detectedFood, setDetectedFood] = useState<any>(null);
     const [base64Image, setBase64Image] = useState<string | null>(null);
     const cameraRef = useRef<any>(null);
@@ -76,7 +78,7 @@ export default function FoodScannerScreen() {
         }
     };
 
-    const analyzeFoodPhoto = async () => {
+    const executeAnalysis = async () => {
         if (!base64Image) return;
 
         setAnalyzing(true);
@@ -109,6 +111,18 @@ export default function FoodScannerScreen() {
         } finally {
             setAnalyzing(false);
         }
+    };
+
+    const analyzeFoodPhoto = async () => {
+        if (!base64Image) return;
+
+        const consented = await getAIConsent();
+        if (!consented) {
+            setConsentModalVisible(true);
+            return;
+        }
+
+        executeAnalysis();
     };
 
     const logFood = async () => {
@@ -219,12 +233,28 @@ export default function FoodScannerScreen() {
                             loading={analyzing}
                             fullWidth
                         />
+                        <View style={styles.aiBadgeRow}>
+                            <MaterialIcons name="auto-awesome" size={13} color={colors.text.muted} />
+                            <Text style={styles.aiBadgeText}>
+                                Powered by Google Gemini AI · Photos analyzed in real-time and never stored
+                            </Text>
+                        </View>
                         <TouchableOpacity onPress={retake} style={styles.retakeLink}>
                             <Text style={styles.retakeText}>Retake Photo</Text>
                         </TouchableOpacity>
                     </View>
                 )}
             </View>
+
+            <AIConsentModal
+                visible={consentModalVisible}
+                featureTitle="Photo Food Scanner"
+                onAccept={() => {
+                    setConsentModalVisible(false);
+                    executeAnalysis();
+                }}
+                onDecline={() => setConsentModalVisible(false)}
+            />
         </SafeAreaView>
     );
 }
@@ -370,6 +400,20 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.regular,
         color: colors.text.secondary,
+        textAlign: 'center',
+    },
+    aiBadgeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        marginTop: spacing.sm,
+        paddingHorizontal: spacing.sm,
+    },
+    aiBadgeText: {
+        fontSize: 11,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
         textAlign: 'center',
     },
 });

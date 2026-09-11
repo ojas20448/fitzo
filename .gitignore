@@ -26,3 +26,12 @@ backend/scripts/exercisedb_full.json
 Media/
 
 /RENDER_ENV_SETUP.md
+
+# Agent and MCP scratch folders
+.agents/
+.claude/
+.codex/
+.gemini/
+.playwright-mcp/
+output/
+backend/scripts/tmp/

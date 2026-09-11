@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { query } = require('../config/database');
+const { query, getClient } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, asyncHandler } = require('../utils/errors');
 const pushNotifications = require('../services/pushNotifications');
@@ -525,7 +525,7 @@ router.get('/feed', authenticate, asyncHandler(async (req, res) => {
            AND ws.user_id != $1
            AND (
                (ws.visibility = 'public' AND u.gym_id = $2)
-               OR (ws.visibility = 'friends' AND ws.user_id = ANY($3))
+               OR (ws.visibility = 'friends' AND u.share_logs_default IS TRUE AND ws.user_id = ANY($3))
            )
          ORDER BY ws.completed_at DESC
          LIMIT 20`,
@@ -564,31 +564,34 @@ router.post('/splits', authenticate, asyncHandler(async (req, res) => {
 
     // Use a transaction to ensure atomicity — prevent orphaned states
     // where all splits are deactivated but no new one is created
-    await query('BEGIN');
+    const client = await getClient();
     try {
+        await client.query('BEGIN');
         // Deactivate existing splits
-        await query(
+        await client.query(
             `UPDATE user_splits SET is_active = false WHERE user_id = $1`,
             [userId]
         );
 
         // Save new split (explicitly set is_active = true)
-        const result = await query(
+        const result = await client.query(
             `INSERT INTO user_splits (user_id, split_id, name, days, days_per_week, is_active)
              VALUES ($1, $2, $3, $4, $5, true)
              RETURNING *`,
             [userId, split_id, name, days, days_per_week || days.length]
         );
 
-        await query('COMMIT');
+        await client.query('COMMIT');
 
         res.status(201).json({
             message: 'Split saved!',
             split: result.rows[0],
         });
     } catch (err) {
-        await query('ROLLBACK');
+        await client.query('ROLLBACK');
         throw err;
+    } finally {
+        client.release();
     }
 }));
 
