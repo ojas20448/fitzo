@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, PixelRatio, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -20,6 +20,7 @@ import { useShareCapture } from '../../hooks/useShareCapture';
 import { createBackground, clampBackgroundScale, pixelDeltaToFraction } from '../../utils/backgroundTransform';
 import * as Haptics from '../../utils/haptics';
 import { logger } from '../../utils/logger';
+import { getCaptureFrame } from '../../utils/shareCapture';
 
 interface Chip {
     id: string;
@@ -27,14 +28,6 @@ interface Chip {
     isPr: boolean;
 }
 
-/**
- * The composer screen — picks which lifts from the just-finished workout to
- * feature on a shareable 9:16 card, in one of five themes.
- *
- * Layout, top to bottom: content chips -> hero preview -> theme picker ->
- * Share button. See the two render blocks below for why the hero and the
- * capture target are two SEPARATE renders of the active theme, not one.
- */
 export default function ShareComposerScreen() {
     const source = useShareComposerStore((s) => s.source);
     const isStale = useShareComposerStore((s) => s.isStale);
@@ -43,34 +36,24 @@ export default function ShareComposerScreen() {
 
     const [selection, setSelection] = useState<string[]>([]);
     const [theme, setTheme] = useState<ThemeId | null>(null);
-    const [heroWidth, setHeroWidth] = useState(0);
+    const [previewBounds, setPreviewBounds] = useState({ width: 0, height: 0 });
+    const heroWidth = Math.min(previewBounds.width, previewBounds.height * CARD_W / CARD_H);
+    const [showHighlights, setShowHighlights] = useState(false);
+    const [selectionHint, setSelectionHint] = useState<string | null>(null);
 
     const cardRef = useRef<View>(null);
-    const { captureAndShare, isSharing } = useShareCapture();
-
-    // Task 10 — camera photo behind the card, gesture-positioned. All local
-    // component state, same as selection/theme/heroWidth above — NOT the
-    // composer store — so it can never survive past this one composer
-    // visit. A fresh mount (a new workout's "share" tap) always starts with
-    // no photo, matching the lifecycle check in the task brief's
-    // verification list (a backgrounded app + a new session must not carry
-    // anything from the previous share forward).
+    const { captureAndShare, isSharing, shareError } = useShareCapture();
     const [background, setBackground] = useState<ShareBackground | null>(null);
-    // RULING R30 — true only once the CAPTURE TARGET's own <Image> (not the
-    // hero's — see handleBackgroundLoad below) has decoded the current uri.
-    const [backgroundLoaded, setBackgroundLoaded] = useState(false);
+    const [loadedAssets, setLoadedAssets] = useState({ key: '', background: false, artwork: false });
+    const [imageError, setImageError] = useState<{ key: string; message: string } | null>(null);
+    const [captureGeneration, setCaptureGeneration] = useState(0);
+    const [captureSnapshot, setCaptureSnapshot] = useState<SharePayload | null>(null);
+    const editingLocked = useRef(false);
+    const activeCaptureKey = useRef('');
     const [showCamera, setShowCamera] = useState(false);
     const [cameraFacing, setCameraFacing] = useState<'front' | 'back'>('back');
     const [permission, requestPermission] = useCameraPermissions();
     const cameraRef = useRef<any>(null);
-
-    // Live gesture state. translate is RAW SCREEN PIXELS measured over the
-    // hero preview while a gesture is active; scale/rotation are already
-    // the same unit `ShareBackground` stores (unitless / radians), so only
-    // translate ever needs a unit conversion before it can be written into
-    // `background` — see commitBackground below and
-    // utils/backgroundTransform.ts's own doc comment for RULING R29's other
-    // half (pixelDeltaToFraction).
     const bgTranslateX = useSharedValue(0);
     const bgTranslateY = useSharedValue(0);
     const bgSavedX = useSharedValue(0);
@@ -79,18 +62,6 @@ export default function ShareComposerScreen() {
     const bgSavedScale = useSharedValue(1);
     const bgRotation = useSharedValue(0);
     const bgSavedRotation = useSharedValue(0);
-
-    // Open on the detected moment for a session source; a static source has
-    // no "moment" to pick from a payload that already carries fixed content,
-    // so it opens straight onto RECEIPT — the same theme pickMoment itself
-    // falls back to when a session carries nothing chip-worthy either. No
-    // source, or one too old to trust (see STALE_AFTER_MS in
-    // shareComposerStore.ts), bounces back rather than showing a composer
-    // with nothing — or stale, wrong — content. That staleness check is the
-    // composer STORE's own clock (time since setSource), not the session's
-    // own completedAt — see shareComposerStore.ts's doc comment for why
-    // those are different checks, and WorkoutRecapScreen.tsx for where a
-    // session's own freshness is verified before it ever reaches this store.
     useEffect(() => {
         if (!source || isStale()) {
             router.back();
@@ -103,24 +74,12 @@ export default function ShareComposerScreen() {
         } else {
             setTheme('receipt');
         }
-    }, []);
-
-    // R3/R4: derived locally from the WHOLE session, independent of which
-    // chips are selected — a heatmap of "what you trained today" does not
-    // shrink because the card happens to feature one exercise. The actual
-    // reduction (and its lowercase-key correctness) lives in
-    // deriveMuscleVolume, which has test coverage this screen cannot.
-    // A static source has no session to derive from, so this is always {}
-    // for one — same as any workout with no muscle-tagged exercises.
+    }, [source, isStale]);
     const muscleVolume = useMemo(
         () => deriveMuscleVolume(session?.exercises ?? []),
         [session],
     );
     const showMusclesChip = hasMuscleVolume(muscleVolume);
-
-    // Empty for a static source — and the chip row that maps this is hidden
-    // entirely below — there is nothing in a finished SharePayload to select
-    // between.
     const chips: Chip[] = useMemo(() => {
         if (!session) return [];
         const list: Chip[] = [{ id: TOTAL_ID, label: 'Total', isPr: false }];
@@ -135,21 +94,6 @@ export default function ShareComposerScreen() {
         }
         return list;
     }, [session, showMusclesChip]);
-
-    // The one place selection + session become what a theme renders — for a
-    // session source. A static source has no selection to derive from: it
-    // renders source.payload exactly as handed to the composer (the chip
-    // row that would mutate selection is hidden for it below, so selection
-    // can never move out of the [] it starts at).
-    // muscleVolume is spread on AFTER buildSharePayload, not passed into
-    // it — see buildSharePayload.ts's own doc comment for why that field
-    // stays outside its 2-argument (session, selection) contract.
-    // Gated on the MUSCLES_ID chip being in `selection` (not spread
-    // unconditionally): Anatomy's hasMuscleVolume check treats an absent
-    // muscleVolume the same as an empty one and falls back to its own
-    // designed FallbackBody, so leaving the chip OFF has to actually mean
-    // something — otherwise toggling "Muscles" would produce no observable
-    // change in any theme.
     const payload: SharePayload | null = useMemo(() => {
         if (!source || !theme) return null;
         let base: SharePayload;
@@ -160,46 +104,46 @@ export default function ShareComposerScreen() {
             const built = buildSharePayload(session, selection);
             base = selection.includes(MUSCLES_ID) ? { ...built, muscleVolume } : built;
         }
-        // Task 10: the camera photo is composer-local state, independent of
-        // source kind — a static source (e.g. Stats' weekly recap) can
-        // carry a background exactly the same way a session source can,
-        // since nothing about WHERE the card's other content came from
-        // changes what a photo taken IN the composer itself means.
-        // Always spread (not `background ? {...} : base`) so composer
-        // state is unconditionally authoritative — removing the photo
-        // (`background` back to null) always clears it from the payload
-        // too, even in a hypothetical future where a static producer's own
-        // `source.payload` already carried one.
         return { ...base, background };
     }, [source, session, theme, selection, muscleVolume, background]);
 
+    const artworkKey = theme === 'receipt' ? (payload?.prs.length ? 'trophy' : JSON.stringify(payload?.exercises[0] ?? 'default')) : '';
+    const captureKey = JSON.stringify([theme, background?.uri, artworkKey, captureGeneration]);
+    activeCaptureKey.current = captureKey;
+    const needsPhoto = !!background && !!theme && !!THEMES[theme].supportsBackground;
+    const needsArt = theme === 'receipt';
+    const waitingForImages = (needsPhoto || needsArt) && (loadedAssets.key !== captureKey
+        || (needsPhoto && !loadedAssets.background) || (needsArt && !loadedAssets.artwork));
+    const currentImageError = imageError?.key === captureKey ? imageError.message : null;
+    // Convert design pixels to native layout units to avoid oversized exports.
+    const captureFrame = getCaptureFrame(Platform.OS === 'web' ? 1 : PixelRatio.get());
+    useEffect(() => {
+        if (!waitingForImages || showCamera || currentImageError) return;
+        const timeout = setTimeout(() => setImageError({ key: captureKey, message: 'The image is taking too long to load. Retry, or remove the photo.' }), 30000);
+        return () => clearTimeout(timeout);
+    }, [captureKey, waitingForImages, showCamera, currentImageError]);
+
+    // Only load events from the current export tree can enable Share.
+    const markAssetLoaded = (asset: 'background' | 'artwork') => {
+        if (activeCaptureKey.current !== captureKey) return;
+        setLoadedAssets(previous => ({
+            ...(previous.key === captureKey ? previous : { key: captureKey, background: false, artwork: false }),
+            [asset]: true,
+        }));
+    };
+    const markAssetError = () => {
+        if (activeCaptureKey.current === captureKey) setImageError({ key: captureKey, message: 'Could not load an image. Retry, or remove the photo.' });
+    };
+
     if (!source || !theme || !payload) {
-        // Either the effect above is about to call router.back(), or the
-        // moment hasn't been seeded yet (a single tick after mount) — both
-        // are momentary, so a bare background avoids flashing a zeroed-out
-        // composer. Same idiom as app/_layout.tsx's own loadingContainer.
         return <View style={styles.container} />;
     }
 
     const ActiveTheme = THEMES[theme].Component;
     const heroScale = heroWidth > 0 ? heroWidth / CARD_W : 0;
     const heroHeight = heroWidth * (CARD_H / CARD_W);
-    // False for ANATOMY only — see themes/index.ts's own doc comment and
-    // Anatomy.tsx's file doc for why that theme opts out entirely.
     const themeSupportsBackground = !!THEMES[theme].supportsBackground;
-    // RULING R30: the share button must wait for the CAPTURE target's photo
-    // to decode ONLY when a background is actually set AND the active theme
-    // will actually render it — a background sitting in state while the
-    // user is on Anatomy (which never mounts CardBackground, so never fires
-    // onBackgroundLoad) must not disable sharing forever.
-    const backgroundGateActive = !!background && themeSupportsBackground && !backgroundLoaded;
-
-    // Task 10 — camera capture. Writes a freshly `createBackground`'d
-    // (centred, 1x, unrotated — backgroundTransform.ts) entry and resets
-    // the live gesture shared values to match, so the first drag after a
-    // retake starts from the same neutral point the newly rendered
-    // CardBackground itself starts at, not wherever the PREVIOUS photo was
-    // left.
+    const backgroundGateActive = waitingForImages || !!currentImageError;
     const handleCapturePhoto = async () => {
         if (!cameraRef.current) return;
         try {
@@ -213,7 +157,7 @@ export default function ShareComposerScreen() {
             bgRotation.value = 0;
             bgSavedRotation.value = 0;
             setBackground(createBackground(photo.uri));
-            setBackgroundLoaded(false); // re-armed until the NEW image's onLoad fires (R30)
+            setCaptureGeneration(value => value + 1);
             setShowCamera(false);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         } catch (err) {
@@ -223,6 +167,7 @@ export default function ShareComposerScreen() {
     };
 
     const handleOpenCamera = async () => {
+        if (editingLocked.current) return;
         if (!permission?.granted) {
             const result = await requestPermission();
             if (!result.granted) {
@@ -230,34 +175,18 @@ export default function ShareComposerScreen() {
                 return;
             }
         }
+        setCaptureGeneration(value => value + 1);
         setShowCamera(true);
     };
 
     const handleRemoveBackground = () => {
+        if (editingLocked.current) return;
         setBackground(null);
-        setBackgroundLoaded(false);
     };
-
-    // RULING R30 — wired ONLY to the CAPTURE TARGET's own CardBackground
-    // below, never the hero's: the hero is what the user watches load, but
-    // the capture target is what useShareCapture actually screenshots, and
-    // those are two separate <Image> instances even though they share a
-    // uri. Gating on the hero's load instead would let sharing enable
-    // before the tree that actually matters has decoded.
-    const handleBackgroundLoad = () => setBackgroundLoaded(true);
-
-    // Bridges gesture updates (UI thread, screen pixels) into React state
-    // (JS thread, normalized fractions) — RULING R29's boundary, crossed in
-    // exactly one place. Unlike WorkoutRecapScreen's receipt-drag (a
-    // reanimated-only animation with no React-state mirror, since nothing
-    // outside that gesture ever needs its position), this photo's position
-    // must ALSO reach the completely separate, non-gesture-aware capture
-    // target tree (the hidden ViewShot below) — so every update commits
-    // into state via runOnJS rather than staying purely on the UI thread.
-    // `pixelDeltaToFraction` (not the raw translate values) is what
-    // actually performs the R29 conversion; it runs here, on the JS thread,
-    // deliberately — see its own doc comment in backgroundTransform.ts.
+    const handleBackgroundLoad = () => markAssetLoaded('background');
+    // Normalize preview gestures so the separate export tree matches the photo.
     const commitBackground = (translateX: number, translateY: number, scale: number, rotation: number) => {
+        if (editingLocked.current) return;
         setBackground((prev) =>
             prev
                 ? {
@@ -270,13 +199,6 @@ export default function ShareComposerScreen() {
                 : prev,
         );
     };
-
-    // Task 10 — full-screen camera, replacing the whole composer while
-    // open. Same structural pattern as WorkoutRecapScreen's own camera
-    // early-return (WorkoutRecapScreen.tsx:219-247): CameraView fills the
-    // screen, capture/flip/close controls sit in a SafeAreaView overlay.
-    // Placed AFTER the guard above (not before) so it never needs to
-    // special-case a missing source/theme/payload itself.
     if (showCamera) {
         return (
             <View style={styles.container}>
@@ -317,20 +239,6 @@ export default function ShareComposerScreen() {
             </View>
         );
     }
-
-    // Gesture layer over the hero preview — RULING R29: writes NORMALIZED
-    // values, never pixels. `.onUpdate()`/`.onEnd()` run as reanimated
-    // worklets (react-native-reanimated/plugin, babel.config.js) on the UI
-    // thread; `runOnJS` is the one legal way to reach commitBackground (a
-    // plain JS/React-state function) from there. Same
-    // Gesture.Simultaneous(Pan, Pinch, Rotation) composition
-    // WorkoutRecapScreen uses for its own receipt placement
-    // (WorkoutRecapScreen.tsx:40-88) and the same reason: a one-at-a-time
-    // recognizer cannot pinch and drag in the same touch sequence. The
-    // SUBJECT inverts, though — recap moves the CARD over a fixed photo;
-    // here the PHOTO moves behind a fixed card, so the sign of every delta
-    // below is what the recap version would have called correct, applied
-    // to the opposite layer.
     const dragGesture = Gesture.Pan()
         .averageTouches(true)
         .onUpdate((e) => {
@@ -345,9 +253,6 @@ export default function ShareComposerScreen() {
 
     const pinchGesture = Gesture.Pinch()
         .onUpdate((e) => {
-            // Clamped on the UI thread (clampBackgroundScale is a
-            // 'worklet' function — backgroundTransform.ts) so the photo can
-            // never be scaled to nothing, matching the binding requirement.
             bgScale.value = clampBackgroundScale(bgSavedScale.value * e.scale);
             runOnJS(commitBackground)(bgTranslateX.value, bgTranslateY.value, bgScale.value, bgRotation.value);
         })
@@ -365,246 +270,141 @@ export default function ShareComposerScreen() {
         });
 
     const backgroundGesture = Gesture.Simultaneous(dragGesture, pinchGesture, rotateGesture);
-
-    // Only wire the gesture layer when there is something to drag AND the
-    // active theme will actually show it moving — dragging blind against a
-    // theme that never renders the photo (Anatomy) would be touch input
-    // with no visible effect.
-    const gestureActive = !!background && themeSupportsBackground;
+    const gestureActive = !!background && themeSupportsBackground && !isSharing;
+    const shareText = [payload.subtitle, payload.contextLabel, [payload.headlineLabel, payload.headline].filter(Boolean).join(': '),
+        ...payload.rows.map(row => row.label + ': ' + row.value),
+        ...payload.prs.map(pr => pr.exercise + ': ' + pr.current + (pr.previous ? ' (previous ' + pr.previous + ')' : '')),
+        ...payload.exercises.map(ex => ex.name + ': ' + ex.setCount + ' sets'),
+    ].filter(Boolean).join('\n');
     const heroCard = (
-        <View style={[styles.heroOuter, { width: heroWidth, height: heroHeight }]}>
-            <View style={[styles.heroInner, { transform: [{ scale: heroScale }] }]}>
+        <View style={[styles.heroOuter, { width: heroWidth, height: heroHeight }]} accessible accessibilityRole="image" accessibilityLabel={shareText}>
+            <View style={[styles.heroInner, { transform: [{ scale: heroScale }] }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
                 <ActiveTheme payload={payload} />
             </View>
         </View>
     );
-
-    // Step 3 of the task brief, essentially verbatim: SCOREBOARD (the only
-    // singleSelectOnly theme) can only ever draw one figure. Switching TO it
-    // with more than one chip selected collapses to the first; adding a
-    // second chip while it's already active moves the theme to SPEC, the
-    // layout built to handle a list, rather than silently dropping the chip.
-    // Gated on isSession: a static source's selection can never grow past
-    // the [] it starts at (its chip row is never rendered, so nothing can
-    // ever push into it), so this collapse is a no-op for it either way —
-    // the guard makes that explicit rather than relying on selection
-    // happening to stay empty.
     const onSelectTheme = (id: ThemeId) => {
+        if (editingLocked.current) return;
         Haptics.selectionAsync();
-        if (isSession && THEMES[id].singleSelectOnly && selection.length > 1) {
-            setSelection([selection[0]]);
+        if (isSession && THEMES[id].singleSelectOnly && selection.filter(item => item !== MUSCLES_ID).length > 1) {
+            setSelectionHint('Scoreboard uses one highlight. Edit Highlights or choose another style.');
+            return;
         }
+        setSelectionHint(null);
+        if (id === 'anatomy' && showMusclesChip && !selection.includes(MUSCLES_ID)) setSelection([...selection, MUSCLES_ID]);
         setTheme(id);
     };
 
     const onToggleChip = (id: string) => {
-        const next = selection.includes(id) ? selection.filter((s) => s !== id) : [...selection, id];
+        if (editingLocked.current) return;
+        setSelectionHint(null);
+        const base = id === TOTAL_ID ? selection.filter(item => !item.startsWith(EX_PREFIX))
+            : id.startsWith(EX_PREFIX) ? selection.filter(item => item !== TOTAL_ID) : selection;
+        const next = base.includes(id) ? base.filter((s) => s !== id) : [...base, id];
         if (next.length === 0) return; // never an empty selection
-        if (next.length > 1 && THEMES[theme].singleSelectOnly) setTheme('spec');
+        if (id === MUSCLES_ID && next.includes(MUSCLES_ID)) setTheme('anatomy');
+        else if (next.filter(item => item !== MUSCLES_ID).length > 1 && THEMES[theme].singleSelectOnly) setTheme('spec');
         Haptics.selectionAsync();
         setSelection(next);
     };
 
-    const handleShare = () => {
-        // RULING R30 — defence in depth: the Share button's own `disabled`
-        // prop already covers this (see the footer below), but this
-        // guard means calling handleShare from anywhere else can never
-        // capture a background that has not finished decoding.
-        if (isSharing || backgroundGateActive) return;
-
-        // A static source can hand the composer a purpose-built fallback
-        // (Stats' weekly-recap text references summary_text / streak_days —
-        // fields no SharePayload carries); the session path keeps the same
-        // generic message it has always used.
-        const fallbackMessage =
-            source.kind === 'static' && source.fallbackMessage
-                ? source.fallbackMessage
-                : `${payload.headline} — shared from Fitzo`;
-        captureAndShare(cardRef, {
-            dialogTitle: 'Share your workout',
-            fallbackMessage,
-        });
+    const handleShare = async () => {
+        if (editingLocked.current || isSharing || backgroundGateActive) return;
+        editingLocked.current = true;
+        setCaptureSnapshot(payload);
+        try {
+            await captureAndShare(cardRef, { dialogTitle: 'Share your workout', fallbackMessage: shareText + '\nFITZO' });
+        } finally {
+            editingLocked.current = false;
+            setCaptureSnapshot(null);
+        }
     };
 
     return (
         <View style={styles.container}>
-            {/*
-             * Hidden capture target at true 1080x1920. The scaled hero below is
-             * for reading; capturing IT would export at preview resolution.
-             *
-             * Do NOT use opacity:0 — Android skips rendering it entirely and
-             * captureRef returns a blank image. Do NOT use display:'none' — the
-             * tree never lays out. Sitting it behind an opaque background at
-             * negative z keeps it painted and capturable while invisible.
-             * Always mounted (never conditionally rendered past the guard
-             * above) so it has already painted by the time Share is tappable;
-             * useShareCapture's own double-rAF + settle delay is a second
-             * layer of the same guarantee, not the only one.
-             */}
-            <View style={styles.captureHost} pointerEvents="none">
-                <ViewShot ref={cardRef} style={{ width: CARD_W, height: CARD_H }}>
-                    {/*
-                     * onBackgroundLoad wired HERE only (RULING R30) — this is
-                     * the tree useShareCapture actually screenshots. The
-                     * hero instance below renders the same payload without
-                     * it; see handleBackgroundLoad's own comment for why
-                     * gating on the hero's load instead would be wrong.
-                     */}
-                    <ActiveTheme payload={payload} onBackgroundLoad={handleBackgroundLoad} />
+
+            {/* Keep the export tree painted behind the opaque screen; opacity: 0 can produce blank Android captures. */}
+            <View style={styles.captureHost} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
+                <ViewShot ref={cardRef} style={{ width: captureFrame.width, height: captureFrame.height, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+
+                    <View key={captureKey} style={{ width: CARD_W, height: CARD_H, flexShrink: 0, transform: [{ scale: captureFrame.scale }] }}>
+                        <ActiveTheme payload={captureSnapshot ?? payload} onBackgroundLoad={handleBackgroundLoad} onBackgroundError={markAssetError}
+                            onArtworkLoad={() => markAssetLoaded('artwork')} onArtworkError={markAssetError} />
+                    </View>
                 </ViewShot>
             </View>
 
             <SafeAreaView style={styles.screenBody} edges={['top', 'bottom']}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn} hitSlop={8}>
+                    <TouchableOpacity onPress={() => router.back()} disabled={isSharing} style={styles.headerBtn} hitSlop={8} accessibilityRole="button" accessibilityLabel="Close share composer">
                         <MaterialIcons name="close" size={24} color={colors.text.primary} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Share workout</Text>
                     <View style={styles.headerBtn} />
                 </View>
 
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                    {/*
-                     * Content chips — session source only. A static source
-                     * (e.g. Stats' weekly recap) has no selectable content to
-                     * chip between, so the whole section — label included —
-                     * is hidden rather than left showing an empty row.
-                     */}
-                    {isSession && (
-                        <>
-                            <Text style={styles.sectionLabel}>WHAT TO FEATURE</Text>
-                            <View style={styles.chipRow}>
-                                {chips.map((chip) => {
-                                    const active = selection.includes(chip.id);
-                                    return (
-                                        <TouchableOpacity
-                                            key={chip.id}
-                                            style={[styles.chip, active && styles.chipActive]}
-                                            onPress={() => onToggleChip(chip.id)}
-                                            accessibilityRole="button"
-                                            accessibilityState={{ selected: active }}
-                                        >
-                                            {chip.isPr && (
-                                                <MaterialIcons
-                                                    name="emoji-events"
-                                                    size={14}
-                                                    color={active ? colors.background : colors.accent.gold}
-                                                    style={styles.chipIcon}
-                                                />
-                                            )}
-                                            <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
-                                                {chip.label}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                            </View>
-                        </>
-                    )}
-
-                    {/*
-                     * Hero preview — the active theme rendered ONCE at
-                     * transform:scale(heroScale), heroScale = measured width /
-                     * CARD_W. heroOuter is centered flex content sized exactly
-                     * to the scaled footprint; heroInner is the natural
-                     * CARD_W x CARD_H box. Scaling defaults to the element's
-                     * OWN center, which flexbox centering has already aligned
-                     * with heroOuter's center, so the scaled-down result lands
-                     * exactly inside heroOuter with no extra offset math —
-                     * same technique Anatomy.tsx already uses for its own
-                     * inner heatmap scale. (transformOrigin is deliberately
-                     * not used here — BrandIntro.tsx already found it has
-                     * patchy support on this RN/Expo setup and compensates
-                     * with translate math instead; centered flex layout
-                     * sidesteps needing either.)
-                     */}
-                    <View style={styles.heroSection} onLayout={(e) => setHeroWidth(e.nativeEvent.layout.width)}>
-                        {heroScale > 0 && (
-                            gestureActive ? (
-                                <GestureDetector gesture={backgroundGesture}>{heroCard}</GestureDetector>
-                            ) : (
-                                heroCard
-                            )
-                        )}
+                <View style={styles.compactContent}>
+                    <View style={styles.previewSpace} onLayout={event => {
+                        const { width, height } = event.nativeEvent.layout;
+                        setPreviewBounds({ width, height });
+                    }}>
+                        {heroScale > 0 && (gestureActive ? <GestureDetector gesture={backgroundGesture}>{heroCard}</GestureDetector> : heroCard)}
                     </View>
-
-                    {/*
-                     * Task 10 — camera photo behind the card. Sits right
-                     * below the hero, the one place the effect is actually
-                     * visible, rather than up with the content chips: it
-                     * applies uniformly across themes (bar Anatomy, which
-                     * opts out — themes/index.ts), it is not "what to
-                     * feature" content selection.
-                     */}
-                    <View style={styles.photoRow}>
-                        <TouchableOpacity
-                            style={styles.photoBtn}
-                            onPress={background ? handleRemoveBackground : handleOpenCamera}
-                            accessibilityRole="button"
-                            accessibilityLabel={background ? 'Remove background photo' : 'Add background photo'}
-                        >
-                            <MaterialIcons name={background ? 'close' : 'camera-alt'} size={16} color={colors.primary} />
-                            <Text style={styles.photoBtnText}>{background ? 'REMOVE PHOTO' : 'ADD PHOTO'}</Text>
-                        </TouchableOpacity>
-                        {!!background && (
-                            <TouchableOpacity
-                                style={styles.photoBtn}
-                                onPress={handleOpenCamera}
-                                accessibilityRole="button"
-                                accessibilityLabel="Retake background photo"
-                            >
-                                <MaterialIcons name="replay" size={16} color={colors.primary} />
-                                <Text style={styles.photoBtnText}>RETAKE</Text>
-                            </TouchableOpacity>
-                        )}
-                        {!!background && !themeSupportsBackground && (
-                            <Text style={styles.photoHint} numberOfLines={1}>Hidden on {THEMES[theme].label}</Text>
-                        )}
-                    </View>
-
-                    {/*
-                     * Theme picker — LABELS ONLY, not a carousel of live
-                     * previews. At the ~0.4 scale a five-up row would need,
-                     * VT323 text and exercise names are illegible, so a row of
-                     * tiny cards could not actually serve as confirmation —
-                     * the hero above is the one place that reads the card.
-                     */}
-                    <Text style={styles.sectionLabel}>STYLE</Text>
-                    <View style={styles.themeRow}>
-                        {THEME_ORDER.map((id) => {
+                    <View style={styles.compactThemes} accessibilityRole="radiogroup" accessibilityLabel="Card style">
+                        {THEME_ORDER.map(id => {
                             const active = theme === id;
-                            return (
-                                <TouchableOpacity
-                                    key={id}
-                                    style={[styles.themePill, active && styles.themePillActive]}
-                                    onPress={() => onSelectTheme(id)}
-                                    accessibilityRole="button"
-                                    accessibilityState={{ selected: active }}
-                                >
-                                    <Text style={[styles.themePillText, active && styles.themePillTextActive]}>
-                                        {THEMES[id].label}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
+                            return <TouchableOpacity key={id} onPress={() => onSelectTheme(id)} disabled={isSharing}
+                                style={[styles.compactTheme, active && styles.themePillActive]}
+                                accessibilityRole="radio" accessibilityState={{ checked: active, disabled: isSharing }} aria-checked={active}>
+                                <Text style={[styles.compactThemeText, active && styles.themePillTextActive]}>{THEMES[id].label}</Text>
+                            </TouchableOpacity>;
                         })}
                     </View>
-                </ScrollView>
+                    <View style={styles.compactActions}>
+                        {isSession && <TouchableOpacity style={styles.photoBtn} onPress={() => setShowHighlights(true)} disabled={isSharing}
+                            accessibilityRole="button" accessibilityLabel="Choose highlights">
+                            <MaterialIcons name="tune" size={18} color={colors.primary} />
+                            <Text style={styles.photoBtnText}>Highlights</Text>
+                            <Text style={styles.selectionCount}>{selection.length}</Text>
+                        </TouchableOpacity>}
+                        {(themeSupportsBackground || !!background) && <TouchableOpacity style={styles.photoBtn} onPress={background ? handleRemoveBackground : handleOpenCamera} disabled={isSharing}
+                            accessibilityRole="button" accessibilityLabel={background ? 'Remove background photo' : 'Add background photo'}>
+                            <MaterialIcons name={background ? 'close' : 'camera-alt'} size={18} color={colors.primary} />
+                            <Text style={styles.photoBtnText}>{background ? 'Remove photo' : 'Photo'}</Text>
+                        </TouchableOpacity>}
+                        {!!background && themeSupportsBackground && <TouchableOpacity onPress={handleOpenCamera} disabled={isSharing} style={styles.retakeButton}
+                            accessibilityRole="button" accessibilityLabel="Retake background photo">
+                            <MaterialIcons name="replay" size={20} color={colors.primary} />
+                        </TouchableOpacity>}
+                    </View>
+                    {!!background && <Text style={styles.compactHint}>{themeSupportsBackground ? 'Drag, pinch or rotate the photo' : 'Photo is hidden in Anatomy'}</Text>}
+                    {!!selectionHint && <Text style={styles.compactHint} accessibilityLiveRegion="polite">{selectionHint}</Text>}
+                </View>
 
                 <View style={styles.footer}>
+                    {!!shareError && <Text style={[styles.imageErrorText, { paddingBottom: 12 }]} accessibilityLiveRegion="polite">{shareError}</Text>}
+                    {!!currentImageError && <View style={styles.imageError}>
+                        <Text style={styles.imageErrorText} accessibilityLiveRegion="polite">{currentImageError}</Text>
+                        <TouchableOpacity onPress={() => setCaptureGeneration(value => value + 1)} accessibilityRole="button" accessibilityLabel="Retry loading card images">
+                            <Text style={styles.photoBtnText}>RETRY IMAGE</Text>
+                        </TouchableOpacity>
+                    </View>}
                     <TouchableOpacity
                         style={[styles.shareBtn, (isSharing || backgroundGateActive) && styles.shareBtnDisabled]}
                         onPress={handleShare}
                         disabled={isSharing || backgroundGateActive}
+                        accessibilityRole="button"
+                        accessibilityLabel="Share card image"
+                        accessibilityState={{ disabled: isSharing || backgroundGateActive, busy: isSharing || waitingForImages }}
                     >
                         {isSharing ? (
                             <ActivityIndicator color={colors.background} size="small" />
+                        ) : currentImageError ? (
+                            <Text style={styles.shareBtnText}>IMAGE UNAVAILABLE</Text>
                         ) : backgroundGateActive ? (
-                            // RULING R30 — visible while the capture target's
-                            // photo is still decoding, so the disabled button
-                            // reads as "wait a moment" rather than "broken".
                             <>
                                 <ActivityIndicator color={colors.background} size="small" />
-                                <Text style={styles.shareBtnText}>PREPARING PHOTO</Text>
+                                <Text style={styles.shareBtnText}>PREPARING IMAGE</Text>
                             </>
                         ) : (
                             <>
@@ -615,24 +415,70 @@ export default function ShareComposerScreen() {
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
+            <Modal visible={showHighlights} transparent animationType="slide" onRequestClose={() => setShowHighlights(false)}>
+                <View style={styles.sheetOverlay}>
+                    <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setShowHighlights(false)} accessibilityLabel="Close highlights" accessibilityRole="button" />
+                    <SafeAreaView edges={['bottom']} style={styles.sheet}>
+                        <View style={styles.sheetHeader}>
+                            <Text style={styles.headerTitle}>Choose highlights</Text>
+                            <TouchableOpacity onPress={() => setShowHighlights(false)} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel="Close highlights picker">
+                                <MaterialIcons name="close" size={24} color={colors.text.primary} />
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView contentContainerStyle={styles.selectionList}>
+                            {chips.map(chip => {
+                                const active = selection.includes(chip.id);
+                                return <TouchableOpacity key={chip.id} onPress={() => onToggleChip(chip.id)} style={styles.selectionRow}
+                                    accessibilityRole="checkbox" accessibilityState={{ checked: active }} aria-checked={active}
+                                    accessibilityLabel={(chip.isPr ? 'Personal record: ' : '') + chip.label}>
+                                    <MaterialIcons name={active ? 'check-box' : 'check-box-outline-blank'} size={24} color={active ? colors.primary : colors.text.muted} />
+                                    <Text style={styles.selectionLabel}>{chip.label}</Text>
+                                    {chip.isPr && <Text style={styles.prBadge}>PR</Text>}
+                                </TouchableOpacity>;
+                            })}
+                        </ScrollView>
+                        <TouchableOpacity style={[styles.shareBtn, styles.sheetDone]} onPress={() => setShowHighlights(false)} accessibilityRole="button" accessibilityLabel="Done choosing highlights">
+                            <Text style={styles.shareBtnText}>DONE</Text>
+                        </TouchableOpacity>
+                    </SafeAreaView>
+                </View>
+            </Modal>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
+    compactContent: { flex: 1, minHeight: 0, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12, gap: 10 },
+    previewSpace: { flex: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+    compactThemes: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 6 },
+    compactTheme: { paddingHorizontal: 5, paddingVertical: 10, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 24, borderWidth: 1, borderColor: colors.glass.border, backgroundColor: colors.glass.surface },
+    compactThemeText: { fontFamily: typography.fontFamily.semiBold, fontSize: 12, color: colors.text.primary },
+    compactActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 8 },
+    selectionCount: { fontFamily: typography.fontFamily.semiBold, fontSize: 12, color: colors.text.muted },
+    compactHint: { fontFamily: typography.fontFamily.regular, fontSize: 12, color: colors.text.muted, textAlign: 'center' },
+    retakeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end' },
+    sheet: { maxHeight: '78%', backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+    sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12 },
+    selectionList: { paddingHorizontal: 20 },
+    selectionRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.glass.border },
+    selectionLabel: { flex: 1, fontFamily: typography.fontFamily.medium, fontSize: 15, color: colors.text.primary },
+    prBadge: { fontFamily: typography.fontFamily.bold, fontSize: 12, color: colors.accent.gold },
+    sheetDone: { margin: 20 },
+    imageError: { gap: 12, paddingBottom: 16 },
+    imageErrorText: { color: colors.text.primary, fontFamily: typography.fontFamily.regular, fontSize: 14 },
     container: {
         flex: 1,
         backgroundColor: colors.background,
+        ...(Platform.OS === 'web' ? { overflow: 'hidden' as const } : {}),
     },
-
-    // The fragile part — see the JSX comment above the ViewShot for the
-    // full explanation of why these exact properties, not opacity/display.
     captureHost: {
         position: 'absolute',
         top: 0,
         left: 0,
         zIndex: -1,
         elevation: -1, // Android draws by elevation, not zIndex
+        ...(Platform.OS === 'web' ? { width: '100%' as const, height: '100%' as const, overflow: 'hidden' as const } : {}),
     },
     screenBody: {
         flex: 1,
@@ -651,8 +497,8 @@ const styles = StyleSheet.create({
         borderBottomColor: colors.glass.border,
     },
     headerBtn: {
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -662,58 +508,9 @@ const styles = StyleSheet.create({
         color: colors.text.primary,
     },
 
-    scrollContent: {
-        padding: spacing.xl,
-        paddingBottom: spacing['4xl'],
-    },
 
-    sectionLabel: {
-        fontSize: typography.sizes['2xs'],
-        fontFamily: typography.fontFamily.semiBold,
-        letterSpacing: 2,
-        textTransform: 'uppercase',
-        color: colors.text.muted,
-        marginBottom: spacing.md,
-    },
 
-    chipRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.sm,
-        marginBottom: spacing['3xl'],
-    },
-    chip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        maxWidth: 240,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm + 2,
-        borderRadius: borderRadius.full,
-        backgroundColor: colors.glass.surface,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
-    },
-    chipActive: {
-        backgroundColor: colors.primary,
-        borderColor: colors.primary,
-    },
-    chipIcon: {
-        marginRight: 6,
-    },
-    chipText: {
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.primary,
-    },
-    chipTextActive: {
-        color: colors.background,
-    },
 
-    heroSection: {
-        width: '100%',
-        alignItems: 'center',
-        marginBottom: spacing['3xl'],
-    },
     heroOuter: {
         alignItems: 'center',
         justifyContent: 'center',
@@ -724,17 +521,10 @@ const styles = StyleSheet.create({
     heroInner: {
         width: CARD_W,
         height: CARD_H,
-    },
-
-    // Task 10 — camera photo controls, directly below the hero.
-    photoRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        gap: spacing.sm,
-        marginBottom: spacing['3xl'],
+        flexShrink: 0,
     },
     photoBtn: {
+        minHeight: 44,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
@@ -751,36 +541,10 @@ const styles = StyleSheet.create({
         color: colors.primary,
         letterSpacing: 0.5,
     },
-    photoHint: {
-        fontSize: typography.sizes['2xs'],
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
-        flexShrink: 1,
-    },
 
-    themeRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.sm,
-        marginBottom: spacing.lg,
-    },
-    themePill: {
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm + 2,
-        borderRadius: borderRadius.full,
-        backgroundColor: colors.glass.surface,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
-    },
     themePillActive: {
         backgroundColor: colors.primary,
         borderColor: colors.primary,
-    },
-    themePillText: {
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.semiBold,
-        color: colors.text.primary,
-        letterSpacing: 0.5,
     },
     themePillTextActive: {
         color: colors.background,
@@ -811,11 +575,6 @@ const styles = StyleSheet.create({
         color: colors.background,
         letterSpacing: 1,
     },
-
-    // Task 10 — full-screen camera. Same visual language as
-    // WorkoutRecapScreen's own camera overlay (WorkoutRecapScreen.tsx's
-    // cameraOverlay/cameraTopRow/cameraBtn/cameraBottom/cameraHint/
-    // captureBtn/captureBtnInner styles) rather than a divergent new one.
     cameraOverlay: {
         ...StyleSheet.absoluteFillObject,
         justifyContent: 'space-between',

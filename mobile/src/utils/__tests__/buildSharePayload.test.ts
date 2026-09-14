@@ -79,7 +79,7 @@ describe('buildSharePayload — selection semantics', () => {
 
         const payload = buildSharePayload(session, ['total']);
 
-        expect(payload.headline).toBe('0 KG');
+        expect(payload.headline).toBe('3 SETS');
         expect(payload.exercises).toEqual([]);
     });
 

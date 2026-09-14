@@ -8,7 +8,6 @@ import {
     ScrollView,
     TouchableOpacity,
     ActivityIndicator,
-    Dimensions,
     Platform,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -18,15 +17,14 @@ import { router } from 'expo-router';
 import ViewShot from 'react-native-view-shot';
 import { healthAPI, progressAPI, nutritionAPI, measurementsAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
-import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
-import { isHealthAvailable, hasHealthData, healthSyncPayload, getTodaysSummary } from '../../services/healthService';
-import { healthReportData } from '../../utils/healthReportData';
+import { isHealthAvailable } from '../../services/healthService';
+import { syncHealthDays } from '../../services/healthSync';
+import { healthReportData, healthReportDetails } from '../../utils/healthReportData';
 import { useShareCapture } from '../../hooks/useShareCapture';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_GAP = 10;
-const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 2 - CARD_GAP) / 2;
+const healthSource = Platform.OS === 'ios' ? 'Apple Health' : Platform.OS === 'android' ? 'Health Connect' : 'Device health data';
 
 // ─────────────────────────────────────────────
 // TYPES
@@ -39,35 +37,16 @@ interface HealthData {
     sleep_hours: number | null;
 }
 
-interface PRData {
-    exercise_name: string;
-    max_weight: number;
-    reps_at_max: number;
-}
-
-interface NutritionProfile {
-    daily_calories: number;
-    daily_protein: number;
-    daily_carbs: number;
-    daily_fat: number;
-}
-
-interface MeasurementData {
-    weight: number | null;
-    body_fat: number | null;
-    chest: number | null;
-    waist: number | null;
-    hips: number | null;
-}
+type ReportDetails = ReturnType<typeof healthReportDetails>;
 
 interface HealthHistory {
-    daily: Array<{
+    daily: {
         date: string;
         steps: number | null;
         active_calories: number | null;
         resting_heart_rate: number | null;
         sleep_hours: number | null;
-    }>;
+    }[];
     averages: {
         avg_steps: number | null;
         avg_calories: number | null;
@@ -84,11 +63,6 @@ function formatNumber(n: number | null | undefined): string {
     if (n == null) return '—';
     if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
     return Math.round(n).toString();
-}
-
-function safeNum(v: any): number {
-    const n = Number(v);
-    return isNaN(n) ? 0 : n;
 }
 
 function getHealthGrade(data: {
@@ -141,61 +115,57 @@ function getHealthGrade(data: {
     return { grade: 'F', color: colors.error, label: 'Needs Work' };
 }
 
-const today = new Date();
-const reportDate = today.toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-});
-
 // ─────────────────────────────────────────────
 // COMPONENT
 // ─────────────────────────────────────────────
 
 export default function HealthReportScreen() {
     const { user } = useAuth();
-    const toast = useToast();
     const viewShotRef = useRef<ViewShot>(null);
     const [loading, setLoading] = useState(true);
-    const { captureAndShare, isSharing } = useShareCapture();
+    const [loadError, setLoadError] = useState(false);
+    const { captureAndShare, isSharing, shareError } = useShareCapture();
+    const reportDate = new Date().toLocaleDateString('en-IN', {
+        day: 'numeric', month: 'long', year: 'numeric',
+    });
 
     const [healthToday, setHealthToday] = useState<HealthData | null>(null);
     const [healthHistory, setHealthHistory] = useState<HealthHistory | null>(null);
-    const [prs, setPrs] = useState<PRData[]>([]);
-    const [nutrition, setNutrition] = useState<NutritionProfile | null>(null);
-    const [measurements, setMeasurements] = useState<MeasurementData | null>(null);
+    const [prs, setPrs] = useState<ReportDetails['prs']>([]);
+    const [nutrition, setNutrition] = useState<ReportDetails['nutrition']>(null);
+    const [measurements, setMeasurements] = useState<ReportDetails['measurements']>(null);
 
     const loadData = useCallback(async () => {
         setLoading(true);
+        setLoadError(false);
         try {
             // Auto-sync from device health services if available
             if (isHealthAvailable() && await isHealthImportEnabled(user?.id)) {
                 try {
-                    const summary = await getTodaysSummary();
-                    if (hasHealthData(summary)) {
-                        await healthAPI.sync(healthSyncPayload(summary));
-                    }
+                    if (user?.id) await syncHealthDays(user.id);
                 } catch {
                     // Sync failed silently — still load from backend
                 }
             }
 
             const [healthRes, historyRes, prsRes, nutritionRes, measureRes] = await Promise.all([
-                healthAPI.getToday().catch(() => ({ data: null })),
-                healthAPI.getHistory(7).catch(() => ({ data: null })),
-                progressAPI.getPRs().catch(() => ({ prs: [] })),
-                nutritionAPI.getProfile().catch(() => ({ profile: null })),
-                measurementsAPI.getLatest().catch(() => ({ measurement: null })),
+                healthAPI.getToday(),
+                healthAPI.getHistory(7),
+                progressAPI.getPRs(),
+                nutritionAPI.getProfile(),
+                measurementsAPI.getLatest(),
             ]);
 
             const report = healthReportData(healthRes, historyRes);
+            const details = healthReportDetails(prsRes, nutritionRes, measureRes);
             setHealthToday(report.today);
             setHealthHistory(report.history);
-            setPrs((prsRes?.prs || []).slice(0, 5));
-            setNutrition(nutritionRes?.profile || null);
-            setMeasurements(measureRes?.measurement || null);
-        } catch (e: any) {
-            toast.error('Error', e.message || 'Something went wrong');
+            setPrs(details.prs);
+            setNutrition(details.nutrition);
+            setMeasurements(details.measurements);
+        } catch {
+            // A failed request is not an empty report. Keep it out of exports too.
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -205,12 +175,6 @@ export default function HealthReportScreen() {
         loadData();
     }, [loadData]);
 
-    // viewShotRef is a ViewShot component ref (not a plain View ref) — captureRef
-    // (used inside useShareCapture) accepts that too, so no ref change is needed.
-    // Ruling R25: fallbackMessage is required, not optional decoration -- with
-    // none, useShareCapture.ts's catch branch only logs via logger.error and
-    // returns, so a capture/share failure would stop the button's spinner with
-    // zero feedback to the user. Tone matches StatsScreen's fallback string.
     const handleShare = () => {
         captureAndShare(viewShotRef, {
             dialogTitle: 'Share Health Report',
@@ -225,37 +189,47 @@ export default function HealthReportScreen() {
               sleep: healthToday.sleep_hours,
               hr: healthToday.resting_heart_rate,
           })
-        : { grade: '—', color: colors.text.muted, label: 'Sync health data to get your grade' };
+        : { grade: '—', color: colors.text.muted, label: 'No readable health data yet' };
+    const hasTodayReadings = healthToday != null && Object.values(healthToday).some(value => value != null);
+    const hasHistoryReadings = healthHistory != null && Object.values(healthHistory.averages).some(value => value != null);
+    const hasReadings = hasTodayReadings || hasHistoryReadings;
 
-    if (loading) {
+    if (loading || loadError) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.backBtn}>
                         <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Health Report</Text>
-                    <View style={{ width: 40 }} />
+                    <View style={{ width: 44 }} />
                 </View>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={styles.loadingText}>Generating your report...</Text>
+                    {loading ? <>
+                        <ActivityIndicator size="large" color={colors.primary} />
+                        <Text style={styles.loadingText}>Generating your report...</Text>
+                    </> : <>
+                        <Text accessibilityRole="alert" style={styles.errorTitle}>Couldn&apos;t load your report</Text>
+                        <Text style={styles.loadingText}>Check your connection and try again.</Text>
+                        <TouchableOpacity accessibilityRole="button" onPress={loadData} style={styles.retryButton}>
+                            <Text style={styles.retryText}>Try again</Text>
+                        </TouchableOpacity>
+                    </>}
                 </View>
             </SafeAreaView>
         );
     }
 
-    const hasNutrition = nutrition &&
-        !isNaN(nutrition.daily_calories) && nutrition.daily_calories > 0;
+    const hasNutrition = nutrition?.target_calories != null && nutrition.target_calories > 0;
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.backBtn}>
                     <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Health Report</Text>
-                <TouchableOpacity onPress={handleShare} style={styles.shareBtn} disabled={isSharing}>
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel="Share health report" accessibilityState={{ disabled: isSharing, busy: isSharing }} onPress={handleShare} style={styles.shareBtn} disabled={isSharing}>
                     {isSharing ? (
                         <ActivityIndicator size="small" color={colors.primary} />
                     ) : (
@@ -263,6 +237,7 @@ export default function HealthReportScreen() {
                     )}
                 </TouchableOpacity>
             </View>
+            {shareError && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.shareError}>{shareError}</Text>}
 
             <ScrollView
                 style={styles.scrollView}
@@ -297,17 +272,16 @@ export default function HealthReportScreen() {
                         <View style={styles.healthKitBannerContent}>
                             <View style={styles.healthKitBannerTitleRow}>
                                 <Text style={styles.healthKitBannerTitle}>
-                                    {Platform.OS === 'ios' ? 'Apple Health Integration' : 'Health Connect Integration'}
+                                    {healthSource}
                                 </Text>
                                 <View style={styles.healthKitPill}>
-                                    <MaterialIcons name="check-circle" size={11} color={colors.success} />
-                                    <Text style={styles.healthKitPillText}>Active</Text>
+                                    <Text style={styles.healthKitPillText}>{hasReadings ? 'Readings saved' : 'No readings yet'}</Text>
                                 </View>
                             </View>
                             <Text style={styles.healthKitBannerDesc}>
-                                {Platform.OS === 'ios'
-                                    ? 'Daily steps, active calories, resting heart rate, and sleep duration are integrated directly from Apple Health (HealthKit).'
-                                    : 'Daily steps, active calories, resting heart rate, and sleep duration are integrated directly from Health Connect.'}
+                                {hasReadings
+                                    ? 'Saved readings are shown below. A dash means no reading was imported.'
+                                    : 'Open Settings in the Fitzo mobile app to manage health import. A dash means no reading was imported.'}
                             </Text>
                         </View>
                     </Animated.View>
@@ -330,11 +304,11 @@ export default function HealthReportScreen() {
                     {/* ── Today's Vitals (2x2 Grid) ── */}
                     <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} style={styles.sectionBlock}>
                         <View style={styles.sectionHeaderRow}>
-                            <Text style={styles.sectionTitle}>TODAY'S VITALS</Text>
+                            <Text style={styles.sectionTitle}>TODAY&apos;S VITALS</Text>
                             <View style={styles.sectionBadge}>
                                 <MaterialIcons name="sync" size={11} color={colors.text.muted} />
                                 <Text style={styles.sectionBadgeText}>
-                                    {Platform.OS === 'ios' ? 'Apple Health' : 'Health Connect'}
+                                    {healthSource}
                                 </Text>
                             </View>
                         </View>
@@ -349,9 +323,9 @@ export default function HealthReportScreen() {
                             <VitalCard
                                 icon="local-fire-department"
                                 label="Active Cal"
-                                value={`${safeNum(healthToday?.active_calories)}`}
+                                value={formatNumber(healthToday?.active_calories)}
                                 target="300"
-                                unit="kcal"
+                                unit={healthToday?.active_calories != null ? 'kcal' : ''}
                                 color={colors.accent.orange}
                             />
                         </View>
@@ -376,14 +350,14 @@ export default function HealthReportScreen() {
                     </Animated.View>
 
                     {/* ── 7-Day Averages ── */}
-                    {healthHistory?.averages && (
+                    {hasHistoryReadings && healthHistory && (
                         <Animated.View entering={FadeInDown.delay(300).duration(600).springify()} style={styles.sectionBlock}>
                             <View style={styles.sectionHeaderRow}>
                                 <Text style={styles.sectionTitle}>7-DAY AVERAGES</Text>
                                 <View style={styles.sectionBadge}>
                                     <MaterialIcons name="sync" size={11} color={colors.text.muted} />
                                     <Text style={styles.sectionBadgeText}>
-                                        {Platform.OS === 'ios' ? 'Apple Health' : 'Health Connect'}
+                                        {healthSource}
                                     </Text>
                                 </View>
                             </View>
@@ -395,16 +369,16 @@ export default function HealthReportScreen() {
                                 </View>
                                 <View style={styles.avgRowDivider} />
                                 <View style={styles.avgRow}>
-                                    <AvgStat label="Sleep" value={healthHistory.averages.avg_sleep ? `${Number(healthHistory.averages.avg_sleep).toFixed(1)}h` : '—'} icon="bedtime" />
+                                    <AvgStat label="Sleep" value={healthHistory.averages.avg_sleep != null ? `${healthHistory.averages.avg_sleep.toFixed(1)}h` : '—'} icon="bedtime" />
                                     <View style={styles.avgDivider} />
-                                    <AvgStat label="Heart Rate" value={healthHistory.averages.avg_heart_rate ? `${Math.round(Number(healthHistory.averages.avg_heart_rate))}` : '—'} icon="favorite" />
+                                    <AvgStat label="Heart Rate" value={healthHistory.averages.avg_heart_rate != null ? `${Math.round(healthHistory.averages.avg_heart_rate)}` : '—'} icon="favorite" />
                                 </View>
                             </GlassCard>
                         </Animated.View>
                     )}
 
                     {/* ── Weekly Steps Chart ── */}
-                    {healthHistory?.daily && healthHistory.daily.length > 0 && (
+                    {healthHistory?.daily.some(day => day.steps != null) && (
                         <Animated.View entering={FadeInDown.delay(400).duration(600).springify()} style={styles.sectionBlock}>
                             <Text style={styles.sectionTitle}>STEPS THIS WEEK</Text>
                             <GlassCard style={styles.innerCard}>
@@ -420,7 +394,7 @@ export default function HealthReportScreen() {
                     )}
 
                     {/* ── Body Composition ── */}
-                    {measurements && (measurements.weight || measurements.body_fat) && (
+                    {measurements && Object.values(measurements).some(value => value != null) && (
                         <Animated.View entering={FadeInDown.delay(500).duration(600).springify()} style={styles.sectionBlock}>
                             <Text style={styles.sectionTitle}>BODY COMPOSITION</Text>
                             <GlassCard style={styles.innerCard}>
@@ -440,10 +414,10 @@ export default function HealthReportScreen() {
                             <Text style={styles.sectionTitle}>DAILY NUTRITION TARGETS</Text>
                             <GlassCard style={styles.innerCard}>
                                 <View style={styles.macroRow}>
-                                    <MacroStat label="Calories" value={safeNum(nutrition!.daily_calories)} unit="kcal" color={colors.accent.orange} />
-                                    <MacroStat label="Protein" value={safeNum(nutrition!.daily_protein)} unit="g" color={colors.macro.protein} />
-                                    <MacroStat label="Carbs" value={safeNum(nutrition!.daily_carbs)} unit="g" color={colors.macro.carbs} />
-                                    <MacroStat label="Fat" value={safeNum(nutrition!.daily_fat)} unit="g" color={colors.macro.fat} />
+                                    <MacroStat label="Calories" value={nutrition!.target_calories} unit="kcal" color={colors.accent.orange} />
+                                    <MacroStat label="Protein" value={nutrition!.target_protein} unit="g" color={colors.macro.protein} />
+                                    <MacroStat label="Carbs" value={nutrition!.target_carbs} unit="g" color={colors.macro.carbs} />
+                                    <MacroStat label="Fat" value={nutrition!.target_fat} unit="g" color={colors.macro.fat} />
                                 </View>
                             </GlassCard>
                         </Animated.View>
@@ -463,7 +437,7 @@ export default function HealthReportScreen() {
                                             <View style={styles.prInfo}>
                                                 <Text style={styles.prName}>{pr.exercise_name}</Text>
                                                 <Text style={styles.prDetail}>
-                                                    {pr.max_weight}kg x {pr.reps_at_max} reps
+                                                    {pr.max_weight_kg == null ? '—' : pr.max_weight_kg === 0 ? 'Bodyweight' : `${pr.max_weight_kg} kg`} x {pr.reps_at_max ?? '—'} reps
                                                 </Text>
                                             </View>
                                             <MaterialIcons name="emoji-events" size={20} color={colors.accent.gold} />
@@ -481,7 +455,9 @@ export default function HealthReportScreen() {
                         <Text style={styles.healthKitDisclaimerText}>
                             {Platform.OS === 'ios'
                                 ? 'Fitzo integrates with Apple Health (HealthKit) to read your daily steps, active calories burned, resting heart rate, and sleep analysis. When connected, available readings are imported into your Fitzo account for your report and AI coach. Manage read access in your device health settings.'
-                                : 'Fitzo integrates with Health Connect to read your daily steps, active calories burned, resting heart rate, and sleep analysis. When connected, available readings are imported into your Fitzo account for your report and AI coach. Manage read access in your device health settings.'}
+                                : Platform.OS === 'android'
+                                    ? 'Fitzo integrates with Health Connect to read your daily steps, active calories burned, resting heart rate, and sleep analysis. When connected, available readings are imported into your Fitzo account for your report and AI coach. Manage read access in your device health settings.'
+                                    : 'The Fitzo mobile app can import available readings from Apple Health or Health Connect into your account for your report and AI coach. Manage read access in your device health settings.'}
                         </Text>
                     </Animated.View>
 
@@ -541,13 +517,13 @@ function BodyStat({ label, value, unit }: { label: string; value: string; unit: 
 }
 
 function MacroStat({ label, value, unit, color }: {
-    label: string; value: number; unit: string; color: string;
+    label: string; value: number | null; unit: string; color: string;
 }) {
     return (
         <View style={styles.macroItem}>
             <View style={[styles.macroDot, { backgroundColor: color }]} />
             <Text style={styles.macroValue}>
-                {Math.round(value)}<Text style={styles.macroUnit}>{unit}</Text>
+                {value == null ? '—' : Math.round(value)}{value != null && <Text style={styles.macroUnit}> {unit}</Text>}
             </Text>
             <Text style={styles.macroLabel}>{label}</Text>
         </View>
@@ -555,7 +531,7 @@ function MacroStat({ label, value, unit, color }: {
 }
 
 function MiniBarChart({ data, target }: {
-    data: Array<{ label: string; value: number }>; target: number;
+    data: { label: string; value: number }[]; target: number;
 }) {
     const max = Math.max(...data.map((d) => d.value), target, 1);
 
@@ -599,7 +575,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
     },
     backBtn: {
-        width: 40, height: 40, borderRadius: 20,
+        width: 44, height: 44, borderRadius: 22,
         backgroundColor: colors.glass.surface, borderWidth: 1, borderColor: colors.glass.border,
         alignItems: 'center', justifyContent: 'center',
     },
@@ -607,19 +583,23 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.xl, fontFamily: typography.fontFamily.semiBold, color: colors.text.primary,
     },
     shareBtn: {
-        width: 40, height: 40, borderRadius: 20,
+        width: 44, height: 44, borderRadius: 22,
         backgroundColor: colors.glass.surface, borderWidth: 1, borderColor: colors.glass.border,
         alignItems: 'center', justifyContent: 'center',
     },
-    loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
-    loadingText: { fontSize: typography.sizes.md, fontFamily: typography.fontFamily.regular, color: colors.text.muted },
+    loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.lg },
+    loadingText: { fontSize: typography.sizes.md, fontFamily: typography.fontFamily.regular, color: colors.text.muted, textAlign: 'center' },
+    errorTitle: { fontSize: typography.sizes.lg, fontFamily: typography.fontFamily.semiBold, color: colors.text.primary, textAlign: 'center' },
+    retryButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xl, backgroundColor: colors.primary, borderRadius: borderRadius.full },
+    retryText: { fontSize: typography.sizes.md, fontFamily: typography.fontFamily.semiBold, color: colors.background },
+    shareError: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md, color: colors.error, fontFamily: typography.fontFamily.regular, fontSize: typography.sizes.sm },
     scrollView: { flex: 1 },
     scrollContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing['5xl'] },
 
     // Report
     reportContainer: { backgroundColor: colors.background, paddingTop: spacing.md },
     reportHeader: { marginBottom: spacing['2xl'] },
-    reportTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    reportTitleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between', alignItems: 'flex-start' },
     reportBrand: {
         fontSize: typography.sizes['3xl'], fontFamily: typography.fontFamily.extraBold,
         color: colors.text.primary, letterSpacing: 6,
@@ -673,6 +653,8 @@ const styles = StyleSheet.create({
     healthKitBannerContent: { flex: 1 },
     healthKitBannerTitleRow: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.xs,
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: 2,
@@ -686,7 +668,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 3,
-        backgroundColor: 'rgba(34, 197, 94, 0.15)',
+        backgroundColor: colors.glass.surface,
         paddingHorizontal: 6,
         paddingVertical: 2,
         borderRadius: borderRadius.full,
@@ -694,7 +676,7 @@ const styles = StyleSheet.create({
     healthKitPillText: {
         fontSize: 10,
         fontFamily: typography.fontFamily.medium,
-        color: colors.success,
+        color: colors.text.secondary,
     },
     healthKitBannerDesc: {
         fontSize: typography.sizes['2xs'],
@@ -758,7 +740,7 @@ const styles = StyleSheet.create({
     // Vitals — explicit 2-column rows
     vitalsRow: { flexDirection: 'row', gap: CARD_GAP },
     vitalCard: {
-        width: CARD_WIDTH,
+        flex: 1, minWidth: 0,
         backgroundColor: colors.glass.surface, borderWidth: 1, borderColor: colors.glass.border,
         borderRadius: borderRadius.lg, padding: spacing.md, alignItems: 'flex-start',
     },

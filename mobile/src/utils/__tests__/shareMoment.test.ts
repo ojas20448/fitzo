@@ -24,9 +24,9 @@ describe('pickMoment — open on the interesting thing', () => {
         expect(m.theme).toBe('scoreboard');
     });
 
-    it('falls back to the heaviest exercise by volume, not the first', () => {
+    it('uses the whole workout for the default receipt', () => {
         const m = pickMoment(base);
-        expect(m.selection).toEqual([`${EX_PREFIX}b`]);
+        expect(m.selection).toEqual([TOTAL_ID]);
         expect(m.theme).toBe('receipt');
     });
 

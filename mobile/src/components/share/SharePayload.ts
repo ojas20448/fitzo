@@ -48,6 +48,8 @@ export interface ShareBackground {
 /** Everything a theme may render. Themes read from this and nothing else. */
 export interface SharePayload {
     headline: string;           // "1,240 KG"
+    headlineLabel?: string;     // What the headline measures, e.g. "Workout load volume".
+    contextLabel?: string;      // Name of a selected exercise or other scoped context.
     caption?: string;           // "The weight of 3 auto-rickshaws"
     subtitle?: string;          // "Push - 24 Aug"
     rows: { label: string; value: string }[];

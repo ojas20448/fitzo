@@ -33,9 +33,9 @@ import type { ShareSet, SharePayload } from './SharePayload';
  */
 export const CARD_LOCALE = 'en-IN';
 
-/** Whole-kg volume, comma-grouped under the pinned CARD_LOCALE — never the ambient device locale. */
+/** Keep useful fractional kg so the displayed breakdown agrees with its total. */
 export function formatVolumeKg(kg: number): string {
-    return Math.round(kg).toLocaleString(CARD_LOCALE);
+    return kg.toLocaleString(CARD_LOCALE, { maximumFractionDigits: 2 });
 }
 
 /**
@@ -61,6 +61,7 @@ export function formatTopSet(topSet: ShareSet | undefined): string | null {
     if (!topSet) return null;
     const w = topSet.weight_kg;
     const r = topSet.reps;
+    if (w === 0 && r != null) return `${r} reps`;
     if (w != null && r != null) return `${Math.round(w * 10) / 10}×${r}`;
     if (w != null) return `${Math.round(w * 10) / 10} kg`;
     if (r != null) return `${r} reps`;
@@ -81,6 +82,17 @@ export const ANATOMY_MUSCLE_KEYS = [
     'glutes', 'hamstrings', 'lats', 'legs', 'obliques', 'quads', 'shoulders',
     'traps', 'triceps', 'lower back',
 ] as const;
+
+export function normalizeShareMuscle(target?: string): string | undefined {
+    const key = target?.trim().toLowerCase();
+    if (!key) return undefined;
+    const aliases: Record<string, string> = {
+        pectorals: 'chest', delts: 'shoulders', 'rear delts': 'shoulders',
+        'upper back': 'back', adductors: 'legs', abductors: 'legs',
+    };
+    const normalized = aliases[key] ?? key;
+    return (ANATOMY_MUSCLE_KEYS as readonly string[]).includes(normalized) ? normalized : undefined;
+}
 
 /**
  * True only when `volume` has at least one strictly-positive entry under a
@@ -116,44 +128,20 @@ export function hasMuscleVolume(
     });
 }
 
-/**
- * Layered fallback content for a theme's secondary list: a PR beats a plain
- * exercise beats a generic stat row, because that is the order of "how
- * interesting is this to show" — a PR is the one thing worth leading with
- * when it exists.
- *
- * Two callers share this, not one: ANATOMY uses it for the entire card body
- * when `hasMuscleVolume` is false (no heatmap to draw), and CHALK uses it
- * unconditionally for its exercise checklist (Chalk has no optional hero —
- * `payload.headline` is a required field — so there is no separate
- * degraded-vs-normal split for it, just "what goes in the list"). Sharing
- * one tested implementation means both themes' sparse-payload behaviour is
- * verified in one place instead of two hand-rolled, unverifiable JSX
- * branches (see module doc: components have no test coverage here).
- *
- * `max` is clamped to >= 0 before reaching `Array.prototype.slice` —
- * `slice(0, negative)` means "up to N from the END" in JS, not "empty," so
- * an accidental negative cap would silently return the wrong rows instead
- * of nothing.
- */
+/** Combine records and exercises; use generic stats when neither is present. */
 export function pickSummaryRows(
     payload: SharePayload,
     max: number
 ): { label: string; value: string }[] {
     const n = Math.max(0, max);
-    if (payload.prs.length > 0) {
-        return payload.prs.slice(0, n).map((pr) => ({ label: pr.exercise, value: pr.current }));
-    }
-    if (payload.exercises.length > 0) {
-        return payload.exercises.slice(0, n).map((ex) => ({
+    const content = [
+        ...payload.prs.map((pr) => ({ label: pr.exercise, value: pr.current })),
+        ...payload.exercises.map((ex) => ({
             label: ex.name,
             value: formatTopSet(ex.topSet) || `${formatVolumeKg(ex.volumeKg)} KG`,
-        }));
-    }
-    if (payload.rows.length > 0) {
-        return payload.rows.slice(0, n);
-    }
-    return [];
+        })),
+    ];
+    return (content.length ? content : payload.rows).slice(0, n);
 }
 
 /**

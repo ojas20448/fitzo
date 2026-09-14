@@ -39,9 +39,9 @@ describe('formatVolumeKg', () => {
         expect(formatVolumeKg(920)).toBe('920');
     });
 
-    it('rounds to the nearest whole kg before formatting', () => {
-        expect(formatVolumeKg(919.6)).toBe('920');
-        expect(formatVolumeKg(919.4)).toBe('919');
+    it('preserves fractional kg in the displayed breakdown', () => {
+        expect(formatVolumeKg(919.6)).toBe('919.6');
+        expect(formatVolumeKg(919.4)).toBe('919.4');
     });
 });
 
@@ -135,7 +135,7 @@ describe('hasMuscleVolume', () => {
 });
 
 describe('pickSummaryRows', () => {
-    it('prefers PRs over everything else when present', () => {
+    it('leads with PRs without dropping other selected exercises', () => {
         const payload = basePayload({
             prs: [{ exercise: 'Bench Press', current: '100 kg x 5', previous: '95 kg x 5' }],
             exercises: [{ id: 'e1', name: 'Squat', volumeKg: 500, setCount: 4 }],
@@ -143,6 +143,7 @@ describe('pickSummaryRows', () => {
         });
         expect(pickSummaryRows(payload, 5)).toEqual([
             { label: 'Bench Press', value: '100 kg x 5' },
+            { label: 'Squat', value: '500 KG' },
         ]);
     });
 

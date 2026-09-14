@@ -90,9 +90,5 @@ export function pickMoment(session: LastSession): { selection: string[]; theme: 
     if (session.prs.length > 0) {
         return { selection: [`${PR_PREFIX}${session.prs[0].exercise}`], theme: 'scoreboard' };
     }
-    if (session.exercises.length > 0) {
-        const heaviest = session.exercises.reduce((a, b) => (b.volumeKg > a.volumeKg ? b : a));
-        return { selection: [`${EX_PREFIX}${heaviest.id}`], theme: 'receipt' };
-    }
     return { selection: [TOTAL_ID], theme: 'receipt' };
 }

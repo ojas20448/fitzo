@@ -1,6 +1,6 @@
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(async () => 'token-a'), setItemAsync: jest.fn(), deleteItemAsync: jest.fn() }));
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
-import api, { caloriesAPI, memberAPI, setAuthToken } from '../../services/api';
+import api, { caloriesAPI, memberAPI, setAuthToken, healthAPI } from '../../services/api';
 import { useOfflineStore } from '../../stores/offlineStore';
 
 it('does not replay a meal after a timeout that could follow a successful commit', async () => {
@@ -48,4 +48,11 @@ it('isolates pending writes and keeps failed writes recoverable', () => {
     expect(store.getPendingActions()).toHaveLength(0);
     store.setAccount('a');
     expect(store.getPendingActions()).toHaveLength(1);
+});
+
+it('does not upload health data using a different session token', async () => {
+    const adapter = jest.fn();
+    api.defaults.adapter = adapter;
+    await expect(healthAPI.sync({ date: '2026-09-14', steps: 10 }, 'another-session')).rejects.toBeDefined();
+    expect(adapter).not.toHaveBeenCalled();
 });

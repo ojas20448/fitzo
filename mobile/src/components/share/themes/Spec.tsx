@@ -1,203 +1,83 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { CardText as Text } from '../CardText';
+import { View, StyleSheet } from 'react-native';
 import { CARD_W, CARD_H } from '../SharePayload';
-import type { ShareExercise } from '../SharePayload';
-import { formatDate, formatTopSet, formatVolumeKg, fitFontSize } from '../format';
+import { formatDate, formatVolumeKg, formatTopSet, fitFontSize } from '../format';
 import { typography } from '../../../styles/theme';
 import CardBackground from '../CardBackground';
 import type { ShareThemeProps } from './index';
 
-/**
- * SPEC — the technical spec-sheet theme.
- *
- * Pure black ground, Lexend, hairline rules, letterspaced uppercase labels.
- * Structure: eyebrow -> hero number -> a rule-separated data table, one row
- * per exercise. Deliberately typographic and columnar with NO dither art —
- * Receipt already owns the illustrated-paper motif. The two themes must
- * differ in structure, not just palette, and a table is the structural
- * opposite of a receipt: crisp hairline borders instead of hand-drawn SVG
- * dashes, a fixed-width numeric grid instead of a single stacked column.
- *
- * formatDate/formatTopSet/formatVolumeKg live in ../format (R19) — Receipt
- * needs formatDate too, and duplicating pure formatting logic across the two
- * theme files is the same defect class R16 already named for InkCircle and
- * DashedLine.
- */
-
-const RULE = 'rgba(255,255,255,0.12)';
-const MUTED = 'rgba(255,255,255,0.5)';
-const DIM = 'rgba(255,255,255,0.34)';
-
-const H_PADDING = 72;
-
-/**
- * RULING R31. This theme was the one hero that never went through
- * `fitFontSize` — it relied solely on `numberOfLines={1}` +
- * `adjustsFontSizeToFit`, which react-native-web does not honour. A rendered
- * measurement of the Stats weekly headline "4 WORKOUTS" showed it needing
- * 1097px against this box's 936px and truncating. `fitFontSize` computes a
- * size that fits by construction, before either RN prop runs.
- */
-const HEADLINE_BOX_W = CARD_W - H_PADDING * 2; // 936
-const HEADLINE_MAX_SIZE = 156;
-const HEADLINE_MIN_SIZE = 80;
-
-// Nothing bounds payload.exercises.length, and this card renders at a fixed
-// 1920px-tall frame with no scroll. A full workout session comfortably fits
-// in 8 rows; beyond that, further rows collapse into a single "+N more" line
-// instead of growing past the bottom of the card.
-const MAX_EXERCISE_ROWS = 8;
-
-export default function Spec({ payload, onBackgroundLoad }: ShareThemeProps) {
-    const eyebrow = (payload.subtitle || formatDate(payload.date)).toUpperCase();
-    const exercises = payload.exercises.slice(0, MAX_EXERCISE_ROWS);
-    const overflowCount = payload.exercises.length - exercises.length;
-    const hasExercises = payload.exercises.length > 0;
-    // R31 — sized to fit by construction; see HEADLINE_BOX_W above.
-    const headlineFontSize = fitFontSize(
-        payload.headline,
-        HEADLINE_BOX_W,
-        HEADLINE_MAX_SIZE,
-        HEADLINE_MIN_SIZE
-    );
-
+const MAX_ROWS = 6;
+export default function Spec({ payload, onBackgroundLoad, onBackgroundError }: ShareThemeProps) {
+    // Records include a previous value, so reserve more vertical space per row.
+    const rowLimit = payload.prs.length ? 4 : MAX_ROWS;
+    const prs = payload.prs.slice(0, rowLimit);
+    const exercises = payload.exercises.slice(0, rowLimit - prs.length);
+    const generic = !payload.prs.length && !payload.exercises.length;
+    const rows = generic ? payload.rows.slice(0, MAX_ROWS) : [];
+    const overflow = generic ? payload.rows.length - rows.length : payload.prs.length + payload.exercises.length - prs.length - exercises.length;
+    const headlineSize = fitFontSize(payload.headline, 936, 140, 56);
     return (
         <View style={styles.frame}>
-            {/* Task 10: full-bleed black ground, photo + scrim drops
-             * straight in. Scrim is heavier than Scoreboard's 0.55 — the
-             * column headers (DIM, 34% white alpha) and hairline rules
-             * (12% alpha) are the lowest-contrast text/lines of any theme
-             * here and need the extra margin to stay legible over a photo. */}
-            <CardBackground background={payload.background} scrimOpacity={0.6} onLoad={onBackgroundLoad} />
-
+            <CardBackground background={payload.background} scrimOpacity={0.72} onLoad={onBackgroundLoad} onError={onBackgroundError} />
             <View>
-                <Text style={styles.eyebrow} numberOfLines={1}>{eyebrow}</Text>
-
-                <View style={styles.hero}>
-                    <Text
-                        style={[styles.headline, { fontSize: headlineFontSize }]}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                    >
-                        {payload.headline}
-                    </Text>
-                </View>
-
-                {hasExercises && (
-                    <View style={styles.table}>
-                        <View style={[styles.row, styles.headerRow]}>
-                            <Text style={[styles.colLabel, styles.nameCol]} numberOfLines={1}>Exercise</Text>
-                            <Text style={[styles.colLabel, styles.topSetCol]} numberOfLines={1}>Top set</Text>
-                            <Text style={[styles.colLabel, styles.volumeCol]} numberOfLines={1}>Volume</Text>
-                        </View>
-                        {exercises.map((ex: ShareExercise) => {
-                            const topSet = formatTopSet(ex.topSet);
-                            return (
-                                <View key={ex.id} style={styles.row}>
-                                    <Text style={[styles.name, styles.nameCol]} numberOfLines={1}>{ex.name}</Text>
-                                    <Text style={[styles.value, styles.topSetCol, styles.topSetValue]} numberOfLines={1}>
-                                        {topSet || '—'}
-                                    </Text>
-                                    <Text style={[styles.value, styles.volumeCol]} numberOfLines={1}>
-                                        {formatVolumeKg(ex.volumeKg)} KG
-                                    </Text>
-                                </View>
-                            );
-                        })}
-                        {overflowCount > 0 && (
-                            <View style={styles.row}>
-                                <Text style={styles.overflow}>+{overflowCount} MORE</Text>
+                <Text style={styles.eyebrow} numberOfLines={2}>{(payload.subtitle || formatDate(payload.date)).toUpperCase()}</Text>
+                {!!payload.contextLabel && <Text style={styles.context} numberOfLines={2}>{payload.contextLabel}</Text>}
+                <Text style={[styles.headline, { fontSize: headlineSize, lineHeight: headlineSize * 1.15 }]} numberOfLines={1} adjustsFontSizeToFit>{payload.headline}</Text>
+                {!!payload.headlineLabel && <Text style={styles.metric}>{payload.headlineLabel}</Text>}
+                <View style={styles.table}>
+                    {prs.map((pr, i) => (
+                        <View style={styles.record} key={pr.exercise + i}>
+                            <View style={styles.recordTop}>
+                                <Text style={styles.name} numberOfLines={2}>{pr.exercise}</Text>
+                                <Text style={styles.prTag} numberOfLines={1}>NEW PR</Text>
                             </View>
-                        )}
-                    </View>
-                )}
+                            <Text style={styles.recordValue} numberOfLines={1}>{pr.current}</Text>
+                            {!!pr.previous && <Text style={styles.previous} numberOfLines={1}>{'Previous: ' + pr.previous}</Text>}
+                        </View>
+                    ))}
+                    {!!exercises.length && <View style={styles.columns}>
+                        <Text style={[styles.columnLabel, styles.nameCol]}>EXERCISE</Text>
+                        <Text style={[styles.columnLabel, styles.numberCol]}>TOP SET</Text>
+                        <Text style={[styles.columnLabel, styles.numberCol]}>KG VOLUME</Text>
+                    </View>}
+                    {exercises.map(ex => (
+                        <View style={styles.row} key={ex.id}>
+                            <Text style={[styles.name, styles.nameCol]} numberOfLines={2}>{ex.name}</Text>
+                            <Text style={[styles.value, styles.numberCol]} numberOfLines={2}>{formatTopSet(ex.topSet) || '—'}</Text>
+                            <Text style={[styles.value, styles.numberCol]} numberOfLines={2}>{ex.volumeKg > 0 ? formatVolumeKg(ex.volumeKg) : '—'}</Text>
+                        </View>
+                    ))}
+                    {rows.map((row, i) => <View style={styles.row} key={row.label + i}>
+                        <Text style={[styles.name, styles.nameCol]} numberOfLines={2}>{row.label}</Text>
+                        <Text style={styles.value} numberOfLines={2}>{row.value}</Text>
+                    </View>)}
+                    {overflow > 0 && <Text style={styles.overflow}>{'+' + overflow + ' MORE'}</Text>}
+                </View>
             </View>
-
-            {/* Footer: small wordmark only — no user identity on the card */}
-            <Text style={styles.footerMark}>FITZO</Text>
+            <Text style={styles.brand}>FITZO</Text>
         </View>
     );
 }
-
 const styles = StyleSheet.create({
-    frame: {
-        width: CARD_W,
-        height: CARD_H,
-        backgroundColor: '#000000',
-        paddingHorizontal: H_PADDING,
-        paddingTop: 100,
-        paddingBottom: 64,
-        justifyContent: 'space-between',
-        overflow: 'hidden',
-    },
-    eyebrow: {
-        fontFamily: typography.fontFamily.semiBold,
-        fontSize: 26,
-        letterSpacing: 4,
-        color: MUTED,
-    },
-    hero: {
-        marginTop: 28,
-        marginBottom: 64,
-    },
-    headline: {
-        fontFamily: typography.fontFamily.extraBold,
-        // Always overridden inline by fitFontSize (R31); kept as the documented
-        // upper bound so the two cannot drift to different numbers.
-        fontSize: HEADLINE_MAX_SIZE,
-        letterSpacing: -2,
-        color: '#FFFFFF',
-    },
-    table: {
-        borderTopWidth: 1,
-        borderTopColor: RULE,
-    },
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 28,
-        borderBottomWidth: 1,
-        borderBottomColor: RULE,
-    },
-    headerRow: {
-        paddingVertical: 16,
-    },
-    nameCol: { flex: 1, paddingRight: 16 },
-    topSetCol: { width: 190, textAlign: 'right' },
-    volumeCol: { width: 190, textAlign: 'right' },
-    colLabel: {
-        fontFamily: typography.fontFamily.semiBold,
-        fontSize: 20,
-        letterSpacing: 2,
-        textTransform: 'uppercase',
-        color: DIM,
-    },
-    name: {
-        fontFamily: typography.fontFamily.medium,
-        fontSize: 34,
-        color: '#FFFFFF',
-    },
-    value: {
-        fontFamily: typography.fontFamily.semiBold,
-        fontSize: 28,
-        color: '#FFFFFF',
-    },
-    topSetValue: {
-        color: MUTED,
-        fontFamily: typography.fontFamily.regular,
-        fontSize: 26,
-    },
-    overflow: {
-        fontFamily: typography.fontFamily.medium,
-        fontSize: 24,
-        letterSpacing: 1,
-        color: MUTED,
-    },
-    footerMark: {
-        alignSelf: 'center',
-        fontFamily: typography.fontFamily.semiBold,
-        fontSize: 26,
-        letterSpacing: 6,
-        color: DIM,
-    },
+    frame: { width: CARD_W, height: CARD_H, backgroundColor: '#000', paddingHorizontal: 72, paddingTop: 110, paddingBottom: 90, justifyContent: 'space-between', overflow: 'hidden' },
+    eyebrow: { fontFamily: typography.fontFamily.semiBold, fontSize: 36, lineHeight: 44, letterSpacing: 2, color: '#bfbfbf' },
+    context: { fontFamily: typography.fontFamily.medium, fontSize: 44, lineHeight: 52, color: '#fff', marginTop: 24 },
+    headline: { fontFamily: typography.fontFamily.extraBold, letterSpacing: -2, color: '#fff', marginTop: 28 },
+    metric: { fontFamily: typography.fontFamily.medium, fontSize: 36, lineHeight: 44, color: '#bfbfbf', marginTop: 12 },
+    table: { marginTop: 60, borderTopWidth: 2, borderTopColor: '#777' },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 136, paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: '#555' },
+    record: { paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: '#555' },
+    recordTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 },
+    recordValue: { fontFamily: typography.fontFamily.semiBold, fontSize: 44, lineHeight: 52, color: '#fff', marginTop: 6 },
+    previous: { fontFamily: typography.fontFamily.regular, fontSize: 34, lineHeight: 42, color: '#bfbfbf', marginTop: 4 },
+    prTag: { fontFamily: typography.fontFamily.bold, fontSize: 30, lineHeight: 38, color: '#fdd90d', minWidth: 128, flexShrink: 0, textAlign: 'right' },
+    columns: { flexDirection: 'row', gap: 12, paddingVertical: 22 },
+    columnLabel: { fontFamily: typography.fontFamily.semiBold, fontSize: 30, lineHeight: 38, color: '#bfbfbf' },
+    nameCol: { flex: 1 },
+    numberCol: { width: 208, textAlign: 'right' },
+    name: { fontFamily: typography.fontFamily.medium, fontSize: 42, lineHeight: 50, color: '#fff', flexShrink: 1 },
+    value: { fontFamily: typography.fontFamily.semiBold, fontSize: 40, lineHeight: 48, color: '#fff' },
+    overflow: { fontFamily: typography.fontFamily.medium, fontSize: 36, lineHeight: 44, color: '#bfbfbf', marginTop: 24 },
+    brand: { alignSelf: 'center', fontFamily: typography.fontFamily.semiBold, fontSize: 36, lineHeight: 44, color: '#bfbfbf', letterSpacing: 6 },
 });

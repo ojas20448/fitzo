@@ -1,8 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { RefObject } from 'react';
-import { Share } from 'react-native';
-import { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
+import { Share, Alert, Platform } from 'react-native';
+import { shareCapturedImage } from '../utils/shareCapture';
 import { logger } from '../utils/logger';
 
 /**
@@ -18,6 +17,7 @@ const PAINT_SETTLE_MS = 180;
 export function useShareCapture() {
     const isSharingRef = useRef(false);
     const [isSharing, setIsSharing] = useState(false);
+    const [shareError, setShareError] = useState<string | null>(null);
 
     const captureAndShare = useCallback(async (
         ref: RefObject<any>,
@@ -26,33 +26,33 @@ export function useShareCapture() {
         if (!ref.current || isSharingRef.current) return;
         isSharingRef.current = true;
         setIsSharing(true);
+        setShareError(null);
         try {
             await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
             await new Promise((r) => setTimeout(r, PAINT_SETTLE_MS));
 
-            const uri = await captureRef(ref, { format: 'png', quality: 1, result: 'tmpfile' });
-
-            if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(uri, {
-                    mimeType: 'image/png',
-                    dialogTitle: opts?.dialogTitle ?? 'Share',
-                    UTI: 'public.png',
-                });
-                return;
-            }
-            throw new Error('sharing unavailable');
+            await shareCapturedImage(ref, opts?.dialogTitle ?? 'Share');
         } catch (err) {
             logger.error('[useShareCapture] capture or share failed', err);
-            // Sharing is unavailable on some Android builds and on web. Text is
-            // a worse share but a better outcome than a dead button.
-            if (opts?.fallbackMessage) {
-                await Share.share({ message: opts.fallbackMessage }).catch(() => {});
-            }
+            setShareError(Platform.OS === 'web'
+                ? 'Could not share this image in your browser. Try using Fitzo on your phone.'
+                : 'Could not share the image. Your card is still here; please try again.');
+            if (Platform.OS === 'web') return;
+            const message = opts?.fallbackMessage;
+            Alert.alert('Could not share image', 'Your card is still here. Try sharing again, or choose a text version.', [
+                { text: 'OK', style: 'cancel' },
+                ...(message ? [{ text: 'Share text', onPress: () => Alert.alert('Share this text?', message, [
+                    { text: 'Cancel', style: 'cancel' as const },
+                    { text: 'Share', onPress: () => {
+                        Share.share({ message }).catch(() => Alert.alert('Could not share text', 'Please try again.'));
+                    } },
+                ]) }] : []),
+            ]);
         } finally {
             isSharingRef.current = false;
             setIsSharing(false);
         }
     }, []);
 
-    return { captureAndShare, isSharing };
+    return { captureAndShare, isSharing, shareError };
 }

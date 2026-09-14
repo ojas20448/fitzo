@@ -47,6 +47,7 @@ import type { ExerciseSet, UserExercise, PickerConfig } from '../../components/w
 import { useLastSessionStore } from '../../stores/lastSessionStore';
 import { normalizePrs } from '../../utils/normalizePr';
 import { buildShareExercises } from '../../utils/buildShareExercises';
+import { finalizeWorkout } from '../../utils/finalizeWorkout';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -587,8 +588,9 @@ const WorkoutLogScreen: React.FC = () => {
     // -----------------------------------------------------------------------
 
     const handleFinish = async () => {
-        if (userExercises.length === 0) {
-            toast.error('Empty Workout', 'Add at least one exercise to log.');
+        const finishedExercises = finalizeWorkout(userExercises);
+        if (finishedExercises.length === 0) {
+            toast.error('No completed sets', 'Check off at least one set with reps before finishing. Use 0 kg for bodyweight exercises.');
             return;
         }
 
@@ -603,42 +605,33 @@ const WorkoutLogScreen: React.FC = () => {
             const result = await workoutsAPI.log({
                 workout_type: workoutType,
                 day_name: sessionLabel,
-                exercises: JSON.stringify(userExercises),
+                exercises: JSON.stringify(finishedExercises),
                 notes: 'Logged via Smart Log',
                 visibility: visibility,
                 duration_minutes: Math.max(durationMinutes, 1),
             });
 
-            let totalVolume = 0;
-            let totalSets = 0;
-            for (const ex of userExercises) {
-                for (const s of ex.sets) {
-                    const w = parseFloat(String(s.weight_kg || 0));
-                    const r = parseFloat(String(s.reps || 0));
-                    if (w > 0 && r > 0) {
-                        // Same rule as backend/src/utils/volume.js — unilateral
-                        // reps are per side, so both sides count.
-                        totalVolume += w * r * (ex.is_unilateral ? 2 : 1);
-                        totalSets++;
-                    }
-                }
-            }
+            const shareExercises = buildShareExercises(finishedExercises);
+            const totalVolume = shareExercises.reduce((sum, ex) => sum + ex.volumeKg, 0);
+            const totalSets = shareExercises.reduce((sum, ex) => sum + ex.setCount, 0);
+            const completedAt = Date.now();
 
             const recap = {
                 duration: Math.max(durationMinutes, 1),
-                volume: Math.round(totalVolume),
+                volume: totalVolume,
                 sets: totalSets,
                 prs: result.prs || [],
+                completedAt,
             };
 
             useLastSessionStore.getState().setSession({
-                completedAt: Date.now(),
+                completedAt,
                 title: sessionTitle || workoutType || 'Workout',
                 durationMin: Math.max(durationMinutes, 1),
-                volumeKg: Math.round(totalVolume),
+                volumeKg: totalVolume,
                 setCount: totalSets,
                 prs: normalizePrs(result.prs),
-                exercises: buildShareExercises(userExercises),
+                exercises: shareExercises,
             });
 
             router.replace({

@@ -19,8 +19,9 @@ import * as Haptics from '../../utils/haptics';
 import { useAuth } from '../../context/AuthContext';
 import { useNutrition } from '../../context/NutritionContext';
 import { useOfflineStore } from '../../stores/offlineStore';
-import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI, intentAPI, aiAPI, healthAPI, checkinAPI } from '../../services/api';
-import { isHealthAvailable, hasHealthData, healthSyncPayload, getTodaysSummary } from '../../services/healthService';
+import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI, intentAPI, aiAPI, checkinAPI } from '../../services/api';
+import { isHealthAvailable } from '../../services/healthService';
+import { syncHealthDays } from '../../services/healthSync';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import Badge from '../../components/Badge';
@@ -202,13 +203,9 @@ const HomeScreen: React.FC = () => {
     const syncWearableData = async () => {
         if (!isHealthAvailable() || !await isHealthImportEnabled(user?.id)) return;
         try {
-            const summary = await getTodaysSummary();
-            if (hasHealthData(summary)) {
-                await healthAPI.sync(healthSyncPayload(summary));
-                console.log('🔄 Wearable data background auto-sync completed');
-            }
+            if (user?.id) await syncHealthDays(user.id);
         } catch (err: any) {
-            console.log('Wearable background auto-sync skipped:', err.message);
+            console.log('Wearable sync skipped:', err.message);
         }
     };
 

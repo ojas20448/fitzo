@@ -20,3 +20,27 @@ export function healthReportData(today: { health?: Record<string, unknown> } | n
             avg_sleep: average('sleep_hours'), avg_heart_rate: average('resting_heart_rate') } },
     };
 }
+
+export function healthReportDetails(
+    records: { prs?: Record<string, unknown>[] } | null,
+    nutrition: { profile?: Record<string, unknown> | null } | null,
+    body: { measurement?: Record<string, unknown> | null } | null,
+) {
+    const profile = nutrition?.profile;
+    const measurement = body?.measurement;
+    return {
+        prs: (records?.prs ?? []).slice(0, 5).map(pr => ({
+            exercise_name: String(pr.exercise_name ?? 'Exercise'),
+            max_weight_kg: numeric(pr.max_weight_kg),
+            reps_at_max: numeric(pr.reps_at_max),
+        })),
+        nutrition: profile ? {
+            target_calories: numeric(profile.target_calories), target_protein: numeric(profile.target_protein),
+            target_carbs: numeric(profile.target_carbs), target_fat: numeric(profile.target_fat),
+        } : null,
+        measurements: measurement ? {
+            weight: numeric(measurement.weight), body_fat: numeric(measurement.body_fat),
+            waist: numeric(measurement.waist), chest: numeric(measurement.chest),
+        } : null,
+    };
+}

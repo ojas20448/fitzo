@@ -1,0 +1,23 @@
+# Import this blueprint from the repository root after a separate database is ready.
+services:
+  - type: web
+    name: fitzo-staging
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: backend
+    autoDeployTrigger: off
+    buildCommand: npm ci
+    startCommand: node src/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_ENV
+        value: staging
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false

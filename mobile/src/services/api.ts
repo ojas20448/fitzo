@@ -73,6 +73,9 @@ api.interceptors.request.use(
 
         if (!isAuthEndpoint) {
             const token = await getAuthToken();
+            if ((config as any)._expectedAuthToken && token !== (config as any)._expectedAuthToken) {
+                throw { code: 'SESSION_CHANGED', message: 'Account changed during this request' };
+            }
             if ((config as any)._sessionEpoch !== sessionEpoch) throw { code: 'SESSION_CHANGED', message: 'Account changed during this request' };
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
@@ -1244,8 +1247,8 @@ export const healthAPI = {
         sleep_hours?: number | null;
         date?: string;
         source?: string;
-    }) => {
-        const response = await api.post('/health/sync', data);
+    }, expectedAuthToken?: string) => {
+        const response = await api.post('/health/sync', data, { _expectedAuthToken: expectedAuthToken } as any);
         return response.data;
     },
 

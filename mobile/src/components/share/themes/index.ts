@@ -22,6 +22,9 @@ import Chalk from './Chalk';
 export interface ShareThemeProps {
     payload: SharePayload;
     onBackgroundLoad?: () => void;
+    onBackgroundError?: () => void;
+    onArtworkLoad?: () => void;
+    onArtworkError?: () => void;
 }
 
 export interface ShareTheme {

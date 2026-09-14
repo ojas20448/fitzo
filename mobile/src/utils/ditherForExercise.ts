@@ -20,6 +20,21 @@ export const DITHER_BY_MUSCLE = {
     default: require('../../assets/barbell_dither.png'),
 } as const;
 
+/** Transparent ink variants keep the paper visible through the illustration. */
+export const RECEIPT_DITHER_BY_MUSCLE = {
+    chest: require('../../assets/receipt/barbell_dither.png'),
+    back: require('../../assets/receipt/dumbbell_dither.png'),
+    shoulders: require('../../assets/receipt/kettlebell_dither.png'),
+    arms: require('../../assets/receipt/dumbbell_dither.png'),
+    legs: require('../../assets/receipt/treadmill_dither.png'),
+    core: require('../../assets/receipt/yoga_mat_dither.png'),
+    cardio: require('../../assets/receipt/running_shoe_dither.png'),
+    kettlebell: require('../../assets/receipt/kettlebell_dither.png'),
+    bike: require('../../assets/receipt/bicycle_dither.png'),
+    trophy: require('../../assets/receipt/trophy_dither.png'),
+    default: require('../../assets/receipt/barbell_dither.png'),
+} as const;
+
 const NAME_HINTS: [RegExp, keyof typeof DITHER_BY_MUSCLE][] = [
     [/kettlebell/i, 'kettlebell'],
     [/bike|cycl|spin/i, 'bike'],
@@ -31,13 +46,13 @@ const NAME_HINTS: [RegExp, keyof typeof DITHER_BY_MUSCLE][] = [
     [/plank|crunch|ab/i, 'core'],
 ];
 
-export function ditherForExercise(ex: ShareExercise) {
+export function ditherForExercise(ex: ShareExercise, artwork = DITHER_BY_MUSCLE) {
     const target = ex.target?.toLowerCase();
     if (target && target in DITHER_BY_MUSCLE) {
-        return DITHER_BY_MUSCLE[target as keyof typeof DITHER_BY_MUSCLE];
+        return artwork[target as keyof typeof DITHER_BY_MUSCLE];
     }
     for (const [re, key] of NAME_HINTS) {
-        if (re.test(ex.name)) return DITHER_BY_MUSCLE[key];
+        if (re.test(ex.name)) return artwork[key];
     }
-    return DITHER_BY_MUSCLE.default;
+    return artwork.default;
 }

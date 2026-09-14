@@ -38,7 +38,6 @@ describe('buildShareExercises', () => {
         expect(roundOfSum).not.toBe(sumOfRoundedParts);
     });
 
-    // RULING R10: counted by w > 0 && r > 0, not by s.completed.
     it('excludes a set with weight but no reps', () => {
         const [ex] = buildShareExercises([
             exercise('a', [
@@ -50,12 +49,32 @@ describe('buildShareExercises', () => {
         expect(ex.volumeKg).toBe(250); // only the second set (50 * 5) counts
     });
 
-    it('counts a set with weight and reps even when marked incomplete', () => {
-        const [ex] = buildShareExercises([
+    it('does not turn prefilled unchecked sets into completed work', () => {
+        const result = buildShareExercises([
             exercise('a', [set({ weight_kg: 50, reps: 5, completed: false })]),
         ]);
+        expect(result).toEqual([]);
+    });
+
+    it('keeps completed bodyweight sets without inventing loaded volume', () => {
+        const [ex] = buildShareExercises([exercise('pushup', [set({ weight_kg: 0, reps: 15 })])]);
         expect(ex.setCount).toBe(1);
-        expect(ex.volumeKg).toBe(250);
+        expect(ex.volumeKg).toBe(0);
+        expect(ex.topSet).toEqual({ weight_kg: 0, reps: 15 });
+    });
+
+    it('uses higher reps to break a top-set weight tie', () => {
+        const [ex] = buildShareExercises([exercise('a', [set({ weight_kg: 80, reps: 5 }), set({ weight_kg: 80, reps: 10 })])]);
+        expect(ex.topSet).toEqual({ weight_kg: 80, reps: 10 });
+    });
+
+    it('excludes invalid numbers and keeps unilateral volume per side', () => {
+        const [ex] = buildShareExercises([exercise('a', [
+            set({ weight_kg: '20kg', reps: 10 }), set({ weight_kg: 20, reps: 2.5 }),
+            set({ weight_kg: -1, reps: 10 }), set({ weight_kg: 20, reps: 10 }),
+        ], true)]);
+        expect(ex.setCount).toBe(1);
+        expect(ex.volumeKg).toBe(400);
     });
 
     // RULING R11: parseFloat(String(x || 0)) guards against undefined, empty,

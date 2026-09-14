@@ -17,6 +17,7 @@ interface CardBackgroundProps {
      * wiring) so a slow decode can never be captured as an empty background.
      */
     onLoad?: () => void;
+    onError?: () => void;
 }
 
 /**
@@ -44,7 +45,7 @@ interface CardBackgroundProps {
  * true CARD_W x CARD_H — resolveBackgroundTransform never needs to know
  * which of the two trees it is resolving for.
  */
-export default function CardBackground({ background, scrimOpacity, onLoad }: CardBackgroundProps) {
+export default function CardBackground({ background, scrimOpacity, onLoad, onError }: CardBackgroundProps) {
     if (!background) return null;
 
     const t = resolveBackgroundTransform(background, CARD_W, CARD_H);
@@ -55,6 +56,7 @@ export default function CardBackground({ background, scrimOpacity, onLoad }: Car
                 source={{ uri: background.uri }}
                 resizeMode="cover"
                 onLoad={onLoad}
+                onError={onError}
                 style={[
                     StyleSheet.absoluteFill,
                     {

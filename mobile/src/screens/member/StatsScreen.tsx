@@ -162,6 +162,7 @@ const StatsScreen = () => {
     // entry instead of staying separate.
     const buildWeeklyRecapPayload = (recap: any): SharePayload => ({
         headline: `${recap.recap_data.workouts_count} WORKOUTS`,
+        headlineLabel: 'Workouts this week',
         caption: `${recap.recap_data.checkin_count} gym check-ins this week`,
         subtitle: 'WEEKLY RECAP',
         // Receipt's BREAKDOWN section renders a visibly blank block on an
@@ -188,16 +189,7 @@ const StatsScreen = () => {
         useShareComposerStore.getState().setSource({
             kind: 'static',
             payload: buildWeeklyRecapPayload(weeklyRecap),
-            // Preserves the exact user-facing failure message that used to
-            // fire when useShareCapture's own fallback kicked in (sharing
-            // unavailable, or the capture threw) — see ShareComposerScreen's
-            // handleShare, which prefers this over its own generic fallback
-            // for a static source. Referencing summary_text/workouts_count/
-            // streak_days the way it always did; none of those are part of
-            // SharePayload, so without carrying the string itself here this
-            // message would simply stop existing once Stats stopped calling
-            // captureAndShare directly.
-            fallbackMessage: `🔥 Fitzo Weekly AI Recap:\n\n"${weeklyRecap.summary_text}"\n\n💪 Workouts: ${weeklyRecap.recap_data.workouts_count} | 🎯 Streak: ${weeklyRecap.recap_data.streak_days} days!`,
+
         });
         router.push('/member/share' as any);
     };

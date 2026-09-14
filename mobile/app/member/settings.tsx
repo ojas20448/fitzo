@@ -1,4 +1,4 @@
-import { enableHealthImport } from '../../src/utils/healthImportPreference';
+import HealthImportSettings from '../../src/components/HealthImportSettings';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, Linking, ActivityIndicator, Platform, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,8 +8,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { colors, typography, spacing, borderRadius } from '../../src/styles/theme';
 import GlassCard from '../../src/components/GlassCard';
 import { useToast } from '../../src/components/Toast';
-import { isHealthAvailable, hasHealthData, healthSyncPayload, requestPermissions, getTodaysSummary } from '../../src/services/healthService';
-import { healthAPI, settingsAPI, notificationsAPI } from '../../src/services/api';
+import { settingsAPI, notificationsAPI } from '../../src/services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Haptics from '../../src/utils/haptics';
@@ -191,71 +190,10 @@ export default function SettingsScreen() {
         );
     };
 
-    // Health Connect / Apple Health
-    const [healthAvailable, setHealthAvailable] = useState(false);
-    const [healthConnected, setHealthConnected] = useState(false);
-    const [healthSyncing, setHealthSyncing] = useState(false);
-
     // AI Data Privacy
     const [aiConsentGranted, setAiConsentGranted] = useState(false);
     const [aiModalVisible, setAiModalVisible] = useState(false);
-
-    useEffect(() => {
-        setHealthAvailable(isHealthAvailable());
-        getAIConsent().then(setAiConsentGranted);
-        // Check if already connected by trying to get today's data
-        if (isHealthAvailable()) {
-            healthAPI.getToday().then(res => {
-                if ([res?.health?.steps, res?.health?.active_calories, res?.health?.sleep_hours, res?.health?.resting_heart_rate].some(v => v != null)) setHealthConnected(true);
-            }).catch(() => {});
-        }
-    }, []);
-
-    const promptConnectHealth = () => {
-        if (Platform.OS === 'ios' && !healthAvailable) {
-            Alert.alert('Apple Health Unavailable', 'Apple Health is not supported on this device.');
-            return;
-        }
-
-        Alert.alert(
-            Platform.OS === 'ios' ? 'Connect Apple Health' : 'Connect Health Services',
-            Platform.OS === 'ios'
-                ? 'Fitzo can read your daily steps, active energy burned, resting heart rate, and sleep duration from Apple Health to display in your fitness dashboard and Health Report.\n\nFitzo only reads this data and never writes to or modifies your Apple Health data.'
-                : 'Fitzo reads your daily steps, calories, heart rate, and sleep duration to display in your fitness dashboard.',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Continue',
-                    onPress: () => executeConnectHealth(),
-                },
-            ]
-        );
-    };
-
-    const executeConnectHealth = async () => {
-        if (!user) return;
-        setHealthSyncing(true);
-        try {
-            const granted = await requestPermissions();
-            if (granted) {
-                await enableHealthImport(user.id);
-                const summary = await getTodaysSummary();
-                setHealthConnected(hasHealthData(summary));
-                if (hasHealthData(summary)) {
-                    await healthAPI.sync(healthSyncPayload(summary));
-                    toast.success('Connected!', 'Available health data imported');
-                } else {
-                    toast.info('Health Access Requested', 'You can update sharing categories in the Apple Health app.');
-                }
-            } else {
-                toast.info('Health Access', 'Health sync was not connected.');
-            }
-        } catch {
-            toast.error('Error', 'Could not connect to health services');
-        } finally {
-            setHealthSyncing(false);
-        }
-    };
+    useEffect(() => { getAIConsent().then(setAiConsentGranted); }, []);
 
     const handleSignOut = () => {
         Alert.alert(
@@ -497,74 +435,7 @@ export default function SettingsScreen() {
                     </TouchableOpacity>
                 </GlassCard>
 
-                {/* Health Section */}
-                <Text style={styles.sectionTitle}>Health & Fitness Data</Text>
-                <GlassCard style={styles.card}>
-                    <TouchableOpacity
-                        style={styles.row}
-                        onPress={healthConnected ? undefined : promptConnectHealth}
-                        disabled={healthSyncing || (Platform.OS === 'ios' && !healthAvailable)}
-                        activeOpacity={healthConnected || (Platform.OS === 'ios' && !healthAvailable) ? 1 : 0.7}
-                    >
-                        <View style={styles.rowLeft}>
-                            <MaterialIcons
-                                name="favorite"
-                                size={24}
-                                color={healthConnected ? colors.accent.rose : colors.text.secondary}
-                            />
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.rowLabel}>
-                                    {Platform.OS === 'ios' ? 'Apple Health (HealthKit)' : 'Health Connect'}
-                                </Text>
-                                <Text style={styles.rowSub}>
-                                    {Platform.OS === 'ios' && !healthAvailable
-                                        ? 'Apple Health is not supported on this device'
-                                        : healthConnected
-                                        ? 'Connected • Syncing steps, calories & sleep'
-                                        : 'Tap to connect Apple Health to Fitzo'}
-                                </Text>
-                            </View>
-                        </View>
-                        {healthSyncing ? (
-                            <ActivityIndicator size="small" color={colors.text.primary} />
-                        ) : healthConnected ? (
-                            <MaterialIcons name="check-circle" size={22} color={colors.success} />
-                        ) : Platform.OS === 'ios' && !healthAvailable ? null : (
-                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
-                        )}
-                    </TouchableOpacity>
-                    {healthConnected && (
-                        <>
-                            <View style={styles.divider} />
-                            <TouchableOpacity
-                                style={styles.row}
-                                onPress={async () => {
-                                    setHealthSyncing(true);
-                                    try {
-                                        const summary = await getTodaysSummary();
-                                        setHealthConnected(hasHealthData(summary));
-                                        await healthAPI.sync(healthSyncPayload(summary));
-                                        toast.success('Synced!', 'Health data updated from Apple Health');
-                                    } catch {
-                                        toast.error('Sync Failed', 'Could not sync health data');
-                                    } finally {
-                                        setHealthSyncing(false);
-                                    }
-                                }}
-                                disabled={healthSyncing}
-                            >
-                                <View style={styles.rowLeft}>
-                                    <MaterialIcons name="sync" size={24} color={colors.text.secondary} />
-                                    <Text style={styles.rowLabel}>Sync Apple Health Now</Text>
-                                </View>
-                                {healthSyncing && <ActivityIndicator size="small" color={colors.text.primary} />}
-                            </TouchableOpacity>
-                        </>
-                    )}
-                </GlassCard>
-                <Text style={styles.healthExplanationText}>
-                    Fitzo integrates with Apple Health (HealthKit) to sync daily steps, active calories burned, resting heart rate, and sleep duration.
-                </Text>
+                <HealthImportSettings key={user?.id} userId={user?.id} />
 
                 {/* AI Features & Privacy */}
                 <Text style={styles.sectionTitle}>AI Features & Privacy</Text>

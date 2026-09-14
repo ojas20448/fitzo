@@ -6,6 +6,7 @@ const { asyncHandler, ValidationError, NotFoundError } = require('../utils/error
 const xpService = require('../services/xpService');
 const { invalidateContextPack } = require('../services/contextPack');
 const { parseRir } = require('../utils/rir');
+const { finalizeWorkoutJson } = require('../utils/workoutSets');
 
 // All routes require authentication
 router.use(authenticate);
@@ -125,7 +126,7 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
                  VALUES ($1, $2, $3, $4, false, $5, $6)`,
                 [exerciseLogId, s + 1, reps, weight, rpe, rirValue]
             );
-            if (weight > 0 && (!bestSet || weight > bestSet.weight)) {
+            if (weight > 0 && (!bestSet || weight > bestSet.weight || (weight === bestSet.weight && reps > bestSet.reps))) {
                 bestSet = { weight, reps };
             }
         }
@@ -149,7 +150,7 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
 // ============================================
 router.post('/', asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const { workout_type, day_name, exercises, notes, visibility = 'friends', duration_minutes } = req.body;
+    const { workout_type, day_name, notes, visibility = 'friends', duration_minutes } = req.body;
 
     // Validation
     const validTypes = ['legs', 'chest', 'back', 'shoulders', 'arms', 'cardio', 'rest'];
@@ -162,6 +163,7 @@ router.post('/', asyncHandler(async (req, res) => {
         throw new ValidationError('Invalid visibility option');
     }
 
+    const exercises = finalizeWorkoutJson(req.body.exercises);
     const client = await getClient();
     let result, isNewLog, prs = [], checkinXpEarned = 0;
     try {
