@@ -1,5 +1,5 @@
 import { useAuth } from '../../context/AuthContext';
-import { isHealthImportEnabled } from '../../utils/healthImportPreference';
+import { isHealthImportEnabled, enableHealthImport } from '../../utils/healthImportPreference';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View,
@@ -18,7 +18,7 @@ import ViewShot from 'react-native-view-shot';
 import { healthAPI, progressAPI, nutritionAPI, measurementsAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
-import { isHealthAvailable } from '../../services/healthService';
+import { isHealthAvailable, requestPermissions } from '../../services/healthService';
 import { syncHealthDays } from '../../services/healthSync';
 import { healthReportData, healthReportDetails } from '../../utils/healthReportData';
 import { useShareCapture } from '../../hooks/useShareCapture';
@@ -134,13 +134,17 @@ export default function HealthReportScreen() {
     const [prs, setPrs] = useState<ReportDetails['prs']>([]);
     const [nutrition, setNutrition] = useState<ReportDetails['nutrition']>(null);
     const [measurements, setMeasurements] = useState<ReportDetails['measurements']>(null);
+    const [healthImportOn, setHealthImportOn] = useState(false);
+    const [connectingHealth, setConnectingHealth] = useState(false);
 
     const loadData = useCallback(async () => {
         setLoading(true);
         setLoadError(false);
         try {
+            const importEnabled = isHealthAvailable() && await isHealthImportEnabled(user?.id);
+            setHealthImportOn(importEnabled);
             // Auto-sync from device health services if available
-            if (isHealthAvailable() && await isHealthImportEnabled(user?.id)) {
+            if (importEnabled) {
                 try {
                     if (user?.id) await syncHealthDays(user.id);
                 } catch {
@@ -174,6 +178,23 @@ export default function HealthReportScreen() {
     useEffect(() => {
         loadData();
     }, [loadData]);
+
+    const handleConnectHealth = async () => {
+        if (!user?.id || connectingHealth) return;
+        setConnectingHealth(true);
+        try {
+            const granted = await requestPermissions();
+            if (granted) {
+                await enableHealthImport(user.id);
+                setHealthImportOn(true);
+                await loadData();
+            }
+        } catch {
+            // Permission request cancelled or denied; gracefully remain on screen
+        } finally {
+            setConnectingHealth(false);
+        }
+    };
 
     const handleShare = () => {
         captureAndShare(viewShotRef, {
@@ -275,14 +296,33 @@ export default function HealthReportScreen() {
                                     {healthSource}
                                 </Text>
                                 <View style={styles.healthKitPill}>
-                                    <Text style={styles.healthKitPillText}>{hasReadings ? 'Readings saved' : 'No readings yet'}</Text>
+                                    <Text style={styles.healthKitPillText}>
+                                        {hasReadings ? 'Readings saved' : (healthImportOn ? 'Importing enabled' : 'Not connected')}
+                                    </Text>
                                 </View>
                             </View>
                             <Text style={styles.healthKitBannerDesc}>
                                 {hasReadings
                                     ? 'Saved readings are shown below. A dash means no reading was imported.'
-                                    : 'Open Settings in the Fitzo mobile app to manage health import. A dash means no reading was imported.'}
+                                    : healthImportOn
+                                        ? 'No readable data available for this period. A dash means no reading was imported.'
+                                        : `Connect ${healthSource} to view your daily steps, active calories, resting heart rate, and sleep.`}
                             </Text>
+                            {!healthImportOn && isHealthAvailable() && (
+                                <TouchableOpacity
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Connect ${healthSource}`}
+                                    disabled={connectingHealth}
+                                    style={styles.connectButton}
+                                    onPress={handleConnectHealth}
+                                >
+                                    {connectingHealth ? (
+                                        <ActivityIndicator size="small" color="#000000" />
+                                    ) : (
+                                        <Text style={styles.connectButtonText}>Continue</Text>
+                                    )}
+                                </TouchableOpacity>
+                            )}
                         </View>
                     </Animated.View>
 
@@ -454,10 +494,10 @@ export default function HealthReportScreen() {
                         <MaterialIcons name="health-and-safety" size={18} color={colors.text.muted} />
                         <Text style={styles.healthKitDisclaimerText}>
                             {Platform.OS === 'ios'
-                                ? 'Fitzo integrates with Apple Health (HealthKit) to read your daily steps, active calories burned, resting heart rate, and sleep analysis. When connected, available readings are imported into your Fitzo account for your report and AI coach. Manage read access in your device health settings.'
+                                ? 'Fitzo integrates with Apple Health (HealthKit) to read your daily steps, active calories burned, resting heart rate, and sleep analysis. When connected, available readings are imported into your Fitzo account for your report and AI coach.'
                                 : Platform.OS === 'android'
-                                    ? 'Fitzo integrates with Health Connect to read your daily steps, active calories burned, resting heart rate, and sleep analysis. When connected, available readings are imported into your Fitzo account for your report and AI coach. Manage read access in your device health settings.'
-                                    : 'The Fitzo mobile app can import available readings from Apple Health or Health Connect into your account for your report and AI coach. Manage read access in your device health settings.'}
+                                    ? 'Fitzo integrates with Health Connect to read your daily steps, active calories burned, resting heart rate, and sleep analysis. When connected, available readings are imported into your Fitzo account for your report and AI coach.'
+                                    : 'The Fitzo mobile app can import available readings from Apple Health or Health Connect into your account for your report and AI coach.'}
                         </Text>
                     </Animated.View>
 
@@ -683,6 +723,21 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.regular,
         color: colors.text.muted,
         lineHeight: 14,
+    },
+    connectButton: {
+        marginTop: spacing.sm,
+        alignSelf: 'flex-start',
+        paddingVertical: 6,
+        paddingHorizontal: 14,
+        borderRadius: borderRadius.md,
+        backgroundColor: colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    connectButtonText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.semiBold,
+        color: '#000000',
     },
 
     // Section

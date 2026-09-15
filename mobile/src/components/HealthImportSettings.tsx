@@ -33,7 +33,11 @@ export default function HealthImportSettings({ userId }: { userId?: string }) {
         setMessage(connect ? `Opening ${provider} permissions…` : 'Starting import…');
         try {
             if (connect) {
-                if (!await requestPermissions()) throw new Error(`Access was not requested. Check ${provider} permissions and try again.`);
+                const granted = await requestPermissions();
+                if (!granted) {
+                    if (mounted.current) setMessage(`${provider} connection was not completed.`);
+                    return;
+                }
                 await enableHealthImport(userId);
                 if (mounted.current) setEnabled(true);
             }
@@ -42,7 +46,7 @@ export default function HealthImportSettings({ userId }: { userId?: string }) {
             } });
             if (mounted.current) setMessage(result.imported
                 ? `Updated ${result.imported} ${result.imported === 1 ? 'day' : 'days'}. Checked ${result.total} days.`
-                : `No readable data found. Check the categories shared with Fitzo in ${provider}, then try Sync now.`);
+                : 'No readable data available for this period. You can sync again when new readings are recorded.');
         } catch (error) {
             if (mounted.current) setMessage(`${error instanceof Error ? error.message : 'Import could not finish.'} You can retry; saved days are kept.`);
         } finally { if (mounted.current) setBusy(false); }
@@ -92,7 +96,7 @@ export default function HealthImportSettings({ userId }: { userId?: string }) {
             {loading ? <ActivityIndicator accessibilityLabel="Loading health settings" /> : !available ?
                 <Text style={styles.detail}>Open Fitzo on a supported iPhone or Android device to import health data. A current native build is required.</Text> : <>
                 <Text style={styles.detail}>{enabled ? 'Importing is on for this account.' : 'Import steps, active calories, resting heart rate and sleep to your Fitzo account.'}</Text>
-                {!enabled ? button('Enable health imports', () => { void run(2, true); }, busy || !userId) : <>
+                {!enabled ? button('Continue', () => { void run(2, true); }, busy || !userId) : <>
                     {button('Sync now', () => { void run(2); })}
                     {button('Import last 30 days', () => { void run(30); })}
                     <View style={styles.toggleRow}>
@@ -105,7 +109,7 @@ export default function HealthImportSettings({ userId }: { userId?: string }) {
                         : 'Background sync is unavailable in this build or is restricted by your phone. Sync now still works.'}</Text>
                     {button('Turn off health imports', () => { void turnOff(); }, false)}
                 </>}
-                <Text style={styles.detail}>Only readable metrics are imported. Sleep counts time asleep within each local calendar day. You can change shared categories in {provider}.</Text>
+                <Text style={styles.detail}>Only readable metrics are imported. Sleep counts time asleep within each local calendar day.</Text>
             </>}
         </GlassCard>
     </View>;
