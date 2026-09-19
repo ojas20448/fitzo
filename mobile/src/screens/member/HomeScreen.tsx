@@ -38,7 +38,7 @@ import CustomRefreshHeader from '../../components/CustomRefreshHeader';
 import BusyTimesStrip from '../../components/BusyTimesStrip';
 import { gymAPI, BusyTimes } from '../../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
-import { firstName as getFirstName } from '../../utils/displayName';
+import { firstName as getFirstName, displayName } from '../../utils/displayName';
 import AIConsentModal, { getAIConsent } from '../../components/AIConsentModal';
 
 interface HomeData {
@@ -820,16 +820,17 @@ const HomeScreen: React.FC = () => {
                                         pathname: '/member/user-profile' as any,
                                         params: {
                                             userId: friend.id,
-                                            userName: friend.name,
+                                            userName: displayName(friend),
+                                            userUsername: (friend as any).username,
                                             userAvatar: friend.avatar_url || ''
                                         }
                                     })}
                                 >
                                     <View style={styles.squadAvatar}>
-                                        <Avatar size="lg" uri={friend.avatar_url} name={friend.name} />
+                                        <Avatar size="lg" uri={friend.avatar_url} name={displayName(friend)} />
                                     </View>
                                     <Text style={styles.squadName} numberOfLines={1}>
-                                        {(friend.name || 'Friend').split(' ')[0]}
+                                        {getFirstName(friend)}
                                     </Text>
                                 </TouchableOpacity>
                             ))

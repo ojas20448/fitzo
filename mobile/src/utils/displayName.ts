@@ -32,6 +32,8 @@ export function looksLikeEmail(value: string | null | undefined): boolean {
 function humanizeLocalPart(localPart: string): string {
     return localPart
         .replace(/[._-]+/g, ' ')
+        // Separate letters and digits when they act as separators (e.g. ojas4123narang -> ojas narang)
+        .replace(/(\p{L})\d+(\p{L})/gu, '$1 $2')
         // Strip trailing digits people append to addresses (ojas4123 -> ojas),
         // but only when letters remain — "123" alone stays as-is.
         .replace(/(\p{L})\d+\b/gu, '$1')

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, ActivityIndicator, Share, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -12,19 +12,45 @@ import { friendsAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { displayName } from '../../utils/displayName';
+import { shareCapturedImage } from '../../utils/shareCapture';
 import { useLocalSearchParams } from 'expo-router';
 
-type Tab = 'search' | 'scan' | 'code';
+type Tab = 'code' | 'scan' | 'search';
+
+const TABS: { id: Tab; label: string; icon: keyof typeof MaterialIcons.glyphMap }[] = [
+    { id: 'code', label: 'My QR Code', icon: 'qr-code-2' },
+    { id: 'scan', label: 'Scan QR', icon: 'qr-code-scanner' },
+    { id: 'search', label: 'Search', icon: 'search' },
+];
 
 export default function AddBuddyScreen() {
     const { user } = useAuth();
-    const { tab } = useLocalSearchParams<{ tab?: string }>();
-    const [activeTab, setActiveTab] = useState<Tab>((tab as Tab) || 'search');
+    const { tab, userId: paramUserId, username: paramUsername } = useLocalSearchParams<{
+        tab?: string;
+        userId?: string;
+        username?: string;
+    }>();
+    const initialTab: Tab = (tab === 'scan' || tab === 'search' || tab === 'code') ? tab : 'code';
+    const [activeTab, setActiveTab] = useState<Tab>(initialTab);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searching, setSearching] = useState(false);
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
+    const qrCardRef = useRef<View>(null);
+
+    useEffect(() => {
+        if (paramUserId && paramUserId !== user?.id) {
+            Alert.alert(
+                'Add Gym Buddy',
+                `Add @${paramUsername || 'this user'} as your gym buddy?`,
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Add Buddy', onPress: () => handleAdd(paramUserId) }
+                ]
+            );
+        }
+    }, [paramUserId]);
 
     useEffect(() => {
         if (searchQuery.length >= 2) {
@@ -61,24 +87,48 @@ export default function AddBuddyScreen() {
         
         let userId: string | null = null;
         let username: string | null = null;
-        
-        try {
-            const parsed = JSON.parse(data);
-            if (parsed.type === 'fitzo_profile') {
-                userId = parsed.userId;
-                username = parsed.username;
-            } else if (parsed.userId) {
-                // Old format
-                userId = parsed.userId;
-                username = parsed.username;
+        const rawData = String(data || '').trim();
+
+        // 1. Check if scanned data is a universal link or deep link
+        if (rawData.includes('/buddy') || rawData.startsWith('fitzo://')) {
+            try {
+                const queryStr = rawData.includes('?') ? rawData.split('?')[1] : '';
+                const searchParams = new URLSearchParams(queryStr);
+                userId = searchParams.get('id') || searchParams.get('userId');
+                username = searchParams.get('u') || searchParams.get('username');
+            } catch {
+                const idMatch = rawData.match(/[?&](?:id|userId)=([^&]+)/);
+                const userMatch = rawData.match(/[?&](?:u|username)=([^&]+)/);
+                if (idMatch) userId = decodeURIComponent(idMatch[1]);
+                if (userMatch) username = decodeURIComponent(userMatch[1]);
             }
-        } catch (e) {
-            // Not JSON, assume it's just a userId string (legacy)
-            userId = data;
+        }
+        
+        // 2. Check JSON payload
+        if (!userId) {
+            try {
+                const parsed = JSON.parse(rawData);
+                if (parsed.type === 'fitzo_profile' || parsed.userId) {
+                    userId = parsed.userId;
+                    username = parsed.username;
+                }
+            } catch {
+                // 3. Fallback: check if rawData is a direct UUID / alphanumeric ID
+                if (/^[0-9a-fA-F-]{8,}$/.test(rawData) || /^[a-zA-Z0-9_-]{6,36}$/.test(rawData)) {
+                    userId = rawData;
+                }
+            }
         }
 
         if (!userId) {
-            Alert.alert('Invalid Code', 'This QR code is not valid.', [
+            Alert.alert('Invalid QR Code', 'This QR code does not appear to be a valid Fitzo gym buddy code.', [
+                { text: 'OK', onPress: () => setScanned(false) }
+            ]);
+            return;
+        }
+
+        if (userId === user?.id) {
+            Alert.alert('Nice Try!', "You can't add yourself as a buddy 😄", [
                 { text: 'OK', onPress: () => setScanned(false) }
             ]);
             return;
@@ -90,7 +140,7 @@ export default function AddBuddyScreen() {
             [
                 { text: 'Cancel', onPress: () => setScanned(false), style: 'cancel' },
                 {
-                    text: 'Add',
+                    text: 'Add Buddy',
                     onPress: async () => {
                         await handleAdd(userId!);
                         setScanned(false);
@@ -100,19 +150,27 @@ export default function AddBuddyScreen() {
         );
     };
 
-    const handleShare = async () => {
+    const handleShareText = async () => {
         try {
-            const appUrl = 'https://www.fitzoapp.in';
             const username = user?.username || 'user';
-            const deepLink = `fitzo://profile/${username}`;
+            const quickLink = `https://www.fitzoapp.in/buddy?id=${user?.id || ''}&u=${encodeURIComponent(username)}`;
+            const deepLink = `fitzo://buddy?id=${user?.id || ''}&u=${encodeURIComponent(username)}`;
             
             await Share.share({
-                title: 'Join me on Fitzo!',
-                message: `Hey! Add me as your gym buddy on Fitzo.\n\nUsername: @${username}\n\nDownload the app: ${appUrl}\nOr scan my QR code to connect instantly!`,
-                url: deepLink, // iOS will use this
+                title: 'Add me on Fitzo!',
+                message: `Hey! Add me as your gym buddy on Fitzo 💪\n\nTap this link to connect with me directly:\n${quickLink}\n\n(If you already have Fitzo installed, tap: ${deepLink})`,
             });
         } catch (error: any) {
             Alert.alert('Error', error.message || 'Something went wrong');
+        }
+    };
+
+    const handleShareImage = async () => {
+        try {
+            if (!qrCardRef.current) return;
+            await shareCapturedImage(qrCardRef, 'Fitzo Gym Buddy QR Code');
+        } catch (error: any) {
+            Alert.alert('Could not share image', error.message || 'Please try sharing the invite link instead.');
         }
     };
 
@@ -213,31 +271,49 @@ export default function AddBuddyScreen() {
     };
 
     const renderCodeTab = () => {
-        const qrData = JSON.stringify({
-            type: 'fitzo_profile',
-            userId: user?.id,
-            username: user?.username,
-            deepLink: `fitzo://profile/${user?.username}`
-        });
+        const username = user?.username || 'user';
+        const quickLink = `https://www.fitzoapp.in/buddy?id=${user?.id || ''}&u=${encodeURIComponent(username)}`;
 
         return (
             <View style={styles.centerContent}>
-                <GlassCard style={styles.qrCard} padding="lg">
-                    <QRCode
-                        value={qrData}
-                        size={200}
-                        color="white"
-                        backgroundColor="transparent"
+                <View ref={qrCardRef} collapsable={false}>
+                    <GlassCard style={styles.qrCard} padding="lg">
+                        <QRCode
+                            value={quickLink}
+                            size={200}
+                            color="black"
+                            backgroundColor="white"
+                        />
+                        <Text style={styles.myUsername}>@{username}</Text>
+                        <Text style={styles.qrBadgeText}>SCAN TO CONNECT</Text>
+                    </GlassCard>
+                </View>
+
+                <TouchableOpacity style={styles.linkPill} onPress={handleShareText} activeOpacity={0.7}>
+                    <MaterialIcons name="link" size={16} color={colors.primary} />
+                    <Text style={styles.linkPillText} numberOfLines={1}>
+                        fitzoapp.in/buddy?u={username}
+                    </Text>
+                    <MaterialIcons name="share" size={14} color={colors.text.muted} />
+                </TouchableOpacity>
+
+                <Text style={styles.qrHint}>Let your buddy scan this code with any camera or tap your link to add you instantly.</Text>
+                
+                <View style={styles.actionButtonsContainer}>
+                    <Button
+                        title="Share Invite Link"
+                        icon={<MaterialIcons name="share" size={20} color={colors.text.dark} />}
+                        onPress={handleShareText}
+                        style={{ marginTop: spacing.md, width: 220 }}
                     />
-                    <Text style={styles.myUsername}>@{user?.username || 'user'}</Text>
-                </GlassCard>
-                <Text style={styles.qrHint}>Let your buddy scan this code to add you.</Text>
-                <Button
-                    title="Share Profile"
-                    icon={<MaterialIcons name="share" size={20} color={colors.text.dark} />}
-                    onPress={handleShare}
-                    style={{ marginTop: spacing.xl, width: 200 }}
-                />
+                    <Button
+                        title="Share QR Code Image"
+                        variant="secondary"
+                        icon={<MaterialIcons name="qr-code-2" size={20} color={colors.text.primary} />}
+                        onPress={handleShareImage}
+                        style={{ marginTop: spacing.sm, width: 220 }}
+                    />
+                </View>
             </View>
         );
     };
@@ -253,23 +329,29 @@ export default function AddBuddyScreen() {
             </View>
 
             <View style={styles.tabs}>
-                {(['search', 'scan', 'code'] as Tab[]).map((tab) => (
+                {TABS.map((t) => (
                     <TouchableOpacity
-                        key={tab}
-                        style={[styles.tab, activeTab === tab && styles.tabActive]}
-                        onPress={() => setActiveTab(tab)}
+                        key={t.id}
+                        style={[styles.tab, activeTab === t.id && styles.tabActive]}
+                        onPress={() => setActiveTab(t.id)}
                     >
-                        <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                            {tab.toUpperCase()}
+                        <MaterialIcons
+                            name={t.icon}
+                            size={18}
+                            color={activeTab === t.id ? colors.primary : colors.text.muted}
+                            style={{ marginBottom: 4 }}
+                        />
+                        <Text style={[styles.tabText, activeTab === t.id && styles.tabTextActive]}>
+                            {t.label}
                         </Text>
                     </TouchableOpacity>
                 ))}
             </View>
 
             <View style={styles.content}>
-                {activeTab === 'search' && renderSearchTab()}
-                {activeTab === 'scan' && renderScanTab()}
                 {activeTab === 'code' && renderCodeTab()}
+                {activeTab === 'scan' && renderScanTab()}
+                {activeTab === 'search' && renderSearchTab()}
             </View>
         </SafeAreaView>
     );
@@ -452,9 +534,39 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.bold,
         color: 'black',
     },
+    qrBadgeText: {
+        fontSize: 10,
+        fontFamily: typography.fontFamily.bold,
+        color: '#666',
+        letterSpacing: 1.5,
+        marginTop: 4,
+    },
+    linkPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.full,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        marginTop: spacing.md,
+        gap: spacing.xs,
+    },
+    linkPillText: {
+        fontSize: typography.sizes.xs,
+        color: colors.primary,
+        fontFamily: typography.fontFamily.medium,
+    },
     qrHint: {
         color: colors.text.secondary,
-        marginTop: spacing.xl,
-        fontSize: typography.sizes.base,
+        marginTop: spacing.md,
+        fontSize: typography.sizes.sm,
+        textAlign: 'center',
+        paddingHorizontal: spacing.md,
+    },
+    actionButtonsContainer: {
+        alignItems: 'center',
+        width: '100%',
     },
 });

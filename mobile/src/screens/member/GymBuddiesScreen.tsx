@@ -11,6 +11,7 @@ import {
     Alert,
     Modal,
     Pressable,
+    Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -25,10 +26,12 @@ import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { useAuth } from '../../context/AuthContext';
 import Celebration from '../../components/Celebration';
+import { displayName } from '../../utils/displayName';
 
 interface Friend {
     id: string;
     name: string;
+    username?: string | null;
     avatar_url: string | null;
     xp_points: number;
     streak: number;
@@ -37,6 +40,7 @@ interface Friend {
     worked_out_today: boolean;
     logged_food_today: boolean;
     checked_in_today: boolean;
+    at_gym_now?: boolean;
 }
 
 const GymBuddiesScreen: React.FC = () => {
@@ -49,6 +53,7 @@ const GymBuddiesScreen: React.FC = () => {
     const [suggested, setSuggested] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [searching, setSearching] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
     const [loading, setLoading] = useState(true);
     // "Join your gym" used to dump you on the profile tab with no explanation of
@@ -241,15 +246,20 @@ const GymBuddiesScreen: React.FC = () => {
 
     const handleSearch = async (query: string) => {
         setSearchQuery(query);
-        if (query.length >= 2) {
+        const clean = query.trim().replace(/^@+/, '');
+        if (clean.length >= 2) {
+            setSearching(true);
             try {
                 const result = await friendsAPI.search(query);
                 setSearchResults(result.users || []);
             } catch (error: any) {
                 toast.error('Error', error.message || 'Something went wrong');
+            } finally {
+                setSearching(false);
             }
         } else {
             setSearchResults([]);
+            setSearching(false);
         }
     };
 
@@ -280,6 +290,21 @@ const GymBuddiesScreen: React.FC = () => {
         }
     };
 
+    const handleShareQuickLink = async () => {
+        try {
+            const username = user?.username || 'user';
+            const quickLink = `https://www.fitzoapp.in/buddy?id=${user?.id || ''}&u=${encodeURIComponent(username)}`;
+            const deepLink = `fitzo://buddy?id=${user?.id || ''}&u=${encodeURIComponent(username)}`;
+
+            await Share.share({
+                title: 'Add me on Fitzo!',
+                message: `Hey! Add me as your gym buddy on Fitzo 💪\n\nTap this link to connect with me directly:\n${quickLink}\n\n(If you already have Fitzo installed, tap: ${deepLink})`,
+            });
+        } catch (error: any) {
+            toast.error('Error', error.message || 'Could not share invite link');
+        }
+    };
+
     const getDaysAgo = (dateStr: string | null) => {
         if (!dateStr) return null;
         const now = new Date();
@@ -297,13 +322,14 @@ const GymBuddiesScreen: React.FC = () => {
     };
 
     const getFriendStatus = (friend: Friend): { label: string; color: string } => {
+        if (friend.at_gym_now) return { label: 'At gym now', color: colors.success };
         if (friend.worked_out_today) return { label: 'Worked out today', color: colors.success };
         if (friend.logged_food_today) return { label: 'Logged food today', color: colors.primary };
         return { label: 'Inactive today', color: colors.text.subtle };
     };
 
     const shouldShowNudge = (friend: Friend): boolean => {
-        if (friend.worked_out_today || friend.logged_food_today) return false;
+        if (friend.at_gym_now || friend.worked_out_today || friend.logged_food_today) return false;
         if (!friend.last_workout_date) return true;
         const daysSince = Math.floor(
             (Date.now() - new Date(friend.last_workout_date).getTime()) / (1000 * 60 * 60 * 24)
@@ -342,11 +368,11 @@ const GymBuddiesScreen: React.FC = () => {
                 <View style={styles.headerActions}>
                     <TouchableOpacity
                         style={styles.filterBtn}
-                        onPress={() => router.push('/member/add-buddy?tab=scan' as any)}
+                        onPress={() => router.push('/member/add-buddy?tab=code' as any)}
                         accessibilityRole="button"
-                        accessibilityLabel="Add a buddy by QR code"
+                        accessibilityLabel="My QR code and invite"
                     >
-                        <MaterialIcons name="qr-code-scanner" size={22} color={colors.text.primary} />
+                        <MaterialIcons name="qr-code-2" size={22} color={colors.text.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.filterBtn}
@@ -366,15 +392,17 @@ const GymBuddiesScreen: React.FC = () => {
                         <MaterialIcons name="search" size={20} color={colors.text.muted} />
                         <TextInput
                             style={styles.searchInput}
-                            placeholder="Find gym buddies..."
+                            placeholder="Search name, @username, or ID..."
                             placeholderTextColor={colors.text.muted}
                             value={searchQuery}
                             onChangeText={handleSearch}
+                            autoCapitalize="none"
                             autoFocus
                         />
+                        {searching && <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: spacing.xs }} />}
                     </GlassCard>
 
-                    {searchResults.length > 0 && (
+                    {searchResults.length > 0 ? (
                         <View style={styles.searchResults}>
                             {searchResults.map((user) => {
                                 // The search endpoint has always returned
@@ -391,6 +419,7 @@ const GymBuddiesScreen: React.FC = () => {
                                                 : status === 'blocked' ? 'Blocked'
                                                     : null;
                                 const actionable = !label;
+                                const userName = displayName(user);
 
                                 return (
                                     <TouchableOpacity
@@ -400,11 +429,16 @@ const GymBuddiesScreen: React.FC = () => {
                                         disabled={!actionable}
                                         accessibilityRole="button"
                                         accessibilityLabel={
-                                            actionable ? `Send friend request to ${user.name}` : `${user.name} — ${label}`
+                                            actionable ? `Send friend request to ${userName}` : `${userName} — ${label}`
                                         }
                                     >
-                                        <Avatar uri={user.avatar_url} name={user.name} size="sm" />
-                                        <Text style={styles.searchResultName}>{user.name}</Text>
+                                        <Avatar uri={user.avatar_url} name={userName} size="sm" />
+                                        <View style={styles.searchResultTextCol}>
+                                            <Text style={styles.searchResultName} numberOfLines={1}>{userName}</Text>
+                                            {user.username ? (
+                                                <Text style={styles.searchResultHandle} numberOfLines={1}>@{user.username}</Text>
+                                            ) : null}
+                                        </View>
                                         {actionable
                                             ? <MaterialIcons name="person-add" size={20} color={colors.primary} />
                                             : <Text style={styles.searchResultStatus}>{label}</Text>}
@@ -412,6 +446,15 @@ const GymBuddiesScreen: React.FC = () => {
                                 );
                             })}
                         </View>
+                    ) : (
+                        !searching && searchQuery.trim().replace(/^@+/, '').length >= 2 ? (
+                            <View style={styles.searchResults}>
+                                <View style={styles.searchEmptyContainer}>
+                                    <MaterialIcons name="person-search" size={22} color={colors.text.muted} />
+                                    <Text style={styles.searchEmptyText}>No users found for "{searchQuery}"</Text>
+                                </View>
+                            </View>
+                        ) : null
                     )}
                 </View>
             )}
@@ -442,6 +485,37 @@ const GymBuddiesScreen: React.FC = () => {
             >
                 {activeTab === 'buddies' ? (
                     <>
+                        {/* Invite & Connect Banner */}
+                        <GlassCard style={styles.inviteBanner}>
+                            <View style={styles.inviteBannerHeader}>
+                                <View style={styles.inviteIconCircle}>
+                                    <MaterialIcons name="qr-code-2" size={22} color={colors.primary} />
+                                </View>
+                                <View style={styles.inviteBannerInfo}>
+                                    <Text style={styles.inviteBannerTitle}>Connect with Buddies</Text>
+                                    <Text style={styles.inviteBannerSub}>Share your invite link or let buddies scan your QR</Text>
+                                </View>
+                            </View>
+                            <View style={styles.inviteBannerButtons}>
+                                <TouchableOpacity
+                                    style={styles.inviteBannerPrimaryBtn}
+                                    onPress={() => router.push('/member/add-buddy?tab=code' as any)}
+                                    activeOpacity={0.8}
+                                >
+                                    <MaterialIcons name="qr-code" size={16} color={colors.text.dark} />
+                                    <Text style={styles.inviteBannerPrimaryBtnText}>My QR Code</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.inviteBannerSecondaryBtn}
+                                    onPress={handleShareQuickLink}
+                                    activeOpacity={0.8}
+                                >
+                                    <MaterialIcons name="share" size={16} color={colors.text.primary} />
+                                    <Text style={styles.inviteBannerSecondaryBtnText}>Share Link</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </GlassCard>
+
                         {/* Suggested Friends */}
                         {suggested.length > 0 && (
                             <View style={styles.section}>
@@ -449,11 +523,13 @@ const GymBuddiesScreen: React.FC = () => {
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestedList}>
                                     {suggested.map((user) => (
                                         <GlassCard key={user.id} style={styles.suggestedCard}>
-                                            <Avatar uri={user.avatar_url} name={user.name} size="md" />
-                                            <Text style={styles.suggestedName} numberOfLines={1}>{user.name}</Text>
-                                            {user.last_checkin && (
+                                            <Avatar uri={user.avatar_url} name={displayName(user)} size="md" showOnline={!!user.at_gym_now} />
+                                            <Text style={styles.suggestedName} numberOfLines={1}>{displayName(user)}</Text>
+                                            {user.at_gym_now ? (
+                                                <Text style={[styles.suggestedSubtext, { color: colors.success }]}>At gym now</Text>
+                                            ) : user.last_checkin ? (
                                                 <Text style={styles.suggestedSubtext}>Recently at gym</Text>
-                                            )}
+                                            ) : null}
                                             <TouchableOpacity
                                                 style={styles.addSuggestedBtn}
                                                 onPress={() => handleSendRequest(user.id)}
@@ -474,18 +550,19 @@ const GymBuddiesScreen: React.FC = () => {
                                 {pendingRequests.map((request) => (
                                     <GlassCard key={request.id} style={styles.requestCard}>
                                         <View style={styles.requestInfo}>
-                                            <Avatar uri={request.avatar_url} name={request.name} size="md" />
+                                            <Avatar uri={request.avatar_url} name={displayName(request)} size="md" />
                                             <View style={styles.requestText}>
-                                                <Text style={styles.requestName}>{request.name}</Text>
+                                                <Text style={styles.requestName}>{displayName(request)}</Text>
+                                                {request.username ? <Text style={styles.friendHandle}>@{request.username}</Text> : null}
                                                 <Text style={styles.requestTime}>Wants to be your gym buddy</Text>
                                             </View>
                                         </View>
                                         <View style={styles.requestActions}>
                                             <TouchableOpacity
                                                 style={styles.declineBtn}
-                                                onPress={() => handleRejectRequest(request.id, request.name)}
+                                                onPress={() => handleRejectRequest(request.id, displayName(request))}
                                                 accessibilityRole="button"
-                                                accessibilityLabel={`Decline request from ${request.name}`}
+                                                accessibilityLabel={`Decline request from ${displayName(request)}`}
                                             >
                                                 <MaterialIcons name="close" size={20} color={colors.text.secondary} />
                                             </TouchableOpacity>
@@ -493,7 +570,7 @@ const GymBuddiesScreen: React.FC = () => {
                                                 style={styles.acceptBtn}
                                                 onPress={() => handleAcceptRequest(request.id)}
                                                 accessibilityRole="button"
-                                                accessibilityLabel={`Accept request from ${request.name}`}
+                                                accessibilityLabel={`Accept request from ${displayName(request)}`}
                                             >
                                                 <MaterialIcons name="check" size={20} color={colors.background} />
                                             </TouchableOpacity>
@@ -509,9 +586,10 @@ const GymBuddiesScreen: React.FC = () => {
                                 {sentRequests.map((request) => (
                                     <GlassCard key={request.id} style={styles.requestCard}>
                                         <View style={styles.requestInfo}>
-                                            <Avatar uri={request.avatar_url} name={request.name} size="md" />
+                                            <Avatar uri={request.avatar_url} name={displayName(request)} size="md" />
                                             <View style={styles.requestText}>
-                                                <Text style={styles.requestName}>{request.name}</Text>
+                                                <Text style={styles.requestName}>{displayName(request)}</Text>
+                                                {request.username ? <Text style={styles.friendHandle}>@{request.username}</Text> : null}
                                                 <Text style={styles.requestTime}>Waiting for them to accept</Text>
                                             </View>
                                         </View>
@@ -538,8 +616,8 @@ const GymBuddiesScreen: React.FC = () => {
                                 variant="no-friends"
                                 title="No Gym Buddies Yet"
                                 message="Find friends to train together and stay motivated!"
-                                actionLabel="Add Buddy"
-                                onAction={() => setShowSearch(true)}
+                                actionLabel="Add Buddy / My QR"
+                                onAction={() => router.push('/member/add-buddy?tab=code' as any)}
                             />
                         ) : (
                             friends.map((friend) => {
@@ -552,17 +630,24 @@ const GymBuddiesScreen: React.FC = () => {
                                             style={styles.friendTap}
                                             onPress={() => router.push({
                                                 pathname: '/member/user-profile',
-                                                params: { userId: friend.id, userName: friend.name, userAvatar: friend.avatar_url || '' }
+                                                params: {
+                                                    userId: friend.id,
+                                                    userName: displayName(friend),
+                                                    userUsername: friend.username || '',
+                                                    userAvatar: friend.avatar_url || ''
+                                                }
                                             })}
                                             activeOpacity={0.7}
                                         >
                                             <Avatar
                                                 uri={friend.avatar_url}
+                                                name={displayName(friend)}
                                                 size="lg"
-                                                showOnline={friend.worked_out_today || friend.logged_food_today}
+                                                showOnline={!!friend.at_gym_now}
                                             />
                                             <View style={styles.friendInfo}>
-                                                <Text style={styles.friendName}>{friend.name}</Text>
+                                                <Text style={styles.friendName}>{displayName(friend)}</Text>
+                                                {friend.username ? <Text style={styles.friendHandle}>@{friend.username}</Text> : null}
                                                 <View style={styles.friendMeta}>
                                                     {friend.streak > 0 && (
                                                         <View style={styles.streakBadge}>
@@ -582,7 +667,7 @@ const GymBuddiesScreen: React.FC = () => {
                                         {showNudge && (
                                             <TouchableOpacity
                                                 style={[styles.nudgeBtn, nudgingId === friend.id && styles.nudgeBtnDisabled]}
-                                                onPress={() => handleNudge(friend.id, friend.name)}
+                                                onPress={() => handleNudge(friend.id, displayName(friend))}
                                                 disabled={nudgingId === friend.id}
                                             >
                                                 <MaterialIcons name="notifications-active" size={18} color={colors.background} />
@@ -821,6 +906,73 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
+    inviteBanner: {
+        marginBottom: spacing.lg,
+        padding: spacing.md,
+    },
+    inviteBannerHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        marginBottom: spacing.md,
+    },
+    inviteIconCircle: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(232, 255, 77, 0.12)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    inviteBannerInfo: {
+        flex: 1,
+    },
+    inviteBannerTitle: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+    },
+    inviteBannerSub: {
+        fontSize: typography.sizes.xs,
+        color: colors.text.muted,
+        marginTop: 2,
+    },
+    inviteBannerButtons: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+    },
+    inviteBannerPrimaryBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.xs,
+        backgroundColor: colors.primary,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+    },
+    inviteBannerPrimaryBtnText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.dark,
+    },
+    inviteBannerSecondaryBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.xs,
+        backgroundColor: colors.glass.surface,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+    },
+    inviteBannerSecondaryBtnText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+    },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -897,8 +1049,28 @@ const styles = StyleSheet.create({
         padding: spacing.sm,
     },
     searchResultName: {
-        flex: 1,
         color: colors.text.primary,
+        fontFamily: typography.fontFamily.medium,
+    },
+    searchResultTextCol: {
+        flex: 1,
+        gap: 2,
+    },
+    searchResultHandle: {
+        fontSize: typography.sizes.xs,
+        color: colors.primary,
+        fontFamily: typography.fontFamily.medium,
+    },
+    searchEmptyContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.sm,
+        paddingVertical: spacing.md,
+    },
+    searchEmptyText: {
+        fontSize: typography.sizes.sm,
+        color: colors.text.muted,
         fontFamily: typography.fontFamily.medium,
     },
     content: {
@@ -1050,6 +1222,12 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
+    },
+    friendHandle: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.primary,
+        marginTop: 1,
     },
     friendMeta: {
         flexDirection: 'row',

@@ -236,11 +236,22 @@ export default function ProfileScreen() {
                     <View style={styles.headerDot} />
                     <Text style={styles.headerSubtitle}>YOU</Text>
                 </View>
-                <TouchableOpacity onPress={handleEditOpen} accessibilityRole="button" accessibilityLabel="Edit profile">
-                    <GlassCard style={styles.settingsBtn}>
-                        <MaterialIcons name="edit" size={20} color={colors.text.primary} />
-                    </GlassCard>
-                </TouchableOpacity>
+                <View style={styles.headerRightActions}>
+                    <TouchableOpacity
+                        onPress={() => router.push('/member/add-buddy?tab=code' as any)}
+                        accessibilityRole="button"
+                        accessibilityLabel="My QR code and invite"
+                    >
+                        <GlassCard style={styles.settingsBtn}>
+                            <MaterialIcons name="qr-code-2" size={20} color={colors.text.primary} />
+                        </GlassCard>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleEditOpen} accessibilityRole="button" accessibilityLabel="Edit profile">
+                        <GlassCard style={styles.settingsBtn}>
+                            <MaterialIcons name="edit" size={20} color={colors.text.primary} />
+                        </GlassCard>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView
@@ -659,6 +670,11 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
         letterSpacing: 2,
+    },
+    headerRightActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
     },
     settingsBtn: {
         width: 40,

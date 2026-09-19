@@ -34,7 +34,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "usesAppleSignIn": true,
-      "buildNumber": "19"
+      "buildNumber": "20"
     },
     "android": {
       "adaptiveIcon": {
@@ -43,7 +43,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.fitzo.app",
-      "versionCode": 23,
+      "versionCode": 24,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
@@ -56,11 +56,29 @@
       "intentFilters": [
         {
           "action": "VIEW",
+          "data": [
+            {
+              "scheme": "fitzo"
+            }
+          ],
+          "category": [
+            "DEFAULT",
+            "BROWSABLE"
+          ]
+        },
+        {
+          "action": "VIEW",
           "autoVerify": true,
           "data": [
             {
-              "scheme": "fitzo",
-              "path": "/auth"
+              "scheme": "https",
+              "host": "www.fitzoapp.in",
+              "pathPrefix": "/buddy"
+            },
+            {
+              "scheme": "https",
+              "host": "fitzoapp.in",
+              "pathPrefix": "/buddy"
             }
           ],
           "category": [
