@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import Animated from 'react-native-reanimated';
 import type { ShareBackground } from './SharePayload';
 import { CARD_W, CARD_H } from './SharePayload';
 import { resolveBackgroundTransform } from '../../utils/backgroundTransform';
+import { useBackgroundTransform } from './BackgroundTransformContext';
 
 interface CardBackgroundProps {
     background: ShareBackground | null | undefined;
@@ -46,27 +48,32 @@ interface CardBackgroundProps {
  * which of the two trees it is resolving for.
  */
 export default function CardBackground({ background, scrimOpacity, onLoad, onError }: CardBackgroundProps) {
+    const transformCtx = useBackgroundTransform();
     if (!background) return null;
 
     const t = resolveBackgroundTransform(background, CARD_W, CARD_H);
 
+    const imageStyle = transformCtx?.animatedStyle
+        ? transformCtx.animatedStyle
+        : {
+              transform: [
+                  { translateX: t.translateX },
+                  { translateY: t.translateY },
+                  { scale: t.scale },
+                  { rotate: `${t.rotateDeg}deg` },
+              ],
+          };
+
     return (
         <>
-            <Image
+            <Animated.Image
                 source={{ uri: background.uri }}
                 resizeMode="cover"
                 onLoad={onLoad}
                 onError={onError}
                 style={[
                     StyleSheet.absoluteFill,
-                    {
-                        transform: [
-                            { translateX: t.translateX },
-                            { translateY: t.translateY },
-                            { scale: t.scale },
-                            { rotate: `${t.rotateDeg}deg` },
-                        ],
-                    },
+                    imageStyle,
                 ]}
             />
             <View

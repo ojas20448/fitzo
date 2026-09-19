@@ -5,7 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import ViewShot from 'react-native-view-shot';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { useSharedValue, runOnJS } from 'react-native-reanimated';
+import { useSharedValue, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { useShareComposerStore } from '../../stores/shareComposerStore';
@@ -18,6 +18,7 @@ import { CARD_W, CARD_H } from '../../components/share/SharePayload';
 import type { SharePayload, ShareBackground } from '../../components/share/SharePayload';
 import { useShareCapture } from '../../hooks/useShareCapture';
 import { createBackground, clampBackgroundScale, pixelDeltaToFraction } from '../../utils/backgroundTransform';
+import { BackgroundTransformContext } from '../../components/share/BackgroundTransformContext';
 import * as Haptics from '../../utils/haptics';
 import { logger } from '../../utils/logger';
 import { getCaptureFrame } from '../../utils/shareCapture';
@@ -62,6 +63,25 @@ export default function ShareComposerScreen() {
     const bgSavedScale = useSharedValue(1);
     const bgRotation = useSharedValue(0);
     const bgSavedRotation = useSharedValue(0);
+
+    // Drive the hero preview background at 60fps on the UI thread.
+    // Shared values are updated directly by gesture handlers (no
+    // runOnJS round-trip), so the image moves in lockstep with the
+    // finger. React state (commitBackground) is updated only on
+    // gesture END, keeping the hidden capture tree in sync without
+    // choking the JS thread during the gesture itself.
+    const animatedBgStyle = useAnimatedStyle(() => {
+        'worklet';
+        return {
+            transform: [
+                { translateX: bgTranslateX.value },
+                { translateY: bgTranslateY.value },
+                { scale: bgScale.value },
+                { rotate: `${(bgRotation.value * 180) / Math.PI}deg` },
+            ],
+        };
+    });
+
     useEffect(() => {
         if (!source || isStale()) {
             router.back();
@@ -242,35 +262,42 @@ export default function ShareComposerScreen() {
     const dragGesture = Gesture.Pan()
         .averageTouches(true)
         .onUpdate((e) => {
+            'worklet';
             bgTranslateX.value = bgSavedX.value + e.translationX;
             bgTranslateY.value = bgSavedY.value + e.translationY;
-            runOnJS(commitBackground)(bgTranslateX.value, bgTranslateY.value, bgScale.value, bgRotation.value);
         })
         .onEnd(() => {
+            'worklet';
             bgSavedX.value = bgTranslateX.value;
             bgSavedY.value = bgTranslateY.value;
+            runOnJS(commitBackground)(bgTranslateX.value, bgTranslateY.value, bgScale.value, bgRotation.value);
         });
 
     const pinchGesture = Gesture.Pinch()
         .onUpdate((e) => {
+            'worklet';
             bgScale.value = clampBackgroundScale(bgSavedScale.value * e.scale);
-            runOnJS(commitBackground)(bgTranslateX.value, bgTranslateY.value, bgScale.value, bgRotation.value);
         })
         .onEnd(() => {
+            'worklet';
             bgSavedScale.value = bgScale.value;
+            runOnJS(commitBackground)(bgTranslateX.value, bgTranslateY.value, bgScale.value, bgRotation.value);
         });
 
     const rotateGesture = Gesture.Rotation()
         .onUpdate((e) => {
+            'worklet';
             bgRotation.value = bgSavedRotation.value + e.rotation;
-            runOnJS(commitBackground)(bgTranslateX.value, bgTranslateY.value, bgScale.value, bgRotation.value);
         })
         .onEnd(() => {
+            'worklet';
             bgSavedRotation.value = bgRotation.value;
+            runOnJS(commitBackground)(bgTranslateX.value, bgTranslateY.value, bgScale.value, bgRotation.value);
         });
 
     const backgroundGesture = Gesture.Simultaneous(dragGesture, pinchGesture, rotateGesture);
     const gestureActive = !!background && themeSupportsBackground && !isSharing;
+    const bgTransformCtxValue = useMemo(() => ({ animatedStyle: animatedBgStyle }), [animatedBgStyle]);
     const shareText = [payload.subtitle, payload.contextLabel, [payload.headlineLabel, payload.headline].filter(Boolean).join(': '),
         ...payload.rows.map(row => row.label + ': ' + row.value),
         ...payload.prs.map(pr => pr.exercise + ': ' + pr.current + (pr.previous ? ' (previous ' + pr.previous + ')' : '')),
@@ -279,7 +306,9 @@ export default function ShareComposerScreen() {
     const heroCard = (
         <View style={[styles.heroOuter, { width: heroWidth, height: heroHeight }]} accessible accessibilityRole="image" accessibilityLabel={shareText}>
             <View style={[styles.heroInner, { transform: [{ scale: heroScale }] }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
-                <ActiveTheme payload={payload} />
+                <BackgroundTransformContext.Provider value={bgTransformCtxValue}>
+                    <ActiveTheme payload={payload} />
+                </BackgroundTransformContext.Provider>
             </View>
         </View>
     );
