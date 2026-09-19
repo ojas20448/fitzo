@@ -21,42 +21,7 @@ import { isHealthAvailable } from '../../services/healthService';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-// ─── Science: Mifflin-St Jeor equation ──────────────────────────────────────
-function computeTDEE(weight: number, height: number, age: number, gender: string, activity: string) {
-    // Mifflin-St Jeor — most accurate modern BMR formula
-    const bmr = gender === 'male'
-        ? 10 * weight + 6.25 * height - 5 * age + 5
-        : 10 * weight + 6.25 * height - 5 * age - 161;
-    const multipliers: Record<string, number> = {
-        sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very_active: 1.9,
-    };
-    return { bmr: Math.round(bmr), tdee: Math.round(bmr * (multipliers[activity] || 1.55)) };
-}
-
-function computeTargetCalories(tdee: number, goal: string) {
-    if (goal === 'fat_loss') return tdee - 500;
-    if (goal === 'muscle_gain') return tdee + 300;
-    return tdee;
-}
-
-function computeMacros(calories: number, goal: string, dietary: string) {
-    let proteinPct: number, carbsPct: number, fatPct: number;
-    // Macro splits tuned for Indian diets (carb-heavy: rice, roti, dal)
-    if (goal === 'fat_loss') { proteinPct = 0.30; fatPct = 0.25; carbsPct = 0.45; }
-    else if (goal === 'muscle_gain') { proteinPct = 0.30; carbsPct = 0.45; fatPct = 0.25; }
-    else { proteinPct = 0.20; carbsPct = 0.50; fatPct = 0.30; }
-
-    if (dietary === 'vegetarian' || dietary === 'vegan') {
-        proteinPct -= 0.03;
-        carbsPct += 0.03;
-    }
-
-    return {
-        protein: Math.round((calories * proteinPct) / 4),
-        carbs: Math.round((calories * carbsPct) / 4),
-        fat: Math.round((calories * fatPct) / 9),
-    };
-}
+import { calculateEnergy as computeTDEE, calculateCalories as computeTargetCalories, calculateMacros as computeMacros } from '../../utils/nutritionTargets';
 
 function computeBMI(weight: number, height: number) {
     const h = height / 100;
@@ -474,7 +439,7 @@ export default function OnboardingWizard() {
         gender: 'male' as 'male' | 'female',
         body_fat_pct: '',
         goal_type: 'maintenance' as 'fat_loss' | 'maintenance' | 'muscle_gain',
-        activity_level: 'moderate' as 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active',
+        activity_level: 'sedentary' as 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active',
         experience: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
         dietary: 'everything' as 'everything' | 'vegetarian' | 'vegan',
         split_id: 'custom' as string,
@@ -499,7 +464,7 @@ export default function OnboardingWizard() {
     const w = parseFloat(form.weight_kg);
     const h = parseFloat(form.height_cm);
     const a = parseFloat(form.age);
-    const hasBody = !!w && !!h && !!a;
+    const hasBody = Number.isFinite(w) && w >= 20 && w <= 300 && Number.isFinite(h) && h >= 100 && h <= 250 && Number.isInteger(a) && a >= 14 && a <= 100;
 
     const { bmr, tdee } = useMemo(() => {
         if (!hasBody) return { bmr: 0, tdee: 0 };
@@ -508,15 +473,15 @@ export default function OnboardingWizard() {
 
     const baseTargetCal = useMemo(() => {
         if (!hasBody) return 0;
-        return computeTargetCalories(tdee, form.goal_type);
-    }, [tdee, form.goal_type, hasBody]);
+        return computeTargetCalories(tdee, form.goal_type, form.gender, w / (h / 100) ** 2);
+    }, [tdee, form.goal_type, form.gender, w, h, hasBody]);
 
     const targetCal = baseTargetCal + calorieOffset;
 
     const baseMacros = useMemo(() => {
         if (!hasBody) return { protein: 0, carbs: 0, fat: 0 };
-        return computeMacros(targetCal, form.goal_type, form.dietary);
-    }, [targetCal, form.goal_type, form.dietary, hasBody]);
+        return computeMacros(targetCal, w);
+    }, [targetCal, w, hasBody]);
 
     const macros = macroOverride || baseMacros;
 
@@ -529,14 +494,14 @@ export default function OnboardingWizard() {
     // Mini calorie estimate for after step 2
     const miniEstimate = useMemo(() => {
         if (!hasBody) return null;
-        const cal = computeTargetCalories(tdee, form.goal_type);
+        const cal = computeTargetCalories(tdee, form.goal_type, form.gender, w / (h / 100) ** 2);
         return cal;
-    }, [hasBody, tdee, form.goal_type]);
+    }, [hasBody, tdee, form.goal_type, form.gender, w, h]);
 
     // Reset macro override when base changes
     useEffect(() => {
         setMacroOverride(null);
-    }, [baseTargetCal, form.goal_type, form.dietary]);
+    }, [targetCal, w, form.goal_type, form.dietary]);
 
     // Reset calorie offset when goal changes
     useEffect(() => {
@@ -567,7 +532,7 @@ export default function OnboardingWizard() {
 
     // ── Navigation ───────────────────────────────────────────────
     const nextStep = useCallback(() => {
-        if (step === 1 && (!form.height_cm || !form.weight_kg || !form.age)) {
+        if (step === 1 && !hasBody) {
             toast.error('Missing Info', 'Please fill in height, weight, and age');
             return;
         }
@@ -592,6 +557,8 @@ export default function OnboardingWizard() {
                 activity_level: form.activity_level,
                 body_fat_pct: form.body_fat_pct ? parseFloat(form.body_fat_pct) : undefined,
                 is_vegetarian: form.dietary !== 'everything',
+                calorie_target_mode: calorieOffset === 0 ? 'automatic' : 'custom',
+                macro_target_mode: macroOverride ? 'custom' : 'automatic',
                 target_calories: targetCal,
                 target_protein: macros.protein,
                 target_carbs: macros.carbs,
@@ -654,7 +621,7 @@ export default function OnboardingWizard() {
                 <Text style={s.title}>Your Body Stats</Text>
                 <Text style={s.purpose}>{STEP_META[1].purpose}</Text>
                 <Text style={s.subtitle}>
-                    We use these to calculate your calorie targets using the Mifflin-St Jeor equation -- the gold standard in sports nutrition.
+                    We use these to calculate your calorie targets using the Mifflin-St Jeor equation. This is a starting estimate, not a precise measurement.
                 </Text>
             </Animated.View>
 
@@ -755,7 +722,7 @@ export default function OnboardingWizard() {
                 </View>
                 <Text style={s.title}>What's Your Goal?</Text>
                 <Text style={s.purpose}>{STEP_META[2].purpose}</Text>
-                <Text style={s.subtitle}>This adjusts your calorie surplus or deficit and optimises your macro split.</Text>
+                <Text style={s.subtitle}>Start with a modest calorie adjustment. Protein is based on your body weight.</Text>
             </Animated.View>
 
             <ChipGroup<'fat_loss' | 'maintenance' | 'muscle_gain'>
@@ -763,9 +730,9 @@ export default function OnboardingWizard() {
                 onChange={v => set('goal_type', v)}
                 delay={200}
                 options={[
-                    { id: 'fat_loss', label: 'Lose Fat', icon: '🔥', desc: '−500 kcal/day' },
+                    { id: 'fat_loss', label: 'Lose Fat', icon: '🔥', desc: 'Modest calorie deficit' },
                     { id: 'maintenance', label: 'Maintain', icon: '⚖️', desc: 'TDEE calories' },
-                    { id: 'muscle_gain', label: 'Build Muscle', icon: '💪', desc: '+300 kcal/day' },
+                    { id: 'muscle_gain', label: 'Build Muscle', icon: '💪', desc: 'Small calorie surplus' },
                 ]}
             />
 
@@ -816,11 +783,11 @@ export default function OnboardingWizard() {
     // STEP 3: Activity Level
     // ─────────────────────────────────────────────────────────────
     const activityOptions = useMemo(() => [
-        { id: 'sedentary', label: 'Sedentary', icon: 'weekend' as keyof typeof MaterialIcons.glyphMap, desc: 'Desk job, little to no exercise' },
-        { id: 'light', label: 'Lightly Active', icon: 'directions-walk' as keyof typeof MaterialIcons.glyphMap, desc: 'Light exercise 1-3x/week' },
-        { id: 'moderate', label: 'Moderately Active', icon: 'directions-bike' as keyof typeof MaterialIcons.glyphMap, desc: 'Exercise 3-5x/week' },
-        { id: 'active', label: 'Very Active', icon: 'fitness-center' as keyof typeof MaterialIcons.glyphMap, desc: 'Hard exercise 6-7x/week' },
-        { id: 'very_active', label: 'Athlete / Manual Labor', icon: 'flash-on' as keyof typeof MaterialIcons.glyphMap, desc: 'Training twice a day or physical job' },
+        { id: 'sedentary', label: 'Sedentary', icon: 'weekend' as keyof typeof MaterialIcons.glyphMap, desc: 'Mostly sitting, little daily movement' },
+        { id: 'light', label: 'Lightly Active', icon: 'directions-walk' as keyof typeof MaterialIcons.glyphMap, desc: 'Mostly sitting, plus walks or a few workouts' },
+        { id: 'moderate', label: 'Moderately Active', icon: 'directions-bike' as keyof typeof MaterialIcons.glyphMap, desc: 'Regular exercise plus a reasonably active day' },
+        { id: 'active', label: 'Very Active', icon: 'fitness-center' as keyof typeof MaterialIcons.glyphMap, desc: 'Hard exercise and active for much of the day' },
+        { id: 'very_active', label: 'Athlete / Manual Labor', icon: 'flash-on' as keyof typeof MaterialIcons.glyphMap, desc: 'Heavy physical work or demanding twice-daily training' },
     ], []);
 
     const renderStep3 = () => (
@@ -831,7 +798,7 @@ export default function OnboardingWizard() {
                 </View>
                 <Text style={s.title}>How Active Are You?</Text>
                 <Text style={s.purpose}>{STEP_META[3].purpose}</Text>
-                <Text style={s.subtitle}>Be honest -- overestimating activity is the most common reason calorie targets don't work.</Text>
+                <Text style={s.subtitle}>Include your whole day, not just gym visits. Choose a lower level if you sit most of the day.</Text>
             </Animated.View>
 
             {activityOptions.map((o, idx) => {
@@ -897,23 +864,19 @@ export default function OnboardingWizard() {
     const handleMacroAdjust = useCallback((macro: 'protein' | 'carbs' | 'fat', delta: number) => {
         const current = { ...(macroOverride || baseMacros) };
         const newVal = Math.max(0, current[macro] + delta);
-        const actualDelta = newVal - current[macro];
         current[macro] = newVal;
 
-        // Redistribute calorie difference to the other two macros
-        const calPerG: Record<string, number> = { protein: 4, carbs: 4, fat: 9 };
-        const calDiff = actualDelta * calPerG[macro]; // calories added/removed
-        const others = (['protein', 'carbs', 'fat'] as const).filter(m => m !== macro);
-
-        // Split the calorie difference equally between the other two
-        const halfCal = calDiff / 2;
-        for (const other of others) {
-            const gDelta = Math.round(halfCal / calPerG[other]);
-            current[other] = Math.max(0, current[other] - gDelta);
+        // Absorb difference without rounding drift
+        if (macro === 'protein' || macro === 'fat') {
+            const usedCal = current.protein * 4 + current.fat * 9;
+            current.carbs = Math.max(0, Math.round((targetCal - usedCal) / 4));
+        } else {
+            const usedCal = current.protein * 4 + current.carbs * 4;
+            current.fat = Math.max(0, Math.round((targetCal - usedCal) / 9));
         }
 
         setMacroOverride(current);
-    }, [macroOverride, baseMacros]);
+    }, [macroOverride, baseMacros, targetCal]);
 
     const renderStep4 = () => (
         <View style={s.stepWrap}>
@@ -923,7 +886,7 @@ export default function OnboardingWizard() {
                 </View>
                 <Text style={s.title}>Your Blueprint</Text>
                 <Text style={s.purpose}>{STEP_META[4].purpose}</Text>
-                <Text style={s.subtitle}>Calculated using the Mifflin-St Jeor equation, adjusted for your goal.</Text>
+                <Text style={s.subtitle}>A starting estimate for your goal, with protein at 1.6 g per kg of body weight.</Text>
             </Animated.View>
 
             {/* Editable calorie target */}

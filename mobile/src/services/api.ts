@@ -895,6 +895,8 @@ export const nutritionAPI = {
         target_protein?: number;
         target_carbs?: number;
         target_fat?: number;
+        calorie_target_mode?: 'automatic' | 'custom';
+        macro_target_mode?: 'automatic' | 'custom';
     }) => {
         const response = await api.post('/nutrition/profile', data);
         return response.data;

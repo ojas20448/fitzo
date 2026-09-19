@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { nutritionAPI } from '../../services/api';
 import { useNutrition } from '../../context/NutritionContext';
+import { calculateEnergy, calculateCalories, calculateMacros } from '../../utils/nutritionTargets';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import { useToast } from '../../components/Toast';
 
@@ -15,11 +16,11 @@ const GOALS = [
 ];
 
 const ACTIVITY_LEVELS = [
-    { id: 'sedentary', label: 'Sedentary', desc: 'Little or no exercise' },
-    { id: 'light', label: 'Light', desc: '1-3 days/week' },
-    { id: 'moderate', label: 'Moderate', desc: '3-5 days/week' },
-    { id: 'active', label: 'Active', desc: '6-7 days/week' },
-    { id: 'very_active', label: 'Very Active', desc: 'Twice daily' },
+    { id: 'sedentary', label: 'Sedentary', desc: 'Mostly sitting, little daily movement' },
+    { id: 'light', label: 'Light', desc: 'Mostly sitting, plus walks or a few workouts' },
+    { id: 'moderate', label: 'Moderate', desc: 'Regular exercise plus a reasonably active day' },
+    { id: 'active', label: 'Active', desc: 'Hard exercise and active for much of the day' },
+    { id: 'very_active', label: 'Very Active', desc: 'Heavy physical work or demanding twice-daily training' },
 ];
 
 export default function FitnessProfileScreen() {
@@ -33,7 +34,7 @@ export default function FitnessProfileScreen() {
     const [age, setAge] = useState('25');
     const [gender, setGender] = useState<'male' | 'female'>('male');
     const [goalType, setGoalType] = useState('maintenance');
-    const [activityLevel, setActivityLevel] = useState('moderate');
+    const [activityLevel, setActivityLevel] = useState('sedentary');
     const [isVegetarian, setIsVegetarian] = useState(false);
     // Manual calorie override. Off by default so the app keeps auto-calculating
     // from biometrics; on, it sends target_calories and the backend stops
@@ -47,7 +48,18 @@ export default function FitnessProfileScreen() {
     const bmiCategory = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
     const bmiColor = bmi < 18.5 || bmi >= 30 ? '#FF6B6B' : bmi < 25 ? '#4ECDC4' : '#FFE66D';
 
-    const { weeklyWorkoutGoal, updateWeeklyGoal } = useNutrition();
+    const w = parseFloat(weight) || 70;
+    const h = parseFloat(height) || 170;
+    const a = parseInt(age, 10) || 25;
+    const liveEnergy = calculateEnergy(w, h, a, gender, activityLevel);
+    const autoCalories = calculateCalories(liveEnergy.tdee, goalType, gender, bmi);
+    const customCalNum = parseInt(customCalories, 10);
+    const effectiveCalories = useCustomCalories && Number.isFinite(customCalNum) && customCalNum >= 800 && customCalNum <= 8000
+        ? customCalNum
+        : autoCalories;
+    const liveMacros = calculateMacros(effectiveCalories, w);
+
+    const { weeklyWorkoutGoal, updateWeeklyGoal, refreshToday } = useNutrition();
     const [weeklyGoal, setWeeklyGoal] = useState('4');
 
     // ... existing state ...
@@ -67,9 +79,10 @@ export default function FitnessProfileScreen() {
                 setAge(String(profile.age || 25));
                 setGender(profile.gender || 'male');
                 setGoalType(profile.goal_type || 'maintenance');
-                setActivityLevel(profile.activity_level || 'moderate');
+                setActivityLevel(profile.activity_level || 'sedentary');
                 setIsVegetarian(profile.is_vegetarian || false);
                 setCalculatedCalories(profile.target_calories ?? null);
+                setUseCustomCalories(profile.calorie_target_mode === 'custom');
                 if (profile.target_calories) {
                     setCustomCalories(String(Math.round(profile.target_calories)));
                 }
@@ -93,22 +106,25 @@ export default function FitnessProfileScreen() {
             const result = await nutritionAPI.updateProfile({
                 height_cm: parseFloat(height),
                 weight_kg: parseFloat(weight),
-                age: parseInt(age),
+                age: parseInt(age, 10),
                 gender,
                 activity_level: activityLevel as any,
                 goal_type: goalType as any,
                 is_vegetarian: isVegetarian,
+                calorie_target_mode: useCustomCalories ? 'custom' : 'automatic',
+                macro_target_mode: 'automatic',
                 // Omitted entirely when off, so the backend recalculates.
                 ...(useCustomCalories ? { target_calories: override } : {}),
             });
 
             // Save weekly goal
-            await updateWeeklyGoal(parseInt(weeklyGoal));
+            await updateWeeklyGoal(parseInt(weeklyGoal, 10));
+            await refreshToday();
 
             toast.success('Profile Updated!', `Daily target: ${result.profile.target_calories} kcal`);
             router.back();
-        } catch (error) {
-            toast.error('Error', 'Failed to save profile');
+        } catch (error: any) {
+            toast.error('Could not save profile', error.message || 'Please check your details and try again.');
         } finally {
             setSaving(false);
         }
@@ -356,7 +372,57 @@ export default function FitnessProfileScreen() {
                     )}
                 </View>
 
+                {/* Target Breakdown Preview */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>TARGET BREAKDOWN</Text>
+                    <View style={styles.macroPreviewCard}>
+                        <View style={styles.macroPreviewRow}>
+                            <View style={styles.macroPreviewItem}>
+                                <Text style={styles.macroPreviewLabel}>Calories</Text>
+                                <Text style={styles.macroPreviewValue}>
+                                    {effectiveCalories} <Text style={styles.macroPreviewUnit}>kcal</Text>
+                                </Text>
+                                <Text style={styles.macroPreviewSub}>{useCustomCalories ? 'Custom' : 'Auto'}</Text>
+                            </View>
+                            <View style={styles.macroPreviewDivider} />
+                            <View style={styles.macroPreviewItem}>
+                                <Text style={[styles.macroPreviewLabel, { color: colors.macro.protein }]}>Protein</Text>
+                                <Text style={styles.macroPreviewValue}>
+                                    {liveMacros.protein} <Text style={styles.macroPreviewUnit}>g</Text>
+                                </Text>
+                                <Text style={styles.macroPreviewSub}>
+                                    {Math.round((liveMacros.protein * 4 / (effectiveCalories || 1)) * 100)}%
+                                </Text>
+                            </View>
+                            <View style={styles.macroPreviewDivider} />
+                            <View style={styles.macroPreviewItem}>
+                                <Text style={[styles.macroPreviewLabel, { color: colors.macro.carbs }]}>Carbs</Text>
+                                <Text style={styles.macroPreviewValue}>
+                                    {liveMacros.carbs} <Text style={styles.macroPreviewUnit}>g</Text>
+                                </Text>
+                                <Text style={styles.macroPreviewSub}>
+                                    {Math.round((liveMacros.carbs * 4 / (effectiveCalories || 1)) * 100)}%
+                                </Text>
+                            </View>
+                            <View style={styles.macroPreviewDivider} />
+                            <View style={styles.macroPreviewItem}>
+                                <Text style={[styles.macroPreviewLabel, { color: colors.macro.fat }]}>Fat</Text>
+                                <Text style={styles.macroPreviewValue}>
+                                    {liveMacros.fat} <Text style={styles.macroPreviewUnit}>g</Text>
+                                </Text>
+                                <Text style={styles.macroPreviewSub}>
+                                    {Math.round((liveMacros.fat * 9 / (effectiveCalories || 1)) * 100)}%
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+
                 {/* Save Button */}
+                <Text style={styles.toggleDesc}>
+                    Saving recalculates macros using 1.6 g of protein per kg of body weight.
+                    Calories are a starting estimate; review your progress over a few weeks.
+                </Text>
                 <TouchableOpacity
                     style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
                     onPress={handleSave}
@@ -731,5 +797,48 @@ const styles = StyleSheet.create({
     dayBtnTextActive: {
         color: colors.text.dark,
         fontFamily: typography.fontFamily.bold,
+    },
+    macroPreviewCard: {
+        backgroundColor: colors.glass.surface,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+    },
+    macroPreviewRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    macroPreviewItem: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    macroPreviewDivider: {
+        width: 1,
+        height: 36,
+        backgroundColor: colors.glass.border,
+    },
+    macroPreviewLabel: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.muted,
+        marginBottom: 2,
+    },
+    macroPreviewValue: {
+        fontSize: typography.sizes.base,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+    },
+    macroPreviewUnit: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+    },
+    macroPreviewSub: {
+        fontSize: 10,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        marginTop: 1,
     },
 });

@@ -16,76 +16,7 @@ const { validateComboItems } = require('../utils/mealCombo');
 const mealPresets = require('../data/meal-presets.json');
 const { IST_TODAY_SQL } = require('../utils/dayBoundary');
 
-/**
- * Calculate macro targets based on calories and goal
- */
-function calculateMacros(calories, goal) {
-    // Protein-first approach for gym members
-    let proteinPct, carbsPct, fatPct;
-
-    // Macro splits tuned for Indian diets (carb-heavy: rice, roti, dal)
-    switch (goal) {
-        case 'fat_loss':
-            proteinPct = 0.30;
-            fatPct = 0.25;
-            carbsPct = 0.45;
-            break;
-        case 'muscle_gain':
-            proteinPct = 0.30;
-            fatPct = 0.25;
-            carbsPct = 0.45;
-            break;
-        default: // maintenance
-            proteinPct = 0.20;
-            fatPct = 0.30;
-            carbsPct = 0.50;
-    }
-
-    return {
-        protein: Math.round((calories * proteinPct) / 4), // 4 cal per gram
-        carbs: Math.round((calories * carbsPct) / 4),
-        fat: Math.round((calories * fatPct) / 9), // 9 cal per gram
-    };
-}
-
-/**
- * Calculate BMR using three scientific equations and average the results.
- * Mifflin-St Jeor — most accurate modern BMR formula.
- * W = weight in kg, H = height in cm, A = age in years
- */
-function calculateBMR(weight, height, age, gender) {
-    return gender === 'male'
-        ? 10 * weight + 6.25 * height - 5 * age + 5
-        : 10 * weight + 6.25 * height - 5 * age - 161;
-}
-
-/**
- * Calculate daily calories (TDEE) using averaged BMR × activity multiplier.
- * Optionally accepts bodyFatPct to enable the Katch-McArdle formula.
- */
-function calculateTDEE(weight, height, age, gender, activityLevel, goal) {
-    const bmr = calculateBMR(weight, height, age, gender);
-
-    // Activity multiplier
-    const multipliers = {
-        sedentary: 1.2,
-        light: 1.375,
-        moderate: 1.55,
-        active: 1.725,
-        very_active: 1.9,
-    };
-
-    const tdee = bmr * (multipliers[activityLevel] || 1.55);
-
-    // Goal adjustment
-    const adjustments = {
-        fat_loss: -500,    // 1 lb/week loss
-        muscle_gain: 300,
-        maintenance: 0,
-    };
-
-    return Math.round(tdee + (adjustments[goal] || 0));
-}
+const { resolveTargets, legacyModes } = require('../utils/nutritionTargets');
 
 /**
  * GET /api/nutrition/profile
@@ -120,6 +51,8 @@ router.get('/profile', authenticate, asyncHandler(async (req, res) => {
             target_fat: profile.target_fat,
             is_vegetarian: profile.is_vegetarian,
             protein_priority: profile.protein_priority,
+            calorie_target_mode: profile.calorie_target_mode ?? legacyModes(profile).calorie_target_mode,
+            macro_target_mode: profile.macro_target_mode ?? legacyModes(profile).macro_target_mode,
         }
     });
 }));
@@ -135,7 +68,7 @@ router.post('/profile', authenticate, asyncHandler(async (req, res) => {
         height_cm,
         age,
         gender,
-        activity_level = 'moderate',
+        activity_level = 'sedentary',
         goal_type = 'maintenance',
         target_weight_kg,
         is_vegetarian = false,
@@ -147,32 +80,21 @@ router.post('/profile', authenticate, asyncHandler(async (req, res) => {
         target_fat,
     } = req.body;
 
-    // Validation
-    if (!weight_kg || !height_cm || !age || !gender) {
-        throw new ValidationError('Weight, height, age, and gender are required');
+    let targets;
+    try {
+        targets = resolveTargets({ ...req.body, activity_level, goal_type });
+    } catch (error) {
+        throw new ValidationError(error.message);
     }
-
-    // Calculate targets if not provided
-    let calories = target_calories;
-    let protein = target_protein;
-    let carbs = target_carbs;
-    let fat = target_fat;
-
-    if (!calories) {
-        calories = calculateTDEE(weight_kg, height_cm, age, gender, activity_level, goal_type);
-        const macros = calculateMacros(calories, goal_type);
-        protein = protein || macros.protein;
-        carbs = carbs || macros.carbs;
-        fat = fat || macros.fat;
-    }
+    const { target_calories: calories, target_protein: protein, target_carbs: carbs, target_fat: fat } = targets;
 
     // Upsert profile
     const result = await query(
         `INSERT INTO nutrition_profiles (
             user_id, weight_kg, height_cm, age, gender, activity_level, goal_type,
             target_weight_kg, target_calories, target_protein, target_carbs, target_fat,
-            is_vegetarian
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            is_vegetarian, calorie_target_mode, macro_target_mode, target_formula_version
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         ON CONFLICT (user_id) DO UPDATE SET
             weight_kg = EXCLUDED.weight_kg,
             height_cm = EXCLUDED.height_cm,
@@ -186,10 +108,13 @@ router.post('/profile', authenticate, asyncHandler(async (req, res) => {
             target_carbs = EXCLUDED.target_carbs,
             target_fat = EXCLUDED.target_fat,
             is_vegetarian = EXCLUDED.is_vegetarian,
+            calorie_target_mode = EXCLUDED.calorie_target_mode,
+            macro_target_mode = EXCLUDED.macro_target_mode,
+            target_formula_version = EXCLUDED.target_formula_version,
             updated_at = NOW()
         RETURNING *`,
         [userId, weight_kg, height_cm, age, gender, activity_level, goal_type,
-            target_weight_kg, calories, protein, carbs, fat, is_vegetarian]
+            target_weight_kg, calories, protein, carbs, fat, is_vegetarian, targets.calorie_target_mode, targets.macro_target_mode, targets.target_formula_version]
     );
 
     const profile = result.rows[0];
@@ -205,6 +130,8 @@ router.post('/profile', authenticate, asyncHandler(async (req, res) => {
             target_carbs: profile.target_carbs,
             target_fat: profile.target_fat,
             goal_type: profile.goal_type,
+            calorie_target_mode: profile.calorie_target_mode,
+            macro_target_mode: profile.macro_target_mode,
         }
     });
 }));
@@ -244,59 +171,10 @@ router.get('/today', authenticate, asyncHandler(async (req, res) => {
 
     const logged = logsResult.rows[0];
 
-    // Get today's intent for dynamic adjustments
-    const intentResult = await query(
-        `SELECT split_type, emphasis FROM workout_intents 
-         WHERE user_id = $1 AND expires_at > NOW()
-         ORDER BY created_at DESC LIMIT 1`,
-        [userId]
-    );
-
-    const intent = intentResult.rows[0];
-
-    // Base targets from profile
-    let targetCalories = profile.target_calories;
-    let targetProtein = profile.target_protein;
-    let targetCarbs = profile.target_carbs;
-    let targetFat = profile.target_fat;
-
-    // Apply adjustments based on intent
-    if (intent) {
-        const type = intent.split_type;
-        const emphasis = intent.emphasis || [];
-
-        // REST DAY
-        if (type === 'rest' || emphasis.includes('rest')) {
-            targetCalories -= 200;
-            // Base protein/fat/carbs usually stay similar or scale down. 
-            // Plan says "-200 calories, base protein". 
-            // So we just reduce calories. Usually implies reducing carbs/fat.
-            // Let's reduce carbs/fat proportionally to the 200 cal.
-            // 200 cal ~ 25g carbs + 11g fat roughly. 
-            // Or just leave macros as 'limits' and reduce cal. 
-            // But UI shows macro targets. 
-            // I'll reduce carbs by 30g (120cal) and fat by 9g (81cal) ~ 200cal.
-            targetCarbs -= 30;
-            targetFat -= 9;
-        }
-        // LEG DAY (High demand)
-        else if (type === 'legs' || emphasis.includes('quads') || emphasis.includes('hamstrings') || emphasis.includes('glutes')) {
-            targetCarbs += 50;
-            targetProtein += 20;
-            targetCalories += (50 * 4) + (20 * 4); // +280 cal
-        }
-        // CARDIO
-        else if (type === 'cardio' || emphasis.includes('cardio')) {
-            targetCalories -= 100;
-            // Reduce carbs slightly
-            targetCarbs -= 25;
-        }
-        // STRENGTH (Push/Pull, Upper/Lower, etc)
-        else {
-            targetProtein += 20;
-            targetCalories += (20 * 4); // +80 cal
-        }
-    }
+    // The activity estimate already includes regular training. An intent is not
+    // measured energy expenditure: do not add protein/calories or cut rest days.
+    const { target_calories: targetCalories, target_protein: targetProtein,
+        target_carbs: targetCarbs, target_fat: targetFat } = profile;
 
     res.json({
         targets: {
@@ -497,18 +375,17 @@ router.post('/recalculate-all', authenticate, asyncHandler(async (req, res) => {
             continue;
         }
 
-        const calories = calculateTDEE(
-            parseFloat(p.weight_kg), parseFloat(p.height_cm),
-            p.age, p.gender, p.activity_level || 'moderate', p.goal_type || 'maintenance'
-        );
-        const macros = calculateMacros(calories, p.goal_type || 'maintenance');
-
+        let targets;
+        try { targets = resolveTargets(p); } catch { skipped++; continue; }
         await query(
             `UPDATE nutrition_profiles
-             SET target_calories = $1, target_protein = $2, target_carbs = $3, target_fat = $4, updated_at = NOW()
-             WHERE id = $5`,
-            [calories, macros.protein, macros.carbs, macros.fat, p.id]
+             SET target_calories = $1, target_protein = $2, target_carbs = $3, target_fat = $4,
+                 calorie_target_mode = $5, macro_target_mode = $6, target_formula_version = $7, updated_at = NOW()
+             WHERE id = $8`,
+            [targets.target_calories, targets.target_protein, targets.target_carbs, targets.target_fat,
+                targets.calorie_target_mode, targets.macro_target_mode, targets.target_formula_version, p.id]
         );
+        invalidateContextPack(p.user_id).catch(() => {});
         updated++;
     }
 
