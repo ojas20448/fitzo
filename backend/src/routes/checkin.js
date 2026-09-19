@@ -7,6 +7,7 @@ const pushNotifications = require('../services/pushNotifications');
 const xpService = require('../services/xpService');
 const { invalidateContextPack } = require('../services/contextPack');
 const cache = require('../services/cache');
+const { IST_TODAY_SQL } = require('../utils/dayBoundary');
 
 /**
  * POST /api/checkin
@@ -36,11 +37,12 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
 
     const gym = gymResult.rows[0];
 
-    // Check if already checked in today
+    // Check if already checked in today at a gym
     const existingCheckin = await query(
         `SELECT id FROM attendances 
      WHERE user_id = $1 
-     AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE`,
+       AND gym_id IS NOT NULL
+       AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}`,
         [userId]
     );
 
@@ -48,9 +50,13 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
         throw new ConflictError("You've already checked in today! 💪");
     }
 
-    // Create check-in
+    // Create check-in (or upgrade a dummy streak attendance where gym_id is NULL)
     await query(
-        `INSERT INTO attendances (user_id, gym_id) VALUES ($1, $2)`,
+        `INSERT INTO attendances (user_id, gym_id, check_date)
+         VALUES ($1, $2, ${IST_TODAY_SQL})
+         ON CONFLICT (user_id, check_date)
+         DO UPDATE SET gym_id = EXCLUDED.gym_id, checked_in_at = NOW(), checked_out_at = NULL
+         WHERE attendances.gym_id IS NULL`,
         [userId, gym_id]
     );
 
@@ -100,10 +106,13 @@ router.get('/status', authenticate, asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
     const result = await query(
-        `SELECT id, checked_in_at, gym_id 
+        `SELECT id, checked_in_at, checked_out_at, gym_id 
      FROM attendances 
      WHERE user_id = $1 
-     AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE`,
+       AND gym_id IS NOT NULL
+       AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
+     ORDER BY checked_in_at DESC
+     LIMIT 1`,
         [userId]
     );
 
@@ -114,10 +123,15 @@ router.get('/status', authenticate, asyncHandler(async (req, res) => {
         });
     }
 
+    const row = result.rows[0];
+    const active = row.checked_out_at === null &&
+        new Date(row.checked_in_at).getTime() > Date.now() - 90 * 60 * 1000;
+
     res.json({
-        checked_in: true,
-        checked_in_at: result.rows[0].checked_in_at,
-        gym_id: result.rows[0].gym_id
+        checked_in: active,
+        checked_in_at: row.checked_in_at,
+        gym_id: row.gym_id,
+        checked_out_at: row.checked_out_at
     });
 }));
 
@@ -164,7 +178,7 @@ router.post('/checkout', authenticate, asyncHandler(async (req, res) => {
             SET checked_out_at = NOW()
           WHERE user_id = $1
             AND checked_out_at IS NULL
-            AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+            AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
       RETURNING checked_out_at, gym_id`,
         [userId]
     );
@@ -173,7 +187,8 @@ router.post('/checkout', authenticate, asyncHandler(async (req, res) => {
         const existing = await query(
             `SELECT checked_out_at FROM attendances
               WHERE user_id = $1
-                AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+                AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
+              ORDER BY checked_in_at DESC
               LIMIT 1`,
             [userId]
         );

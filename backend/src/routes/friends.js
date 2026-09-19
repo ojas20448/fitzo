@@ -18,6 +18,7 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
         `SELECT
        u.id,
        u.name,
+       u.username,
        u.avatar_url,
        u.xp_points,
        u.share_logs_default,
@@ -26,6 +27,11 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
        wi.session_label,
        wi.muscle_group,
        a.checked_in_at as last_checkin,
+       (a.checked_in_at IS NOT NULL
+        AND a.gym_id IS NOT NULL
+        AND a.checked_out_at IS NULL
+        AND a.checked_in_at <= NOW()
+        AND a.checked_in_at > NOW() - INTERVAL '90 minutes') as at_gym_now,
        get_user_streak(u.id) as streak,
        lw.last_workout_date,
        lw.last_workout_type,
@@ -38,7 +44,12 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
        -- disagree, exactly the 00:00-05:30 IST window.
        (EXISTS(
          SELECT 1 FROM workout_logs wl
-         WHERE wl.user_id = u.id AND wl.logged_date = ${IST_TODAY_SQL}
+         WHERE wl.user_id = u.id 
+           AND wl.logged_date = ${IST_TODAY_SQL}
+           AND (
+             wl.visibility = 'public'
+             OR (wl.visibility = 'friends' AND u.share_logs_default IS TRUE)
+           )
        ) OR EXISTS(
          SELECT 1 FROM workout_sessions ws
          WHERE ws.user_id = u.id AND ws.completed_at IS NOT NULL
@@ -46,7 +57,13 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
        )) as worked_out_today,
        EXISTS(
          SELECT 1 FROM calorie_logs cl
-         WHERE cl.user_id = u.id AND cl.logged_date = ${IST_TODAY_SQL}
+         WHERE cl.user_id = u.id 
+           AND cl.logged_date = ${IST_TODAY_SQL}
+           AND cl.calories > 0
+           AND (
+             cl.visibility = 'public'
+             OR (cl.visibility = 'friends' AND u.share_logs_default IS TRUE)
+           )
        ) as logged_food_today
      FROM friendships f
      JOIN users u ON f.friend_id = u.id
@@ -55,10 +72,14 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
        AND wi.expires_at > NOW()
        AND wi.visibility IN ('public', 'friends')
      )
-     LEFT JOIN attendances a ON (
-       u.id = a.user_id
-       AND DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
-     )
+     LEFT JOIN LATERAL (
+       SELECT checked_in_at, checked_out_at, gym_id
+       FROM attendances
+       WHERE user_id = u.id
+         AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
+       ORDER BY checked_in_at DESC
+       LIMIT 1
+     ) a ON true
      LEFT JOIN LATERAL (
        SELECT logged_date as last_workout_date, workout_type as last_workout_type
        FROM workout_logs WHERE user_id = u.id
@@ -154,6 +175,7 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
                 last_workout_type: f.last_workout_type || null,
                 worked_out_today: f.worked_out_today || false,
                 logged_food_today: f.logged_food_today || false,
+                at_gym_now: !!f.at_gym_now,
             };
         }),
         pending_requests: pendingResult.rows,
@@ -477,87 +499,59 @@ router.post('/:id/block', authenticate, asyncHandler(async (req, res) => {
 router.get('/search', authenticate, asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const gymId = req.user.gym_id;
-    const { q } = req.query;
+    const rawQ = String(req.query.q || '').trim();
+    const cleanQ = rawQ.replace(/^@+/, '').trim().toLowerCase();
 
-    if (!q || q.length < 2) {
+    if (!cleanQ || cleanQ.length < 2) {
         return res.json({ users: [] });
     }
 
-    // Query supporting both Name search and Username search
-    let queryText = '';
-    let queryParams = [];
+    const searchPattern = `%${cleanQ}%`;
+    const prefixPattern = `${cleanQ}%`;
 
-    // Search by exact username
-    if (q.startsWith('@')) {
-        queryText = `
-            SELECT u.id, u.name, u.username, u.avatar_url,
-            CASE
-              WHEN f.status = 'blocked' THEN 'blocked'
-              WHEN f.status = 'accepted' THEN 'friend'
-              WHEN f.status = 'pending' AND f.user_id = $1 THEN 'pending_sent'
-              WHEN f.status = 'pending' THEN 'pending_received'
-              ELSE 'none'
-            END as friendship_status
-            FROM users u
-            -- LATERAL ... LIMIT 1, not a plain LEFT JOIN. An accepted
-            -- friendship is stored as TWO rows (A->B and B->A) and the
-            -- both-directions predicate matched both, so every existing friend
-            -- appeared in search results twice. Ordering picks the most
-            -- significant row when several exist.
-            LEFT JOIN LATERAL (
-              SELECT f2.status, f2.user_id
-              FROM friendships f2
-              WHERE (f2.user_id = $1 AND f2.friend_id = u.id)
-                 OR (f2.friend_id = $1 AND f2.user_id = u.id)
-              ORDER BY CASE f2.status
-                         WHEN 'blocked'  THEN 0
-                         WHEN 'accepted' THEN 1
-                         WHEN 'pending'  THEN 2
-                         ELSE 3
-                       END
-              LIMIT 1
-            ) f ON true
-            WHERE u.username = $2 AND u.id != $1
-        `;
-        queryParams = [userId, q.substring(1).toLowerCase()];
-    } else {
-        // Search by name
-        queryText = `
-            SELECT u.id, u.name, u.username, u.avatar_url,
-            CASE
-              WHEN f.status = 'blocked' THEN 'blocked'
-              WHEN f.status = 'accepted' THEN 'friend'
-              WHEN f.status = 'pending' AND f.user_id = $1 THEN 'pending_sent'
-              WHEN f.status = 'pending' THEN 'pending_received'
-              ELSE 'none'
-            END as friendship_status
-            FROM users u
-            -- LATERAL ... LIMIT 1, not a plain LEFT JOIN. An accepted
-            -- friendship is stored as TWO rows (A->B and B->A) and the
-            -- both-directions predicate matched both, so every existing friend
-            -- appeared in search results twice. Ordering picks the most
-            -- significant row when several exist.
-            LEFT JOIN LATERAL (
-              SELECT f2.status, f2.user_id
-              FROM friendships f2
-              WHERE (f2.user_id = $1 AND f2.friend_id = u.id)
-                 OR (f2.friend_id = $1 AND f2.user_id = u.id)
-              ORDER BY CASE f2.status
-                         WHEN 'blocked'  THEN 0
-                         WHEN 'accepted' THEN 1
-                         WHEN 'pending'  THEN 2
-                         ELSE 3
-                       END
-              LIMIT 1
-            ) f ON true
-            WHERE u.gym_id = $2 
-              AND u.id != $1
-              AND u.role = 'member'
-              AND (u.name ILIKE $3 OR u.username ILIKE $3)
-            LIMIT 20
-        `;
-        queryParams = [userId, gymId, `%${q}%`];
-    }
+    const queryText = `
+        SELECT u.id, u.name, u.username, u.avatar_url,
+        CASE
+          WHEN f.status = 'blocked' THEN 'blocked'
+          WHEN f.status = 'accepted' THEN 'friend'
+          WHEN f.status = 'pending' AND f.user_id = $1 THEN 'pending_sent'
+          WHEN f.status = 'pending' THEN 'pending_received'
+          ELSE 'none'
+        END as friendship_status
+        FROM users u
+        -- LATERAL ... LIMIT 1, not a plain LEFT JOIN. An accepted
+        -- friendship is stored as TWO rows (A->B and B->A) and the
+        -- both-directions predicate matched both, so every existing friend
+        -- appeared in search results twice. Ordering picks the most
+        -- significant row when several exist.
+        LEFT JOIN LATERAL (
+          SELECT f2.status, f2.user_id
+          FROM friendships f2
+          WHERE (f2.user_id = $1 AND f2.friend_id = u.id)
+             OR (f2.friend_id = $1 AND f2.user_id = u.id)
+          ORDER BY CASE f2.status
+                     WHEN 'blocked'  THEN 0
+                     WHEN 'accepted' THEN 1
+                     WHEN 'pending'  THEN 2
+                     ELSE 3
+                   END
+          LIMIT 1
+        ) f ON true
+        WHERE u.id != $1
+          AND (
+            LOWER(u.username) ILIKE $2
+            OR LOWER(u.name) ILIKE $2
+            OR u.id::text ILIKE $2
+            OR u.id::text = $3
+          )
+        ORDER BY
+          (CASE WHEN LOWER(u.username) = $3 OR u.id::text = $3 THEN 0 ELSE 1 END),
+          (CASE WHEN u.gym_id = $4 THEN 0 ELSE 1 END),
+          (CASE WHEN LOWER(u.username) LIKE $5 THEN 0 ELSE 1 END),
+          u.name ASC
+        LIMIT 20
+    `;
+    const queryParams = [userId, searchPattern, cleanQ, gymId || null, prefixPattern];
 
     const result = await query(queryText, queryParams);
 
@@ -579,16 +573,26 @@ router.get('/suggested', authenticate, asyncHandler(async (req, res) => {
     // Also excluding pending requests
     const result = await query(
         `SELECT u.id, u.name, u.avatar_url, u.xp_points,
-                a.checked_in_at as last_checkin
+                a.checked_in_at as last_checkin,
+                (a.checked_in_at IS NOT NULL
+                 AND a.gym_id IS NOT NULL
+                 AND a.checked_out_at IS NULL
+                 AND a.checked_in_at <= NOW()
+                 AND a.checked_in_at > NOW() - INTERVAL '90 minutes') as at_gym_now
          FROM users u
          LEFT JOIN friendships f ON (
              (f.user_id = $1 AND f.friend_id = u.id)
              OR (f.friend_id = $1 AND f.user_id = u.id)
          )
-         LEFT JOIN attendances a ON (
-             u.id = a.user_id
-             AND DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
-         )
+         LEFT JOIN LATERAL (
+             SELECT checked_in_at, checked_out_at, gym_id
+             FROM attendances
+             WHERE user_id = u.id
+               AND gym_id IS NOT NULL
+               AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
+             ORDER BY checked_in_at DESC
+             LIMIT 1
+         ) a ON true
          WHERE u.gym_id = $2 
            AND u.id != $1
            AND u.role = 'member'
@@ -599,7 +603,10 @@ router.get('/suggested', authenticate, asyncHandler(async (req, res) => {
     );
 
     res.json({
-        suggested: result.rows
+        suggested: result.rows.map(row => ({
+            ...row,
+            at_gym_now: !!row.at_gym_now
+        }))
     });
 }));
 

@@ -7,6 +7,7 @@ const xpService = require('../services/xpService');
 const { invalidateContextPack } = require('../services/contextPack');
 const { parseRir } = require('../utils/rir');
 const { finalizeWorkoutJson } = require('../utils/workoutSets');
+const { IST_TODAY_SQL } = require('../utils/dayBoundary');
 
 // All routes require authentication
 router.use(authenticate);
@@ -174,7 +175,7 @@ router.post('/', asyncHandler(async (req, res) => {
         // Check if already logged today for this type
         const existingLog = await query(
             `SELECT id FROM workout_logs
-             WHERE user_id = $1 AND logged_date = CURRENT_DATE AND workout_type = $2`,
+             WHERE user_id = $1 AND logged_date = ${IST_TODAY_SQL} AND workout_type = $2`,
             [userId, workout_type]
         );
 
@@ -190,8 +191,8 @@ router.post('/', asyncHandler(async (req, res) => {
         } else {
             // Create new log
             result = await query(
-                `INSERT INTO workout_logs (user_id, workout_type, exercises, notes, visibility)
-                 VALUES ($1, $2, $3, $4, $5)
+                `INSERT INTO workout_logs (user_id, workout_type, exercises, notes, visibility, logged_date)
+                 VALUES ($1, $2, $3, $4, $5, ${IST_TODAY_SQL})
                  RETURNING *`,
                 [userId, workout_type, exercises || null, notes || null, visibility]
             );
@@ -202,10 +203,11 @@ router.post('/', asyncHandler(async (req, res) => {
         prs = await mirrorToStructuredLogs(userId, workout_type, exercises, visibility,
             parseInt(duration_minutes, 10) || null, day_name, result.rows[0].id, query) || [];
 
-        // Auto-mark attendance for streak tracking
+        // Auto-mark attendance for streak tracking on completion.
+        // Sets checked_out_at = NOW() so streaks count without leaving the user falsely "At Gym Now".
         const attendanceResult = await query(
-            `INSERT INTO attendances (user_id, gym_id, check_date)
-             VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), CURRENT_DATE)
+            `INSERT INTO attendances (user_id, gym_id, check_date, checked_out_at)
+             VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), ${IST_TODAY_SQL}, NOW())
              ON CONFLICT (user_id, check_date) DO NOTHING
              RETURNING id`,
             [userId]
@@ -239,7 +241,7 @@ router.get('/today', asyncHandler(async (req, res) => {
 
     const result = await query(
         `SELECT * FROM workout_logs
-         WHERE user_id = $1 AND logged_date = CURRENT_DATE
+         WHERE user_id = $1 AND logged_date = ${IST_TODAY_SQL}
          ORDER BY created_at DESC`,
         [userId]
     );
@@ -249,7 +251,7 @@ router.get('/today', asyncHandler(async (req, res) => {
         `SELECT COUNT(*) as workout_count,
                 array_agg(DISTINCT workout_type) as types
          FROM workout_logs
-         WHERE user_id = $1 AND logged_date = CURRENT_DATE`,
+         WHERE user_id = $1 AND logged_date = ${IST_TODAY_SQL}`,
         [userId]
     );
 

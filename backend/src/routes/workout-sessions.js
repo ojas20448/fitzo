@@ -12,6 +12,7 @@ const pushNotifications = require('../services/pushNotifications');
 const xpService = require('../services/xpService');
 const { resolveMuscleGroup } = require('../utils/muscleGroup');
 const { invalidateContextPack } = require('../services/contextPack');
+const { IST_TODAY_SQL } = require('../utils/dayBoundary');
 
 /**
  * GET /api/workouts/exercises
@@ -300,14 +301,6 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
         ? parseInt(percentileRes.rows[0].percentile)
         : null;
 
-    // Auto-mark attendance for streak tracking
-    await query(
-        `INSERT INTO attendances (user_id, gym_id, check_date)
-         VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), CURRENT_DATE)
-         ON CONFLICT (user_id, check_date) DO NOTHING`,
-        [userId]
-    );
-
     // Notify friends about workout completion (fire-and-forget)
     (async () => {
         try {
@@ -334,11 +327,12 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
         } catch (e) { /* silent */ }
     })();
 
-    // Auto-mark attendance for streak tracking on completion
+    // Auto-mark attendance for streak tracking on completion.
+    // Sets checked_out_at = NOW() so streaks count without leaving the user falsely "At Gym Now".
     try {
         const attendanceResult = await query(
-            `INSERT INTO attendances (user_id, gym_id, check_date)
-             VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), CURRENT_DATE)
+            `INSERT INTO attendances (user_id, gym_id, check_date, checked_out_at)
+             VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), ${IST_TODAY_SQL}, NOW())
              ON CONFLICT (user_id, check_date) DO NOTHING
              RETURNING id`,
             [userId]
