@@ -1,0 +1,204 @@
+{
+  "generatedAt": "2026-09-19T11:35:18.166Z",
+  "metadata": {
+    "name": "Fitzo: Gym & Nutrition Tracker",
+    "subtitle": "Log lifts, meals & progress",
+    "promotionalText": "Make every rep count. Log workouts, track Indian meals by voice or photo, and see your progress with a visual muscle map and an AI coach that uses your logs.",
+    "keywords": "workout,calorie,protein,macro,indian,food,hinglish,strength,weightlifting,diary,fitness,coach"
+  },
+  "sourceType": "Actual Expo web UI captures, with demo data. Native appearance requires owner comparison before upload.",
+  "outputs": [
+    {
+      "file": "app-store-6.9/01-workouts.png",
+      "width": 1320,
+      "height": 2868,
+      "hasAlpha": false,
+      "source": "store-screenshots/store-refresh/04-logger.png",
+      "sourceSHA256": "01734832602b251b97034b20bf9487f33463870e7c4269e057497622a3335f2e"
+    },
+    {
+      "file": "app-store-6.9/02-nutrition.png",
+      "width": 1320,
+      "height": 2868,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/05-nutrition.png",
+      "sourceSHA256": "f7aa2784256caa8d55d6b4a21b5f271cb6be9a37d6f77c10186b7559c16b8de4"
+    },
+    {
+      "file": "app-store-6.9/03-muscle-map.png",
+      "width": 1320,
+      "height": 2868,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/02-stats.png",
+      "sourceSHA256": "c3a1b7f1ad1df770433253fbd16f106622be16f3dbd82e112d2c79fe52ab6818"
+    },
+    {
+      "file": "app-store-6.9/04-spotter.png",
+      "width": 1320,
+      "height": 2868,
+      "hasAlpha": false,
+      "source": "store-screenshots/store-refresh/03-coach.png",
+      "sourceSHA256": "aec8e2dcc3b6081e4a5109ba3fc775d0884d1e537844ad6e1805a9a8bbb66ba0"
+    },
+    {
+      "file": "app-store-6.9/05-progress.png",
+      "width": 1320,
+      "height": 2868,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/06-profile.png",
+      "sourceSHA256": "375aca3a1b291743ad6a186409773110a03db8bc1807dfb7cf33fdb2e21b08f0"
+    },
+    {
+      "file": "app-store-6.9/06-today.png",
+      "width": 1320,
+      "height": 2868,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/01-home.png",
+      "sourceSHA256": "ef0810565ef48ba758af4a0bccd40282f0797bd46096e4401e20830218ebcccb"
+    },
+    {
+      "file": "app-store-6.9/07-learn.png",
+      "width": 1320,
+      "height": 2868,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/07-learn.png",
+      "sourceSHA256": "f9cf08122e0a6d997c81bc14dd203f30122877b4935f724189d07428775598e7"
+    },
+    {
+      "file": "app-store-6.9/08-buddies.png",
+      "width": 1320,
+      "height": 2868,
+      "hasAlpha": false,
+      "source": "store-screenshots/store-refresh/08-buddies.png",
+      "sourceSHA256": "fae7f96068f79ab4b5c48be9bdec550b4e1274c2a4016fa7d8aff95071e746a5"
+    },
+    {
+      "file": "app-store-6.5/01-workouts.png",
+      "width": 1284,
+      "height": 2778,
+      "hasAlpha": false,
+      "source": "store-screenshots/store-refresh/04-logger.png",
+      "sourceSHA256": "01734832602b251b97034b20bf9487f33463870e7c4269e057497622a3335f2e"
+    },
+    {
+      "file": "app-store-6.5/02-nutrition.png",
+      "width": 1284,
+      "height": 2778,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/05-nutrition.png",
+      "sourceSHA256": "f7aa2784256caa8d55d6b4a21b5f271cb6be9a37d6f77c10186b7559c16b8de4"
+    },
+    {
+      "file": "app-store-6.5/03-muscle-map.png",
+      "width": 1284,
+      "height": 2778,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/02-stats.png",
+      "sourceSHA256": "c3a1b7f1ad1df770433253fbd16f106622be16f3dbd82e112d2c79fe52ab6818"
+    },
+    {
+      "file": "app-store-6.5/04-spotter.png",
+      "width": 1284,
+      "height": 2778,
+      "hasAlpha": false,
+      "source": "store-screenshots/store-refresh/03-coach.png",
+      "sourceSHA256": "aec8e2dcc3b6081e4a5109ba3fc775d0884d1e537844ad6e1805a9a8bbb66ba0"
+    },
+    {
+      "file": "app-store-6.5/05-progress.png",
+      "width": 1284,
+      "height": 2778,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/06-profile.png",
+      "sourceSHA256": "375aca3a1b291743ad6a186409773110a03db8bc1807dfb7cf33fdb2e21b08f0"
+    },
+    {
+      "file": "app-store-6.5/06-today.png",
+      "width": 1284,
+      "height": 2778,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/01-home.png",
+      "sourceSHA256": "ef0810565ef48ba758af4a0bccd40282f0797bd46096e4401e20830218ebcccb"
+    },
+    {
+      "file": "app-store-6.5/07-learn.png",
+      "width": 1284,
+      "height": 2778,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/07-learn.png",
+      "sourceSHA256": "f9cf08122e0a6d997c81bc14dd203f30122877b4935f724189d07428775598e7"
+    },
+    {
+      "file": "app-store-6.5/08-buddies.png",
+      "width": 1284,
+      "height": 2778,
+      "hasAlpha": false,
+      "source": "store-screenshots/store-refresh/08-buddies.png",
+      "sourceSHA256": "fae7f96068f79ab4b5c48be9bdec550b4e1274c2a4016fa7d8aff95071e746a5"
+    },
+    {
+      "file": "google-play/01-workouts.png",
+      "width": 1080,
+      "height": 2160,
+      "hasAlpha": false,
+      "source": "store-screenshots/store-refresh/04-logger.png",
+      "sourceSHA256": "01734832602b251b97034b20bf9487f33463870e7c4269e057497622a3335f2e"
+    },
+    {
+      "file": "google-play/02-nutrition.png",
+      "width": 1080,
+      "height": 2160,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/05-nutrition.png",
+      "sourceSHA256": "f7aa2784256caa8d55d6b4a21b5f271cb6be9a37d6f77c10186b7559c16b8de4"
+    },
+    {
+      "file": "google-play/03-muscle-map.png",
+      "width": 1080,
+      "height": 2160,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/02-stats.png",
+      "sourceSHA256": "c3a1b7f1ad1df770433253fbd16f106622be16f3dbd82e112d2c79fe52ab6818"
+    },
+    {
+      "file": "google-play/04-spotter.png",
+      "width": 1080,
+      "height": 2160,
+      "hasAlpha": false,
+      "source": "store-screenshots/store-refresh/03-coach.png",
+      "sourceSHA256": "aec8e2dcc3b6081e4a5109ba3fc775d0884d1e537844ad6e1805a9a8bbb66ba0"
+    },
+    {
+      "file": "google-play/05-progress.png",
+      "width": 1080,
+      "height": 2160,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/06-profile.png",
+      "sourceSHA256": "375aca3a1b291743ad6a186409773110a03db8bc1807dfb7cf33fdb2e21b08f0"
+    },
+    {
+      "file": "google-play/06-today.png",
+      "width": 1080,
+      "height": 2160,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/01-home.png",
+      "sourceSHA256": "ef0810565ef48ba758af4a0bccd40282f0797bd46096e4401e20830218ebcccb"
+    },
+    {
+      "file": "google-play/07-learn.png",
+      "width": 1080,
+      "height": 2160,
+      "hasAlpha": false,
+      "source": "store-screenshots/device/07-learn.png",
+      "sourceSHA256": "f9cf08122e0a6d997c81bc14dd203f30122877b4935f724189d07428775598e7"
+    },
+    {
+      "file": "google-play/08-buddies.png",
+      "width": 1080,
+      "height": 2160,
+      "hasAlpha": false,
+      "source": "store-screenshots/store-refresh/08-buddies.png",
+      "sourceSHA256": "fae7f96068f79ab4b5c48be9bdec550b4e1274c2a4016fa7d8aff95071e746a5"
+    }
+  ]
+}

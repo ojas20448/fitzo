@@ -1,38 +1,69 @@
-# App name  (28 / 30)
+# Fitzo — proposed App Store copy
 
-Fitzo: Gym & Nutrition Coach
+Prepared 19 September 2026. Local draft; not published. Character limits are validated by `tools/compose-store-panels.mjs` against the editable values in `tools/campaign.mjs`.
 
-# Short description  (79 / 80)
+## App name — 30 / 30
 
-Log workouts, track macros by voice, and check in at your gym. Built for India.
+Fitzo: Gym & Nutrition Tracker
 
-# Full description
+## Subtitle — 27 / 30
 
-Fitzo is your all-in-one fitness companion, built for gym-goers and their trainers.
+Log lifts, meals & progress
 
-Workout Tracking
-Set your daily training intent, follow structured splits, and log exercises with sets, reps and weight. Watch volume build over time, and see exactly which muscles you have trained with a visual volume map. Share and discover community workout plans.
+## Promotional text — 157 / 170
 
-Nutrition Logging
-Search thousands of foods across multiple databases — including real Indian cuisine, not just Western staples. Scan a barcode, or snap a photo and let AI identify the meal. Track calories, protein, carbs and fat against your daily targets with a clear macro breakdown.
+Make every rep count. Log workouts, track Indian meals by voice or photo, and see your progress with a visual muscle map and an AI coach that uses your logs.
 
-Log a Meal by Speaking
-Say what you ate and Fitzo turns it into macros. It understands how people actually talk about food in India, Hinglish included — no typing, no scrolling through a database.
+## Keywords — 93 / 100
 
-Spotter, your AI coach
-Ask about form, programming or nutrition and get answers grounded in what you have actually logged: your splits, your training volume, your intake. Spotter reads your data before it answers, and tells you what it looked at.
+workout,calorie,protein,macro,indian,food,hinglish,strength,weightlifting,diary,fitness,coach
 
-Gym Check-In
-Scan the QR code at your gym's front desk to check in and build your attendance streak. See who else is training today in the squad feed.
+These are relevant keyword candidates, not measured search-volume or ranking claims. Avoid repeating words from the app name and subtitle.
 
-Progress and Health
-Track weight and measurements, connect Apple Health or Health Connect for steps, sleep and resting heart rate, and get a weekly report on how the week actually went.
+## Description — copy from here
 
-Learn and Level Up
-Work through bite-sized lessons to earn XP and build real knowledge, from training fundamentals to nutrition science.
+Know what you lifted. Remember what you ate. See your progress.
 
-For Trainers
-View assigned members, monitor their workout plans, track attendance and give guidance from a dedicated trainer dashboard.
+Fitzo brings your workouts, nutrition and daily routine into one place. Built with Indian meals and the way you speak in mind, it helps you spend less time keeping track and more time getting on with your training.
 
-Built for your gym
-Gym managers can onboard members, assign trainers and monitor facility activity from an admin dashboard.
+PICK UP WHERE YOU LEFT OFF
+Log exercises, sets, reps and weights with your last session's numbers in view. Follow a workout split or build your own routine, track personal records and share your workout highlights.
+
+YOUR FOOD. YOUR WAY.
+Speak a meal in English or Hinglish, search for a food, or take a photo for a nutrition estimate. From roti and dal to paneer and poha, track familiar meals alongside your daily calories, protein, carbs and fat. Review estimates and portions before saving.
+
+SEE WHAT YOU TRAINED
+Your muscle volume map shows where your training went. Review weekly activity and spot patterns as you plan your next session.
+
+MEET SPOTTER, YOUR AI COACH
+Ask about your training, food or recovery. Spotter uses the information you've logged to put its responses in context, so you can start with your own routine.
+
+BUILD YOUR CONSISTENCY
+Keep your streak, body measurements and weight trends in view. See your next workout and daily nutrition on your home screen. Connect with gym buddies and see the activity they share.
+
+UNDERSTAND THE WHY
+Explore short lessons on training, nutrition and recovery, one topic at a time.
+
+APPLE HEALTH, IF YOU WANT IT
+With your permission, Fitzo can import steps, active calories, sleep and resting heart rate from Apple Health. Workout and food logging work without connecting Apple Health.
+
+Start with your next workout. Build from there.
+
+AI responses and nutrition estimates may be imperfect. Fitzo provides general fitness information, not medical advice.
+
+Privacy policy: https://www.fitzoapp.in/privacy-policy
+Account deletion: https://www.fitzoapp.in/delete-account
+
+## End of description
+
+## Optional Google Play short description — separate field
+
+Log workouts, track Indian meals by voice, and see your progress in one place.
+
+## Editorial notes — do not paste into the listing
+
+- Manager and trainer dashboards are excluded. Do not advertise deferred manager functionality.
+- Removed absolute timing claims such as “two taps” and blanket promises about accuracy, privacy or permanent pricing that this artwork review did not independently validate.
+- No invented ratings, customer counts, awards, keyword volumes or conversion improvements.
+- Apple Health is optional. Food analysis produces estimates; AI is described as contextual assistance.
+- App name/subtitle changes are proposals. Check availability and the current editing options in App Store Connect before submitting.

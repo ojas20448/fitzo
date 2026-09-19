@@ -43,7 +43,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.fitzo.app",
-      "versionCode": 21,
+      "versionCode": 22,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",

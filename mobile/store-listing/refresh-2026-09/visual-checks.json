@@ -1,0 +1,113 @@
+{
+  "checkedPNGFiles": 26,
+  "ribbonJoins": [
+    {
+      "size": "app-store-6.9",
+      "join": "1-2",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "app-store-6.9",
+      "join": "2-3",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "app-store-6.9",
+      "join": "3-4",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "app-store-6.9",
+      "join": "4-5",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "app-store-6.9",
+      "join": "5-6",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "app-store-6.9",
+      "join": "6-7",
+      "maxDifferencePixels": 0
+    },
+    {
+      "size": "app-store-6.9",
+      "join": "7-8",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "app-store-6.5",
+      "join": "1-2",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "app-store-6.5",
+      "join": "2-3",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "app-store-6.5",
+      "join": "3-4",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "app-store-6.5",
+      "join": "4-5",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "app-store-6.5",
+      "join": "5-6",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "app-store-6.5",
+      "join": "6-7",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "app-store-6.5",
+      "join": "7-8",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "google-play",
+      "join": "1-2",
+      "maxDifferencePixels": 0
+    },
+    {
+      "size": "google-play",
+      "join": "2-3",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "google-play",
+      "join": "3-4",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "google-play",
+      "join": "4-5",
+      "maxDifferencePixels": 1
+    },
+    {
+      "size": "google-play",
+      "join": "5-6",
+      "maxDifferencePixels": 0
+    },
+    {
+      "size": "google-play",
+      "join": "6-7",
+      "maxDifferencePixels": 0
+    },
+    {
+      "size": "google-play",
+      "join": "7-8",
+      "maxDifferencePixels": 0
+    }
+  ],
+  "supportTextContrast": 9.94,
+  "supportTextDesignPixels": 34,
+  "supportTextWeight": 700
+}

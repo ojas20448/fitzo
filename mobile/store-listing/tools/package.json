@@ -1,0 +1,13 @@
+{
+  "name": "fitzo-store-artwork",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node compose-store-panels.mjs",
+    "capture": "node capture-offline.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.0",
+    "sharp": "0.34.5"
+  }
+}
