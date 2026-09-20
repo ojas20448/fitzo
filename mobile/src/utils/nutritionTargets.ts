@@ -1,5 +1,12 @@
 // Instant preview of backend/src/utils/nutritionTargets.js. Parity-tested.
-export const PROTEIN_PER_KG = 1.6;
+export const PROTEIN_PER_KG = { maintenance: 1.8, muscle_gain: 1.8, fat_loss: 2.0 };
+export const DEFAULT_FAT_SHARE = 0.30;
+// Practical adult fitness defaults; see docs/reviews/2026-09-20-nutrition-policy.md.
+export function proteinPerKgForGoal(goal = 'maintenance') {
+    return Object.prototype.hasOwnProperty.call(PROTEIN_PER_KG, goal)
+        ? PROTEIN_PER_KG[goal as keyof typeof PROTEIN_PER_KG]
+        : PROTEIN_PER_KG.maintenance;
+}
 export const ACTIVITY: Record<string, number> = {
     sedentary: 1.2,
     light: 1.375,
@@ -43,8 +50,14 @@ export function calculateCalories(
 export function calculateMacros(
     calories: number,
     weight: number,
-    overrides: { protein?: number; carbs?: number; fat?: number } = {}
+    overrides: { protein?: number; carbs?: number; fat?: number } = {},
+    goal = 'maintenance'
 ) {
+    for (const [macro, value] of Object.entries(overrides)) {
+        if (value != null && (!Number.isFinite(value) || value < 0)) {
+            throw new Error(`${macro} must be a non-negative number.`);
+        }
+    }
     const hasProtein = overrides.protein != null && Number.isFinite(overrides.protein);
     const hasFat = overrides.fat != null && Number.isFinite(overrides.fat);
     const hasCarbs = overrides.carbs != null && Number.isFinite(overrides.carbs);
@@ -57,16 +70,16 @@ export function calculateMacros(
         return { protein, carbs, fat };
     }
 
-    // Protein: athletic 30% of calories or minimum 1.6 g/kg of body weight (e.g. ~210g at 2800 kcal)
-    const defaultProtein = Math.round(Math.max(weight * PROTEIN_PER_KG, (calories * 0.30) / 4));
+    // Weight-based default; personal targets are explicit overrides.
+    const defaultProtein = Math.round(weight * proteinPerKgForGoal(goal));
     const protein = hasProtein
         ? Math.max(0, Math.round(overrides.protein!))
         : defaultProtein;
 
-    // Fat: athletic 25% cap of calories for optimal body composition
+    // Balanced default, rounded to whole grams; custom targets remain explicit.
     const fat = hasFat
         ? Math.max(0, Math.round(overrides.fat!))
-        : Math.max(0, Math.round((calories * 0.25) / 9));
+        : Math.max(0, Math.round((calories * DEFAULT_FAT_SHARE) / 9));
 
     let carbs: number;
     if (hasCarbs) {

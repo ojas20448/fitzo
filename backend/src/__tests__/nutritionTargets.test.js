@@ -70,27 +70,26 @@ describe('nutritionTargets utility', () => {
     });
 
     describe('calculateMacros', () => {
-        test('calculates athletic macro split with ~210g protein and 25% fat cap at 2800 kcal', () => {
+        test('uses maintenance protein and about 30% fat at 2800 kcal', () => {
             const { protein, fat, carbs } = calculateMacros(2800, 70);
-            expect(protein).toBe(210); // 30% of 2800 kcal / 4
-            expect(fat).toBe(78); // 25% of 2800 kcal / 9
-            expect(carbs).toBe(315); // remaining 45%
+            expect(protein).toBe(126); // 70 kg * 1.8
+            expect(fat).toBe(93); // 30%, rounded to whole grams
+            expect(carbs).toBe(365); // remaining calories
             // Sum of macro calories should be within ~2 kcal of 2800
             expect(Math.abs(protein * 4 + carbs * 4 + fat * 9 - 2800)).toBeLessThanOrEqual(2);
         });
 
-        test('preserves 1.6 g/kg floor when calories are low', () => {
-            // 75kg at 1500 kcal: 30% is 113g, but 75*1.6 is 120g
-            const { protein } = calculateMacros(1500, 75);
-            expect(protein).toBe(120);
+        test('uses 2.0 g/kg for fat loss when calories are low', () => {
+            // Protein depends on body weight, not calorie percentage.
+            const { protein } = calculateMacros(1500, 75, {}, 'fat_loss');
+            expect(protein).toBe(150);
         });
 
         test('handles custom protein override and balances carbs', () => {
             const { protein, fat, carbs } = calculateMacros(2000, 70, { protein: 140 });
             expect(protein).toBe(140);
-            expect(fat).toBe(56); // 25% of 2000 / 9 = 56g
-            // Remaining cal: 2000 - 140*4 - 56*9 = 2000 - 560 - 504 = 936 / 4 = 234g
-            expect(carbs).toBe(234);
+            expect(fat).toBe(67);
+            expect(carbs).toBe(209);
             expect(Math.abs(protein * 4 + carbs * 4 + fat * 9 - 2000)).toBeLessThanOrEqual(2);
         });
 
@@ -145,11 +144,11 @@ describe('nutritionTargets utility', () => {
                 macro_target_mode: 'automatic'
             };
             const targets = resolveTargets(p);
-            expect(targets.target_protein).toBeGreaterThanOrEqual(130);
+            expect(targets.target_protein).toBe(126);
             expect(targets.target_calories).toBeGreaterThan(2000);
             expect(targets.calorie_target_mode).toBe('automatic');
             expect(targets.macro_target_mode).toBe('automatic');
-            expect(targets.target_formula_version).toBe(2);
+            expect(targets.target_formula_version).toBe(4);
         });
 
         test('respects custom calorie target and re-derives macros', () => {
@@ -166,9 +165,9 @@ describe('nutritionTargets utility', () => {
             };
             const targets = resolveTargets(p);
             expect(targets.target_calories).toBe(2800);
-            expect(targets.target_protein).toBe(210); // 30% of 2800 kcal
-            expect(targets.target_fat).toBe(78); // 25% of 2800 kcal
-            expect(targets.target_carbs).toBe(315); // 45% of 2800 kcal
+            expect(targets.target_protein).toBe(126); // 70 kg * 1.8
+            expect(targets.target_fat).toBe(93); // about 30%
+            expect(targets.target_carbs).toBe(365); // remaining calories
             expect(targets.calorie_target_mode).toBe('custom');
             expect(targets.macro_target_mode).toBe('automatic');
         });

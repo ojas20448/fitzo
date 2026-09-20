@@ -21,7 +21,7 @@ import { isHealthAvailable } from '../../services/healthService';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-import { calculateEnergy as computeTDEE, calculateCalories as computeTargetCalories, calculateMacros as computeMacros } from '../../utils/nutritionTargets';
+import { calculateEnergy as computeTDEE, calculateCalories as computeTargetCalories, calculateMacros as computeMacros, proteinPerKgForGoal } from '../../utils/nutritionTargets';
 
 function computeBMI(weight: number, height: number) {
     const h = height / 100;
@@ -480,8 +480,8 @@ export default function OnboardingWizard() {
 
     const baseMacros = useMemo(() => {
         if (!hasBody) return { protein: 0, carbs: 0, fat: 0 };
-        return computeMacros(targetCal, w);
-    }, [targetCal, w, hasBody]);
+        return computeMacros(targetCal, w, {}, form.goal_type);
+    }, [targetCal, w, hasBody, form.goal_type]);
 
     const macros = macroOverride || baseMacros;
 
@@ -601,7 +601,7 @@ export default function OnboardingWizard() {
 
             completeOnboarding();
             toast.success('Welcome to Fitzo!', 'Your plan is ready.');
-            setTimeout(() => router.replace('/(tabs)'), 400);
+            setTimeout(() => router.replace('/'), 400);
         } catch (err: any) {
             toast.error('Error', err?.message || 'Failed to save profile');
         } finally {
@@ -1000,9 +1000,9 @@ export default function OnboardingWizard() {
                 <View style={s.infoBox}>
                     <MaterialIcons name="lightbulb-outline" size={16} color={colors.text.muted} style={{ marginTop: 1 }} />
                     <Text style={s.infoText}>
-                        {form.dietary !== 'everything'
-                            ? 'Your protein targets are achievable through plant-based sources. Focus on legumes, tofu, and seeds. '
-                            : 'Protein is set high to preserve muscle during your goal. '}
+                        {macroOverride
+                            ? 'You are using custom macros. '
+                            : `Protein starts at ${proteinPerKgForGoal(form.goal_type)} g per kg. Fat provides about 30% of calories; carbs fill the rest. `}
                         You can fine-tune these targets anytime in your profile.
                     </Text>
                 </View>

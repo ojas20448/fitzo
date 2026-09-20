@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, ActivityIndicator, Share, Linking, Alert } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, ActivityIndicator, Share, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import QRCode from 'react-native-qrcode-svg';
 import GlassCard from '../../components/GlassCard';
@@ -13,7 +13,7 @@ import { useAuth } from '../../context/AuthContext';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { displayName } from '../../utils/displayName';
 import { shareCapturedImage } from '../../utils/shareCapture';
-import { useLocalSearchParams } from 'expo-router';
+import { parseBuddyInvite, parseBuddyQr } from '../../utils/buddyInvite';
 
 type Tab = 'code' | 'scan' | 'search';
 
@@ -39,18 +39,16 @@ export default function AddBuddyScreen() {
     const [scanned, setScanned] = useState(false);
     const qrCardRef = useRef<View>(null);
 
+    const scannedRef = useRef(false);
+    useFocusEffect(useCallback(() => {
+        scannedRef.current = false;
+        setScanned(false);
+    }, []));
+
     useEffect(() => {
-        if (paramUserId && paramUserId !== user?.id) {
-            Alert.alert(
-                'Add Gym Buddy',
-                `Add @${paramUsername || 'this user'} as your gym buddy?`,
-                [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Add Buddy', onPress: () => handleAdd(paramUserId) }
-                ]
-            );
-        }
-    }, [paramUserId]);
+        const invite = parseBuddyInvite(paramUserId, paramUsername);
+        if (invite) router.replace({ pathname: '/buddy', params: invite });
+    }, [paramUserId, paramUsername]);
 
     useEffect(() => {
         if (searchQuery.length >= 2) {
@@ -83,71 +81,17 @@ export default function AddBuddyScreen() {
     };
 
     const handleBarCodeScanned = ({ data }: { data: string }) => {
+        if (scannedRef.current) return;
+        scannedRef.current = true;
         setScanned(true);
-        
-        let userId: string | null = null;
-        let username: string | null = null;
-        const rawData = String(data || '').trim();
-
-        // 1. Check if scanned data is a universal link or deep link
-        if (rawData.includes('/buddy') || rawData.startsWith('fitzo://')) {
-            try {
-                const queryStr = rawData.includes('?') ? rawData.split('?')[1] : '';
-                const searchParams = new URLSearchParams(queryStr);
-                userId = searchParams.get('id') || searchParams.get('userId');
-                username = searchParams.get('u') || searchParams.get('username');
-            } catch {
-                const idMatch = rawData.match(/[?&](?:id|userId)=([^&]+)/);
-                const userMatch = rawData.match(/[?&](?:u|username)=([^&]+)/);
-                if (idMatch) userId = decodeURIComponent(idMatch[1]);
-                if (userMatch) username = decodeURIComponent(userMatch[1]);
-            }
-        }
-        
-        // 2. Check JSON payload
-        if (!userId) {
-            try {
-                const parsed = JSON.parse(rawData);
-                if (parsed.type === 'fitzo_profile' || parsed.userId) {
-                    userId = parsed.userId;
-                    username = parsed.username;
-                }
-            } catch {
-                // 3. Fallback: check if rawData is a direct UUID / alphanumeric ID
-                if (/^[0-9a-fA-F-]{8,}$/.test(rawData) || /^[a-zA-Z0-9_-]{6,36}$/.test(rawData)) {
-                    userId = rawData;
-                }
-            }
-        }
-
-        if (!userId) {
-            Alert.alert('Invalid QR Code', 'This QR code does not appear to be a valid Fitzo gym buddy code.', [
-                { text: 'OK', onPress: () => setScanned(false) }
+        const invite = parseBuddyQr(data);
+        if (!invite) {
+            Alert.alert('Invalid QR Code', 'Ask your buddy to share their Fitzo QR code.', [
+                { text: 'OK', onPress: () => { scannedRef.current = false; setScanned(false); } },
             ]);
             return;
         }
-
-        if (userId === user?.id) {
-            Alert.alert('Nice Try!', "You can't add yourself as a buddy 😄", [
-                { text: 'OK', onPress: () => setScanned(false) }
-            ]);
-            return;
-        }
-
-        Alert.alert(
-            'Buddy Found!',
-            username ? `Add @${username} as your gym buddy?` : 'Add this user as your gym buddy?',
-            [
-                { text: 'Cancel', onPress: () => setScanned(false), style: 'cancel' },
-                {
-                    text: 'Add Buddy',
-                    onPress: async () => {
-                        await handleAdd(userId!);
-                        setScanned(false);
-                    }
-                }
-            ]
-        );
+        router.push({ pathname: '/buddy', params: invite });
     };
 
     const handleShareText = async () => {

@@ -8,6 +8,7 @@ const { invalidateContextPack } = require('../services/contextPack');
 const { parseRir } = require('../utils/rir');
 const { finalizeWorkoutJson } = require('../utils/workoutSets');
 const { IST_TODAY_SQL } = require('../utils/dayBoundary');
+const { completeWorkoutAttendance } = require('../utils/workoutAttendance');
 
 // All routes require authentication
 router.use(authenticate);
@@ -203,17 +204,7 @@ router.post('/', asyncHandler(async (req, res) => {
         prs = await mirrorToStructuredLogs(userId, workout_type, exercises, visibility,
             parseInt(duration_minutes, 10) || null, day_name, result.rows[0].id, query) || [];
 
-        // Auto-mark attendance for streak tracking on completion.
-        // Sets checked_out_at = NOW() so streaks count without leaving the user falsely "At Gym Now".
-        const attendanceResult = await query(
-            `INSERT INTO attendances (user_id, gym_id, check_date, checked_out_at)
-             VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), ${IST_TODAY_SQL}, NOW())
-             ON CONFLICT (user_id, check_date) DO NOTHING
-             RETURNING id`,
-            [userId]
-        );
-
-        checkinXpEarned = attendanceResult.rows.length > 0 ? 5 : 0;
+        checkinXpEarned = await completeWorkoutAttendance(userId, query) ? 5 : 0;
         await client.query('COMMIT');
     } catch (error) {
         await client.query('ROLLBACK');

@@ -54,6 +54,8 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
          SELECT 1 FROM workout_sessions ws
          WHERE ws.user_id = u.id AND ws.completed_at IS NOT NULL
          AND DATE(ws.completed_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
+         AND (ws.visibility = 'public'
+              OR (ws.visibility = 'friends' AND u.share_logs_default IS TRUE))
        )) as worked_out_today,
        EXISTS(
          SELECT 1 FROM calorie_logs cl
@@ -83,6 +85,8 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
      LEFT JOIN LATERAL (
        SELECT logged_date as last_workout_date, workout_type as last_workout_type
        FROM workout_logs WHERE user_id = u.id
+         AND (visibility = 'public'
+              OR (visibility = 'friends' AND u.share_logs_default IS TRUE))
        ORDER BY logged_date DESC LIMIT 1
      ) lw ON true
      WHERE f.user_id = $1 AND f.status = 'accepted'
@@ -165,6 +169,7 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
             return {
                 id: f.id,
                 name: f.name,
+                username: f.username,
                 avatar_url: f.avatar_url,
                 xp_points: f.xp_points || 0,
                 today_intent,

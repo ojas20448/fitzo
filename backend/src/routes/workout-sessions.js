@@ -12,7 +12,7 @@ const pushNotifications = require('../services/pushNotifications');
 const xpService = require('../services/xpService');
 const { resolveMuscleGroup } = require('../utils/muscleGroup');
 const { invalidateContextPack } = require('../services/contextPack');
-const { IST_TODAY_SQL } = require('../utils/dayBoundary');
+const { completeWorkoutAttendance } = require('../utils/workoutAttendance');
 
 /**
  * GET /api/workouts/exercises
@@ -304,7 +304,9 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
     // Notify friends about workout completion (fire-and-forget)
     (async () => {
         try {
-            const userName = (await query(`SELECT name FROM users WHERE id = $1`, [userId])).rows[0]?.name || 'Someone';
+            const owner = (await query(`SELECT name, share_logs_default FROM users WHERE id = $1`, [userId])).rows[0];
+            if (session.visibility !== 'public' && !(session.visibility === 'friends' && owner?.share_logs_default === true)) return;
+            const userName = owner?.name || 'Someone';
             const friendsRes = await query(
                 `SELECT CASE WHEN user_id = $1 THEN friend_id ELSE user_id END as fid
                  FROM friendships WHERE (user_id = $1 OR friend_id = $1) AND status = 'accepted'`,
@@ -327,17 +329,9 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
         } catch (e) { /* silent */ }
     })();
 
-    // Auto-mark attendance for streak tracking on completion.
-    // Sets checked_out_at = NOW() so streaks count without leaving the user falsely "At Gym Now".
+    // Close an actual visit and record training without fabricating a gym visit.
     try {
-        const attendanceResult = await query(
-            `INSERT INTO attendances (user_id, gym_id, check_date, checked_out_at)
-             VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), ${IST_TODAY_SQL}, NOW())
-             ON CONFLICT (user_id, check_date) DO NOTHING
-             RETURNING id`,
-            [userId]
-        );
-        if (attendanceResult.rows.length > 0) {
+        if (await completeWorkoutAttendance(userId, query)) {
             // A new attendance check-in was successfully logged. Award the 5 XP!
             await xpService.awardXP(userId, 5, 'checkin');
         }

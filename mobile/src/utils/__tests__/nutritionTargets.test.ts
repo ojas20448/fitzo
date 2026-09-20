@@ -2,9 +2,22 @@ import {
     calculateEnergy,
     calculateCalories,
     calculateMacros,
-    PROTEIN_PER_KG,
-    ACTIVITY,
 } from '../nutritionTargets';
+import { execFileSync } from 'node:child_process';
+import { resolve } from 'node:path';
+
+test('mobile and backend produce identical valid target previews', () => {
+    const inputs: [number, number, { protein?: number; fat?: number }, string][] = [];
+    for (const goal of ['maintenance', 'fat_loss', 'muscle_gain']) for (const weight of [50, 70, 100]) for (const calories of [1500, 2200, 2800]) {
+        inputs.push([calories, weight, {}, goal], [calories, weight, { protein: 170 }, goal], [calories, weight, { protein: 140, fat: 50 }, goal]);
+    }
+    // Run the real backend module in Node, outside Expo's React Native transform.
+    const expected = JSON.parse(execFileSync(process.execPath, ['-e',
+        'const n=require(process.argv[1]); process.stdout.write(JSON.stringify(JSON.parse(process.argv[2]).map(args=>n.calculateMacros(...args))));',
+        resolve(__dirname, '../../../../backend/src/utils/nutritionTargets.js'), JSON.stringify(inputs),
+    ], { encoding: 'utf8' }));
+    expect(inputs.map(args => calculateMacros(...args))).toEqual(expected);
+});
 
 describe('mobile nutritionTargets parity tests', () => {
     test('calculateEnergy matches backend Mifflin-St Jeor formula', () => {
@@ -32,22 +45,22 @@ describe('mobile nutritionTargets parity tests', () => {
         expect(cal).toBe(1900); // no deficit if underweight
     });
 
-    test('calculateMacros gives athletic 30% protein / 25% fat split (~210g protein at 2800 kcal)', () => {
+    test('calculateMacros uses the requested weight-based protein default', () => {
         const { protein, fat, carbs } = calculateMacros(2800, 70);
-        expect(protein).toBe(210); // 30% of 2800 / 4
-        expect(fat).toBe(78); // 25% of 2800 / 9
-        expect(carbs).toBe(315); // remaining 45%
+        expect(protein).toBe(126); // maintenance: 70 kg * 1.8
+        expect(fat).toBe(93); // about 30%
+        expect(carbs).toBe(365); // remaining calories
     });
 
-    test('calculateMacros preserves 1.6 g/kg floor on lower calorie intakes', () => {
-        const { protein } = calculateMacros(1500, 75);
-        expect(protein).toBe(120); // 75 * 1.6
+    test('calculateMacros uses 2.0 g/kg for fat loss on lower calorie intakes', () => {
+        const { protein } = calculateMacros(1500, 75, {}, 'fat_loss');
+        expect(protein).toBe(150); // 75 * 2.0
     });
 
     test('calculateMacros accepts custom overrides and balances cleanly', () => {
         const { protein, fat, carbs } = calculateMacros(2000, 70, { protein: 140 });
         expect(protein).toBe(140);
-        expect(fat).toBe(56); // 25% of 2000 / 9
-        expect(carbs).toBe(234);
+        expect(fat).toBe(67);
+        expect(carbs).toBe(209);
     });
 });

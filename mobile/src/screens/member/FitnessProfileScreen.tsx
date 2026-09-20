@@ -5,7 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { nutritionAPI } from '../../services/api';
 import { useNutrition } from '../../context/NutritionContext';
-import { calculateEnergy, calculateCalories, calculateMacros } from '../../utils/nutritionTargets';
+import { calculateEnergy, calculateCalories, calculateMacros, proteinPerKgForGoal } from '../../utils/nutritionTargets';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import { useToast } from '../../components/Toast';
 
@@ -41,6 +41,8 @@ export default function FitnessProfileScreen() {
     // recomputing it (routes/nutrition.js treats a supplied target as final).
     const [useCustomCalories, setUseCustomCalories] = useState(false);
     const [customCalories, setCustomCalories] = useState('');
+    const [savedMacros, setSavedMacros] = useState<{ protein: number; carbs: number; fat: number } | null>(null);
+    const [keepCustomMacros, setKeepCustomMacros] = useState(false);
     const [calculatedCalories, setCalculatedCalories] = useState<number | null>(null);
 
     // Calculated values
@@ -57,7 +59,8 @@ export default function FitnessProfileScreen() {
     const effectiveCalories = useCustomCalories && Number.isFinite(customCalNum) && customCalNum >= 800 && customCalNum <= 8000
         ? customCalNum
         : autoCalories;
-    const liveMacros = calculateMacros(effectiveCalories, w);
+    const liveMacros = calculateMacros(effectiveCalories, w, keepCustomMacros && savedMacros
+        ? { protein: savedMacros.protein, fat: savedMacros.fat } : {}, goalType);
 
     const { weeklyWorkoutGoal, updateWeeklyGoal, refreshToday } = useNutrition();
     const [weeklyGoal, setWeeklyGoal] = useState('4');
@@ -83,6 +86,10 @@ export default function FitnessProfileScreen() {
                 setIsVegetarian(profile.is_vegetarian || false);
                 setCalculatedCalories(profile.target_calories ?? null);
                 setUseCustomCalories(profile.calorie_target_mode === 'custom');
+                const custom = profile.macro_target_mode === 'custom'
+                    && [profile.target_protein, profile.target_carbs, profile.target_fat].every(value => value != null && Number.isFinite(Number(value)) && Number(value) >= 0);
+                setKeepCustomMacros(custom);
+                setSavedMacros(custom ? { protein: Number(profile.target_protein), carbs: Number(profile.target_carbs), fat: Number(profile.target_fat) } : null);
                 if (profile.target_calories) {
                     setCustomCalories(String(Math.round(profile.target_calories)));
                 }
@@ -100,6 +107,10 @@ export default function FitnessProfileScreen() {
             toast.error('Check that number', 'Enter a daily target between 800 and 8000 kcal.');
             return;
         }
+        if (liveMacros.protein * 4 + liveMacros.fat * 9 > effectiveCalories) {
+            toast.error('Check your targets', 'Protein and fat exceed your calorie target. Increase calories or use suggested macros.');
+            return;
+        }
 
         setSaving(true);
         try {
@@ -112,7 +123,8 @@ export default function FitnessProfileScreen() {
                 goal_type: goalType as any,
                 is_vegetarian: isVegetarian,
                 calorie_target_mode: useCustomCalories ? 'custom' : 'automatic',
-                macro_target_mode: 'automatic',
+                macro_target_mode: keepCustomMacros ? 'custom' : 'automatic',
+                ...(keepCustomMacros ? { target_protein: liveMacros.protein, target_carbs: liveMacros.carbs, target_fat: liveMacros.fat } : {}),
                 // Omitted entirely when off, so the backend recalculates.
                 ...(useCustomCalories ? { target_calories: override } : {}),
             });
@@ -374,6 +386,17 @@ export default function FitnessProfileScreen() {
 
                 {/* Target Breakdown Preview */}
                 <View style={styles.section}>
+                    {savedMacros && (
+                        <Pressable style={styles.toggleRow} onPress={() => setKeepCustomMacros(value => !value)} accessibilityRole="switch" accessibilityState={{ checked: keepCustomMacros }}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.toggleLabel}>Keep my custom protein and fat</Text>
+                                <Text style={styles.toggleDesc}>Carbs adjust to your calories. Turn off to use suggested macros.</Text>
+                            </View>
+                            <View style={[styles.toggle, keepCustomMacros && styles.toggleActive]}>
+                                <View style={[styles.toggleKnob, keepCustomMacros && styles.toggleKnobActive]} />
+                            </View>
+                        </Pressable>
+                    )}
                     <Text style={styles.sectionTitle}>TARGET BREAKDOWN</Text>
                     <View style={styles.macroPreviewCard}>
                         <View style={styles.macroPreviewRow}>
@@ -420,7 +443,7 @@ export default function FitnessProfileScreen() {
 
                 {/* Save Button */}
                 <Text style={styles.toggleDesc}>
-                    Saving recalculates macros using 1.6 g of protein per kg of body weight.
+                    {keepCustomMacros ? 'Your custom protein and fat are kept. Carbs fill the remaining calories. ' : `Suggested protein uses ${proteinPerKgForGoal(goalType)} g per kg. Fat provides about 30% of calories; carbs fill the rest. `}
                     Calories are a starting estimate; review your progress over a few weeks.
                 </Text>
                 <TouchableOpacity

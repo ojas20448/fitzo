@@ -17,6 +17,15 @@ const bg = (overrides: Partial<ShareBackground> = {}): ShareBackground => ({
     ...overrides,
 });
 
+it('a 90px drag moves the scaled preview by 90px and exports the same crop', () => {
+    const offsetX = pixelDeltaToFraction(90, 360);
+    const transform = resolveBackgroundTransform(bg({ offsetX, scale: 1.8, rotation: 0.4 }), 1080, 1920);
+    expect(transform.translateX).toBe(270);
+    expect(transform.translateX * (360 / 1080)).toBe(90);
+    // Resizing the preview preserves normalized framing.
+    expect(resolveBackgroundTransform(bg({ offsetX }), 540, 960).translateX / 540).toBe(offsetX);
+});
+
 describe('resolveBackgroundTransform — RULING R29: normalized, never pixels', () => {
     // THE regression test the task brief calls out by name: the SAME
     // normalized background, resolved at two very different render sizes (a

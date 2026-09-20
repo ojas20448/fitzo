@@ -81,6 +81,7 @@ export function clampBackgroundScale(scale: number): number {
  * pure functions.
  */
 export function pixelDeltaToFraction(px: number, boxSize: number): number {
+    'worklet';
     return boxSize > 0 ? px / boxSize : 0;
 }
 

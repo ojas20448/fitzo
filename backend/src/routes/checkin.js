@@ -51,17 +51,19 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
     }
 
     // Create check-in (or upgrade a dummy streak attendance where gym_id is NULL)
-    await query(
+    const checkinResult = await query(
         `INSERT INTO attendances (user_id, gym_id, check_date)
          VALUES ($1, $2, ${IST_TODAY_SQL})
          ON CONFLICT (user_id, check_date)
          DO UPDATE SET gym_id = EXCLUDED.gym_id, checked_in_at = NOW(), checked_out_at = NULL
-         WHERE attendances.gym_id IS NULL`,
+         WHERE attendances.gym_id IS NULL
+         RETURNING (xmax = 0) AS inserted`,
         [userId, gym_id]
     );
 
-    // Award XP for gym check-in
-    await xpService.awardXP(userId, 5, 'checkin');
+    if (!checkinResult.rows.length) throw new ConflictError("You've already checked in today! 💪");
+    // A synthetic workout attendance already earned the day's check-in XP.
+    if (checkinResult.rows[0].inserted) await xpService.awardXP(userId, 5, 'checkin');
 
     // Calculate new streak
     const streakResult = await query(

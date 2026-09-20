@@ -1,12 +1,23 @@
 import { Redirect } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { getPendingInvite, type BuddyInvite } from '../src/utils/buddyInvite';
 import { useAuth } from '../src/context/AuthContext';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { colors } from '../src/styles/theme';
 
 export default function Index() {
     const { isAuthenticated, isLoading, user } = useAuth();
+    const [pendingInvite, setPendingInvite] = useState<BuddyInvite | null>(null);
+    const [inviteLoaded, setInviteLoaded] = useState(false);
+    useEffect(() => {
+        let active = true;
+        getPendingInvite().then(invite => {
+            if (active) { setPendingInvite(invite); setInviteLoaded(true); }
+        }).catch(() => { if (active) setInviteLoaded(true); });
+        return () => { active = false; };
+    }, []);
 
-    if (isLoading) {
+    if (isLoading || !inviteLoaded) {
         return (
             <View style={styles.container}>
                 <ActivityIndicator size="large" color={colors.primary} />
@@ -19,6 +30,8 @@ export default function Index() {
         if (!user.onboarding_completed) {
             return <Redirect href="/onboarding" />;
         }
+
+        if (pendingInvite) return <Redirect href={{ pathname: '/buddy', params: pendingInvite }} />;
 
         if (user.role === 'manager') {
             return <Redirect href="/manager-dashboard" />;

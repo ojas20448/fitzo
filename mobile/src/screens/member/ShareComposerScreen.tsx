@@ -64,7 +64,8 @@ export default function ShareComposerScreen() {
     const bgRotation = useSharedValue(0);
     const bgSavedRotation = useSharedValue(0);
 
-    // Drive the hero preview background at 60fps on the UI thread.
+    // Shared translations are fractions of the card, independent of layout size.
+    // Drive the hero preview background on the UI thread.
     // Shared values are updated directly by gesture handlers (no
     // runOnJS round-trip), so the image moves in lockstep with the
     // finger. React state (commitBackground) is updated only on
@@ -74,13 +75,14 @@ export default function ShareComposerScreen() {
         'worklet';
         return {
             transform: [
-                { translateX: bgTranslateX.value },
-                { translateY: bgTranslateY.value },
+                { translateX: bgTranslateX.value * CARD_W },
+                { translateY: bgTranslateY.value * CARD_H },
                 { scale: bgScale.value },
                 { rotate: `${(bgRotation.value * 180) / Math.PI}deg` },
             ],
         };
     });
+    const bgTransformCtxValue = useMemo(() => ({ animatedStyle: animatedBgStyle }), [animatedBgStyle]);
 
     useEffect(() => {
         if (!source || isStale()) {
@@ -211,8 +213,8 @@ export default function ShareComposerScreen() {
             prev
                 ? {
                       ...prev,
-                      offsetX: pixelDeltaToFraction(translateX, heroWidth),
-                      offsetY: pixelDeltaToFraction(translateY, heroHeight),
+                      offsetX: translateX,
+                      offsetY: translateY,
                       scale,
                       rotation,
                   }
@@ -263,10 +265,10 @@ export default function ShareComposerScreen() {
         .averageTouches(true)
         .onUpdate((e) => {
             'worklet';
-            bgTranslateX.value = bgSavedX.value + e.translationX;
-            bgTranslateY.value = bgSavedY.value + e.translationY;
+            bgTranslateX.value = bgSavedX.value + pixelDeltaToFraction(e.translationX, heroWidth);
+            bgTranslateY.value = bgSavedY.value + pixelDeltaToFraction(e.translationY, heroHeight);
         })
-        .onEnd(() => {
+        .onFinalize(() => {
             'worklet';
             bgSavedX.value = bgTranslateX.value;
             bgSavedY.value = bgTranslateY.value;
@@ -278,7 +280,7 @@ export default function ShareComposerScreen() {
             'worklet';
             bgScale.value = clampBackgroundScale(bgSavedScale.value * e.scale);
         })
-        .onEnd(() => {
+        .onFinalize(() => {
             'worklet';
             bgSavedScale.value = bgScale.value;
             runOnJS(commitBackground)(bgTranslateX.value, bgTranslateY.value, bgScale.value, bgRotation.value);
@@ -289,7 +291,7 @@ export default function ShareComposerScreen() {
             'worklet';
             bgRotation.value = bgSavedRotation.value + e.rotation;
         })
-        .onEnd(() => {
+        .onFinalize(() => {
             'worklet';
             bgSavedRotation.value = bgRotation.value;
             runOnJS(commitBackground)(bgTranslateX.value, bgTranslateY.value, bgScale.value, bgRotation.value);
@@ -297,7 +299,6 @@ export default function ShareComposerScreen() {
 
     const backgroundGesture = Gesture.Simultaneous(dragGesture, pinchGesture, rotateGesture);
     const gestureActive = !!background && themeSupportsBackground && !isSharing;
-    const bgTransformCtxValue = useMemo(() => ({ animatedStyle: animatedBgStyle }), [animatedBgStyle]);
     const shareText = [payload.subtitle, payload.contextLabel, [payload.headlineLabel, payload.headline].filter(Boolean).join(': '),
         ...payload.rows.map(row => row.label + ': ' + row.value),
         ...payload.prs.map(pr => pr.exercise + ': ' + pr.current + (pr.previous ? ' (previous ' + pr.previous + ')' : '')),
@@ -340,7 +341,12 @@ export default function ShareComposerScreen() {
     const handleShare = async () => {
         if (editingLocked.current || isSharing || backgroundGateActive) return;
         editingLocked.current = true;
-        setCaptureSnapshot(payload);
+        // Read the final UI-thread placement even if its queued React update
+        // has not rendered yet when Share is tapped.
+        setCaptureSnapshot({ ...payload, background: background ? {
+            ...background, offsetX: bgTranslateX.value, offsetY: bgTranslateY.value,
+            scale: bgScale.value, rotation: bgRotation.value,
+        } : null });
         try {
             await captureAndShare(cardRef, { dialogTitle: 'Share your workout', fallbackMessage: shareText + '\nFITZO' });
         } finally {

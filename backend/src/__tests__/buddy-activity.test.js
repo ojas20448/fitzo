@@ -14,6 +14,15 @@ const request = require('supertest');
 const { query } = require('../config/database');
 function appFor(route) { const app = express(); app.use(express.json()); app.use(require(`../routes/${route}`)); app.use(require('../utils/errors').errorHandler); return app; }
 beforeEach(() => { query.mockReset(); query.mockResolvedValue({ rows: [] }); });
+it('protects private mirrored sessions and last-workout metadata in the friends list', async () => {
+    const res = await request(appFor('friends')).get('/');
+    expect(res.status).toBe(200);
+    const sql = query.mock.calls[0][0];
+    expect(sql).toContain("ws.visibility = 'public'");
+    expect(sql).toContain("ws.visibility = 'friends' AND u.share_logs_default IS TRUE");
+    const lastWorkout = sql.slice(sql.indexOf('SELECT logged_date as last_workout_date'));
+    expect(lastWorkout).toMatch(/FROM workout_logs WHERE user_id = u.id\s+AND \(visibility = 'public'/);
+});
 for (const route of ['workouts', 'calories', 'workout-sessions']) {
     it(`${route} requires the owner's sharing preference for friends-only feed entries`, async () => {
         const res = await request(appFor(route)).get('/feed');
@@ -98,4 +107,3 @@ it('does not insert into attendances when logging calories', async () => {
     );
     expect(attendanceQueries).toHaveLength(0);
 });
-

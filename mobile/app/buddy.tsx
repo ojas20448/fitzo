@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -8,31 +8,38 @@ import { friendsAPI } from '../src/services/api';
 import Button from '../src/components/Button';
 import GlassCard from '../src/components/GlassCard';
 import { colors, typography, spacing } from '../src/styles/theme';
+import { parseBuddyInvite, inviteStatus, savePendingInvite, clearPendingInvite, type InviteStatus } from '../src/utils/buddyInvite';
 
 export default function BuddyInviteHandler() {
     const router = useRouter();
     const { user, isAuthenticated, isLoading: authLoading } = useAuth();
     const params = useLocalSearchParams<{ id?: string; userId?: string; u?: string; username?: string }>();
 
-    const targetUserId = params.id || params.userId;
-    const targetUsername = params.u || params.username;
+    const invite = parseBuddyInvite(params.id || params.userId, params.u || params.username);
+    const targetUserId = invite?.id;
+    const targetUsername = invite?.u;
 
-    const [status, setStatus] = useState<'checking' | 'ready' | 'already_friend' | 'self' | 'invalid'>('checking');
+    const [status, setStatus] = useState<InviteStatus>('checking');
+    const [retry, setRetry] = useState(0);
     const [adding, setAdding] = useState(false);
 
     useEffect(() => {
         if (authLoading) return;
 
-        if (!isAuthenticated) {
-            // Not authenticated, redirect to login
-            router.replace('/login');
-            return;
-        }
-
         if (!targetUserId) {
             setStatus('invalid');
             return;
         }
+
+        let active = true;
+        setStatus('checking');
+        if (!isAuthenticated || !user?.onboarding_completed) {
+            savePendingInvite({ id: targetUserId, u: targetUsername || '' })
+                .then(() => { if (active) router.replace(isAuthenticated ? '/onboarding' : '/login'); })
+                .catch(() => { if (active) setStatus('error'); });
+            return () => { active = false; };
+        }
+        void clearPendingInvite();
 
         if (targetUserId === user?.id) {
             setStatus('self');
@@ -42,26 +49,24 @@ export default function BuddyInviteHandler() {
         // Check if already buddies
         friendsAPI.getFriendshipStatus(targetUserId)
             .then(res => {
-                if (res.status === 'accepted') {
-                    setStatus('already_friend');
-                } else {
-                    setStatus('ready');
-                }
+                if (active) setStatus(inviteStatus(res.status));
             })
             .catch(() => {
-                // Default to ready to allow adding
-                setStatus('ready');
+                if (active) setStatus('error');
             });
-    }, [authLoading, isAuthenticated, targetUserId, user?.id]);
+        return () => { active = false; };
+    }, [authLoading, isAuthenticated, targetUserId, targetUsername, user?.id, user?.onboarding_completed, router, retry]);
 
     const handleAdd = async () => {
-        if (!targetUserId) return;
+        if (!targetUserId || adding || !['ready', 'pending_received'].includes(status)) return;
         setAdding(true);
         try {
-            await friendsAPI.sendRequest(targetUserId);
+            const result = await friendsAPI.sendRequest(targetUserId);
+            const accepted = result.status === 'accepted';
+            setStatus(accepted ? 'already_friend' : 'pending_sent');
             Alert.alert(
-                'Friend Request Sent!',
-                `@${targetUsername || 'Your buddy'} will see your request in their Buddies tab.`,
+                accepted ? 'You’re now gym buddies!' : 'Friend Request Sent!',
+                accepted ? 'Your invitation has been accepted.' : `@${targetUsername || 'Your buddy'} will see your request in their Buddies tab.`,
                 [{ text: 'OK', onPress: () => router.replace('/(tabs)/buddies') }]
             );
         } catch (err: any) {
@@ -152,6 +157,19 @@ export default function BuddyInviteHandler() {
         );
     }
 
+    if (status === 'pending_sent' || status === 'blocked' || status === 'error') {
+        return (
+            <SafeAreaView style={styles.container}>
+                <GlassCard style={styles.card} padding="lg">
+                    <Text style={styles.title}>{status === 'pending_sent' ? 'Request already sent' : status === 'blocked' ? 'Invite unavailable' : 'Could not check this invite'}</Text>
+                    <Text style={styles.subtitle}>{status === 'pending_sent' ? 'Your buddy can accept it in their Buddies tab.' : status === 'blocked' ? 'You cannot connect with this account.' : 'Check your connection and try again.'}</Text>
+                    {status === 'error' && <Button title="Try again" onPress={() => setRetry(value => value + 1)} style={{ marginTop: spacing.lg }} />}
+                    <Button title="Back" variant="ghost" onPress={() => router.replace('/')} style={{ marginTop: spacing.sm }} />
+                </GlassCard>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <GlassCard style={styles.card} padding="lg">
@@ -161,7 +179,7 @@ export default function BuddyInviteHandler() {
                     Do you want to add {targetUsername ? `@${targetUsername}` : 'this member'} as your gym buddy on Fitzo?
                 </Text>
                 <Button
-                    title={adding ? 'Sending...' : 'Add as Gym Buddy'}
+                    title={adding ? 'Connecting...' : status === 'pending_received' ? 'Accept Buddy Request' : 'Add as Gym Buddy'}
                     loading={adding}
                     onPress={handleAdd}
                     style={{ marginTop: spacing.xl, width: '100%' }}

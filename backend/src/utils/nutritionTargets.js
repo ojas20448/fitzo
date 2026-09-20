@@ -1,7 +1,12 @@
 // Keep the mobile preview in sync; its tests compare both calculators.
 // Defaults for fitness planning, grounded in sports nutrition literature.
-const PROTEIN_PER_KG = 1.6;
-const FORMULA_VERSION = 2;
+const PROTEIN_PER_KG = { maintenance: 1.8, muscle_gain: 1.8, fat_loss: 2.0 };
+const FORMULA_VERSION = 4;
+const DEFAULT_FAT_SHARE = 0.30;
+// Practical adult fitness defaults; rationale: docs/reviews/2026-09-20-nutrition-policy.md.
+function proteinPerKgForGoal(goal = 'maintenance') {
+    return Object.hasOwn(PROTEIN_PER_KG, goal) ? PROTEIN_PER_KG[goal] : PROTEIN_PER_KG.maintenance;
+}
 const ACTIVITY = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very_active: 1.9 };
 
 function calculateEnergy(weight, height, age, gender, activity = 'sedentary') {
@@ -19,11 +24,17 @@ function calculateCalories(tdee, goal, gender, bmi) {
     if (goal === 'fat_loss' && !(bmi < 18.5)) {
         adjustment = -Math.min(500, Math.max(300, Math.round(tdee * 0.18)));
     }
-    // Safety guardrails: minimum 1500 kcal for adult/adolescent males, 1200 kcal for females
+    // Existing product floors; these do not establish individual calorie adequacy.
     return Math.max(gender === 'male' ? 1500 : 1200, Math.round(tdee + adjustment));
 }
 
-function calculateMacros(calories, weight, overrides = {}) {
+function calculateMacros(calories, weight, overrides = {}, goal = 'maintenance') {
+    for (const [macro, value] of Object.entries(overrides)) {
+        if (value == null) continue;
+        if (value === '' || !Number.isFinite(Number(value)) || Number(value) < 0) {
+            throw new Error(`${macro} must be a non-negative number.`);
+        }
+    }
     const hasProtein = overrides.protein != null && Number.isFinite(Number(overrides.protein));
     const hasFat = overrides.fat != null && Number.isFinite(Number(overrides.fat));
     const hasCarbs = overrides.carbs != null && Number.isFinite(Number(overrides.carbs));
@@ -36,23 +47,24 @@ function calculateMacros(calories, weight, overrides = {}) {
         return { protein, carbs, fat };
     }
 
-    // Protein: athletic 30% of calories or minimum 1.6 g/kg of body weight (e.g. ~210g at 2800 kcal)
-    const defaultProtein = Math.round(Math.max(weight * PROTEIN_PER_KG, (calories * 0.30) / 4));
+    // Weight-based default; personal targets are explicit overrides.
+    const defaultProtein = Math.round(weight * proteinPerKgForGoal(goal));
     const protein = hasProtein
         ? Math.max(0, Math.round(Number(overrides.protein)))
         : defaultProtein;
 
-    // Fat: athletic 25% cap of calories for optimal body composition
+    // Balanced default, rounded to whole grams; custom targets remain explicit.
     const fat = hasFat
         ? Math.max(0, Math.round(Number(overrides.fat)))
-        : Math.max(0, Math.round((calories * 0.25) / 9));
+        : Math.max(0, Math.round((calories * DEFAULT_FAT_SHARE) / 9));
 
     let carbs;
     if (hasCarbs) {
         carbs = Math.max(0, Math.round(Number(overrides.carbs)));
     } else {
         const remainingCal = calories - (protein * 4 + fat * 9);
-        carbs = Math.max(0, Math.round(remainingCal / 4));
+        if (remainingCal < 0) throw new Error('Protein and fat exceed your calorie target.');
+        carbs = Math.round(remainingCal / 4);
     }
 
     return { protein, carbs, fat };
@@ -110,12 +122,22 @@ function resolveTargets(p) {
         }
     }
     
-    const macros = calculateMacros(Math.round(calories), Number(p.weight_kg), overrides);
+    const macros = calculateMacros(Math.round(calories), Number(p.weight_kg), overrides, p.goal_type);
 
     if (macroMode === 'custom' && overrides.protein != null && overrides.carbs != null && overrides.fat != null) {
         if (calorieMode === 'automatic' || !p.target_calories) {
             calories = macros.protein * 4 + macros.carbs * 4 + macros.fat * 9;
         }
+    }
+
+    // Validate after all overrides: macro-derived calories must not bypass limits.
+    const minimumCalories = calorieMode === 'automatic' ? (p.gender === 'male' ? 1500 : 1200) : 800;
+    if (!Number.isFinite(calories) || calories < minimumCalories || calories > 8000) {
+        throw new Error(`Final calorie target must be between ${minimumCalories} and 8000 kcal.`);
+    }
+    const macroCalories = macros.protein * 4 + macros.carbs * 4 + macros.fat * 9;
+    if (Math.abs(macroCalories - calories) > 10) {
+        throw new Error('Your macros must add up to your calorie target. Adjust carbs or calories.');
     }
 
     return {
@@ -129,4 +151,4 @@ function resolveTargets(p) {
     };
 }
 
-module.exports = { PROTEIN_PER_KG, FORMULA_VERSION, ACTIVITY, calculateEnergy, calculateCalories, calculateMacros, validateProfile, legacyModes, resolveTargets };
+module.exports = { PROTEIN_PER_KG, DEFAULT_FAT_SHARE, proteinPerKgForGoal, FORMULA_VERSION, ACTIVITY, calculateEnergy, calculateCalories, calculateMacros, validateProfile, legacyModes, resolveTargets };

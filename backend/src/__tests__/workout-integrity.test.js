@@ -33,6 +33,9 @@ it('ties each mirror to the flat source record instead of deleting by a display 
     const insert = client.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO workout_sessions'));
     expect(insert[0]).toContain('source_workout_log_id'); expect(insert[1]).toContain('log');
     expect(client.query).toHaveBeenCalledWith('COMMIT');
+    expect(client.query.mock.calls.some(([sql]) => sql.includes('UPDATE attendances SET checked_out_at = NOW()'))).toBe(true);
+    const attendance = client.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO attendances'));
+    expect(attendance[0]).toContain('VALUES ($1, NULL,');
 });
 
 it('saves only finished valid sets in both representations, retaining bodyweight work', async () => {
