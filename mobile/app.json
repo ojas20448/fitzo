@@ -23,7 +23,9 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "in.fitzoapp.fitzo",
-      "associatedDomains": ["applinks:www.fitzoapp.in"],
+      "associatedDomains": [
+        "applinks:www.fitzoapp.in"
+      ],
       "infoPlist": {
         "NSCameraUsageDescription": "Fitzo uses your camera to scan gym QR codes, photograph meals for nutritional logging, and capture workout progress photos",
         "NSMicrophoneUsageDescription": "Fitzo uses your microphone so you can speak to the AI coach and log meals by voice instead of typing",
@@ -35,7 +37,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "usesAppleSignIn": true,
-      "buildNumber": "21"
+      "buildNumber": "22"
     },
     "android": {
       "adaptiveIcon": {
@@ -44,7 +46,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.fitzo.app",
-      "versionCode": 25,
+      "versionCode": 26,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
