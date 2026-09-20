@@ -52,8 +52,7 @@
       "android": {
         "serviceAccountKeyPath": "./google-services-key.json",
         "track": "production",
-        "releaseStatus": "inProgress",
-        "rollout": 0.2
+        "releaseStatus": "completed"
       },
       "ios": {
         "ascAppId": "6804647531"
