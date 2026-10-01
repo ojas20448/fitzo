@@ -995,21 +995,22 @@ export const recipesAPI = {
 // AI COACH ENDPOINTS
 // ===========================================
 
+const workerAITimeout = process.env.EXPO_PUBLIC_FOOD_JOB_MODE === 'true' ? 90000 : undefined;
 export const aiAPI = {
-  extractFoods: async (text: string) => { const res = await api.post('/ai/extract-foods', { text }); return res.data; },
-  extractWorkout: async (text: string) => { const res = await api.post('/ai/extract-workout', { text }); return res.data; },
+  extractFoods: async (text: string) => { const res = await api.post('/ai/extract-foods', { text }, { timeout: workerAITimeout }); return res.data; },
+  extractWorkout: async (text: string) => { const res = await api.post('/ai/extract-workout', { text }, { timeout: workerAITimeout }); return res.data; },
     generateWorkoutPlan: async (profile: any) => {
-        const response = await api.post('/ai/workout-plan', profile, { timeout: 60000 });
+        const response = await api.post('/ai/workout-plan', profile, { timeout: workerAITimeout || 60000 });
         return response.data;
     },
 
     getNutritionAdvice: async (profile: any) => {
-        const response = await api.post('/ai/nutrition-advice', profile, { timeout: 60000 });
+        const response = await api.post('/ai/nutrition-advice', profile, { timeout: workerAITimeout || 60000 });
         return response.data;
     },
 
     chat: async (question: string, context?: any) => {
-        const response = await api.post('/ai/chat', { question, context }, { timeout: 60000 });
+        const response = await api.post('/ai/chat', { question, context }, { timeout: workerAITimeout || 60000 });
         return response.data;
     },
 
@@ -1019,7 +1020,7 @@ export const aiAPI = {
     },
 
     getDailyInsight: async () => {
-        const response = await api.get('/ai/daily-insight');
+        const response = await api.get('/ai/daily-insight', { timeout: workerAITimeout });
         return response.data;
     },
 
@@ -1030,7 +1031,7 @@ export const aiAPI = {
     },
 
     getWeeklyRecap: async () => {
-        const response = await api.get('/ai/weekly-recap');
+        const response = await api.get('/ai/weekly-recap', { timeout: workerAITimeout });
         return response.data;
     },
 
@@ -1040,7 +1041,7 @@ export const aiAPI = {
     },
 
     analyzeForm: async (exerciseName: string, description: string) => {
-        const response = await api.post('/ai/analyze-form', { exerciseName, description }, { timeout: 60000 });
+        const response = await api.post('/ai/analyze-form', { exerciseName, description }, { timeout: workerAITimeout || 60000 });
         return response.data;
     },
 };
@@ -1101,7 +1102,7 @@ export const foodPhotoAPI = {
     jobByRequest: async (key: string) => (await api.get(`/ai-jobs/by-request/${encodeURIComponent(key)}`)).data,
     cancelJob: async (id: string) => (await api.delete(`/ai-jobs/${encodeURIComponent(id)}`)).data,
     analyzeText: async (text: string) => {
-        const response = await api.post('/food/analyze-text', { text }, { timeout: 60000 });
+        const response = await api.post('/food/analyze-text', { text }, { timeout: workerAITimeout || 60000 });
         return response.data;
     },
 
@@ -1114,7 +1115,7 @@ export const foodPhotoAPI = {
         const response = await api.post('/food/analyze-photo', {
             image: base64Image,
             mimeType,
-        }, { timeout: 60000 });
+        }, { timeout: workerAITimeout || 60000 });
         return response.data;
     },
 
@@ -1308,4 +1309,3 @@ export const notificationsAPI = {
 };
 
 export default api;
-
