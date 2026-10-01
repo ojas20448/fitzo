@@ -1096,6 +1096,10 @@ export const exerciseAPI = {
 // ===========================================
 
 export const foodPhotoAPI = {
+    submitJob: async (image: string, requestId: string) => (await api.post('/ai-jobs/food-photo', { image, mimeType: 'image/jpeg' }, { headers: { 'Idempotency-Key': requestId }, timeout: 30000 })).data,
+    jobStatus: async (id: string) => (await api.get(`/ai-jobs/${encodeURIComponent(id)}`)).data,
+    jobByRequest: async (key: string) => (await api.get(`/ai-jobs/by-request/${encodeURIComponent(key)}`)).data,
+    cancelJob: async (id: string) => (await api.delete(`/ai-jobs/${encodeURIComponent(id)}`)).data,
     analyzeText: async (text: string) => {
         const response = await api.post('/food/analyze-text', { text }, { timeout: 60000 });
         return response.data;

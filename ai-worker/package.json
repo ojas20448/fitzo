@@ -1,0 +1,7 @@
+{
+  "name": "fitzo-laptop-worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {"start":"node worker.js", "status":"node worker.js status", "diagnose":"node worker.js diagnose", "test":"node --test tests/*.test.js"},
+  "engines": {"node": ">=22"}
+}

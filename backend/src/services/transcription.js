@@ -50,6 +50,7 @@ const PROVIDERS = {
  * @returns {Promise<{ text: string, provider: string }>}
  */
 async function transcribe(base64Data, mimeType) {
+    if (process.env.AI_PROVIDER === 'laptop-worker' && process.env.AI_WORKER_API_FALLBACK !== 'true') throw new AIUnavailableError('Audio transcription requires the configured Gemini/Groq fallback.');
     const primary = PROVIDERS[PROVIDER] || PROVIDERS.gemini;
     const secondary = primary.name === 'groq' ? PROVIDERS.gemini : PROVIDERS.groq;
 

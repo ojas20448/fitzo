@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Alert, AppState } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import GlassCard from '../../components/GlassCard';
 import Button from '../../components/Button';
 import { foodPhotoAPI } from '../../services/api';
 import AIConsentModal, { getAIConsent } from '../../components/AIConsentModal';
+import { foodJobsEnabled, loadPendingScan, clearPendingScan, submitScan, scanStatus, PendingScan } from '../../services/foodJobs';
 
 export default function FoodScannerScreen() {
     const [permission, requestPermission] = useCameraPermissions();
@@ -19,6 +20,55 @@ export default function FoodScannerScreen() {
     const [detectedFood, setDetectedFood] = useState<any>(null);
     const [base64Image, setBase64Image] = useState<string | null>(null);
     const cameraRef = useRef<any>(null);
+    const [scanState, setScanState] = useState('');
+    const running = useRef(false);
+    const mounted = useRef(true);
+    const acceptResult = (response: any) => {
+        if (!response?.items?.length || !response.total) throw new Error('No food was detected. Try a clearer photo.');
+        setDetectedFood({ name: response.items.map((i: any) => i.name).join(', '), ...response.total });
+    };
+    const recoverJob = async (pending: PendingScan) => {
+        let delay = 1500;
+        let misses = 0;
+        while (mounted.current) {
+            if (AppState.currentState === 'background') { await new Promise(r => setTimeout(r, 3000)); continue; }
+            try {
+                const job = await scanStatus(pending);
+                if (!mounted.current) return;
+                setScanState(job.status === 'queued' ? 'Queued — waiting for the worker' : 'Processing your photo');
+                if (job.status === 'completed') { acceptResult(job.result); await clearPendingScan(); setScanState('Completed'); return; }
+                if (['failed', 'expired'].includes(job.status)) {
+                    await clearPendingScan();
+                    const error: any = new Error('This scan could not finish. Please try again later.');
+                    if (job.apiFallbackAvailable && ['QUOTA_EXHAUSTED', 'AUTH_REQUIRED', 'TIMEOUT', 'PROVIDER_ERROR', 'JOB_EXPIRED'].includes(job.errorCode)) error.code = 'WORKER_FALLBACK_AVAILABLE';
+                    throw error;
+                }
+            } catch (error: any) {
+                if (error.status === 404 && !pending.id && misses++ < 5) { /* The submit response may have been lost. */ }
+                else {
+                    if ([401, 403, 404].includes(error.status)) await clearPendingScan();
+                    throw error;
+                }
+            }
+            await new Promise(r => setTimeout(r, delay));
+            delay = Math.min(delay * 1.5, 10000);
+        }
+    };
+    useEffect(() => {
+        mounted.current = true;
+        const resume = async () => {
+            if (!foodJobsEnabled || running.current) return;
+            running.current = true;
+            try {
+                const pending = await loadPendingScan();
+                if (pending) { setAnalyzing(true); await recoverJob(pending); }
+            } catch (e: any) { if (mounted.current) { setScanState('Unavailable — reopen this screen to check the saved scan'); Alert.alert('Scan unavailable', e.message || 'Try again later.'); } }
+            finally { running.current = false; if (mounted.current) setAnalyzing(false); }
+        };
+        resume();
+        const subscription = AppState.addEventListener('change', state => { if (state === 'active') resume(); });
+        return () => { mounted.current = false; subscription.remove(); };
+    }, []);
 
     // Request camera permission if not granted
     if (!permission) {
@@ -52,7 +102,7 @@ export default function FoodScannerScreen() {
     const MAX_EDGE = 768;
 
     const takePicture = async () => {
-        if (!cameraRef.current) return;
+        if (!cameraRef.current || running.current) return;
 
         try {
             // base64 is deliberately NOT requested here — we only need the file
@@ -79,10 +129,16 @@ export default function FoodScannerScreen() {
     };
 
     const executeAnalysis = async () => {
-        if (!base64Image) return;
+        if (!base64Image || running.current) return;
 
+        running.current = true;
         setAnalyzing(true);
         try {
+            if (foodJobsEnabled) {
+                const pending = await loadPendingScan() || await submitScan(base64Image);
+                await recoverJob(pending);
+                return;
+            }
             const response = await foodPhotoAPI.analyzePhoto(base64Image);
 
             if (response.success && response.items && response.items.length > 0) {
@@ -98,6 +154,12 @@ export default function FoodScannerScreen() {
                 Alert.alert('Analysis Failed', 'Could not detect food in image');
             }
         } catch (error: any) {
+            if (foodJobsEnabled && error.code === 'WORKER_FALLBACK_AVAILABLE') {
+                try { acceptResult(await foodPhotoAPI.analyzePhoto(base64Image)); setScanState('Completed using API fallback'); }
+                catch (e: any) { Alert.alert('Scan unavailable', e.message || 'Please try again later.'); }
+                return;
+            }
+            if (foodJobsEnabled && mounted.current) setScanState((await loadPendingScan()) ? 'Unavailable — reopen this screen to recover your scan' : 'Unavailable — try again later');
             // NB: the axios interceptor in services/api.ts rejects a FLAT
             // { message, code, status } object — `error.response` is stripped.
             if (error?.status === 413 || error?.code === 'PAYLOAD_TOO_LARGE') {
@@ -109,7 +171,8 @@ export default function FoodScannerScreen() {
                 Alert.alert('Error', error.message || 'Failed to analyze food');
             }
         } finally {
-            setAnalyzing(false);
+            running.current = false;
+            if (mounted.current) setAnalyzing(false);
         }
     };
 
@@ -146,7 +209,21 @@ export default function FoodScannerScreen() {
         }
     };
 
-    const retake = () => {
+    const retake = async () => {
+        if (running.current) return;
+        if (foodJobsEnabled) {
+            const pending = await loadPendingScan();
+            if (pending) {
+                try {
+                    const job = await scanStatus(pending);
+                    if (['queued', 'running'].includes(job.status)) await foodPhotoAPI.cancelJob(job.id);
+                    await clearPendingScan();
+                } catch (error: any) {
+                    if (error.status === 404) await clearPendingScan();
+                    else { Alert.alert('Pending scan', 'Reconnect to cancel your saved scan before taking another photo.'); return; }
+                }
+            }
+        }
         setCapturedImage(null);
         setBase64Image(null);
         setDetectedFood(null);
@@ -227,6 +304,7 @@ export default function FoodScannerScreen() {
                     </GlassCard>
                 ) : (
                     <View style={styles.analyzeContainer}>
+                        {!!scanState && <Text accessibilityLiveRegion="polite" style={styles.aiBadgeText}>{scanState}</Text>}
                         <Button
                             title={analyzing ? "Analyzing..." : "Analyze Photo"}
                             onPress={analyzeFoodPhoto}
@@ -236,7 +314,7 @@ export default function FoodScannerScreen() {
                         <View style={styles.aiBadgeRow}>
                             <MaterialIcons name="auto-awesome" size={13} color={colors.text.muted} />
                             <Text style={styles.aiBadgeText}>
-                                Powered by Google Gemini AI · Photos analyzed in real-time and never stored
+                                Nutrition estimates require your review. Photos are temporarily stored while processing.
                             </Text>
                         </View>
                         <TouchableOpacity onPress={retake} style={styles.retakeLink}>

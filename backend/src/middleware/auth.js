@@ -62,7 +62,7 @@ const authenticate = async (req, res, next) => {
         // Attach user to request
         assertCurrentSession(user, decoded);
         req.user = user;
-        next();
+        require('../services/aiContext').run({ userId: user.id }, () => next());
     } catch (error) {
         next(error);
     }
@@ -149,7 +149,7 @@ const authenticateAdmin = async (req, res, next) => {
 
         assertCurrentSession(user, decoded);
         req.user = user;
-        next();
+        require('../services/aiContext').run({ userId: user.id }, () => next());
     } catch (error) {
         next(error);
     }

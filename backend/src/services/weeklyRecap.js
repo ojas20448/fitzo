@@ -1,3 +1,4 @@
+const aiProvider = require('./aiProvider');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { query } = require('../config/database');
 
@@ -127,11 +128,12 @@ Provide the weekly summary report:`;
 
     let summaryText = '';
     try {
-        const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-flash-latest' });
+        const model = aiProvider.getModel(genAI, 'weekly_recap', { model: process.env.GEMINI_MODEL || 'gemini-flash-latest' }, undefined, userId);
         const result = await model.generateContent(prompt);
         const response = await result.response;
         summaryText = response.text().trim();
     } catch (err) {
+        if (process.env.AI_PROVIDER === 'laptop-worker') throw new (require('../utils/errors').AIUnavailableError)();
         console.error('Gemini error generating weekly recap:', err.message);
         summaryText = `Great job completing ${workoutsCount} workouts and checking in ${checkinCount} times this week. Keep up the high consistency to maintain your ${streakDays}-day streak!`;
     }

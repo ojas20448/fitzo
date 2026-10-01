@@ -1,0 +1,10 @@
+{
+  "backendUrl": "https://YOUR-STAGING-BACKEND.example/api",
+  "credentialFile": "C:/private/fitzo-worker.token",
+  "agyPath": "C:/Users/YOUR-USER/AppData/Local/agy/bin/agy.exe",
+  "settingsPath": "C:/Users/YOUR-USER/.gemini/antigravity-cli/settings.json",
+  "model": "gemini-3.8-flash-medium",
+  "runtimeDir": "./runtime",
+  "timeoutMs": 60000,
+  "allowLocalHttp": false
+}

@@ -35,3 +35,7 @@ Media/
 .playwright-mcp/
 output/
 backend/scripts/tmp/
+
+/ai-worker/config.json
+/ai-worker/*.token
+/ai-worker/runtime/

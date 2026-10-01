@@ -13,7 +13,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
 
-export const AI_CONSENT_KEY = '@fitzo_ai_data_consent';
+const workerMode = process.env.EXPO_PUBLIC_FOOD_JOB_MODE === 'true';
+export const AI_CONSENT_KEY = workerMode ? '@fitzo_ai_data_consent_worker_v2' : '@fitzo_ai_data_consent';
 
 export async function getAIConsent(): Promise<boolean> {
     try {
@@ -92,7 +93,7 @@ export default function AIConsentModal({
                         </Text>
                         <View style={styles.bulletList}>
                             <Text style={styles.bulletItem}>• <Text style={styles.bold}>AI Coach & Insights:</Text> Your logged workout volume, exercise sets, nutrition targets, and recovery summaries.</Text>
-                            <Text style={styles.bulletItem}>• <Text style={styles.bold}>Photo Food Scanner:</Text> The captured meal photo for real-time nutritional estimation (analyzed and immediately discarded; never stored).</Text>
+                            <Text style={styles.bulletItem}>• <Text style={styles.bold}>Photo Food Scanner:</Text> The meal photo for nutrition estimates. In worker mode, it is temporarily stored in Fitzo's private queue and on the processing laptop, then removed after completion or expiry.</Text>
                             <Text style={styles.bulletItem}>• <Text style={styles.bold}>Voice Logging:</Text> The short voice clip for speech-to-text transcription and meal/workout extraction (analyzed and immediately discarded; never stored).</Text>
                         </View>
                         <View style={styles.protectedBox}>
@@ -110,7 +111,7 @@ export default function AIConsentModal({
                             <Text style={styles.cardTitle}>Who Data Is Sent To</Text>
                         </View>
                         <Text style={styles.cardBody}>
-                            All AI requests are processed by <Text style={styles.bold}>Google Cloud (Google Gemini AI API)</Text> as our secure enterprise third-party AI provider.
+                            {workerMode ? 'Fitzo AI requests are processed on a designated laptop through Google Antigravity. If enabled, fallback requests use the Google Gemini API, and voice transcription may use Groq.' : 'AI requests use the Google Gemini API. Voice transcription may also use Groq when configured.'}
                         </Text>
                     </View>
 
@@ -121,7 +122,7 @@ export default function AIConsentModal({
                             <Text style={styles.cardTitle}>Data Protection & Safeguards</Text>
                         </View>
                         <Text style={styles.cardBody}>
-                            Under Google Cloud enterprise terms, all transmitted data is encrypted in transit (TLS 1.3) and at rest (AES-256). We confirm that Google Cloud provides equal data protection as stated in our Privacy Policy and does NOT use your personal or fitness data to train AI models.
+                            Requests travel over encrypted HTTPS. Provider retention and model-training practices depend on the selected service, account terms and settings. Antigravity may retain interactions locally and with Google; temporary-file cleanup does not delete those provider records. Please review Fitzo's privacy policy before sharing sensitive information.
                         </Text>
                     </View>
 
