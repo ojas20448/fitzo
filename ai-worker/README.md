@@ -38,7 +38,9 @@ AI_WORKER_API_FALLBACK=false
 
 To retain configured API fallbacks, set `AI_WORKER_API_FALLBACK=true`, and keep the existing `GEMINI_API_KEY`, `GROQ_API_KEY`, `GEMINI_MODEL`, `GEMINI_FAST_MODEL` and `TRANSCRIPTION_PROVIDER` settings on the backend. Those credentials remain on the backend. Existing per-user quotas still apply. Photo retries using the same idempotency key do not consume quota again after the first stored submission.
 
-`backend/render.staging.yaml` already describes a staging service. Ensure the full repository, including sibling `ai-worker/contracts.js`, is present when building from the backend root. Production deployment and production migration require the owner's explicit approval.
+`backend/render.staging.yaml` describes a staging service on `codex/antigravity-worker`. In Render, leave Root Directory blank, set Build Command to `npm ci --prefix backend`, and Start Command to `node backend/src/index.js`. Render excludes files outside a configured root directory, so `backend` cannot be the root: the backend needs sibling `ai-worker/contracts.js`. See https://render.com/docs/monorepo-support . Production deployment and production migration require the owner's explicit approval.
+
+Render free web services have no Shell/SSH access (https://render.com/docs/ssh). Run migration and credential issuance from a trusted development/admin machine, in `backend/`, using the database provider's externally reachable connection settings in a private, ignored `.env` file. Use a separate staging database for the first test. Transfer only the resulting worker token file to the worker laptop; database credentials stay on the admin machine. Paid services can run the scripts through their dashboard Shell, with a private token file securely transferred afterward.
 
 ## Laptop setup
 

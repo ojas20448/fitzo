@@ -5,10 +5,10 @@ services:
     runtime: node
     region: singapore
     plan: free
-    rootDir: backend
+    branch: codex/antigravity-worker
     autoDeployTrigger: off
-    buildCommand: npm ci
-    startCommand: node src/index.js
+    buildCommand: npm ci --prefix backend
+    startCommand: node backend/src/index.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
