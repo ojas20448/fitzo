@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { isHealthImportEnabled } from '../../utils/healthImportPreference';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -18,8 +19,9 @@ import * as Haptics from '../../utils/haptics';
 import { useAuth } from '../../context/AuthContext';
 import { useNutrition } from '../../context/NutritionContext';
 import { useOfflineStore } from '../../stores/offlineStore';
-import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI, intentAPI, aiAPI, healthAPI, checkinAPI } from '../../services/api';
-import { isHealthAvailable, getTodaysSummary } from '../../services/healthService';
+import { memberAPI, workoutsAPI, caloriesAPI, friendsAPI, intentAPI, aiAPI, checkinAPI } from '../../services/api';
+import { isHealthAvailable } from '../../services/healthService';
+import { syncHealthDays } from '../../services/healthSync';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import Badge from '../../components/Badge';
@@ -36,7 +38,8 @@ import CustomRefreshHeader from '../../components/CustomRefreshHeader';
 import BusyTimesStrip from '../../components/BusyTimesStrip';
 import { gymAPI, BusyTimes } from '../../services/api';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
-import { firstName as getFirstName } from '../../utils/displayName';
+import { firstName as getFirstName, displayName } from '../../utils/displayName';
+import AIConsentModal, { getAIConsent } from '../../components/AIConsentModal';
 
 interface HomeData {
     user: {
@@ -120,6 +123,8 @@ const HomeScreen: React.FC = () => {
     const [suggestionReason, setSuggestionReason] = useState<string | null>(null);
     const [settingIntent, setSettingIntent] = useState(false);
     const [dailyInsight, setDailyInsight] = useState<string | null>(null);
+    const [aiConsentModalVisible, setAiConsentModalVisible] = useState(false);
+    const [aiConsented, setAiConsented] = useState<boolean>(false);
     // The catch below used to swallow every failure and fall back to cache
     // silently. With no cache that rendered a fully-populated-looking screen of
     // zeros, which the user believes. Track the failure explicitly instead.
@@ -127,20 +132,27 @@ const HomeScreen: React.FC = () => {
     const [isStale, setIsStale] = useState(false);
     const [busyTimes, setBusyTimes] = useState<BusyTimes | null>(null);
     const [checkingOut, setCheckingOut] = useState(false);
+    /** Readable from inside the mount effect's timers, which `loading` is not. */
+    const stillLoading = useRef(true);
 
     useEffect(() => {
-        // Show progressive loading messages for cold start
+        // These used to read `if (loading)`, but `loading` is captured from the first
+        // render inside a `[]` effect — a stale closure that is `true` forever, so the
+        // guard never did anything. A ref actually tracks it.
+        //
+        // The copy changed too. The old messages blamed a cold start ("Server is waking
+        // up"), which was almost always a lie: the home screen was waiting on a Gemini
+        // call, not on Render. With that off the critical path this screen resolves in
+        // well under a second, so a slow load now means a slow network — say that, and
+        // only once it is genuinely slow.
         const timer1 = setTimeout(() => {
-            if (loading) setLoadingMessage('Connecting to server...');
-        }, 2000);
+            if (stillLoading.current) setLoadingMessage('Still loading…');
+        }, 5000);
         const timer2 = setTimeout(() => {
-            if (loading) setLoadingMessage('Server is waking up, hang tight...');
-        }, 6000);
-        const timer3 = setTimeout(() => {
-            if (loading) setLoadingMessage('Almost there...');
-        }, 15000);
+            if (stillLoading.current) setLoadingMessage('Slow connection — hang tight…');
+        }, 12000);
         loadHomeData();
-        return () => { clearTimeout(timer1); clearTimeout(timer2); clearTimeout(timer3); };
+        return () => { clearTimeout(timer1); clearTimeout(timer2); };
     }, []);
 
     useEffect(() => {
@@ -189,21 +201,11 @@ const HomeScreen: React.FC = () => {
     );
 
     const syncWearableData = async () => {
-        if (!isHealthAvailable()) return;
+        if (!isHealthAvailable() || !await isHealthImportEnabled(user?.id)) return;
         try {
-            const summary = await getTodaysSummary();
-            if (summary.steps > 0 || summary.activeCalories > 0) {
-                await healthAPI.sync({
-                    steps: summary.steps,
-                    active_calories: summary.activeCalories,
-                    resting_heart_rate: summary.restingHeartRate,
-                    sleep_hours: summary.sleepHours,
-                    source: Platform.OS === 'ios' ? 'Apple Health' : 'Health Connect'
-                });
-                console.log('🔄 Wearable data background auto-sync completed');
-            }
+            if (user?.id) await syncHealthDays(user.id);
         } catch (err: any) {
-            console.log('Wearable background auto-sync skipped:', err.message);
+            console.log('Wearable sync skipped:', err.message);
         }
     };
 
@@ -211,13 +213,23 @@ const HomeScreen: React.FC = () => {
         if (showLoader) setLoading(true);
         try {
             // Updated Promise.all to exclude caloriesAPI fetch since it's now handled by context
-            const [homeRes, workoutsRes, friendsRes, suggestRes, dailyRes] = await Promise.all([
+            const [homeRes, workoutsRes, friendsRes, suggestRes] = await Promise.all([
                 memberAPI.getHome(),
                 workoutsAPI.getToday().catch(() => ({ workouts: [], summary: { count: 0, types: [] } })),
                 friendsAPI.getFriends().catch(() => ({ friends: [] })),
                 intentAPI.getSuggestion().catch(() => ({ suggestion: null, reason: null })),
-                aiAPI.getDailyInsight().catch(() => ({ success: false, insight: null }))
             ]);
+
+            // Only query Google Gemini for daily insights if user explicitly granted AI consent (Apple 5.1.1(i) / 5.1.2(i))
+            const consented = await getAIConsent();
+            setAiConsented(consented);
+            if (consented) {
+                aiAPI.getDailyInsight()
+                    .then((r) => { if (r?.success && r?.insight) setDailyInsight(r.insight); })
+                    .catch(() => {});
+            } else {
+                setDailyInsight(null);
+            }
             setData(homeRes);
             setTodayWorkouts(workoutsRes.workouts || []);
             // todayCalories is now derived from context
@@ -228,10 +240,6 @@ const HomeScreen: React.FC = () => {
 
             const fetchedFriends = friendsRes?.friends || [];
             setFriends(fetchedFriends);
-
-            if (dailyRes?.success && dailyRes?.insight) {
-                setDailyInsight(dailyRes.insight);
-            }
 
             // Cache home data in offline store for staleness checking
             useOfflineStore.getState().cacheHomeData(homeRes);
@@ -251,6 +259,7 @@ const HomeScreen: React.FC = () => {
                 setError(offline ? 'offline' : 'error');
             }
         } finally {
+            stillLoading.current = false;
             if (showLoader) setLoading(false);
         }
     };
@@ -455,7 +464,7 @@ const HomeScreen: React.FC = () => {
                 </Animated.View>
 
                 {/* Daily AI Note — taps through to the coach chat */}
-                {dailyInsight && (
+                {dailyInsight ? (
                     <Animated.View entering={FadeInDown.delay(50).duration(600).springify()}>
                         <Pressable
                             onPress={() => router.push('/ai-coach' as any)}
@@ -474,7 +483,29 @@ const HomeScreen: React.FC = () => {
                             </GlassCard>
                         </Pressable>
                     </Animated.View>
-                )}
+                ) : !aiConsented ? (
+                    <Animated.View entering={FadeInDown.delay(50).duration(600).springify()}>
+                        <Pressable
+                            onPress={() => setAiConsentModalVisible(true)}
+                            accessibilityLabel="Enable AI Daily Insights"
+                            accessibilityRole="button"
+                        >
+                            <GlassCard style={styles.insightCard}>
+                                <View style={styles.insightHeader}>
+                                    <MaterialIcons name="auto-awesome" size={18} color={colors.primary} />
+                                    <Text style={styles.insightTitle}>AI DAILY INSIGHTS</Text>
+                                    <View style={{ flex: 1 }} />
+                                    <Text style={[styles.tapHintText, { color: colors.primary }]}>ENABLE</Text>
+                                    <MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
+                                </View>
+                                <Text style={styles.insightMessage}>
+                                    Get personalized coaching tips and workout feedback powered by Google Gemini AI.
+                                </Text>
+                                <Text style={styles.insightAskHint}>Tap to review data privacy details & enable →</Text>
+                            </GlassCard>
+                        </Pressable>
+                    </Animated.View>
+                ) : null}
 
                 {/* Today's Training - Smart Suggestion */}
                 <Animated.View entering={FadeInDown.delay(100).duration(600).springify()}>
@@ -789,16 +820,17 @@ const HomeScreen: React.FC = () => {
                                         pathname: '/member/user-profile' as any,
                                         params: {
                                             userId: friend.id,
-                                            userName: friend.name,
+                                            userName: displayName(friend),
+                                            userUsername: (friend as any).username,
                                             userAvatar: friend.avatar_url || ''
                                         }
                                     })}
                                 >
                                     <View style={styles.squadAvatar}>
-                                        <Avatar size="lg" uri={friend.avatar_url} name={friend.name} />
+                                        <Avatar size="lg" uri={friend.avatar_url} name={displayName(friend)} />
                                     </View>
                                     <Text style={styles.squadName} numberOfLines={1}>
-                                        {(friend.name || 'Friend').split(' ')[0]}
+                                        {getFirstName(friend)}
                                     </Text>
                                 </TouchableOpacity>
                             ))
@@ -837,6 +869,20 @@ const HomeScreen: React.FC = () => {
 
                 <View style={{ height: 120 }} />
             </ScrollView>
+
+            <AIConsentModal
+                visible={aiConsentModalVisible}
+                featureTitle="Daily AI Insights"
+                onAccept={async () => {
+                    setAiConsentModalVisible(false);
+                    setAiConsented(true);
+                    try {
+                        const r = await aiAPI.getDailyInsight();
+                        if (r?.success && r?.insight) setDailyInsight(r.insight);
+                    } catch {}
+                }}
+                onDecline={() => setAiConsentModalVisible(false)}
+            />
         </SafeAreaView>
     );
 };

@@ -39,6 +39,7 @@ describe('displayName', () => {
 
     it('strips digits appended to a local part', () => {
         expect(displayName({ name: 'ojas4123@example.io' })).toBe('Ojas');
+        expect(displayName({ name: 'ojas4123narang@gmail.com' })).toBe('Ojas Narang');
     });
 
     it('ignores a username that is itself an email', () => {

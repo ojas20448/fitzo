@@ -5,13 +5,14 @@
 
 const express = require('express');
 const router = express.Router();
-const { query } = require('../config/database');
+const { query, getClient } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, asyncHandler } = require('../utils/errors');
 const pushNotifications = require('../services/pushNotifications');
 const xpService = require('../services/xpService');
 const { resolveMuscleGroup } = require('../utils/muscleGroup');
 const { invalidateContextPack } = require('../services/contextPack');
+const { completeWorkoutAttendance } = require('../utils/workoutAttendance');
 
 /**
  * GET /api/workouts/exercises
@@ -300,18 +301,12 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
         ? parseInt(percentileRes.rows[0].percentile)
         : null;
 
-    // Auto-mark attendance for streak tracking
-    await query(
-        `INSERT INTO attendances (user_id, gym_id, check_date)
-         VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), CURRENT_DATE)
-         ON CONFLICT (user_id, check_date) DO NOTHING`,
-        [userId]
-    );
-
     // Notify friends about workout completion (fire-and-forget)
     (async () => {
         try {
-            const userName = (await query(`SELECT name FROM users WHERE id = $1`, [userId])).rows[0]?.name || 'Someone';
+            const owner = (await query(`SELECT name, share_logs_default FROM users WHERE id = $1`, [userId])).rows[0];
+            if (session.visibility !== 'public' && !(session.visibility === 'friends' && owner?.share_logs_default === true)) return;
+            const userName = owner?.name || 'Someone';
             const friendsRes = await query(
                 `SELECT CASE WHEN user_id = $1 THEN friend_id ELSE user_id END as fid
                  FROM friendships WHERE (user_id = $1 OR friend_id = $1) AND status = 'accepted'`,
@@ -334,16 +329,9 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
         } catch (e) { /* silent */ }
     })();
 
-    // Auto-mark attendance for streak tracking on completion
+    // Close an actual visit and record training without fabricating a gym visit.
     try {
-        const attendanceResult = await query(
-            `INSERT INTO attendances (user_id, gym_id, check_date)
-             VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), CURRENT_DATE)
-             ON CONFLICT (user_id, check_date) DO NOTHING
-             RETURNING id`,
-            [userId]
-        );
-        if (attendanceResult.rows.length > 0) {
+        if (await completeWorkoutAttendance(userId, query)) {
             // A new attendance check-in was successfully logged. Award the 5 XP!
             await xpService.awardXP(userId, 5, 'checkin');
         }
@@ -525,7 +513,7 @@ router.get('/feed', authenticate, asyncHandler(async (req, res) => {
            AND ws.user_id != $1
            AND (
                (ws.visibility = 'public' AND u.gym_id = $2)
-               OR (ws.visibility = 'friends' AND ws.user_id = ANY($3))
+               OR (ws.visibility = 'friends' AND u.share_logs_default IS TRUE AND ws.user_id = ANY($3))
            )
          ORDER BY ws.completed_at DESC
          LIMIT 20`,
@@ -564,31 +552,34 @@ router.post('/splits', authenticate, asyncHandler(async (req, res) => {
 
     // Use a transaction to ensure atomicity — prevent orphaned states
     // where all splits are deactivated but no new one is created
-    await query('BEGIN');
+    const client = await getClient();
     try {
+        await client.query('BEGIN');
         // Deactivate existing splits
-        await query(
+        await client.query(
             `UPDATE user_splits SET is_active = false WHERE user_id = $1`,
             [userId]
         );
 
         // Save new split (explicitly set is_active = true)
-        const result = await query(
+        const result = await client.query(
             `INSERT INTO user_splits (user_id, split_id, name, days, days_per_week, is_active)
              VALUES ($1, $2, $3, $4, $5, true)
              RETURNING *`,
             [userId, split_id, name, days, days_per_week || days.length]
         );
 
-        await query('COMMIT');
+        await client.query('COMMIT');
 
         res.status(201).json({
             message: 'Split saved!',
             split: result.rows[0],
         });
     } catch (err) {
-        await query('ROLLBACK');
+        await client.query('ROLLBACK');
         throw err;
+    } finally {
+        client.release();
     }
 }));
 

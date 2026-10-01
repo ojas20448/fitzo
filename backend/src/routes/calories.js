@@ -55,23 +55,6 @@ router.post('/', asyncHandler(async (req, res) => {
     // Award XP for logging
     await xpService.awardXP(userId, 2, 'nutrition', result.rows[0].id);
 
-    // Auto-mark attendance for streak tracking.
-    //
-    // NOTE: CURRENT_DATE (UTC) on purpose, NOT the IST boundary used above.
-    // `attendances` is read by get_user_streak() (db/schema.sql), which
-    // initialises check_date := CURRENT_DATE and walks backwards in UTC, and by
-    // four other writers that all use CURRENT_DATE. Stamping IST here alone
-    // would put this row a day ahead of everything that reads it, so between
-    // 00:00 and 05:30 IST the day would read as missed and the streak would
-    // drop until UTC caught up. Moving attendances to IST is a separate change
-    // that has to move the streak function and all five writers together.
-    await query(
-        `INSERT INTO attendances (user_id, gym_id, check_date)
-         VALUES ($1, (SELECT gym_id FROM users WHERE id = $1), CURRENT_DATE)
-         ON CONFLICT (user_id, check_date) DO NOTHING`,
-        [userId]
-    );
-
     // Invalidate cached nutrition totals
     await cache.del(cache.keys.nutritionToday(userId));
 
@@ -206,7 +189,7 @@ router.get('/feed', asyncHandler(async (req, res) => {
          AND (
              c.visibility = 'public'
              OR 
-             (c.visibility = 'friends' AND EXISTS (
+             (c.visibility = 'friends' AND u.share_logs_default IS TRUE AND EXISTS (
                  SELECT 1 FROM friendships f 
                  WHERE f.status = 'accepted'
                  AND ((f.user_id = $1 AND f.friend_id = c.user_id)

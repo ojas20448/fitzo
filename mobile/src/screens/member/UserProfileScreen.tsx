@@ -16,14 +16,78 @@ import { friendsAPI, buddyActivityAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import Avatar from '../../components/Avatar';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
+import { displayName } from '../../utils/displayName';
 
 type FriendshipStatus = 'none' | 'friend' | 'pending_sent' | 'pending_received' | 'blocked';
+
+interface ExerciseSet {
+    id?: string;
+    weight_kg?: number | string;
+    reps?: number | string;
+    rir?: number | string;
+    completed?: boolean;
+}
+
+interface ParsedExercise {
+    id?: string;
+    name: string;
+    target?: string;
+    sets?: ExerciseSet[];
+}
+
+function capitalizeWords(str: string): string {
+    if (!str) return '';
+    return str
+        .split(' ')
+        .map(w => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : ''))
+        .join(' ');
+}
+
+function parseExercises(raw: string | null | undefined): { exercises: ParsedExercise[]; isJson: boolean } {
+    if (!raw || typeof raw !== 'string') return { exercises: [], isJson: false };
+    const trimmed = raw.trim();
+    if (!trimmed) return { exercises: [], isJson: false };
+
+    try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+            const list: ParsedExercise[] = [];
+            for (const item of parsed) {
+                if (typeof item === 'string') {
+                    list.push({ name: item });
+                } else if (item && typeof item === 'object') {
+                    list.push({
+                        id: item.id ? String(item.id) : undefined,
+                        name: item.name ? String(item.name) : (item.exercise_name ? String(item.exercise_name) : 'Exercise'),
+                        target: item.target ? String(item.target) : (item.muscle_group ? String(item.muscle_group) : undefined),
+                        sets: Array.isArray(item.sets) ? item.sets : [],
+                    });
+                }
+            }
+            return { exercises: list, isJson: true };
+        } else if (parsed && typeof parsed === 'object') {
+            return {
+                exercises: [{
+                    id: parsed.id ? String(parsed.id) : undefined,
+                    name: parsed.name ? String(parsed.name) : 'Exercise',
+                    target: parsed.target ? String(parsed.target) : undefined,
+                    sets: Array.isArray(parsed.sets) ? parsed.sets : [],
+                }],
+                isJson: true,
+            };
+        }
+    } catch {
+        // Plain text, not JSON
+    }
+    return { exercises: [], isJson: false };
+}
 
 interface BuddyData {
     can_view: boolean;
     friend: {
         id: string;
         name: string;
+        username?: string | null;
         avatar_url: string | null;
         xp_points: number;
     };
@@ -58,20 +122,23 @@ interface BuddyData {
 export default function UserProfileScreen() {
     const params = useLocalSearchParams<{
         userId: string;
-        userName: string;
-        userAvatar: string;
+        userName?: string;
+        userUsername?: string;
+        userAvatar?: string;
     }>();
 
     const userId = params.userId;
-    const userName = params.userName || 'User';
-    const userAvatar = params.userAvatar || null;
-
     const [status, setStatus] = useState<FriendshipStatus>('none');
     const [statusFailed, setStatusFailed] = useState(false);
     const [buddyData, setBuddyData] = useState<BuddyData | null>(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+
+    const rawName = buddyData?.friend?.name || params.userName || 'User';
+    const friendUsername = buddyData?.friend?.username || params.userUsername;
+    const resolvedName = displayName({ name: rawName, username: friendUsername });
+    const resolvedAvatar = buddyData?.friend?.avatar_url || params.userAvatar || null;
 
     const loadData = useCallback(async () => {
         if (!userId) return;
@@ -138,7 +205,7 @@ export default function UserProfileScreen() {
     const handleRemoveFriend = async () => {
         Alert.alert(
             'Remove Friend',
-            `Remove ${userName} from your gym buddies?`,
+            `Remove ${resolvedName} from your gym buddies?`,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
@@ -166,8 +233,8 @@ export default function UserProfileScreen() {
     // dialog. Blocking stays one tap away, but behind something that actually
     // looks like what it is.
     const handleMoreOptions = () => {
-        Alert.alert(userName, undefined, [
-            { text: `Block ${userName}`, style: 'destructive', onPress: handleBlock },
+        Alert.alert(resolvedName, undefined, [
+            { text: `Block ${resolvedName}`, style: 'destructive', onPress: handleBlock },
             { text: 'Cancel', style: 'cancel' },
         ]);
     };
@@ -175,7 +242,7 @@ export default function UserProfileScreen() {
     const handleBlock = async () => {
         Alert.alert(
             'Block User',
-            `Block ${userName}? They won't be able to see your activity or send you friend requests.`,
+            `Block ${resolvedName}? They won't be able to see your activity or send you friend requests.`,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
@@ -230,13 +297,13 @@ export default function UserProfileScreen() {
                 <TouchableOpacity onPress={goBack} style={styles.backBtn}>
                     <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{userName}</Text>
+                <Text style={styles.headerTitle} numberOfLines={1}>{resolvedName}</Text>
                 <TouchableOpacity
                     onPress={handleMoreOptions}
                     style={styles.backBtn}
                     disabled={status === 'blocked'}
                     accessibilityRole="button"
-                    accessibilityLabel={`More options for ${userName}`}
+                    accessibilityLabel={`More options for ${resolvedName}`}
                 >
                     <MaterialIcons name="more-vert" size={24} color={colors.text.muted} />
                 </TouchableOpacity>
@@ -250,8 +317,11 @@ export default function UserProfileScreen() {
             >
                 {/* Profile Card */}
                 <View style={styles.profileSection}>
-                    <Avatar uri={userAvatar} name={userName} size="xl" showOnline={activity?.checked_in} />
-                    <Text style={styles.profileName}>{userName}</Text>
+                    <Avatar uri={resolvedAvatar} name={resolvedName} size="xl" showOnline={activity?.checked_in} />
+                    <Text style={styles.profileName} numberOfLines={1}>{resolvedName}</Text>
+                    {friendUsername ? (
+                        <Text style={styles.profileUsername}>@{friendUsername}</Text>
+                    ) : null}
                     {xp > 0 && (
                         <View style={styles.xpRow}>
                             <MaterialIcons name="star" size={16} color={colors.primary} />
@@ -369,18 +439,81 @@ export default function UserProfileScreen() {
                         {activity.workouts.length > 0 && (
                             <>
                                 <Text style={styles.subLabel}>Workouts</Text>
-                                {activity.workouts.map((w) => (
-                                    <GlassCard key={w.id} style={styles.card}>
-                                        <Text style={styles.workoutType}>{w.type.toUpperCase()}</Text>
-                                        {w.exercises && <Text style={styles.exercisesText}>{w.exercises}</Text>}
-                                        {w.notes && <Text style={styles.notesText}>"{w.notes}"</Text>}
-                                    </GlassCard>
-                                ))}
+                                {activity.workouts.map((w) => {
+                                    const { exercises, isJson } = parseExercises(w.exercises);
+
+                                    return (
+                                        <GlassCard key={w.id} style={styles.card}>
+                                            <View style={styles.workoutHeaderRow}>
+                                                <MaterialIcons name="fitness-center" size={16} color={colors.primary} />
+                                                <Text style={styles.workoutType}>{w.type.toUpperCase()}</Text>
+                                            </View>
+
+                                            {isJson && exercises.length > 0 ? (
+                                                <View style={styles.exerciseList}>
+                                                    {exercises.map((ex, exIdx) => (
+                                                        <View key={ex.id || `ex-${exIdx}`} style={styles.exerciseItem}>
+                                                            <View style={styles.exerciseHeader}>
+                                                                <Text style={styles.exerciseName}>{capitalizeWords(ex.name)}</Text>
+                                                                {ex.target ? (
+                                                                    <View style={styles.targetBadge}>
+                                                                        <Text style={styles.targetBadgeText}>{capitalizeWords(ex.target)}</Text>
+                                                                    </View>
+                                                                ) : null}
+                                                            </View>
+
+                                                            {ex.sets && ex.sets.length > 0 ? (
+                                                                <View style={styles.setsList}>
+                                                                    {ex.sets.map((set, sIdx) => {
+                                                                        const weightNum = parseFloat(String(set.weight_kg ?? '0')) || 0;
+                                                                        const repsNum = parseInt(String(set.reps ?? '0'), 10) || 0;
+                                                                        const rirVal = set.rir !== undefined && set.rir !== '' ? String(set.rir) : null;
+                                                                        const isCompleted = set.completed !== false;
+
+                                                                        return (
+                                                                            <View key={set.id || `set-${sIdx}`} style={styles.setRow}>
+                                                                                <View style={styles.setLeft}>
+                                                                                    <View style={[styles.setIndexBadge, isCompleted && styles.setIndexBadgeCompleted]}>
+                                                                                        <Text style={[styles.setIndexText, isCompleted && styles.setIndexTextCompleted]}>
+                                                                                            {sIdx + 1}
+                                                                                        </Text>
+                                                                                    </View>
+                                                                                    <Text style={styles.setRepsWeight}>
+                                                                                        {repsNum} {repsNum === 1 ? 'rep' : 'reps'}
+                                                                                        {weightNum > 0 ? ` @ ${weightNum} kg` : ' (Bodyweight)'}
+                                                                                    </Text>
+                                                                                    {rirVal !== null ? (
+                                                                                        <Text style={styles.setRir}>
+                                                                                            • {rirVal} RIR
+                                                                                        </Text>
+                                                                                    ) : null}
+                                                                                </View>
+                                                                                {isCompleted ? (
+                                                                                    <MaterialIcons name="check-circle" size={16} color={colors.primary} />
+                                                                                ) : (
+                                                                                    <MaterialIcons name="radio-button-unchecked" size={16} color={colors.text.muted} />
+                                                                                )}
+                                                                            </View>
+                                                                        );
+                                                                    })}
+                                                                </View>
+                                                            ) : null}
+                                                        </View>
+                                                    ))}
+                                                </View>
+                                            ) : w.exercises ? (
+                                                <Text style={styles.exercisesText}>{w.exercises}</Text>
+                                            ) : null}
+
+                                            {w.notes ? <Text style={styles.notesText}>"{w.notes}"</Text> : null}
+                                        </GlassCard>
+                                    );
+                                })}
                             </>
                         )}
 
                         {/* Nutrition Summary */}
-                        {activity.food.meals.length > 0 && (
+                        {activity.food && activity.food.meals && activity.food.meals.length > 0 && (activity.food.total_calories || 0) > 0 && (
                             <>
                                 <Text style={styles.subLabel}>Nutrition</Text>
                                 <GlassCard style={styles.nutritionCard}>
@@ -419,7 +552,7 @@ export default function UserProfileScreen() {
                         )}
 
                         {/* Empty state */}
-                        {!activity.intent && activity.workouts.length === 0 && activity.food.meals.length === 0 && (
+                        {!activity.intent && (!activity.workouts || activity.workouts.length === 0) && (!activity.food || !activity.food.meals || activity.food.meals.length === 0 || (activity.food.total_calories || 0) === 0) && (
                             <GlassCard style={styles.emptyCard}>
                                 <MaterialIcons name="today" size={36} color={colors.text.muted} />
                                 <Text style={styles.emptyText}>No activity today</Text>
@@ -435,7 +568,7 @@ export default function UserProfileScreen() {
                             <MaterialIcons name="lock" size={32} color={colors.text.muted} />
                             <Text style={styles.privateTitle}>Logs are Private</Text>
                             <Text style={styles.privateText}>
-                                {userName} hasn't shared their workout and meal logs.
+                                {resolvedName} hasn't shared their workout and meal logs.
                             </Text>
                         </GlassCard>
                     </View>
@@ -448,7 +581,7 @@ export default function UserProfileScreen() {
                             <MaterialIcons name="people-outline" size={32} color={colors.text.muted} />
                             <Text style={styles.privateTitle}>Add as friend</Text>
                             <Text style={styles.privateText}>
-                                Become gym buddies to see {userName}'s workouts and nutrition.
+                                Become gym buddies to see {resolvedName}'s workouts and nutrition.
                             </Text>
                         </GlassCard>
                     </View>
@@ -506,6 +639,12 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.bold,
         color: colors.text.primary,
         marginTop: spacing.md,
+    },
+    profileUsername: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.primary,
+        marginTop: -spacing.xs,
     },
     xpRow: {
         flexDirection: 'row',
@@ -631,11 +770,99 @@ const styles = StyleSheet.create({
         color: colors.text.primary,
         flex: 1,
     },
+    workoutHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        marginBottom: spacing.sm,
+    },
     workoutType: {
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.bold,
         color: colors.primary,
+    },
+    exerciseList: {
+        gap: spacing.sm,
+        marginTop: spacing.xs,
         marginBottom: spacing.xs,
+    },
+    exerciseItem: {
+        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+        borderRadius: borderRadius.md,
+        padding: spacing.md,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.06)',
+    },
+    exerciseHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.xs,
+        flexWrap: 'wrap',
+        gap: spacing.xs,
+    },
+    exerciseName: {
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.primary,
+        flex: 1,
+    },
+    targetBadge: {
+        backgroundColor: 'rgba(0, 240, 255, 0.1)',
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        borderRadius: borderRadius.sm,
+    },
+    targetBadgeText: {
+        fontSize: 10,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.accent.sky,
+        textTransform: 'uppercase',
+    },
+    setsList: {
+        marginTop: spacing.xs,
+        gap: 6,
+    },
+    setRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 3,
+        paddingHorizontal: spacing.xs,
+    },
+    setLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        flex: 1,
+    },
+    setIndexBadge: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    setIndexBadgeCompleted: {
+        backgroundColor: 'rgba(0, 255, 157, 0.15)',
+    },
+    setIndexText: {
+        fontSize: 10,
+        fontFamily: typography.fontFamily.bold,
+        color: colors.text.muted,
+    },
+    setIndexTextCompleted: {
+        color: colors.primary,
+    },
+    setRepsWeight: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.primary,
+    },
+    setRir: {
+        fontSize: typography.sizes.xs,
+        color: colors.text.muted,
     },
     exercisesText: {
         fontSize: typography.sizes.sm,

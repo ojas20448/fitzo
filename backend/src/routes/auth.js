@@ -3,9 +3,9 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
-const { query } = require('../config/database');
+const { query, getClient } = require('../config/database');
 const { renderEmail } = require('../utils/emailTemplate');
-const { generateToken } = require('../middleware/auth');
+const { generateToken, invalidateUserCache } = require('../middleware/auth');
 const { ValidationError, AuthError, NotFoundError, asyncHandler } = require('../utils/errors');
 const { OAuth2Client } = require('google-auth-library');
 const { Resend } = require('resend');
@@ -97,7 +97,7 @@ router.post('/register', passwordLimiter, validate({ body: registerSchema }), as
     );
 
     const user = result.rows[0];
-    const token = generateToken(user.id);
+    const token = await generateToken(user.id, user.token_version || 0);
 
     res.status(201).json({
         message: 'Welcome to Fitzo! 💪',
@@ -129,7 +129,7 @@ router.post('/login', passwordLimiter, validate({ body: loginSchema }), asyncHan
 
     // Find user
     const result = await query(
-        `SELECT u.id, u.email, u.password_hash, u.name, u.username, u.role, u.gym_id, u.xp_points, u.avatar_url, g.name as gym_name
+        `SELECT u.id, u.email, u.password_hash, u.token_version, u.name, u.username, u.role, u.gym_id, u.xp_points, u.avatar_url, g.name as gym_name
      FROM users u
      LEFT JOIN gyms g ON u.gym_id = g.id
      WHERE u.email = $1`,
@@ -153,7 +153,7 @@ router.post('/login', passwordLimiter, validate({ body: loginSchema }), asyncHan
         throw new AuthError('Email or password is incorrect', 'INVALID_CREDENTIALS');
     }
 
-    const token = generateToken(user.id);
+    const token = await generateToken(user.id, user.token_version || 0);
 
     res.json({
         message: `Welcome back, ${user.name}! 💪`,
@@ -225,7 +225,7 @@ router.post('/dev-login', asyncHandler(async (req, res) => {
     }
 
     const result = await query(
-        `SELECT u.id, u.email, u.password_hash, u.name, u.username, u.role, u.gym_id, u.xp_points, u.avatar_url, g.name as gym_name
+        `SELECT u.id, u.email, u.password_hash, u.token_version, u.name, u.username, u.role, u.gym_id, u.xp_points, u.avatar_url, g.name as gym_name
          FROM users u
          LEFT JOIN gyms g ON u.gym_id = g.id
          ORDER BY u.created_at ASC
@@ -237,7 +237,7 @@ router.post('/dev-login', asyncHandler(async (req, res) => {
     }
 
     const user = result.rows[0];
-    const token = generateToken(user.id);
+    const token = await generateToken(user.id, user.token_version || 0);
 
     if (process.env.NODE_ENV !== 'production') {
         console.log(`⚠️ Dev Login used for: ${user.email}`);
@@ -471,7 +471,7 @@ router.post('/google', asyncHandler(async (req, res) => {
         const onboarding_completed = profileCheck.rows.length > 0;
 
         // Generate Token using helper
-        const jwtToken = generateToken(user.id);
+        const jwtToken = await generateToken(user.id, user.token_version || 0);
 
         res.json({
             message: `Welcome ${user.name}! 💪`,
@@ -628,7 +628,7 @@ router.post('/apple', asyncHandler(async (req, res) => {
 
         res.json({
             message: `Welcome ${user.name}! 💪`,
-            token: generateToken(user.id),
+            token: await generateToken(user.id, user.token_version || 0),
             user: {
                 id: user.id,
                 email: user.email,
@@ -709,25 +709,30 @@ router.post('/reset-password', passwordLimiter, resetCodeLimiter, validate({ bod
         throw new ValidationError('Password must be at least 6 characters');
     }
 
-    // Validate the OTP code
-    const tokenResult = await query(
-        `SELECT id FROM password_reset_tokens
-         WHERE email = $1 AND code = $2 AND used = FALSE AND expires_at > NOW()
-         ORDER BY created_at DESC LIMIT 1`,
-        [email, code]
-    );
-
-    if (tokenResult.rows.length === 0) {
-        throw new ValidationError('Invalid or expired reset code. Please request a new one.');
-    }
-
-    // Mark code as used
-    await query('UPDATE password_reset_tokens SET used = TRUE WHERE id = $1', [tokenResult.rows[0].id]);
-
-    // Update user password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    await query('UPDATE users SET password_hash = $1 WHERE email = $2', [hashedPassword, email]);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const client = await getClient();
+    let userId;
+    try {
+        await client.query('BEGIN');
+        // Consuming the code and changing credentials must commit together.
+        const consumed = await client.query(
+            `UPDATE password_reset_tokens SET used = TRUE
+             WHERE id = (SELECT id FROM password_reset_tokens
+                 WHERE email = $1 AND code = $2 AND used = FALSE AND expires_at > NOW()
+                 ORDER BY created_at DESC LIMIT 1 FOR UPDATE)
+             AND used = FALSE RETURNING id`, [email, code]);
+        if (!consumed.rows.length) throw new ValidationError('Invalid or expired reset code. Please request a new one.');
+        const updated = await client.query(
+            'UPDATE users SET password_hash = $1, token_version = token_version + 1 WHERE email = $2 RETURNING id',
+            [hashedPassword, email]);
+        if (!updated.rows.length) throw new AuthError('Account not found');
+        userId = updated.rows[0].id;
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally { client.release(); }
+    await invalidateUserCache(userId);
 
     res.json({ success: true, message: 'Password updated successfully. Please log in.' });
 }));
@@ -736,8 +741,9 @@ router.post('/reset-password', passwordLimiter, resetCodeLimiter, validate({ bod
 router.delete('/account', require('../middleware/auth').authenticate, asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
-    // All related tables use ON DELETE CASCADE, so deleting the user cascades
+    // Health rows cascade after migration 016, like other owned records.
     await query('DELETE FROM users WHERE id = $1', [userId]);
+    await invalidateUserCache(userId);
 
     res.json({ success: true, message: 'Account deleted successfully' });
 }));

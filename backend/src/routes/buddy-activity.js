@@ -47,7 +47,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
     // Get friend's basic info and sharing preference
     const friendResult = await query(
-        `SELECT id, name, avatar_url, xp_points, share_logs_default
+        `SELECT id, name, username, avatar_url, xp_points, share_logs_default
          FROM users
          WHERE id = $1`,
         [friendId]
@@ -75,7 +75,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
         `SELECT id, workout_type, exercises, notes, visibility, created_at
          FROM workout_logs
          WHERE user_id = $1
-           AND logged_date = CURRENT_DATE
+           AND logged_date = ${IST_TODAY_SQL}
            AND (
              visibility = 'public'
              OR (visibility = 'friends' AND ($2 = true))
@@ -119,12 +119,16 @@ router.get('/:id', asyncHandler(async (req, res) => {
         [friendId, friendSharesLogs]
     );
 
-    // Get check-in status for today
+    // Get active check-in status for today (must be within active session window, not checked out, and at an actual gym)
     const checkinResult = await query(
-        `SELECT checked_in_at
+        `SELECT checked_in_at, checked_out_at
          FROM attendances
          WHERE user_id = $1
-           AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+           AND gym_id IS NOT NULL
+           AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
+           AND checked_in_at <= NOW()
+           AND checked_out_at IS NULL
+           AND checked_in_at > NOW() - INTERVAL '90 minutes'
          ORDER BY checked_in_at DESC
          LIMIT 1`,
         [friendId]
@@ -177,6 +181,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
         friend: {
             id: friend.id,
             name: friend.name,
+            username: friend.username,
             avatar_url: friend.avatar_url,
             xp_points: friend.xp_points,
             shares_logs_by_default: friendSharesLogs
@@ -191,10 +196,10 @@ router.get('/:id', asyncHandler(async (req, res) => {
                 logged_at: w.created_at
             })),
             food: {
-                total_calories: foodSummaryResult.rows[0].total_calories || 0,
-                total_protein: foodSummaryResult.rows[0].total_protein || 0,
-                total_carbs: foodSummaryResult.rows[0].total_carbs || 0,
-                total_fat: foodSummaryResult.rows[0].total_fat || 0,
+                total_calories: parseInt(foodSummaryResult.rows[0]?.total_calories, 10) || 0,
+                total_protein: parseInt(foodSummaryResult.rows[0]?.total_protein, 10) || 0,
+                total_carbs: parseInt(foodSummaryResult.rows[0]?.total_carbs, 10) || 0,
+                total_fat: parseInt(foodSummaryResult.rows[0]?.total_fat, 10) || 0,
                 meals: foodResult.rows.map(f => ({
                     id: f.id,
                     name: f.food_name,

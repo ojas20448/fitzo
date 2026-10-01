@@ -72,6 +72,7 @@ app.use(cors({
 // Therefore: large-body routes (base64 image / audio uploads) must declare
 // their parser HERE, above the global default.
 const LARGE_BODY_ROUTES = [
+    '/api/ai-jobs/food-photo',
     '/api/food/analyze-photo',  // base64 food photo -> Gemini Vision
     '/api/ai/transcribe',       // base64 audio -> speech-to-text
 ];
@@ -149,6 +150,11 @@ app.use('/api/gyms', require('./routes/gyms'));
 app.use('/api/workouts', require('./routes/workouts'));
 app.use('/api/calories', require('./routes/calories'));
 app.use('/api/profile', require('./routes/profile'));
+app.use('/api/ai-worker', require('./routes/aiWorker'));
+if (process.env.AI_PROVIDER === 'laptop-worker') {
+    setInterval(() => require('./services/aiJobs').jobs().sweep().catch(() => console.error('AI job cleanup failed; check worker migration.')), 60000).unref();
+}
+app.use('/api/ai-jobs', require('./routes/aiJobs'));
 app.use('/api/food', require('./routes/food'));
 app.use('/api/nutrition', require('./routes/nutrition'));
 app.use('/api/workout-sessions', require('./routes/workout-sessions'));

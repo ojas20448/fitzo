@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { query } = require('../config/database');
+const { query, getClient } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ConflictError, NotFoundError, asyncHandler } = require('../utils/errors');
 
@@ -77,50 +77,26 @@ router.post('/:id/book', authenticate, asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const sessionId = req.params.id;
 
-    // Check if session exists and has capacity
-    const sessionResult = await query(
-        `SELECT 
-       cs.id, cs.name, cs.max_capacity,
-       COUNT(cb.id) as bookings_count
-     FROM class_sessions cs
-     LEFT JOIN class_bookings cb ON cs.id = cb.session_id
-     WHERE cs.id = $1
-     GROUP BY cs.id`,
-        [sessionId]
-    );
+    const client = await getClient();
+    try {
+        await client.query('BEGIN');
+        const sessionResult = await client.query(
+            'SELECT id, name, max_capacity FROM class_sessions WHERE id = $1 AND gym_id = $2 AND scheduled_at > NOW() FOR UPDATE',
+            [sessionId, req.user.gym_id]);
+        if (!sessionResult.rows.length) throw new NotFoundError('Class not found');
+        const session = sessionResult.rows[0];
+        const existing = await client.query('SELECT id FROM class_bookings WHERE session_id = $1 AND user_id = $2', [sessionId, userId]);
+        if (existing.rows.length) throw new ConflictError("You're already booked for this class");
+        const count = await client.query('SELECT COUNT(*) as count FROM class_bookings WHERE session_id = $1', [sessionId]);
+        if (Number(count.rows[0].count) >= session.max_capacity) throw new ConflictError('This class is full. Try another time?');
+        await client.query('INSERT INTO class_bookings (session_id, user_id) VALUES ($1, $2)', [sessionId, userId]);
+        await client.query('COMMIT');
+        res.status(201).json({ success: true, message: `You're booked for ${session.name}!`, class_name: session.name });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally { client.release(); }
 
-    if (sessionResult.rows.length === 0) {
-        throw new NotFoundError("Class not found");
-    }
-
-    const session = sessionResult.rows[0];
-    const currentBookings = parseInt(session.bookings_count);
-
-    if (currentBookings >= session.max_capacity) {
-        throw new ConflictError("This class is full. Try another time?");
-    }
-
-    // Check if already booked
-    const existingBooking = await query(
-        `SELECT id FROM class_bookings WHERE session_id = $1 AND user_id = $2`,
-        [sessionId, userId]
-    );
-
-    if (existingBooking.rows.length > 0) {
-        throw new ConflictError("You're already booked for this class");
-    }
-
-    // Create booking
-    await query(
-        `INSERT INTO class_bookings (session_id, user_id) VALUES ($1, $2)`,
-        [sessionId, userId]
-    );
-
-    res.status(201).json({
-        success: true,
-        message: `You're booked for ${session.name}! 🎉`,
-        class_name: session.name
-    });
 }));
 
 /**

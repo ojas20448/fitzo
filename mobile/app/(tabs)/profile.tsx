@@ -11,6 +11,7 @@ import {
     TextInput,
     Linking,
     ActivityIndicator,
+    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -235,11 +236,22 @@ export default function ProfileScreen() {
                     <View style={styles.headerDot} />
                     <Text style={styles.headerSubtitle}>YOU</Text>
                 </View>
-                <TouchableOpacity onPress={handleEditOpen} accessibilityRole="button" accessibilityLabel="Edit profile">
-                    <GlassCard style={styles.settingsBtn}>
-                        <MaterialIcons name="edit" size={20} color={colors.text.primary} />
-                    </GlassCard>
-                </TouchableOpacity>
+                <View style={styles.headerRightActions}>
+                    <TouchableOpacity
+                        onPress={() => router.push('/member/add-buddy?tab=code' as any)}
+                        accessibilityRole="button"
+                        accessibilityLabel="My QR code and invite"
+                    >
+                        <GlassCard style={styles.settingsBtn}>
+                            <MaterialIcons name="qr-code-2" size={20} color={colors.text.primary} />
+                        </GlassCard>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleEditOpen} accessibilityRole="button" accessibilityLabel="Edit profile">
+                        <GlassCard style={styles.settingsBtn}>
+                            <MaterialIcons name="edit" size={20} color={colors.text.primary} />
+                        </GlassCard>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView
@@ -353,8 +365,15 @@ export default function ProfileScreen() {
                             style={styles.settingItem}
                             onPress={() => router.push('/member/health-report' as any)}
                         >
-                            <MaterialIcons name="show-chart" size={24} color={colors.text.secondary} />
-                            <Text style={styles.settingLabel}>Health Report</Text>
+                            <MaterialIcons name="favorite" size={24} color={colors.accent.rose} />
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.settingLabel}>
+                                    {Platform.OS === 'ios' ? 'Health Report (Apple Health)' : 'Health Report'}
+                                </Text>
+                                <Text style={styles.settingSubtext}>
+                                    {Platform.OS === 'ios' ? 'Steps, calories, sleep & heart rate via HealthKit' : 'Activity, sleep & recovery summary'}
+                                </Text>
+                            </View>
                             <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
                         </TouchableOpacity>
                     </GlassCard>
@@ -652,6 +671,11 @@ const styles = StyleSheet.create({
         color: colors.text.muted,
         letterSpacing: 2,
     },
+    headerRightActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+    },
     settingsBtn: {
         width: 40,
         height: 40,
@@ -823,10 +847,15 @@ const styles = StyleSheet.create({
         gap: spacing.md,
     },
     settingLabel: {
-        flex: 1,
         fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.primary,
+    },
+    settingSubtext: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        marginTop: 2,
     },
     settingDivider: {
         height: 1,

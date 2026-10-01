@@ -32,3 +32,8 @@ google-services-key.json
 # dither pipeline scratch output. Path is relative to THIS file, which lives
 # in mobile/ — so ".dtest/", not "mobile/.dtest/".
 .dtest/
+
+# Binary archives
+*.aab
+*.apk
+*.ipa

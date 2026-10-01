@@ -45,6 +45,7 @@ brag-output-*/
 
 # The backend is a separate service — the mobile build never imports from it.
 backend/
+ai-worker/
 
 # Local media scratch (851 MB) — gitignored, but name it here too since
 # .easignore governs the working-tree upload independently of .gitignore.

@@ -107,17 +107,19 @@ interface AnatomyHeatmapProps {
     volume: Vol;
     bodyWidth?: number;
     bodyHeight?: number;
+    labelSize?: number;
+    allowFontScaling?: boolean;
     onMusclePress?: (muscle: string) => void;
 }
 
-const AnatomyHeatmap: React.FC<AnatomyHeatmapProps> = ({ volume, bodyWidth = 130, bodyHeight = 230, onMusclePress }) => (
+const AnatomyHeatmap: React.FC<AnatomyHeatmapProps> = ({ volume, bodyWidth = 130, bodyHeight = 230, labelSize = 10, allowFontScaling = true, onMusclePress }) => (
     <View style={styles.row}>
         <View style={styles.col}>
-            <Text style={styles.label}>FRONT</Text>
+            <Text style={[styles.label, { fontSize: labelSize }]} allowFontScaling={allowFontScaling}>FRONT</Text>
             <BodyFront v={volume} width={bodyWidth} height={bodyHeight} onPress={onMusclePress} />
         </View>
         <View style={styles.col}>
-            <Text style={styles.label}>BACK</Text>
+            <Text style={[styles.label, { fontSize: labelSize }]} allowFontScaling={allowFontScaling}>BACK</Text>
             <BodyBack v={volume} width={bodyWidth} height={bodyHeight} onPress={onMusclePress} />
         </View>
     </View>

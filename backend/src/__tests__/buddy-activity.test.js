@@ -1,137 +1,109 @@
-/**
- * Buddy Activity Privacy Tests
- * Ensures privacy rules are enforced correctly
- */
-
+jest.mock('../config/database', () => ({ query: jest.fn(async () => ({ rows: [] })) }));
+jest.mock('../middleware/auth', () => ({ authenticate: (req, res, next) => { req.user = { id: 'viewer', gym_id: 'gym' }; next(); } }));
+jest.mock('../services/cache', () => ({ del: jest.fn(), keys: { homeData: id => id, nutritionToday: id => id } }));
+jest.mock('../services/xpService', () => ({ awardXP: jest.fn() }));
+jest.mock('../services/contextPack', () => ({ invalidateContextPack: jest.fn() }));
+jest.mock('../services/communityFoods', () => ({
+    isCommunityId: jest.fn(() => false),
+    stripPrefix: jest.fn(id => id),
+    recordLog: jest.fn()
+}));
+jest.mock('../services/pushNotifications', () => ({}));
+const express = require('express');
 const request = require('supertest');
-const app = require('../index');
-const { query, pool } = require('../config/database');
+const { query } = require('../config/database');
+function appFor(route) { const app = express(); app.use(express.json()); app.use(require(`../routes/${route}`)); app.use(require('../utils/errors').errorHandler); return app; }
+beforeEach(() => { query.mockReset(); query.mockResolvedValue({ rows: [] }); });
+it('protects private mirrored sessions and last-workout metadata in the friends list', async () => {
+    const res = await request(appFor('friends')).get('/');
+    expect(res.status).toBe(200);
+    const sql = query.mock.calls[0][0];
+    expect(sql).toContain("ws.visibility = 'public'");
+    expect(sql).toContain("ws.visibility = 'friends' AND u.share_logs_default IS TRUE");
+    const lastWorkout = sql.slice(sql.indexOf('SELECT logged_date as last_workout_date'));
+    expect(lastWorkout).toMatch(/FROM workout_logs WHERE user_id = u.id\s+AND \(visibility = 'public'/);
+});
+for (const route of ['workouts', 'calories', 'workout-sessions']) {
+    it(`${route} requires the owner's sharing preference for friends-only feed entries`, async () => {
+        const res = await request(appFor(route)).get('/feed');
+        expect(res.status).toBe(200);
+        const sql = query.mock.calls.map(c => c[0]).find(s => s.includes("visibility = 'friends'"));
+        // Verify the real route's SQL contract, not a duplicate test-only router.
+        expect(sql).toMatch(/visibility = 'friends' AND u.share_logs_default IS TRUE/);
+    });
+}
+it('denies activity when the real friendship query finds no accepted relationship', async () => {
+    const res = await request(appFor('buddy-activity')).get('/target');
+    expect(res.status).toBe(403); expect(res.body.blocked_reason).toBe('not_friend');
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(query.mock.calls[0][0]).toMatch(/\)\s+AND status = 'accepted'/);
+});
+it('passes a disabled sharing flag to workout, meal and meal-total filters', async () => {
+    query.mockResolvedValueOnce({ rows: [{ status: 'accepted' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'target', share_logs_default: false }] })
+        .mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ meal_count: 0 }] })
+        .mockResolvedValueOnce({ rows: [] });
+    const res = await request(appFor('buddy-activity')).get('/target');
+    expect(res.status).toBe(200); expect(res.body.can_view).toBe(false);
+    for (const call of query.mock.calls.filter(([sql]) => sql.includes("visibility = 'public'"))) {
+        expect(call[1]).toEqual(['target', false]);
+        expect(call[0]).toContain("visibility = 'private' AND false");
+    }
+});
 
-describe('Buddy Activity - Privacy Enforcement', () => {
-    // Test data
-    let user1, user2, friendship, token1, token2;
+it('enforces active gym attendance contract for checked_in status', async () => {
+    query.mockResolvedValueOnce({ rows: [{ status: 'accepted' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'target', name: 'Target', share_logs_default: true }] })
+        .mockResolvedValueOnce({ rows: [] }) // intent
+        .mockResolvedValueOnce({ rows: [] }) // workouts
+        .mockResolvedValueOnce({ rows: [] }) // food
+        .mockResolvedValueOnce({ rows: [{ total_calories: 0, meal_count: 0 }] }) // food summary
+        .mockResolvedValueOnce({ rows: [{ checked_in_at: new Date().toISOString() }] }); // active checkin
 
-    beforeAll(async () => {
-        // Setup: Create two test users
-        // user1 (shares_logs_default = true)
-        // user2 (shares_logs_default = false)
-        // Create friendship between them
-        // Add test logs with different visibility levels
+    const res = await request(appFor('buddy-activity')).get('/target');
+    expect(res.status).toBe(200);
+    expect(res.body.today.checked_in).toBe(true);
+
+    const checkinQuery = query.mock.calls.find(([sql]) => sql.includes('FROM attendances'));
+    expect(checkinQuery).toBeDefined();
+    const [sql] = checkinQuery;
+    expect(sql).toContain('gym_id IS NOT NULL');
+    expect(sql).toContain('checked_out_at IS NULL');
+    expect(sql).toContain("checked_in_at > NOW() - INTERVAL '90 minutes'");
+});
+
+it('reports checked_in as false when user has no active attendance at gym', async () => {
+    query.mockResolvedValueOnce({ rows: [{ status: 'accepted' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'target', name: 'Target', share_logs_default: true }] })
+        .mockResolvedValueOnce({ rows: [] }) // intent
+        .mockResolvedValueOnce({ rows: [] }) // workouts
+        .mockResolvedValueOnce({ rows: [] }) // food
+        .mockResolvedValueOnce({ rows: [{ total_calories: 0, meal_count: 0 }] }) // food summary
+        .mockResolvedValueOnce({ rows: [] }); // no active checkin
+
+    const res = await request(appFor('buddy-activity')).get('/target');
+    expect(res.status).toBe(200);
+    expect(res.body.today.checked_in).toBe(false);
+    expect(res.body.today.food.total_calories).toBe(0);
+    expect(res.body.today.food.meals).toEqual([]);
+});
+
+it('does not insert into attendances when logging calories', async () => {
+    query.mockResolvedValueOnce({
+        rows: [{ id: 'cal-log-1', calories: 450, protein: 30, carbs: 40, fat: 12, food_name: 'Paneer Wrap' }]
     });
 
-    describe('GET /api/buddy-activity/:id', () => {
-        it('should reject if users are not friends', async () => {
-            // Create user3 who is not a friend
-            // Attempt to view user3's activity
-            // Should return 403 with can_view: false, blocked_reason: 'not_friend'
-        });
+    const res = await request(appFor('calories'))
+        .post('/')
+        .send({ calories: 450, protein: 30, carbs: 40, fat: 12, meal_name: 'Paneer Wrap' });
 
-        it('should allow viewing if users are accepted friends', async () => {
-            // user1 views user2's activity (they are friends)
-            // Should return 200
-        });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
 
-        it('should show workouts with visibility=public to anyone', async () => {
-            // user2 logs workout with visibility='public'
-            // user1 can see it even if user2 shares_logs_default=false
-        });
-
-        it('should show workouts with visibility=friends only if user shares logs', async () => {
-            // user2 has share_logs_default=false
-            // user2 logs workout with visibility='friends'
-            // user1 should NOT see it
-            //
-            // user2 changes share_logs_default=true
-            // user1 should NOW see it
-        });
-
-        it('should never show workouts with visibility=private', async () => {
-            // user2 logs workout with visibility='private'
-            // user1 should NOT see it, regardless of share_logs_default
-            // Should return can_view: false, blocked_reason: 'logs_private'
-        });
-
-        it('should show food logs according to privacy rules', async () => {
-            // Same rules as workouts:
-            // - public: always shown
-            // - friends: only if share_logs_default=true
-            // - private: never shown
-        });
-
-        it('should show check-in status regardless of log sharing', async () => {
-            // Check-in status (attended gym) should be visible
-            // even if logs are private
-        });
-
-        it('should show intent regardless of log sharing', async () => {
-            // Workout intent (today's plan) should be visible
-            // even if logs are private
-        });
-
-        it('should return correct can_view and blocked_reason', async () => {
-            // can_view = true if:
-            //   - share_logs_default = true OR
-            //   - at least one visible log exists
-            //
-            // blocked_reason should be:
-            //   - null if can_view = true
-            //   - 'logs_private' if can_view = false
-        });
-    });
-
-    describe('GET /api/settings/sharing', () => {
-        it('should return user\'s sharing preference', async () => {
-            // User queries /api/settings/sharing
-            // Should return { share_logs_default: true/false, updated_at: ISO }
-        });
-
-        it('should default to true for new users', async () => {
-            // New user should have share_logs_default = true
-        });
-    });
-
-    describe('PATCH /api/settings/sharing', () => {
-        it('should update sharing preference', async () => {
-            // User patches /api/settings/sharing with { share_logs_default: false }
-            // Should return 200 with updated preference
-        });
-
-        it('should validate input is boolean', async () => {
-            // Send { share_logs_default: 'yes' }
-            // Should return 400 with validation error
-        });
-
-        it('should immediately affect log visibility', async () => {
-            // user2 has share_logs_default=true with 'friends' visibility logs
-            // user1 can see them
-            //
-            // user2 changes share_logs_default=false
-            // user1 can no longer see 'friends' visibility logs
-        });
-    });
-
-    describe('Visibility Logic', () => {
-        it('should correctly enforce SQL visibility rules', async () => {
-            // Logs are filtered by:
-            // WHERE (
-            //   visibility = 'public'
-            //   OR (visibility = 'friends' AND share_logs_default = true)
-            //   OR visibility = 'private' AND false  -- Never shown
-            // )
-        });
-
-        it('should handle NULL share_logs_default correctly', async () => {
-            // If for some reason share_logs_default is NULL,
-            // 'friends' visibility logs should NOT be shown
-        });
-
-        it('should count only visible logs for can_view calculation', async () => {
-            // can_view = true if share_logs_default OR has_visible_logs
-            // Should not count private logs
-        });
-    });
-
-    afterAll(async () => {
-        await pool.end();
-    });
+    // Verify attendances table was NEVER touched
+    const attendanceQueries = query.mock.calls.filter(([sql]) =>
+        sql.toLowerCase().includes('attendances')
+    );
+    expect(attendanceQueries).toHaveLength(0);
 });

@@ -1,3 +1,4 @@
+import HealthImportSettings from '../../src/components/HealthImportSettings';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, Linking, ActivityIndicator, Platform, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,12 +8,12 @@ import { useAuth } from '../../src/context/AuthContext';
 import { colors, typography, spacing, borderRadius } from '../../src/styles/theme';
 import GlassCard from '../../src/components/GlassCard';
 import { useToast } from '../../src/components/Toast';
-import { isHealthAvailable, requestPermissions, getTodaysSummary } from '../../src/services/healthService';
-import { healthAPI, settingsAPI, notificationsAPI } from '../../src/services/api';
+import { settingsAPI, notificationsAPI } from '../../src/services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Haptics from '../../src/utils/haptics';
 import { isHapticsEnabled, setHapticsEnabled } from '../../src/utils/haptics';
+import AIConsentModal, { getAIConsent } from '../../src/components/AIConsentModal';
 
 const UNITS_STORAGE_KEY = 'fitzo_units';
 const version = Constants.expoConfig?.version || '1.3.0';
@@ -127,7 +128,7 @@ export default function SettingsScreen() {
                     const { status: newStatus } = await import('expo-notifications').then(m => m.requestPermissionsAsync());
                     if (newStatus !== 'granted') {
                         setNotifications(false);
-                        toast.warning('Permissions Required', 'Enable notifications in your device settings');
+                        toast.warning('Notifications Disabled', 'Notification permission was not granted');
                         return;
                     }
                 }
@@ -189,45 +190,10 @@ export default function SettingsScreen() {
         );
     };
 
-    // Health Connect
-    const [healthAvailable, setHealthAvailable] = useState(false);
-    const [healthConnected, setHealthConnected] = useState(false);
-    const [healthSyncing, setHealthSyncing] = useState(false);
-
-    useEffect(() => {
-        setHealthAvailable(isHealthAvailable());
-        // Check if already connected by trying to get today's data
-        if (isHealthAvailable()) {
-            healthAPI.getToday().then(res => {
-                if (res?.health?.steps > 0) setHealthConnected(true);
-            }).catch(() => {});
-        }
-    }, []);
-
-    const handleConnectHealth = async () => {
-        setHealthSyncing(true);
-        try {
-            const granted = await requestPermissions();
-            if (granted) {
-                setHealthConnected(true);
-                const summary = await getTodaysSummary();
-                await healthAPI.sync({
-                    steps: summary.steps,
-                    active_calories: summary.activeCalories,
-                    resting_heart_rate: summary.restingHeartRate,
-                    sleep_hours: summary.sleepHours,
-                    source: 'wearable',
-                });
-                toast.success('Connected!', 'Health data synced successfully');
-            } else {
-                toast.error('Permission Denied', 'Please allow health access in your device settings');
-            }
-        } catch {
-            toast.error('Error', 'Could not connect to health services');
-        } finally {
-            setHealthSyncing(false);
-        }
-    };
+    // AI Data Privacy
+    const [aiConsentGranted, setAiConsentGranted] = useState(false);
+    const [aiModalVisible, setAiModalVisible] = useState(false);
+    useEffect(() => { getAIConsent().then(setAiConsentGranted); }, []);
 
     const handleSignOut = () => {
         Alert.alert(
@@ -407,9 +373,9 @@ export default function SettingsScreen() {
                     <View style={styles.row}>
                         <View style={styles.rowLeft}>
                             <MaterialIcons name="people" size={24} color={colors.text.secondary} />
-                            <View style={{ flex: 1, paddingRight: spacing.md }}>
+                            <View style={{ flex: 1 }}>
                                 <Text style={styles.rowLabel}>Share with Gym Buddies</Text>
-                                <Text style={[styles.rowSub, { flexWrap: 'wrap' }]}>
+                                <Text style={styles.rowSub}>
                                     {shareLogs
                                         ? 'Buddies can see your workouts & meals'
                                         : 'Your logs are private to buddies'}
@@ -419,8 +385,9 @@ export default function SettingsScreen() {
                         <Switch
                             value={shareLogs}
                             onValueChange={handleShareLogsToggle}
-                            trackColor={{ false: colors.glass.border, true: colors.primary }}
-                            thumbColor={colors.text.primary}
+                            trackColor={{ false: '#2A2A2A', true: colors.primary }}
+                            thumbColor={Platform.OS === 'ios' ? undefined : (shareLogs ? colors.text.dark : colors.text.muted)}
+                            ios_backgroundColor="#2A2A2A"
                         />
                     </View>
                 </GlassCard>
@@ -436,8 +403,9 @@ export default function SettingsScreen() {
                         <Switch
                             value={notifications}
                             onValueChange={handleNotificationsToggle}
-                            trackColor={{ false: colors.glass.border, true: colors.primary }}
-                            thumbColor={colors.text.primary}
+                            trackColor={{ false: '#2A2A2A', true: colors.primary }}
+                            thumbColor={Platform.OS === 'ios' ? undefined : (notifications ? colors.text.dark : colors.text.muted)}
+                            ios_backgroundColor="#2A2A2A"
                         />
                     </View>
                     <View style={styles.divider} />
@@ -449,8 +417,9 @@ export default function SettingsScreen() {
                         <Switch
                             value={hapticsOn}
                             onValueChange={toggleHaptics}
-                            trackColor={{ false: colors.glass.border, true: colors.primary }}
-                            thumbColor={colors.text.primary}
+                            trackColor={{ false: '#2A2A2A', true: colors.primary }}
+                            thumbColor={Platform.OS === 'ios' ? undefined : (hapticsOn ? colors.text.dark : colors.text.muted)}
+                            ios_backgroundColor="#2A2A2A"
                         />
                     </View>
                     <View style={styles.divider} />
@@ -466,76 +435,37 @@ export default function SettingsScreen() {
                     </TouchableOpacity>
                 </GlassCard>
 
-                {/* Health Section */}
-                {healthAvailable && (
-                    <>
-                        <Text style={styles.sectionTitle}>Health</Text>
-                        <GlassCard style={styles.card}>
-                            <TouchableOpacity
-                                style={styles.row}
-                                onPress={healthConnected ? undefined : handleConnectHealth}
-                                disabled={healthSyncing}
-                                activeOpacity={healthConnected ? 1 : 0.7}
-                            >
-                                <View style={styles.rowLeft}>
-                                    <MaterialIcons
-                                        name="watch"
-                                        size={24}
-                                        color={healthConnected ? colors.crowd.low : colors.text.secondary}
-                                    />
-                                    <View>
-                                        <Text style={styles.rowLabel}>
-                                            {Platform.OS === 'ios' ? 'Apple Health' : 'Health Connect'}
-                                        </Text>
-                                        <Text style={styles.rowSub}>
-                                            {healthConnected ? 'Connected' : 'Tap to connect'}
-                                        </Text>
-                                    </View>
-                                </View>
-                                {healthSyncing ? (
-                                    <ActivityIndicator size="small" color={colors.text.primary} />
-                                ) : healthConnected ? (
-                                    <MaterialIcons name="check-circle" size={22} color={colors.crowd.low} />
-                                ) : (
-                                    <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
-                                )}
-                            </TouchableOpacity>
-                            {healthConnected && (
-                                <>
-                                    <View style={styles.divider} />
-                                    <TouchableOpacity
-                                        style={styles.row}
-                                        onPress={async () => {
-                                            setHealthSyncing(true);
-                                            try {
-                                                const summary = await getTodaysSummary();
-                                                await healthAPI.sync({
-                                                    steps: summary.steps,
-                                                    active_calories: summary.activeCalories,
-                                                    resting_heart_rate: summary.restingHeartRate,
-                                                    sleep_hours: summary.sleepHours,
-                                                    source: 'wearable',
-                                                });
-                                                toast.success('Synced!', 'Health data updated');
-                                            } catch {
-                                                toast.error('Sync Failed', 'Could not sync health data');
-                                            } finally {
-                                                setHealthSyncing(false);
-                                            }
-                                        }}
-                                        disabled={healthSyncing}
-                                    >
-                                        <View style={styles.rowLeft}>
-                                            <MaterialIcons name="sync" size={24} color={colors.text.secondary} />
-                                            <Text style={styles.rowLabel}>Sync Now</Text>
-                                        </View>
-                                        {healthSyncing && <ActivityIndicator size="small" color={colors.text.primary} />}
-                                    </TouchableOpacity>
-                                </>
-                            )}
-                        </GlassCard>
-                    </>
-                )}
+                <HealthImportSettings key={user?.id} userId={user?.id} />
+
+                {/* AI Features & Privacy */}
+                <Text style={styles.sectionTitle}>AI Features & Privacy</Text>
+                <GlassCard style={styles.card}>
+                    <TouchableOpacity
+                        style={styles.row}
+                        onPress={() => setAiModalVisible(true)}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.rowLeft}>
+                            <MaterialIcons
+                                name="auto-awesome"
+                                size={24}
+                                color={aiConsentGranted ? colors.primary : colors.text.secondary}
+                            />
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.rowLabel}>AI Data Sharing & Privacy</Text>
+                                <Text style={styles.rowSub}>
+                                    {aiConsentGranted
+                                        ? 'Enabled • Google Gemini API (Private & Encrypted)'
+                                        : 'Disabled • Tap to review AI privacy & data sharing'}
+                                </Text>
+                            </View>
+                        </View>
+                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                    </TouchableOpacity>
+                </GlassCard>
+                <Text style={styles.healthExplanationText}>
+                    Fitzo uses Google Cloud (Google Gemini AI API) for personalized coaching, photo meal scanning, and voice logging. Data is encrypted, never sold, and never used to train models.
+                </Text>
 
                 {/* System Section */}
                 <Text style={styles.sectionTitle}>System</Text>
@@ -583,6 +513,21 @@ export default function SettingsScreen() {
                 <Text style={styles.versionText}>Fitzo v{version}</Text>
                 <View style={{ height: 40 }} />
             </ScrollView>
+
+            <AIConsentModal
+                visible={aiModalVisible}
+                featureTitle="AI Data Sharing"
+                onAccept={() => {
+                    setAiConsentGranted(true);
+                    setAiModalVisible(false);
+                    toast.success('AI Features Enabled', 'Your AI preferences have been updated.');
+                }}
+                onDecline={() => {
+                    setAiConsentGranted(false);
+                    setAiModalVisible(false);
+                    toast.info('AI Features Disabled', 'AI features will remain off.');
+                }}
+            />
         </SafeAreaView>
     );
 }
@@ -635,12 +580,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: spacing.lg,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
     },
     rowLeft: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.md,
+        marginRight: spacing.md,
     },
     rowLabel: {
         fontSize: typography.sizes.base,
@@ -721,6 +669,15 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.lg,
         paddingBottom: spacing.lg,
         marginTop: -spacing.sm,
+    },
+    healthExplanationText: {
+        fontSize: typography.sizes.xs,
+        fontFamily: typography.fontFamily.regular,
+        color: colors.text.muted,
+        marginTop: spacing.xs,
+        marginBottom: spacing.md,
+        paddingHorizontal: spacing.xs,
+        lineHeight: 16,
     },
     versionText: {
         textAlign: 'center',

@@ -1,3 +1,4 @@
+const aiProvider = require('./aiProvider');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { query } = require('../config/database');
 const contextPackService = require('./contextPack');
@@ -92,9 +93,9 @@ Write the morning insight:`;
 
     let generatedNote = '';
     try {
-        const model = genAI.getGenerativeModel(
+        const model = aiProvider.getModel(genAI, 'daily_insight',
             { model: process.env.GEMINI_MODEL || 'gemini-flash-latest' },
-            REQUEST_OPTIONS,
+            REQUEST_OPTIONS, userId,
         );
         const result = await model.generateContent(prompt);
         const response = await result.response;
@@ -110,6 +111,7 @@ Write the morning insight:`;
             );
         }
     } catch (error) {
+        if (process.env.AI_PROVIDER === 'laptop-worker') throw new (require('../utils/errors').AIUnavailableError)();
         console.error(`Gemini daily insight failed for user ${userId}:`, error.message);
 
         // Return the fallback for display, but DO NOT persist it.

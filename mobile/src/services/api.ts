@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { localDateString } from '../utils/healthDate';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { authEvents } from './authEvents';
@@ -32,8 +33,10 @@ export const wakeBackend = async (): Promise<void> => {
 
 // Token management - platform aware (web uses localStorage, native uses SecureStore)
 const TOKEN_KEY = 'fitzo_auth_token';
+let sessionEpoch = 0;
 
 export const setAuthToken = async (token: string): Promise<void> => {
+    sessionEpoch++;
     if (Platform.OS === 'web') {
         localStorage.setItem(TOKEN_KEY, token);
     } else {
@@ -49,6 +52,8 @@ export const getAuthToken = async (): Promise<string | null> => {
 };
 
 export const removeAuthToken = async (): Promise<void> => {
+    sessionEpoch++;
+    useOfflineStore.getState().setAccount(null);
     if (Platform.OS === 'web') {
         localStorage.removeItem(TOKEN_KEY);
     } else {
@@ -59,6 +64,7 @@ export const removeAuthToken = async (): Promise<void> => {
 // Request interceptor - add auth token (except for auth endpoints)
 api.interceptors.request.use(
     async (config) => {
+        (config as any)._sessionEpoch = sessionEpoch;
         // Don't add auth token to login/register/social sign-in endpoints
         const isAuthEndpoint = config.url?.includes('/auth/login') ||
             config.url?.includes('/auth/register') ||
@@ -67,6 +73,10 @@ api.interceptors.request.use(
 
         if (!isAuthEndpoint) {
             const token = await getAuthToken();
+            if ((config as any)._expectedAuthToken && token !== (config as any)._expectedAuthToken) {
+                throw { code: 'SESSION_CHANGED', message: 'Account changed during this request' };
+            }
+            if ((config as any)._sessionEpoch !== sessionEpoch) throw { code: 'SESSION_CHANGED', message: 'Account changed during this request' };
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
@@ -83,14 +93,21 @@ api.interceptors.request.use(
 // Response interceptor - handle errors with automatic retry for cold starts
 api.interceptors.response.use(
     (response) => {
+        if ((response.config as any)._sessionEpoch !== sessionEpoch) {
+            return Promise.reject({ code: 'SESSION_CHANGED', message: 'Account changed during this request' });
+        }
         backendAwake = true;
         return response;
     },
     async (error) => {
         const originalRequest = error.config;
+        if (originalRequest && originalRequest._sessionEpoch !== sessionEpoch) {
+            return Promise.reject({ code: 'SESSION_CHANGED', message: 'Account changed during this request' });
+        }
 
         // Auto-retry once on timeout/network error (handles Render cold starts)
-        const isRetryable = (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK') && !originalRequest._retried;
+        const isRetryable = originalRequest && ['get', 'head', 'options'].includes(originalRequest.method?.toLowerCase()) &&
+            (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK') && !originalRequest._retried;
         if (isRetryable) {
             originalRequest._retried = true;
             originalRequest.timeout = 45000; // Give more time on retry
@@ -106,7 +123,7 @@ api.interceptors.response.use(
             originalRequest?.url?.includes('/auth/google') ||
             originalRequest?.url?.includes('/auth/apple');
 
-        if (error.response?.status === 401 && !originalRequest._retried && !isAuthEndpoint) {
+        if (error.response?.status === 401 && !isAuthEndpoint && !originalRequest?._skipLogout) {
             originalRequest._retried = true;
             // Token expired or invalid - clear it
             await removeAuthToken();
@@ -878,6 +895,8 @@ export const nutritionAPI = {
         target_protein?: number;
         target_carbs?: number;
         target_fat?: number;
+        calorie_target_mode?: 'automatic' | 'custom';
+        macro_target_mode?: 'automatic' | 'custom';
     }) => {
         const response = await api.post('/nutrition/profile', data);
         return response.data;
@@ -976,21 +995,22 @@ export const recipesAPI = {
 // AI COACH ENDPOINTS
 // ===========================================
 
+const workerAITimeout = process.env.EXPO_PUBLIC_FOOD_JOB_MODE === 'true' ? 90000 : undefined;
 export const aiAPI = {
-  extractFoods: async (text: string) => { const res = await api.post('/ai/extract-foods', { text }); return res.data; },
-  extractWorkout: async (text: string) => { const res = await api.post('/ai/extract-workout', { text }); return res.data; },
+  extractFoods: async (text: string) => { const res = await api.post('/ai/extract-foods', { text }, { timeout: workerAITimeout }); return res.data; },
+  extractWorkout: async (text: string) => { const res = await api.post('/ai/extract-workout', { text }, { timeout: workerAITimeout }); return res.data; },
     generateWorkoutPlan: async (profile: any) => {
-        const response = await api.post('/ai/workout-plan', profile, { timeout: 60000 });
+        const response = await api.post('/ai/workout-plan', profile, { timeout: workerAITimeout || 60000 });
         return response.data;
     },
 
     getNutritionAdvice: async (profile: any) => {
-        const response = await api.post('/ai/nutrition-advice', profile, { timeout: 60000 });
+        const response = await api.post('/ai/nutrition-advice', profile, { timeout: workerAITimeout || 60000 });
         return response.data;
     },
 
     chat: async (question: string, context?: any) => {
-        const response = await api.post('/ai/chat', { question, context }, { timeout: 60000 });
+        const response = await api.post('/ai/chat', { question, context }, { timeout: workerAITimeout || 60000 });
         return response.data;
     },
 
@@ -1000,7 +1020,7 @@ export const aiAPI = {
     },
 
     getDailyInsight: async () => {
-        const response = await api.get('/ai/daily-insight');
+        const response = await api.get('/ai/daily-insight', { timeout: workerAITimeout });
         return response.data;
     },
 
@@ -1011,7 +1031,7 @@ export const aiAPI = {
     },
 
     getWeeklyRecap: async () => {
-        const response = await api.get('/ai/weekly-recap');
+        const response = await api.get('/ai/weekly-recap', { timeout: workerAITimeout });
         return response.data;
     },
 
@@ -1021,7 +1041,7 @@ export const aiAPI = {
     },
 
     analyzeForm: async (exerciseName: string, description: string) => {
-        const response = await api.post('/ai/analyze-form', { exerciseName, description }, { timeout: 60000 });
+        const response = await api.post('/ai/analyze-form', { exerciseName, description }, { timeout: workerAITimeout || 60000 });
         return response.data;
     },
 };
@@ -1077,8 +1097,12 @@ export const exerciseAPI = {
 // ===========================================
 
 export const foodPhotoAPI = {
+    submitJob: async (image: string, requestId: string) => (await api.post('/ai-jobs/food-photo', { image, mimeType: 'image/jpeg' }, { headers: { 'Idempotency-Key': requestId }, timeout: 30000 })).data,
+    jobStatus: async (id: string) => (await api.get(`/ai-jobs/${encodeURIComponent(id)}`)).data,
+    jobByRequest: async (key: string) => (await api.get(`/ai-jobs/by-request/${encodeURIComponent(key)}`)).data,
+    cancelJob: async (id: string) => (await api.delete(`/ai-jobs/${encodeURIComponent(id)}`)).data,
     analyzeText: async (text: string) => {
-        const response = await api.post('/food/analyze-text', { text }, { timeout: 60000 });
+        const response = await api.post('/food/analyze-text', { text }, { timeout: workerAITimeout || 60000 });
         return response.data;
     },
 
@@ -1091,7 +1115,7 @@ export const foodPhotoAPI = {
         const response = await api.post('/food/analyze-photo', {
             image: base64Image,
             mimeType,
-        }, { timeout: 60000 });
+        }, { timeout: workerAITimeout || 60000 });
         return response.data;
     },
 
@@ -1224,26 +1248,26 @@ export const progressAPI = {
 export const healthAPI = {
     /** Sync health data from wearable */
     sync: async (data: {
-        steps: number;
-        active_calories: number;
+        steps?: number;
+        active_calories?: number;
         resting_heart_rate?: number | null;
         sleep_hours?: number | null;
         date?: string;
         source?: string;
-    }) => {
-        const response = await api.post('/health/sync', data);
+    }, expectedAuthToken?: string) => {
+        const response = await api.post('/health/sync', data, { _expectedAuthToken: expectedAuthToken } as any);
         return response.data;
     },
 
     /** Get today's health summary */
     getToday: async () => {
-        const response = await api.get('/health/today');
+        const response = await api.get('/health/today', { params: { date: localDateString() } });
         return response.data;
     },
 
     /** Get health data history */
     getHistory: async (days: number = 30) => {
-        const response = await api.get(`/health/history?days=${days}`);
+        const response = await api.get(`/health/history?days=${days}&date=${localDateString()}`);
         return response.data;
     },
 };
@@ -1259,7 +1283,7 @@ export const notificationsAPI = {
     },
 
     unregisterPushToken: async () => {
-        const response = await api.delete('/notifications/unregister');
+        const response = await api.delete('/notifications/unregister', { timeout: 3000, _skipLogout: true } as any);
         return response.data;
     },
 
@@ -1285,4 +1309,3 @@ export const notificationsAPI = {
 };
 
 export default api;
-

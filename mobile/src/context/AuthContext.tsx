@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authAPI, setAuthToken, getAuthToken, removeAuthToken, wakeBackend } from '../services/api';
+import { authAPI, setAuthToken, getAuthToken, removeAuthToken, wakeBackend, notificationsAPI } from '../services/api';
 import { authEvents } from '../services/authEvents';
+import { useLastSessionStore } from '../stores/lastSessionStore';
+import { useShareComposerStore } from '../stores/shareComposerStore';
+import { clearAllCache } from '../utils/cache';
 import { useOfflineStore } from '../stores/offlineStore';
 
 /**
@@ -17,6 +20,13 @@ import { useOfflineStore } from '../stores/offlineStore';
 const USER_CACHE_KEY = 'fitzo_cached_user';
 
 const cacheUser = async (user: User | null) => {
+    const accountId = user?.id ?? null;
+    if (useOfflineStore.getState().accountId !== accountId || accountId === null) {
+        useLastSessionStore.getState().clearSession();
+        useShareComposerStore.getState().clearSource();
+        await clearAllCache();
+    }
+    useOfflineStore.getState().setAccount(accountId);
     try {
         if (user) await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
         else await AsyncStorage.removeItem(USER_CACHE_KEY);
@@ -126,9 +136,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     const checkAuth = async () => {
+        await useOfflineStore.persist.rehydrate();
         const token = await getAuthToken();
 
         if (!token) {
+            await cacheUser(null);
             setState({ user: null, token: null, isLoading: false, isAuthenticated: false });
             return;
         }
@@ -158,6 +170,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // and let individual requests retry.
             const cached = await readCachedUser();
             if (cached) {
+                await cacheUser(cached);
                 useOfflineStore.getState().setOnline(false);
                 setState({ user: cached, token, isLoading: false, isAuthenticated: true });
             } else {
@@ -218,6 +231,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
     const logout = async () => {
+        if (await getAuthToken()) await notificationsAPI.unregisterPushToken().catch(() => {});
         await removeAuthToken();
         await cacheUser(null);
         setState({

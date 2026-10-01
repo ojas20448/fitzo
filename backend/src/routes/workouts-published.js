@@ -103,7 +103,7 @@ router.post('/:id/adopt', asyncHandler(async (req, res) => {
     // 2. Increment download count
     await query(
         `UPDATE published_splits SET download_count = download_count + 1 WHERE id = $1`,
-        [id]
+        [split.id]
     );
 
     // 3. Deactivate current active split

@@ -37,6 +37,7 @@ interface CachedLesson {
 type PendingActionType = 'LOG_WORKOUT' | 'LOG_CALORIES' | 'SET_INTENT';
 
 interface PendingAction {
+    userId?: string;
     id: string;
     type: PendingActionType;
     payload: any;
@@ -46,6 +47,8 @@ interface PendingAction {
 }
 
 interface OfflineStore {
+    accountId: string | null;
+    setAccount: (id: string | null) => void;
     // Cached data
     homeData: CachedHomeData | null;
     lessons: Record<string, CachedLesson>;
@@ -118,7 +121,6 @@ interface OfflineStore {
 }
 
 const ONE_HOUR = 60 * 60 * 1000;
-const MAX_RETRIES = 5;
 
 // Simple unique ID generator (no external dependency)
 function generateId(): string {
@@ -128,6 +130,11 @@ function generateId(): string {
 export const useOfflineStore = create<OfflineStore>()(
     persist(
         (set, get) => ({
+            accountId: null,
+            setAccount: (accountId) => {
+                if (get().accountId !== accountId || accountId === null) get().clearCache();
+                set({ accountId, isSyncing: false });
+            },
             // Initial state
             homeData: null,
             lessons: {},
@@ -152,9 +159,12 @@ export const useOfflineStore = create<OfflineStore>()(
             // ===== WRITE QUEUE ACTIONS =====
 
             queueAction: (type, payload) => {
+                const userId = get().accountId;
+                if (!userId) throw new Error('Sign in before saving an offline action');
                 const id = generateId();
                 const action: PendingAction = {
                     id,
+                    userId,
                     type,
                     payload,
                     createdAt: Date.now(),
@@ -183,19 +193,14 @@ export const useOfflineStore = create<OfflineStore>()(
                 }));
             },
 
-            getPendingActions: () => get().pendingActions,
+            getPendingActions: () => get().pendingActions.filter(a => a.userId === get().accountId),
 
-            getPendingCount: () => get().pendingActions.length,
+            getPendingCount: () => get().getPendingActions().length,
 
             setSyncing: (syncing) => set({ isSyncing: syncing }),
 
-            clearFailedActions: () => {
-                set((state) => ({
-                    pendingActions: state.pendingActions.filter(
-                        (a) => a.retryCount < MAX_RETRIES
-                    ),
-                }));
-            },
+            // Failed writes remain recoverable; never silently delete a log.
+            clearFailedActions: () => {},
 
             // ===== READ CACHE ACTIONS =====
 
@@ -237,7 +242,7 @@ export const useOfflineStore = create<OfflineStore>()(
             }),
 
             // Getters
-            getHomeData: () => get().homeData,
+            getHomeData: () => get().accountId && get().homeData?.user?.id === get().accountId ? get().homeData : null,
             getLesson: (id) => get().lessons[id],
             getUnits: () => get().units,
             getLessons: () => get().lessonLibrary,
@@ -283,6 +288,7 @@ export const useOfflineStore = create<OfflineStore>()(
             name: 'fitzo-offline-cache',
             storage: createJSONStorage(() => AsyncStorage),
             partialize: (state) => ({
+                accountId: state.accountId,
                 homeData: state.homeData,
                 lessons: state.lessons,
                 units: state.units,

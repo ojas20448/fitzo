@@ -1,18 +1,18 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, Share, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, ActivityIndicator, TouchableOpacity } from 'react-native';
 import * as Haptics from '../../utils/haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Svg, Rect, G, Text as SvgText } from 'react-native-svg';
-import ViewShot, { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import api, { aiAPI } from '../../services/api';
 import { useToast } from '../../components/Toast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNutrition } from '../../context/NutritionContext';
 import AnatomyHeatmap, { getMuscleColors } from '../../components/AnatomyHeatmap';
-import ReceiptShareCard from '../../components/ReceiptShareCard';
+import { useShareComposerStore } from '../../stores/shareComposerStore';
+import type { SharePayload } from '../../components/share/SharePayload';
+import { getAIConsent } from '../../components/AIConsentModal';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -67,9 +67,12 @@ const StatsScreen = () => {
     const loadData = async () => {
         setRecapLoading(true);
         try {
+            const consented = await getAIConsent();
             const [nutritionRes, recapRes, volumeRes] = await Promise.all([
                 api.get('/nutrition/weekly'),
-                aiAPI.getWeeklyRecap().catch(() => ({ success: false, recap: null })),
+                consented
+                    ? aiAPI.getWeeklyRecap().catch(() => ({ success: false, recap: null }))
+                    : Promise.resolve({ success: false, recap: null }),
                 api.get('/progress/volume?weeks=1').catch(() => ({ data: { weeks: [], detailed: [] } }))
             ]);
 
@@ -149,29 +152,46 @@ const StatsScreen = () => {
         }
     };
 
-    const recapShotRef = useRef<View>(null);
+    // Task 9: Stats no longer captures its own off-screen ReceiptShareCard —
+    // it builds a static SharePayload and routes through the same themed
+    // composer WorkoutRecapScreen uses (ShareComposerScreen, 5 themes,
+    // theme picker). buildWeeklyRecapPayload maps the fields the old
+    // ReceiptShareCard rendered (title/headlineValue/headlineCaption/rows/
+    // total) onto SharePayload's shape — see that function's own comment for
+    // the field-by-field mapping and why `total` (Streak) becomes a `rows`
+    // entry instead of staying separate.
+    const buildWeeklyRecapPayload = (recap: any): SharePayload => ({
+        headline: `${recap.recap_data.workouts_count} WORKOUTS`,
+        headlineLabel: 'Workouts this week',
+        caption: `${recap.recap_data.checkin_count} gym check-ins this week`,
+        subtitle: 'WEEKLY RECAP',
+        // Receipt's BREAKDOWN section renders a visibly blank block on an
+        // empty rows array — this literal, fixed-length list can never be
+        // empty regardless of what the API returns. `|| 0` / `|| 'stable'`
+        // preserved exactly as the old ReceiptShareCard props had them
+        // (recap_data fields can be missing); workouts_count, checkin_count
+        // and streak_days had no such fallback before and get none here.
+        rows: [
+            { label: 'Streak', value: `${recap.recap_data.streak_days} days` },
+            { label: 'Avg calories', value: `${recap.recap_data.avg_calories || 0} kcal` },
+            { label: 'Avg protein', value: `${recap.recap_data.avg_protein || 0} g` },
+            { label: 'Weight trend', value: `${recap.recap_data.weight_trend || 'stable'}` },
+        ],
+        // A weekly aggregate has no selectable lifts or PRs of its own —
+        // every theme already renders these as empty (task-9 brief).
+        prs: [],
+        exercises: [],
+        date: new Date(),
+    });
 
-    const handleShareRecap = async () => {
+    const handleShareRecap = () => {
         if (!weeklyRecap) return;
-        try {
-            // Capture the receipt-style card as an image (matches workout recap sharing)
-            const uri = await captureRef(recapShotRef, { format: 'png', quality: 1, result: 'tmpfile' });
-            if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share your week' });
-                return;
-            }
-            throw new Error('sharing unavailable');
-        } catch {
-            // Fallback: plain text share
-            try {
-                await Share.share({
-                    title: 'My Fitzo Weekly AI Recap',
-                    message: `🔥 Fitzo Weekly AI Recap:\n\n"${weeklyRecap.summary_text}"\n\n💪 Workouts: ${weeklyRecap.recap_data.workouts_count} | 🎯 Streak: ${weeklyRecap.recap_data.streak_days} days!`,
-                });
-            } catch {
-                toast.error('Error', 'Could not share recap');
-            }
-        }
+        useShareComposerStore.getState().setSource({
+            kind: 'static',
+            payload: buildWeeklyRecapPayload(weeklyRecap),
+
+        });
+        router.push('/member/share' as any);
     };
 
     const fillMissingDays = (data: any[]) => {
@@ -371,13 +391,13 @@ const StatsScreen = () => {
             {/* Header Tabs */}
             <View style={styles.header}>
                 <View style={styles.tabsWrapper}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={[styles.tabButton, activeTab === 'training' && styles.tabActive]}
                         onPress={() => setActiveTab('training')}
                     >
                         <Text style={[styles.tabText, activeTab === 'training' && styles.tabTextActive]}>Training</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={[styles.tabButton, activeTab === 'nutrition' && styles.tabActive]}
                         onPress={() => setActiveTab('nutrition')}
                     >
@@ -405,7 +425,7 @@ const StatsScreen = () => {
                         </Text>
                     </View>
                     <View style={styles.scoreIcon}>
-                        <MaterialIcons 
+                        <MaterialIcons
                             // Not the dumbbell/cutlery pair: those are the app's
                             // generic *category* glyphs (the dumbbell heads every
                             // exercise row), so on a hero card they read as
@@ -413,8 +433,8 @@ const StatsScreen = () => {
                             // for effort logged, and the flame this app already
                             // uses for calories in Health Report and Calorie Log.
                             name={activeTab === 'training' ? 'bolt' : 'local-fire-department'}
-                            size={28} 
-                            color={colors.primary} 
+                            size={28}
+                            color={colors.primary}
                         />
                     </View>
                 </View>
@@ -458,26 +478,6 @@ const StatsScreen = () => {
                 {activeTab === 'training' ? renderAnatomySection() : renderWeeklyChart()}
 
             </ScrollView>
-
-            {/* Off-screen receipt for weekly recap sharing (captured by ViewShot) */}
-            {weeklyRecap && (
-                <View style={{ position: 'absolute', left: -4000, top: 0 }} pointerEvents="none">
-                    <ViewShot ref={recapShotRef} options={{ format: 'png', quality: 1 }}>
-                        <ReceiptShareCard
-                            title="Weekly Recap"
-                            headlineValue={`${weeklyRecap.recap_data.workouts_count} WORKOUTS`}
-                            headlineCaption={`${weeklyRecap.recap_data.checkin_count} gym check-ins this week`}
-                            rows={[
-                                { label: 'Avg calories', value: `${weeklyRecap.recap_data.avg_calories || 0} kcal` },
-                                { label: 'Avg protein', value: `${weeklyRecap.recap_data.avg_protein || 0} g` },
-                                { label: 'Weight trend', value: `${weeklyRecap.recap_data.weight_trend || 'stable'}` },
-                            ]}
-                            total={{ label: 'Streak', value: `${weeklyRecap.recap_data.streak_days} days` }}
-                            date={new Date()}
-                        />
-                    </ViewShot>
-                </View>
-            )}
         </SafeAreaView>
     );
 };

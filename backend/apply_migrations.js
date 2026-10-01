@@ -1,43 +1,10 @@
-require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const { createHash } = require('crypto');
 const { Client } = require('pg');
 
-/**
- * Apply every migration in the repo, in dependency order.
- *
- * ── Why this was rewritten ──────────────────────────────────────────────────
- * The previous version ran five hardcoded files from src/db/ plus everything in
- * data/migrations/. That left THIRTEEN files in src/db/ and all SEVEN in
- * src/db/migrations/ unreachable — including migrate_workout_logging.sql, which
- * creates workout_sessions, exercise_logs, set_logs and user_splits.
- *
- * The live database has those tables because they were applied by hand long
- * ago. The repo could not reproduce them. A rebuild from source would have come
- * up without the core workout-logging schema, and the failure would only
- * surface later as 42P01 "relation does not exist" in a new environment.
- * That is a disaster-recovery hole, not a tidiness problem.
- *
- * ── Ordering ────────────────────────────────────────────────────────────────
- * Three phases, because dependencies cross directory boundaries:
- *   1. schema.sql            base tables and enums
- *   2. src/db/               ORDERED explicitly — FKs make order load-bearing
- *   3. src/db/migrations/    additive feature migrations
- *   4. data/migrations/      numbered, lexical order
- *
- * ── Idempotency ─────────────────────────────────────────────────────────────
- * Older files use bare CREATE TABLE / ADD COLUMN with no IF NOT EXISTS, so
- * re-running them on a live database raises "already exists". That is the
- * expected steady state, not a failure, and must never halt the run — a single
- * unhandled "already exists" is why user_foods went missing for weeks.
- *
- *   node apply_migrations.js --dry-run   # print the plan, touch nothing
- *   node apply_migrations.js             # apply
- *   node apply_migrations.js --with-rls  # also apply enable_rls.sql (see below)
- */
-
-const DRY = process.argv.includes('--dry-run');
-const WITH_RLS = process.argv.includes('--with-rls');
+// Normal runs never execute the destructive base schema. Bootstrap is explicit
+// and restricted to an empty application database. See docs/MIGRATIONS.md.
 
 // Explicit order for src/db/. Files not listed here are swept alphabetically
 // afterwards, so adding a new migration needs no edit unless it has a
@@ -63,21 +30,12 @@ const SRC_DB_ORDER = [
 //                   tables. Opt in with --with-rls, on a staging copy first.
 const EXCLUDED = new Set(['seed.sql', 'schema.sql', 'enable_rls.sql']);
 
-// Postgres codes that mean "this migration has already been applied".
-const ALREADY_APPLIED = new Set([
-    '42P07', // duplicate_table
-    '42710', // duplicate_object (constraint, index, type)
-    '42701', // duplicate_column  <- bare ADD COLUMN, e.g. migrate_username.sql
-    '42P06', // duplicate_schema
-    '42723', // duplicate_function
-]);
-
 function listDir(dir, filter = () => true) {
     if (!fs.existsSync(dir)) return [];
     return fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).filter(filter).sort();
 }
 
-function buildPlan() {
+function buildPlan({ bootstrap = false, withRls = false } = {}) {
     const srcDb = path.join(__dirname, 'src', 'db');
     const srcMig = path.join(__dirname, 'src', 'db', 'migrations');
     const dataMig = path.join(__dirname, 'data', 'migrations');
@@ -85,7 +43,7 @@ function buildPlan() {
     const plan = [];
 
     // Phase 1 — base schema.
-    plan.push({ label: 'src/db/schema.sql', path: path.join(srcDb, 'schema.sql') });
+    if (bootstrap) plan.push({ label: 'src/db/schema.sql', path: path.join(srcDb, 'schema.sql') });
 
     // Phase 2 — ordered, then the alphabetical remainder.
     const named = new Set(SRC_DB_ORDER);
@@ -106,80 +64,97 @@ function buildPlan() {
         plan.push({ label: `data/migrations/${f}`, path: path.join(dataMig, f) });
     }
 
-    if (WITH_RLS) {
+    if (withRls) {
         plan.push({ label: 'src/db/enable_rls.sql', path: path.join(srcDb, 'enable_rls.sql') });
     }
 
     return plan;
 }
 
-async function runMigrations() {
-    const plan = buildPlan();
+// Strip only a whole-file transaction wrapper, never BEGIN/END inside functions.
+function migrationBody(sql) {
+    // Keep comments intact; they cannot contain executable statements.
+    const start = sql.match(/^(?:\s|--[^\n]*(?:\n|$)|\/\*[\s\S]*?\*\/)*BEGIN\s*;/i);
+    const end = sql.match(/COMMIT\s*;\s*$/i);
+    if (start && end) return sql.slice(start[0].length, end.index).trim();
+    return sql;
+}
 
-    if (DRY) {
-        console.log(`Plan — ${plan.length} file(s), in this order:\n`);
-        plan.forEach((m, i) => {
-            const missing = fs.existsSync(m.path) ? '' : '   [FILE MISSING]';
-            console.log(`  ${String(i + 1).padStart(2)}. ${m.label}${missing}`);
-        });
-        console.log('\n--dry-run: nothing executed.');
-        if (!WITH_RLS) console.log('enable_rls.sql excluded — pass --with-rls to include it.');
-        return;
-    }
-
-    const client = new Client({
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+async function applyPlan(client, plan, { bootstrap = false } = {}) {
+    // Read all files before touching the database; a missing file is fatal.
+    const files = plan.map(file => {
+        const sql = fs.readFileSync(file.path, 'utf8');
+        return { ...file, sql, checksum: createHash('sha256').update(sql.replace(/\r\n/g, '\n')).digest('hex') };
     });
-
+    await client.query("SELECT pg_advisory_lock(741203891)");
     try {
-        await client.connect();
-        console.log('🔌 Connected to database...');
-
-        let applied = 0, skipped = 0, failed = 0;
-        const failures = [];
-
-        for (const { label: file, path: filePath } of plan) {
-            if (!fs.existsSync(filePath)) {
-                console.warn(`⚠️  ${file} not found — skipping`);
+        if (bootstrap) {
+            const existing = await client.query(`SELECT c.relname AS name FROM pg_class c
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p', 'v', 'm', 'S', 'f')
+                UNION ALL SELECT t.typname FROM pg_type t
+                JOIN pg_namespace n ON n.oid = t.typnamespace
+                WHERE n.nspname = 'public' AND t.typtype IN ('e', 'd')`);
+            if (existing.rows.length) throw new Error('Bootstrap requires an empty database; existing relations were found.');
+        }
+        await client.query(`CREATE TABLE IF NOT EXISTS fitzo_schema_migrations (
+            name TEXT PRIMARY KEY, checksum TEXT NOT NULL, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )`);
+        const results = [];
+        for (const file of files) {
+            const existing = await client.query('SELECT checksum FROM fitzo_schema_migrations WHERE name = $1', [file.label]);
+            if (existing.rows.length) {
+                if (existing.rows[0].checksum !== file.checksum) throw new Error(`Migration checksum changed: ${file.label}. Add a new migration instead.`);
+                results.push({ name: file.label, status: 'already recorded' });
                 continue;
             }
-
-            const sql = fs.readFileSync(filePath, 'utf8');
+            await client.query('BEGIN');
             try {
-                await client.query(sql);
-                console.log(`✅ ${file}`);
-                applied++;
-            } catch (err) {
-                try {
-                    await client.query('ROLLBACK');
-                } catch (e) {
-                    // ignore rollback errors
-                }
-                
-                if (ALREADY_APPLIED.has(err.code) || /already exists/i.test(err.message)) {
-                    console.log(`⏭️  ${file} — already applied`);
-                    skipped++;
-                } else {
-                    console.error(`❌ ${file} — ${err.code || ''} ${err.message}`);
-                    failures.push(`${file}: ${err.message}`);
-                    failed++;
-                }
+                await client.query(migrationBody(file.sql));
+                await client.query('INSERT INTO fitzo_schema_migrations (name, checksum) VALUES ($1, $2)', [file.label, file.checksum]);
+                await client.query('COMMIT');
+                results.push({ name: file.label, status: 'applied' });
+            } catch (error) {
+                await client.query('ROLLBACK');
+                throw new Error(`${file.label}: ${error.message}. Rolled back; later migrations were not run. An existing object does not prove the whole file was applied.`, { cause: error });
             }
         }
+        return results;
+    } finally {
+        await client.query('SELECT pg_advisory_unlock(741203891)');
+    }
+}
 
-        console.log(`\n✨ ${applied} applied, ${skipped} already present, ${failed} failed.`);
-        if (failed > 0) {
-            console.log('\nFailures:');
-            failures.forEach((f) => console.log(`  ${f}`));
-            process.exitCode = 1;
-        }
-    } catch (err) {
-        console.error('\n❌ Could not run migrations:', err.message);
-        process.exitCode = 1;
+async function runMigrations(args = process.argv.slice(2)) {
+    const flags = new Set(['--bootstrap', '--with-rls', '--only', '--dry-run']);
+    for (let index = 0; index < args.length; index++) {
+        if (!flags.has(args[index])) throw new Error(`Unknown migration option: ${args[index]}`);
+        if (args[index] === '--only') index++;
+    }
+    const bootstrap = args.includes('--bootstrap');
+    const plan = buildPlan({ bootstrap, withRls: args.includes('--with-rls') });
+    const onlyIndex = args.indexOf('--only');
+    const selected = onlyIndex < 0 ? plan : plan.filter(file => file.label === args[onlyIndex + 1]);
+    if (!selected.length || (onlyIndex >= 0 && (!args[onlyIndex + 1] || bootstrap))) {
+        throw new Error('Use --only with an exact migration label from --dry-run, without --bootstrap.');
+    }
+    if (args.includes('--dry-run')) {
+        selected.forEach(file => console.log(file.label));
+        return;
+    }
+    require('dotenv').config();
+    if (!process.env.DATABASE_URL) throw new Error('Set DATABASE_URL explicitly to select the migration target.');
+    const client = new Client(require('./src/config/databaseOptions').databaseOptions());
+    try {
+        await client.connect();
+        const results = await applyPlan(client, selected, { bootstrap });
+        results.forEach(result => console.log(`${result.status}: ${result.name}`));
     } finally {
         await client.end();
     }
 }
 
-runMigrations();
+if (require.main === module) {
+    runMigrations().catch(error => { console.error(error.message); process.exitCode = 1; });
+}
+module.exports = { buildPlan, applyPlan, migrationBody, runMigrations };

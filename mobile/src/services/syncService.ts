@@ -62,6 +62,7 @@ export async function processSyncQueue(): Promise<{
     let failed = 0;
 
     for (const action of pending) {
+        if (useOfflineStore.getState().accountId !== action.userId) break;
         // Skip actions that have exceeded max retries
         if (action.retryCount >= MAX_RETRIES) {
             failed++;
@@ -74,15 +75,8 @@ export async function processSyncQueue(): Promise<{
             synced++;
         } catch (error: any) {
             // If it's an auth error (401), stop syncing — user needs to re-login
-            if (error.status === 401) {
+            if (error.status === 401 || error.code === 'SESSION_CHANGED') {
                 break;
-            }
-
-            // If it's a conflict (409), the action was already applied — remove it
-            if (error.status === 409) {
-                store.dequeueAction(action.id);
-                synced++;
-                continue;
             }
 
             // If it's a network error, stop syncing — we're offline again
@@ -97,8 +91,7 @@ export async function processSyncQueue(): Promise<{
         }
     }
 
-    // Clean up actions that exceeded max retries
-    store.clearFailedActions();
+    // Failed writes remain available for recovery rather than being deleted.
     store.setSyncing(false);
 
     const remaining = store.getPendingCount();

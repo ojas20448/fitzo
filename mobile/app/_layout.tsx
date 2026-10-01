@@ -18,6 +18,7 @@ import {
     Lexend_800ExtraBold,
 } from '@expo-google-fonts/lexend';
 
+import HealthSyncLifecycle from '../src/components/HealthSyncLifecycle';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { ToastProvider } from '../src/components/Toast';
 import { NutritionProvider } from '../src/context/NutritionContext';
@@ -207,6 +208,7 @@ export default function RootLayout() {
             <SafeAreaProvider>
                 <ErrorBoundary>
                 <AuthProvider>
+                    <HealthSyncLifecycle />
                     <NutritionProvider>
                         <ToastProvider>
                             <PushNotificationHandler />
@@ -245,6 +247,7 @@ export default function RootLayout() {
                                 <Stack.Screen name="member/recipes" />
                                 <Stack.Screen name="member/settings" />
                                 <Stack.Screen name="member/workout-recap" />
+                                <Stack.Screen name="member/share" />
                                 <Stack.Screen name="member/nutrition-insights" />
                                 <Stack.Screen name="member/health-report" />
                                 <Stack.Screen name="member/user-profile" />

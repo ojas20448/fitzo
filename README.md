@@ -31,7 +31,7 @@ Fitzo/
 ### Prerequisites
 - Node.js 18+
 - PostgreSQL 14+
-- Expo CLI (`npm install -g expo-cli`)
+- Expo tooling through `npx expo` and a native development build
 
 ### Backend Setup
 
@@ -48,8 +48,9 @@ cp .env.example .env
 # Create database
 createdb fitzo
 
-# Run schema
-psql fitzo < src/db/schema.sql
+# Preview the migration plan, then initialize this NEW EMPTY database
+node apply_migrations.js --bootstrap --dry-run
+node apply_migrations.js --bootstrap
 
 # Seed data (optional)
 psql fitzo < src/db/seed.sql
@@ -60,6 +61,10 @@ npm run dev
 
 Server runs at `http://localhost:3001`
 
+Set `DATABASE_URL` to the intended database before migrating. For an existing
+database, see [migration and connection instructions](docs/MIGRATIONS.md).
+Do not run `src/db/schema.sql` directly on an existing database: it drops tables.
+
 ### Mobile Setup
 
 ```bash
@@ -68,14 +73,15 @@ cd mobile
 # Install dependencies
 npm install
 
-# Update API URL in src/services/api.ts
-# Replace 192.168.1.100 with your local IP
+# Set EXPO_PUBLIC_API_URL in your local environment to your backend's /api URL
 
 # Start Expo
-npx expo start
+npx expo start --dev-client
 ```
 
-Scan QR with Expo Go app on your phone.
+Install a native development build, then scan the QR code. HealthKit, Health
+Connect and other native integrations require a custom build; Expo Go and web
+export do not verify these integrations. Native permission changes require a rebuild.
 
 ## 📱 Features
 
@@ -94,14 +100,13 @@ Scan QR with Expo Go app on your phone.
 - ✅ See private intents
 - ✅ Schedule view
 
-### Manager Features
-- ✅ Dashboard (check-ins, crowd)
-- ✅ Add trainers/members
-- ✅ Upcoming classes
+### Manager Features (not live)
+Manager routes and screens exist, but release and the outstanding manager
+authorization fixes are deferred.
 
 ## 🗄️ Database
 
-11 lean tables:
+The original core tables include:
 - `users` - Members, trainers, managers
 - `gyms` - Physical gym locations
 - `attendances` - QR check-in records
@@ -114,9 +119,15 @@ Scan QR with Expo Go app on your phone.
 - `learn_lessons` - MCQ lessons
 - `learn_attempts` - User attempts
 
+Feature migrations also add workout sessions/exercises/sets, calorie logs,
+fitness profiles, health summaries, recipes, published splits, push registrations
+and AI history. The [project audit](docs/PROJECT_AUDIT_2026-09-10.md) maps these flows;
+the migration plan is the schema inventory.
+
 ## 🔐 Authentication
 
-- JWT tokens (7-day expiry)
+- JWT tokens (90-day default, configurable through JWT_EXPIRES_IN)
+- Password reset increments the account token version to revoke existing sessions
 - 3 roles: `member`, `trainer`, `manager`
 - Secure token storage (expo-secure-store)
 

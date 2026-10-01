@@ -166,9 +166,10 @@ export default function NutritionInsightsScreen() {
 
     const proteinPerKg = bodyWeightKg > 0 ? (logged.protein / bodyWeightKg).toFixed(1) : '0';
     const proteinPerKgNum = parseFloat(proteinPerKg);
+    const targetProteinPerKg = bodyWeightKg > 0 && targets.protein > 0 ? targets.protein / bodyWeightKg : 1.6;
     const proteinAdequacy =
-        proteinPerKgNum >= 1.6 ? { label: 'Optimal', color: colors.crowd.low } :
-        proteinPerKgNum >= 1.2 ? { label: 'Adequate', color: colors.crowd.medium } :
+        proteinPerKgNum >= targetProteinPerKg ? { label: 'Target met', color: colors.crowd.low } :
+        proteinPerKgNum >= targetProteinPerKg * 0.75 ? { label: 'Adequate', color: colors.crowd.medium } :
         { label: 'Low', color: colors.crowd.high };
 
     if (loading) {
@@ -257,7 +258,7 @@ export default function NutritionInsightsScreen() {
                 {/* Protein Adequacy Card */}
                 <Animated.View entering={FadeInDown.delay(250).duration(600).springify()} style={styles.card}>
                     <SectionLabel label="PROTEIN ADEQUACY" />
-                    <Text style={styles.macroSubtitle}>Recommended: 1.6-2.2g per kg bodyweight for muscle gain</Text>
+                    <Text style={styles.macroSubtitle}>Daily protein target: {targets.protein}g ({bodyWeightKg > 0 ? (targets.protein / bodyWeightKg).toFixed(1) : '1.6'} g/kg body weight).</Text>
 
                     <View style={styles.proteinRow}>
                         <View>
@@ -276,8 +277,8 @@ export default function NutritionInsightsScreen() {
                     <StatRow label="Protein consumed" value={logged.protein} unit="g" />
                     <StatRow label="Body weight" value={bodyWeightKg} unit="kg" />
                     <StatRow
-                        label="Target (1.6g/kg)"
-                        value={Math.round(bodyWeightKg * 1.6)}
+                        label="Target protein"
+                        value={targets.protein || Math.round(bodyWeightKg * 1.6)}
                         unit="g"
                         color={colors.text.muted}
                     />
