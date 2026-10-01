@@ -1,7 +1,7 @@
 # Import this blueprint from the repository root after a separate database is ready.
 services:
   - type: web
-    name: fitzo-staging
+    name: fitzo-worker-staging
     runtime: node
     region: singapore
     plan: free
@@ -21,3 +21,11 @@ services:
         generateValue: true
       - key: CORS_ORIGIN
         sync: false
+      - key: AI_PROVIDER
+        value: laptop-worker
+      - key: AI_QUEUE_LIMIT
+        value: "30"
+      - key: AI_WORKER_WAIT_MS
+        value: "45000"
+      - key: AI_WORKER_API_FALLBACK
+        value: "true"
