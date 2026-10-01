@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Alert, AppState } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
@@ -23,11 +23,11 @@ export default function FoodScannerScreen() {
     const [scanState, setScanState] = useState('');
     const running = useRef(false);
     const mounted = useRef(true);
-    const acceptResult = (response: any) => {
+    const acceptResult = useCallback((response: any) => {
         if (!response?.items?.length || !response.total) throw new Error('No food was detected. Try a clearer photo.');
         setDetectedFood({ name: response.items.map((i: any) => i.name).join(', '), ...response.total });
-    };
-    const recoverJob = async (pending: PendingScan) => {
+    }, []);
+    const recoverJob = useCallback(async (pending: PendingScan) => {
         let delay = 1500;
         let misses = 0;
         while (mounted.current) {
@@ -53,7 +53,7 @@ export default function FoodScannerScreen() {
             await new Promise(r => setTimeout(r, delay));
             delay = Math.min(delay * 1.5, 10000);
         }
-    };
+    }, [acceptResult]);
     useEffect(() => {
         mounted.current = true;
         const resume = async () => {
@@ -68,7 +68,7 @@ export default function FoodScannerScreen() {
         resume();
         const subscription = AppState.addEventListener('change', state => { if (state === 'active') resume(); });
         return () => { mounted.current = false; subscription.remove(); };
-    }, []);
+    }, [recoverJob]);
 
     // Request camera permission if not granted
     if (!permission) {
