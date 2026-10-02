@@ -67,7 +67,7 @@ const ThaliPresets: React.FC<ThaliPresetsProps> = ({ onLogged, onError }) => {
 };
 
 const styles = StyleSheet.create({
-    container: { marginVertical: spacing.md },
+    container: { marginVertical: spacing.md, paddingHorizontal: spacing.xl },
     title: {
         fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.medium,

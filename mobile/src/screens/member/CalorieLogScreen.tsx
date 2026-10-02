@@ -128,6 +128,7 @@ const CalorieLogScreen: React.FC = () => {
     }>();
 
     const [searchQuery, setSearchQuery] = useState('');
+    const hasSearchQuery = searchQuery.trim().length > 0;
     const [todayEntries, setTodayEntries] = useState<CalorieEntry[]>([]);
     const [openEntry, setOpenEntry] = useState<CalorieEntry | null>(null);
 
@@ -425,18 +426,24 @@ const CalorieLogScreen: React.FC = () => {
 
     // Debounced search
     useEffect(() => {
+        let cancelled = false;
         if (!searchQuery.trim()) {
             setSearchResults([]);
             setSearchError(null);
+            setSearching(false);
             return;
         }
+        setSearchResults([]);
+        setSearchError(null);
+        setSearching(true);
 
         const runSearch = async () => {
             // 1. Instant Local Search (Cache + Defaults)
-            const queryLower = searchQuery.toLowerCase();
+            const queryLower = searchQuery.trim().toLowerCase();
 
             // Search Cache
             const cachedMatches = await FoodCacheService.searchLocal(queryLower);
+            if (cancelled) return;
 
             // Search Default Hardcoded DB
             const defaultMatches = defaultFoods.filter(f =>
@@ -490,6 +497,7 @@ const CalorieLogScreen: React.FC = () => {
                 // Only call API if we don't have many local matches
                 if (allLocal.length < 5) {
                     const result = await foodAPI.search(searchQuery);
+                    if (cancelled) return;
                     const apiFoods = result.foods || [];
 
                     setSearchResults(prev => {
@@ -500,16 +508,17 @@ const CalorieLogScreen: React.FC = () => {
                     });
                 }
             } catch (err) {
+                if (cancelled) return;
                 if (allLocal.length === 0) {
                     setSearchError('Could not search. Check your connection.');
                 }
             } finally {
-                setSearching(false);
+                if (!cancelled) setSearching(false);
             }
         };
 
         const timer = setTimeout(runSearch, 300); // 300ms debounce
-        return () => clearTimeout(timer);
+        return () => { cancelled = true; clearTimeout(timer); };
     }, [searchQuery]);
 
     const handleFoodSelect = async (food: any) => {
@@ -742,17 +751,6 @@ const CalorieLogScreen: React.FC = () => {
                 </Pressable>
             </View>
 
-            <ThaliPresets
-                onLogged={(preset, kcal) => {
-                    toast.success('Logged!', `${preset.name} · ${kcal} kcal`);
-                    refreshToday();
-                    loadTodayEntries();
-                }}
-                onError={(message) => {
-                    toast.error('Could not log meal', message);
-                }}
-            />
-
             {/* Search Bar */}
             <View style={styles.searchContainer}>
                 <View style={styles.searchBar}>
@@ -800,8 +798,23 @@ const CalorieLogScreen: React.FC = () => {
                 </View>
             </View>
 
+            {!hasSearchQuery && (
+            <ScrollView
+                style={styles.foodContent}
+                contentContainerStyle={styles.foodContentInner}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+            >
+            <ThaliPresets
+                onLogged={(preset, kcal) => {
+                    toast.success('Logged!', `${preset.name} · ${kcal} kcal`);
+                    refreshToday();
+                    loadTodayEntries();
+                }}
+                onError={(message) => toast.error('Could not log meal', message)}
+            />
             {/* Photo Log Banner as Primary Flow */}
-            {!searching && searchQuery === '' && (
+            {!searching && (
                 <Pressable
                     style={styles.photoLogBanner}
                     onPress={() => router.push('/food-scanner')}
@@ -825,7 +838,7 @@ const CalorieLogScreen: React.FC = () => {
 
 
             {/* Frequent Foods Skeleton */}
-            {!searching && searchQuery === '' && frequentLoading && (
+            {frequentLoading && (
                 <View style={styles.frequentContainer}>
                     <Text style={styles.sectionTitle}>QUICK ADD</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.frequentScroll}>
@@ -841,7 +854,7 @@ const CalorieLogScreen: React.FC = () => {
             )}
 
             {/* Frequent Foods */}
-            {!searching && searchQuery === '' && !frequentLoading && (
+            {!frequentLoading && (
                 <Animated.View entering={FadeIn.duration(500)} style={styles.frequentContainer}>
                     <View style={styles.sectionHeaderRow}>
                         <Text style={styles.sectionTitle}>QUICK ADD</Text>
@@ -948,54 +961,9 @@ const CalorieLogScreen: React.FC = () => {
                 </Animated.View>
             )}
 
-            {/* Results */}
-            {
-                searching ? (
-                    <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" color={colors.primary} />
-                        <Text style={styles.loadingText}>Searching...</Text>
-                    </View>
-                ) : searchResults.length > 0 ? (
-                    <FlatList
-                        data={searchResults}
-                        renderItem={renderSearchItem}
-                        keyExtractor={(item) => item.id}
-                        contentContainerStyle={styles.resultsList}
-                        showsVerticalScrollIndicator={false}
-                    />
-                ) : searchQuery.length > 0 ? (
-                    <View style={styles.emptyContainer}>
-                        <MaterialIcons
-                            name={searchError ? "error-outline" : "search-off"}
-                            size={48}
-                            color={searchError ? colors.error : colors.text.subtle}
-                        />
-                        <Text style={styles.emptyText}>
-                            {searchError ? 'Search Error' : 'No foods found'}
-                        </Text>
-                        <Text style={styles.emptySubtext}>
-                            {searchError || 'Try a different search term'}
-                        </Text>
-                    </View>
-                ) : (
-                    <View style={styles.promptContainer}>
-                        <View style={styles.promptIcon}>
-                            <MaterialIcons name="restaurant-menu" size={32} color={colors.primary} />
-                        </View>
-                        <Text style={styles.promptText}>Search for a food</Text>
-                        <Text style={styles.promptSubtext}>Find nutritional info from our database</Text>
-                    </View>
-                )
-            }
-
             {todayEntries.length > 0 && (
                 <View style={styles.todayBlock}>
                     <Text style={styles.servingPickerLabel}>TODAY'S LOG</Text>
-                    {/* Bounded and scrollable: this block is a sibling in a
-                        flex column, so an unbounded list pushes later entries
-                        off-screen where they cannot be tapped — and tapping is
-                        the whole point of the list. */}
-                    <ScrollView style={styles.todayList} nestedScrollEnabled>
                     {todayEntries.map((e) => (
                         <Pressable
                             key={e.id}
@@ -1011,8 +979,35 @@ const CalorieLogScreen: React.FC = () => {
                             <Text style={styles.todayKcal}>{e.calories} kcal</Text>
                         </Pressable>
                     ))}
-                    </ScrollView>
                 </View>
+            )}
+            </ScrollView>
+            )}
+
+            {hasSearchQuery && (
+                searchResults.length > 0 ? (
+                    <FlatList
+                        data={searchResults}
+                        renderItem={renderSearchItem}
+                        keyExtractor={(item) => item.id}
+                        contentContainerStyle={styles.resultsList}
+                        keyboardShouldPersistTaps="handled"
+                        showsVerticalScrollIndicator={false}
+                        ListHeaderComponent={searching ? <ActivityIndicator accessibilityLabel="Searching catalogue" color={colors.primary} /> : null}
+                        ListFooterComponent={searchError ? <Text style={styles.emptySubtext}>{searchError}</Text> : null}
+                    />
+                ) : searching ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color={colors.primary} />
+                        <Text style={styles.loadingText}>Searching...</Text>
+                    </View>
+                ) : (
+                    <View style={styles.emptyContainer}>
+                        <MaterialIcons name={searchError ? 'error-outline' : 'search-off'} size={48} color={searchError ? colors.error : colors.text.subtle} />
+                        <Text style={styles.emptyText}>{searchError ? 'Search Error' : 'No foods found'}</Text>
+                        <Text style={styles.emptySubtext}>{searchError || 'Try a different search term'}</Text>
+                    </View>
+                )
             )}
 
             <FoodEntrySheet
@@ -1687,32 +1682,8 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.regular,
         color: colors.text.muted,
     },
-    promptContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: spacing.lg,
-        paddingBottom: 100,
-    },
-    promptIcon: {
-        width: 72,
-        height: 72,
-        borderRadius: 36,
-        backgroundColor: colors.glass.surface,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: spacing.md,
-    },
-    promptText: {
-        fontSize: typography.sizes.xl,
-        fontFamily: typography.fontFamily.semiBold,
-        color: colors.text.primary,
-    },
-    promptSubtext: {
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.regular,
-        color: colors.text.muted,
-    },
+    foodContent: { flex: 1 },
+    foodContentInner: { paddingBottom: spacing['2xl'] },
 
     // Modal Styles
     modalContainer: {
@@ -2189,12 +2160,7 @@ const styles = StyleSheet.create({
     },
     todayBlock: {
         marginTop: spacing.lg,
-        // Bounds the block so it cannot consume the whole column. Roughly five
-        // rows visible; the rest scroll.
-        maxHeight: 280,
-    },
-    todayList: {
-        flexGrow: 0,
+        paddingHorizontal: spacing.xl,
     },
     todayRow: {
         flexDirection: 'row',

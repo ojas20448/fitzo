@@ -61,7 +61,7 @@ const STEP_META: Record<number, { icon: keyof typeof MaterialIcons.glyphMap; pur
 
 // ─── Animated Chip Selector ──────────────────────────────────────────────────
 function ChipGroup<T extends string>({ options, value, onChange, delay = 0 }: {
-    options: { id: T; label: string; icon?: string; desc?: string }[];
+    options: { id: T; label: string; icon?: string; materialIcon?: keyof typeof MaterialIcons.glyphMap; desc?: string }[];
     value: T;
     onChange: (v: T) => void;
     delay?: number;
@@ -78,7 +78,11 @@ function ChipGroup<T extends string>({ options, value, onChange, delay = 0 }: {
                         key={o.id}
                         style={[chip.card, active && chip.cardActive]}
                         onPress={() => onChange(o.id)}
+                        accessibilityRole="radio"
+                        accessibilityLabel={o.label}
+                        accessibilityState={{ selected: active, checked: active }}
                     >
+                        {o.materialIcon && <MaterialIcons name={o.materialIcon} size={22} color={active ? colors.text.primary : colors.text.secondary} style={chip.materialIcon} />}
                         {o.icon && (
                             <Text style={chip.icon}>{o.icon}</Text>
                         )}
@@ -105,6 +109,7 @@ const chip = StyleSheet.create({
         ...shadows.glowCard,
     },
     icon: { fontSize: 22, marginBottom: 2 },
+    materialIcon: { marginBottom: 2 },
     label: { fontSize: 14, fontFamily: typography.fontFamily.bold, color: colors.text.secondary, textAlign: 'center' },
     labelActive: { color: colors.text.primary },
     desc: { fontSize: 11, color: colors.text.muted, textAlign: 'center' },
@@ -758,9 +763,9 @@ export default function OnboardingWizard() {
                 onChange={v => set('dietary', v)}
                 delay={450}
                 options={[
-                    { id: 'everything', label: 'Everything', icon: '🍗' },
-                    { id: 'vegetarian', label: 'Vegetarian', icon: '🥚' },
-                    { id: 'vegan', label: 'Vegan', icon: '🌿' },
+                    { id: 'everything', label: 'Everything', materialIcon: 'restaurant' },
+                    { id: 'vegetarian', label: 'Vegetarian', materialIcon: 'eco' },
+                    { id: 'vegan', label: 'Vegan', materialIcon: 'spa' },
                 ]}
             />
 

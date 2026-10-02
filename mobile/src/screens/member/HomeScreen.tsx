@@ -413,8 +413,8 @@ const HomeScreen: React.FC = () => {
                             </View>
                         </View>
                         <View style={styles.greetingContainer}>
-                            <Text style={styles.welcomeText}>{greeting}</Text>
-                            <Text style={styles.userName}>{greetingName}</Text>
+                            <Text style={styles.welcomeText} numberOfLines={1}>{greeting}</Text>
+                            <Text style={styles.userName} numberOfLines={1}>{greetingName}</Text>
                         </View>
                     </Pressable>
 
@@ -523,10 +523,10 @@ const HomeScreen: React.FC = () => {
                                         {(currentIntent.emphasis?.[0] || 'Training').toUpperCase()}
                                     </Text>
                                 </View>
-                                <View>
-                                    <Text style={styles.intentCardLabel}>Today's Training</Text>
+                                <View style={styles.intentCardText}>
+                                    <Text style={styles.intentCardLabel} numberOfLines={1}>Today's Training</Text>
                                     {suggestion && currentIntent.training_pattern && (
-                                        <Text style={styles.intentCardSplit}>{suggestion.split_name}</Text>
+                                        <Text style={styles.intentCardSplit} numberOfLines={1}>{suggestion.split_name}</Text>
                                     )}
                                 </View>
                             </View>
@@ -541,13 +541,13 @@ const HomeScreen: React.FC = () => {
                                         {suggestion.day_name.toUpperCase()}
                                     </Text>
                                 </View>
-                                <View>
-                                    <Text style={styles.intentCardLabel}>
+                                <View style={styles.intentCardText}>
+                                    <Text style={styles.intentCardLabel} numberOfLines={1}>
                                         {suggestionReason === 'next_in_cycle' ? 'Next up' :
                                          suggestionReason === 'long_break' ? 'Welcome back' :
                                          'Today\'s Training'}
                                     </Text>
-                                    <Text style={styles.intentCardSplit}>{suggestion.split_name}</Text>
+                                    <Text style={styles.intentCardSplit} numberOfLines={1}>{suggestion.split_name}</Text>
                                 </View>
                             </View>
                             <View style={styles.intentCardActions}>
@@ -632,7 +632,7 @@ const HomeScreen: React.FC = () => {
                                     style={[
                                         styles.gymStatusBarFill,
                                         {
-                                            width: `${Math.max(data.crowd.percentage, 3)}%`,
+                                            width: `${Math.min(100, Math.max(0, data.crowd.percentage))}%`,
                                             backgroundColor: colors.crowd[data.crowd.level],
                                         },
                                     ]}
@@ -907,15 +907,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: spacing['2xl'],
         paddingTop: spacing.md,
+        gap: spacing.sm,
     },
     userInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.lg,
+        gap: spacing.md,
         minHeight: 48,
+        flex: 1,
+        minWidth: 0,
     },
     avatarWrapper: {
         position: 'relative',
+        flexShrink: 0,
     },
     verifiedBadge: {
         position: 'absolute',
@@ -929,6 +933,8 @@ const styles = StyleSheet.create({
     },
     greetingContainer: {
         gap: 2,
+        flex: 1,
+        minWidth: 0,
     },
     welcomeText: {
         fontSize: typography.sizes.xs,
@@ -947,6 +953,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.sm,
+        flexShrink: 0,
     },
     gymBadge: {
         flexDirection: 'row',
@@ -1003,13 +1010,16 @@ const styles = StyleSheet.create({
         borderColor: colors.glass.border,
         padding: spacing.lg,
         marginBottom: spacing['2xl'],
+        gap: spacing.sm,
     },
     intentCardLeft: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.md,
         flex: 1,
+        minWidth: 0,
     },
+    intentCardText: { flex: 1, minWidth: 0 },
     intentDayBadge: {
         backgroundColor: colors.primary,
         paddingHorizontal: spacing.lg,
@@ -1017,6 +1027,7 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.lg,
         minWidth: 56,
         alignItems: 'center',
+        flexShrink: 0,
     },
     intentDayBadgeMuted: {
         backgroundColor: colors.glass.surfaceLight,
@@ -1042,6 +1053,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.sm,
+        flexShrink: 0,
     },
     intentConfirmBtn: {
         backgroundColor: colors.primary,
@@ -1353,6 +1365,7 @@ const styles = StyleSheet.create({
     },
     gymStatusCard: {
         marginBottom: spacing.lg,
+        padding: spacing.lg,
     },
     gymStatusTop: {
         flexDirection: 'row',
@@ -1364,6 +1377,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: spacing.md,
         flex: 1,
+        minWidth: 0,
     },
     // The name/sub block must be allowed to shrink. Without flex + minWidth 0 a
     // long gym name sizes the block to its full intrinsic width and slides under

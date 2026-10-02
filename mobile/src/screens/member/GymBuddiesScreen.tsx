@@ -552,8 +552,8 @@ const GymBuddiesScreen: React.FC = () => {
                                         <View style={styles.requestInfo}>
                                             <Avatar uri={request.avatar_url} name={displayName(request)} size="md" />
                                             <View style={styles.requestText}>
-                                                <Text style={styles.requestName}>{displayName(request)}</Text>
-                                                {request.username ? <Text style={styles.friendHandle}>@{request.username}</Text> : null}
+                                                <Text style={styles.requestName} numberOfLines={1}>{displayName(request)}</Text>
+                                                {request.username ? <Text style={styles.friendHandle} numberOfLines={1}>@{request.username}</Text> : null}
                                                 <Text style={styles.requestTime}>Wants to be your gym buddy</Text>
                                             </View>
                                         </View>
@@ -588,12 +588,14 @@ const GymBuddiesScreen: React.FC = () => {
                                         <View style={styles.requestInfo}>
                                             <Avatar uri={request.avatar_url} name={displayName(request)} size="md" />
                                             <View style={styles.requestText}>
-                                                <Text style={styles.requestName}>{displayName(request)}</Text>
-                                                {request.username ? <Text style={styles.friendHandle}>@{request.username}</Text> : null}
+                                                <Text style={styles.requestName} numberOfLines={1}>{displayName(request)}</Text>
+                                                {request.username ? <Text style={styles.friendHandle} numberOfLines={1}>@{request.username}</Text> : null}
                                                 <Text style={styles.requestTime}>Waiting for them to accept</Text>
                                             </View>
                                         </View>
-                                        <Text style={styles.sentTag}>PENDING</Text>
+                                        <View style={styles.sentTag}>
+                                            <Text style={styles.sentTagText}>PENDING</Text>
+                                        </View>
                                     </GlassCard>
                                 ))}
                             </View>
@@ -1054,6 +1056,7 @@ const styles = StyleSheet.create({
     },
     searchResultTextCol: {
         flex: 1,
+        minWidth: 0,
         gap: 2,
     },
     searchResultHandle: {
@@ -1132,15 +1135,19 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: spacing.sm,
+        padding: spacing.md,
+        gap: spacing.sm,
     },
     requestInfo: {
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
+        minWidth: 0,
         gap: spacing.md,
     },
     requestText: {
         flex: 1,
+        minWidth: 0,
     },
     requestName: {
         fontSize: typography.sizes.base,
@@ -1153,6 +1160,7 @@ const styles = StyleSheet.create({
     },
     requestActions: {
         flexDirection: 'row',
+        flexShrink: 0,
         gap: spacing.sm,
     },
     acceptBtn: {
@@ -1173,23 +1181,26 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
+        flexShrink: 1,
+        maxWidth: '40%',
+        textAlign: 'right',
     },
-    // Was a 6x2 box on an 8px corner: the word sat wedged against its own
-    // border and crowded the name beside it. Pill it, give the text room, and
-    // hold it off the name. overflow keeps Android clipping to the radius.
     sentTag: {
-        fontSize: typography.sizes['2xs'],
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
-        letterSpacing: 0.8,
-        lineHeight: 14,
+        flexShrink: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
         borderWidth: 1,
         borderColor: colors.glass.border,
         borderRadius: borderRadius.full,
         paddingHorizontal: 10,
         paddingVertical: 4,
-        marginLeft: spacing.sm,
-        overflow: 'hidden',
+    },
+    sentTagText: {
+        fontSize: typography.sizes['2xs'],
+        fontFamily: typography.fontFamily.medium,
+        color: colors.text.secondary,
+        letterSpacing: 0.8,
+        lineHeight: 16,
     },
     declineBtn: {
         width: 40,
