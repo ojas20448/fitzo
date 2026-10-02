@@ -1,4 +1,5 @@
 const aiProvider = require('./aiProvider');
+const { DEFAULT_MODEL } = require('./geminiCostControls');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { query } = require('../config/database');
 const contextPackService = require('./contextPack');
@@ -17,6 +18,10 @@ const REQUEST_OPTIONS = { timeout: REQUEST_TIMEOUT_MS };
 
 /** Shown when generation fails. Deliberately never written to daily_insights. */
 const FALLBACK_NOTE = "Keep showing up and stay consistent with your workout targets today! You've got this.";
+// A slow cache warm must not start another paid call on every home refresh.
+// Entries are removed on both completion and failure; persisted notes remain
+// the source of truth. This is process-local, not a distributed cron lock.
+const warmingInsights = new Map();
 
 /**
  * Generates today's proactive daily insight for a user using their 14-day context pack.
@@ -94,7 +99,7 @@ Write the morning insight:`;
     let generatedNote = '';
     try {
         const model = aiProvider.getModel(genAI, 'daily_insight',
-            { model: process.env.GEMINI_MODEL || 'gemini-flash-latest' },
+            { model: process.env.GEMINI_MODEL || DEFAULT_MODEL },
             REQUEST_OPTIONS, userId,
         );
         const result = await model.generateContent(prompt);
@@ -180,9 +185,12 @@ async function getTodayDailyInsight(userId) {
     // every new install — hit this path on their first open of the day and waited out
     // the generation behind a "Server is waking up" banner. Nobody should wait on
     // Gemini for a decorative strip; the next open reads the row this warms.
-    generateDailyInsight(userId, { sendPush: false }).catch((err) => {
-        console.error(`Background daily insight failed for user ${userId}:`, err.message);
-    });
+    if (!warmingInsights.has(userId)) {
+        const warm = generateDailyInsight(userId, { sendPush: false }).catch((err) => {
+            console.error(`Background daily insight failed for user ${userId}:`, err.message);
+        }).finally(() => warmingInsights.delete(userId));
+        warmingInsights.set(userId, warm);
+    }
     return null;
 }
 

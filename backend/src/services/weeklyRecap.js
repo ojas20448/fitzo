@@ -1,4 +1,5 @@
 const aiProvider = require('./aiProvider');
+const { DEFAULT_MODEL } = require('./geminiCostControls');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { query } = require('../config/database');
 
@@ -128,7 +129,7 @@ Provide the weekly summary report:`;
 
     let summaryText = '';
     try {
-        const model = aiProvider.getModel(genAI, 'weekly_recap', { model: process.env.GEMINI_MODEL || 'gemini-flash-latest' }, undefined, userId);
+        const model = aiProvider.getModel(genAI, 'weekly_recap', { model: process.env.GEMINI_MODEL || DEFAULT_MODEL }, undefined, userId);
         const result = await model.generateContent(prompt);
         const response = await result.response;
         summaryText = response.text().trim();

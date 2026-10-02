@@ -100,4 +100,27 @@ describe('aiQuota middleware', () => {
         const usageAgain = await getUsage('user-f');
         expect(usageAgain.daily.used).toBe(2);
     });
+
+    it('invalid environment limits cannot disable cost protection', async () => {
+        jest.resetModules();
+        process.env.AI_DAILY_LIMIT = 'not-a-number';
+        process.env.AI_MONTHLY_LIMIT = '-1';
+        const quota = require('../middleware/aiQuota');
+        const usage = await quota.getUsage('invalid-config-user');
+        expect(usage.daily.limit).toBe(10);
+        expect(usage.monthly.limit).toBe(150);
+    });
+
+    it('limits an otherwise unlimited user to ten AI requests per day by default', async () => {
+        jest.resetModules();
+        delete process.env.AI_DAILY_LIMIT;
+        process.env.AI_BURST_LIMIT = '100';
+        process.env.AI_MONTHLY_LIMIT = '100';
+        const quota = require('../middleware/aiQuota');
+        const next = jest.fn();
+        const res = mockRes();
+        for (let i = 0; i < 11; i++) await quota.aiQuota(mockReq('default-daily-user'), res, next);
+        expect(next).toHaveBeenCalledTimes(10);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'AI_LIMIT_REACHED', window: 'day', limit: 10 }));
+    });
 });

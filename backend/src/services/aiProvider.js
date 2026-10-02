@@ -2,9 +2,10 @@ const {randomUUID}=require('node:crypto');
 const context=require('./aiContext');
 const {AIUnavailableError}=require('../utils/errors');
 const {jobs}=require('./aiJobs');
+const {getCostControlledModel}=require('./geminiCostControls');
 function getModel(legacyClient,feature,options,requestOptions,ownerId) {
     const provider=process.env.AI_PROVIDER||'gemini';
-    if(provider==='gemini')return legacyClient.getGenerativeModel(options,requestOptions);
+    if(provider==='gemini')return getCostControlledModel(legacyClient,feature,options,requestOptions,ownerId);
     if(provider!=='laptop-worker')throw new AIUnavailableError('Unknown AI provider configuration.');
     const workerGenerate=async input=>{
         if(feature==='transcription')throw new AIUnavailableError('Audio transcription is not verified for this worker.');
@@ -29,7 +30,7 @@ function getModel(legacyClient,feature,options,requestOptions,ownerId) {
         try{return await workerGenerate(input);}
         catch(error){
             if(process.env.AI_WORKER_API_FALLBACK==='true' && process.env.GEMINI_API_KEY){
-                return legacyClient.getGenerativeModel(options,requestOptions).generateContent(input);
+                return getCostControlledModel(legacyClient,feature,options,requestOptions,ownerId).generateContent(input);
             }
             throw error;
         }

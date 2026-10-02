@@ -10,17 +10,22 @@
  * fallback so limits still apply on a single instance without Redis.
  *
  * Configure via env (all optional):
- *   AI_BURST_LIMIT    requests/minute  (default 6)
- *   AI_DAILY_LIMIT    requests/day     (default 25)
+ *   AI_BURST_LIMIT    requests/minute  (default 3)
+ *   AI_DAILY_LIMIT    requests/day     (default 10)
  *   AI_MONTHLY_LIMIT  requests/month   (default 150)
  */
 
 const cache = require('../services/cache');
 
+function positiveLimit(value, fallback) {
+    const parsed = Number(value);
+    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 const LIMITS = {
-    minute: { max: parseInt(process.env.AI_BURST_LIMIT || '6', 10), ttl: 120 },
-    day: { max: parseInt(process.env.AI_DAILY_LIMIT || '25', 10), ttl: 60 * 60 * 26 },
-    month: { max: parseInt(process.env.AI_MONTHLY_LIMIT || '150', 10), ttl: 60 * 60 * 24 * 32 },
+    minute: { max: positiveLimit(process.env.AI_BURST_LIMIT, 3), ttl: 120 },
+    day: { max: positiveLimit(process.env.AI_DAILY_LIMIT, 10), ttl: 60 * 60 * 26 },
+    month: { max: positiveLimit(process.env.AI_MONTHLY_LIMIT, 150), ttl: 60 * 60 * 24 * 32 },
 };
 
 // In-memory fallback when Redis is unavailable (single-instance safe)

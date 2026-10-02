@@ -7,15 +7,10 @@ if (!process.env.GEMINI_API_KEY) {
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const { AIUnavailableError, ValidationError } = require('../utils/errors');
 
-// The model name lives in ONE place, and is env-overridable.
-//
-// Google retires model IDs over time: `gemini-2.5-flash` became unavailable to
-// newly-created API keys, so the moment the key was rotated EVERY AI feature
-// (coach, voice logging, food analysis, daily insights, weekly recaps) started
-// returning 500s — with no obvious link between "I rotated a key" and "the AI
-// died". The "-latest" alias tracks the current Flash generation so a future
-// retirement can't do that again. Set GEMINI_MODEL to pin an exact version.
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+// Pin the verified inexpensive model so a moving "latest" alias cannot silently
+// switch production to a more expensive generation. Env overrides remain available.
+const { DEFAULT_MODEL } = require('./geminiCostControls');
+const GEMINI_MODEL = process.env.GEMINI_MODEL || DEFAULT_MODEL;
 
 /**
  * A cheaper, higher-throughput model for the mechanical calls.
@@ -27,10 +22,10 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
  * shares one bucket, and voice logging costs two calls (transcribe, then
  * extract). Those are far and away the highest-volume calls in the app.
  *
- * The coach, plan generation and photo analysis stay on Flash, where output
- * quality is the point and volume is low.
+ * All features default to the verified Flash-Lite model; a separate fast model
+ * can still be selected through the environment.
  */
-const GEMINI_FAST_MODEL = process.env.GEMINI_FAST_MODEL || 'gemini-flash-lite-latest';
+const GEMINI_FAST_MODEL = process.env.GEMINI_FAST_MODEL || DEFAULT_MODEL;
 
 /**
  * Did the provider refuse because a quota or rate limit is exhausted?
@@ -504,7 +499,7 @@ Return ONLY valid JSON (no markdown, no code fences) with this exact structure:
 }
 
 // ===========================================
-// FOOD PHOTO ANALYSIS (Gemini Vision - FREE)
+// FOOD PHOTO ANALYSIS (Gemini Vision)
 // ===========================================
 async function analyzeFoodFromPhoto(base64Image, mimeType = 'image/jpeg') {
     const prompt = `${INDIAN_CONTEXT}
@@ -541,25 +536,13 @@ Return ONLY valid JSON (no markdown, no code fences) with this structure:
 }`;
 
     try {
-        // responseMimeType forces valid JSON out of the model — the same thing the
-        // text-extraction calls below already do. This call was the odd one out, and
-        // it showed: a photo with no food returned `{"items":[]}` fine, but a real
-        // meal produced a long response that arrived fenced or truncated, so
-        // JSON.parse threw and the user got a 500. It broke precisely when it found
-        // food, which is every real use. maxOutputTokens gives a multi-item thali
-        // room to finish rather than being cut mid-object.
+        // JSON mode and a meal-sized allowance keep multi-item scans readable.
+        // The provider applies minimal thinking to the pinned Flash-Lite model.
         const model = aiProvider.getModel(genAI, 'food_photo', {
             model: GEMINI_MODEL,
             generationConfig: {
                 responseMimeType: 'application/json',
-                // Generous on purpose. GEMINI_MODEL resolves to gemini-flash-latest,
-                // which is a 2.5-series thinking model, and thinking tokens are billed
-                // against maxOutputTokens before a single character of JSON is emitted.
-                // A busy plate reasons for longer, so a tight cap starved the actual
-                // answer and truncated it mid-object — which is why this failed on real
-                // meals and passed on an empty plate. SDK 0.24.1 has no thinkingConfig
-                // to turn it off, so the budget has to absorb it.
-                maxOutputTokens: 8192,
+                maxOutputTokens: 4096,
             },
         }, VISION_REQUEST_OPTIONS);
 

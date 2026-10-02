@@ -140,4 +140,21 @@ describe('Daily Insight Service', () => {
         expect(note).toBeNull();
         released(geminiOk(AI_NOTE));
     });
+
+    it('repeated home opens share one background generation and one persisted note', async () => {
+        query.mockResolvedValue({ rows: [] });
+        let release;
+        mockGenerateContent.mockReturnValue(new Promise(resolve => { release = resolve; }));
+        const userId = 'background-dedup-owner';
+        const notes = await Promise.all([getTodayDailyInsight(userId), getTodayDailyInsight(userId)]);
+        expect(notes).toEqual([null, null]);
+        release(geminiOk(AI_NOTE));
+        // Drain the background generation, including response and database awaits.
+        await new Promise(resolve => setImmediate(resolve));
+        const writes = query.mock.calls.filter(([sql]) => sql.includes('INSERT INTO daily_insights'));
+        expect(writes).toHaveLength(1);
+        expect(writes[0][1][0]).toBe(userId);
+        expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+        expect(pushNotifications.sendToUser).not.toHaveBeenCalled();
+    });
 });
