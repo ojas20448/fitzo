@@ -1,6 +1,14 @@
 # Fitzo laptop worker
 
-This branch prepares local/private testing. It has not been deployed to the existing Fitzo backend. The repository's mobile default URL is `https://fitzo.onrender.com/api`; a new migration, backend release and dedicated worker credential are required before a worker can connect there. Use a staging backend/database first. The laptop never accepts inbound connections.
+## Archived on 2 October 2026
+
+The laptop worker is retired from the active Fitzo setup at the owner's request. Production uses `AI_PROVIDER=gemini`, and normal preview/production mobile builds use `EXPO_PUBLIC_FOOD_JOB_MODE=false`. The worker-staging build profile has been removed. Earlier worker-mode app builds receive the explicit API-fallback response when starting a scan.
+
+The last active implementation is preserved on `codex/archived-laptop-worker-2026-10-02`. Source remains here because the dormant backend queue routes and tests depend on `contracts.js`. Existing queue tables are retained; do not drop them or run `db:setup`. Production worker credentials should be revoked and the queue administratively paused during retirement.
+
+On the second laptop, run `.\manage.ps1 stop` and `.\manage.ps1 remove-startup` from `ai-worker/`. This development machine cannot stop a process on the other laptop remotely. Restarting the worker later requires an explicit provider switch and a newly issued credential.
+
+The instructions below are historical setup notes, not the current production configuration.
 
 ## AI feature coverage
 

@@ -78,7 +78,16 @@ test('real route contract: worker credentials cannot read user jobs; owner can r
         assert.equal((await send('/ai-jobs/by-request/scan_test_001',userToken,null,'GET')).status,200);
         assert.equal((await send(`/ai-jobs/${job.id}`,userToken,{},'DELETE')).status,200);
         await db.query('UPDATE ai_worker_credentials SET revoked=true WHERE id=$1',[worker]);assert.equal((await send('/ai-worker/health',token)).status,401);
-    }finally{server.close();delete process.env.AI_PROVIDER;await pg.close();}
+        process.env.AI_PROVIDER='gemini';process.env.GEMINI_API_KEY='test-key-never-used';
+        const direct=await send('/ai-jobs/food-photo',userToken,{image,mimeType:'image/jpeg'});
+        assert.equal(direct.status,503);assert.equal((await direct.json()).code,'WORKER_FALLBACK_AVAILABLE');
+        const capabilities=await (await send('/ai-jobs/capabilities',userToken,null,'GET')).json();
+        assert.equal(capabilities.provider,'gemini');assert.equal(capabilities.foodJobs,false);assert.equal(capabilities.apiFallback,true);
+        assert.equal((await send('/ai-worker/health',token)).status,503);
+        delete process.env.GEMINI_API_KEY;
+        const unavailable=await send('/ai-jobs/food-photo',userToken,{image,mimeType:'image/jpeg'});
+        assert.equal((await unavailable.json()).code,'AI_UNAVAILABLE');
+    }finally{server.close();delete process.env.AI_PROVIDER;delete process.env.GEMINI_API_KEY;await pg.close();}
 });
 test('result schemas for every supported feature reject malformed output and images validate bytes',()=>{
     const sample={coach:'Advice',form:'Form advice',daily_insight:'Daily note',weekly_recap:'Weekly note',food_extract:[{item:'rice',quantity:'1 bowl'}],workout_extract:[{name:'squat',is_unilateral:false,sets:[{reps:10,weight_kg:20,rir:2}]}],nutrition:{calories:2000,macros:{protein_g:100,carbs_g:200,fats_g:60},meal_timing:['morning'],supplements:[],tips:['Rest']},workout_plan:{plan_name:'Plan',duration_weeks:4,days:[{day:'Monday',focus:'legs',exercises:[{name:'squat',sets:3,reps:'10',rest_seconds:60,notes:''}]}]},food_text:{name:'rice',serving_size:'1 bowl',calories:200,protein_g:4,carbs_g:45,fat_g:1,fiber_g:1,sugar_g:0}};
