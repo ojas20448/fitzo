@@ -1,3 +1,5 @@
+import ScreenBackdrop from '../../components/ScreenBackdrop';
+import RecoveryCheckIn from '../../components/RecoveryCheckIn';
 import { isHealthImportEnabled } from '../../utils/healthImportPreference';
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -32,12 +34,11 @@ import WeeklyProgress from '../../components/WeeklyProgress';
 import NutritionAnalytics from '../../components/NutritionAnalytics';
 import { SkeletonHomeScreen } from '../../components/Skeleton';
 import EmptyState, { EmptyStateInline } from '../../components/EmptyState';
-import MacroPieChart from '../../components/MacroPieChart';
 import ProgressRing from '../../components/ProgressRing';
 import CustomRefreshHeader from '../../components/CustomRefreshHeader';
 import BusyTimesStrip from '../../components/BusyTimesStrip';
 import { gymAPI, BusyTimes } from '../../services/api';
-import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
+import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { firstName as getFirstName, displayName } from '../../utils/displayName';
 import AIConsentModal, { getAIConsent } from '../../components/AIConsentModal';
 
@@ -298,8 +299,10 @@ const HomeScreen: React.FC = () => {
                 session_label: suggestion.day_name,
                 visibility: 'friends',
             });
-            // Refresh home data to show the confirmed intent
-            await loadHomeData(false);
+            router.push({ pathname: '/log/workout', params: { intent: JSON.stringify({
+                training_pattern: suggestion.split_id || 'custom',
+                emphasis: [suggestion.day_name], session_label: suggestion.day_name,
+            }) } });
         } catch {
             // Fall back to full intent screen
             router.push('/workout-intent' as any);
@@ -324,11 +327,12 @@ const HomeScreen: React.FC = () => {
     };
 
     // Time-based greeting
-    const greeting = 'Consistency matters.';
+    const greeting = 'Today';
 
     if (loading) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
                 <SkeletonHomeScreen />
                 {loadingMessage ? (
                     <View style={styles.loadingBanner}>
@@ -344,6 +348,7 @@ const HomeScreen: React.FC = () => {
     if (error && !data) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
                 <EmptyState variant={error} onAction={retry} />
             </SafeAreaView>
         );
@@ -370,6 +375,7 @@ const HomeScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
             {isStale && (
                 <View style={styles.staleBanner}>
                     <MaterialIcons name="cloud-off" size={14} color={colors.text.muted} />
@@ -381,6 +387,8 @@ const HomeScreen: React.FC = () => {
             )}
             <ScrollView
                 style={styles.content}
+                keyboardShouldPersistTaps="handled"
+                automaticallyAdjustKeyboardInsets
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
                 refreshControl={
@@ -463,50 +471,6 @@ const HomeScreen: React.FC = () => {
                     </View>
                 </Animated.View>
 
-                {/* Daily AI Note — taps through to the coach chat */}
-                {dailyInsight ? (
-                    <Animated.View entering={FadeInDown.delay(50).duration(600).springify()}>
-                        <Pressable
-                            onPress={() => router.push('/ai-coach' as any)}
-                            accessibilityLabel="Open AI Coach chat"
-                            accessibilityRole="button"
-                        >
-                            <GlassCard style={styles.insightCard}>
-                                <View style={styles.insightHeader}>
-                                    <MaterialIcons name="insights" size={18} color={colors.primary} />
-                                    <Text style={styles.insightTitle}>COACH'S DAILY INSIGHT</Text>
-                                    <View style={{ flex: 1 }} />
-                                    <MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
-                                </View>
-                                <Text style={styles.insightMessage}>{dailyInsight}</Text>
-                                <Text style={styles.insightAskHint}>Ask your coach anything →</Text>
-                            </GlassCard>
-                        </Pressable>
-                    </Animated.View>
-                ) : !aiConsented ? (
-                    <Animated.View entering={FadeInDown.delay(50).duration(600).springify()}>
-                        <Pressable
-                            onPress={() => setAiConsentModalVisible(true)}
-                            accessibilityLabel="Enable AI Daily Insights"
-                            accessibilityRole="button"
-                        >
-                            <GlassCard style={styles.insightCard}>
-                                <View style={styles.insightHeader}>
-                                    <MaterialIcons name="auto-awesome" size={18} color={colors.primary} />
-                                    <Text style={styles.insightTitle}>AI DAILY INSIGHTS</Text>
-                                    <View style={{ flex: 1 }} />
-                                    <Text style={[styles.tapHintText, { color: colors.primary }]}>ENABLE</Text>
-                                    <MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
-                                </View>
-                                <Text style={styles.insightMessage}>
-                                    Get personalized coaching tips and workout feedback powered by Google Gemini AI.
-                                </Text>
-                                <Text style={styles.insightAskHint}>Tap to review data privacy details & enable →</Text>
-                            </GlassCard>
-                        </Pressable>
-                    </Animated.View>
-                ) : null}
-
                 {/* Today's Training - Smart Suggestion */}
                 <Animated.View entering={FadeInDown.delay(100).duration(600).springify()}>
                     {currentIntent ? (
@@ -552,15 +516,6 @@ const HomeScreen: React.FC = () => {
                             </View>
                             <View style={styles.intentCardActions}>
                                 <TouchableOpacity
-                                    style={styles.intentConfirmBtn}
-                                    onPress={handleQuickConfirm}
-                                    disabled={settingIntent}
-                                >
-                                    <Text style={styles.intentConfirmText}>
-                                        {settingIntent ? '...' : "Let's Go"}
-                                    </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
                                     onPress={handleIntentPress}
                                     style={styles.intentChangeBtn}
                                     accessibilityRole="button"
@@ -593,6 +548,130 @@ const HomeScreen: React.FC = () => {
                         </Pressable>
                     )}
                 </Animated.View>
+
+                {/* Quick Action Buttons
+                    One primary only. Two identical white CTAs (plus the tab-bar FAB
+                    and the "Let's Go" pill) meant nothing was actually primary, and
+                    users resolved the tie by thumb proximity rather than intent.
+
+                    The primary is context-aware: before an intent is set the useful
+                    next step is declaring the session; once it is set, it is logging
+                    the work. Previously the label said LOG WORKOUT but routed to the
+                    planning screen, disagreeing with the FAB of the same name. */}
+                <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} style={styles.actionButtons}>
+                    <TouchableOpacity
+                        style={styles.primaryActionBtn}
+                        onPress={() => currentIntent ? router.push({ pathname: '/log/workout', params: { intent: JSON.stringify({
+                            session_label: currentIntent.session_label || currentIntent.display,
+                            training_pattern: currentIntent.training_pattern || undefined,
+                            emphasis: currentIntent.emphasis,
+                        }) } }) : suggestion ? void handleQuickConfirm() : handleIntentPress()}
+                        disabled={settingIntent}
+                        accessibilityState={{ disabled: settingIntent, busy: settingIntent }}
+                        accessibilityLabel={currentIntent ? 'Log workout' : 'Start training'}
+                        accessibilityRole="button"
+                    >
+                        <MaterialIcons
+                            name={currentIntent ? 'add' : 'bolt'}
+                            size={20}
+                            color={colors.text.dark}
+                        />
+                        <Text style={styles.primaryActionText}>
+                            {settingIntent ? 'Starting…' : currentIntent ? 'Log workout' : 'Start workout'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.secondaryActionBtn}
+                        onPress={() => router.push('/log/calories' as any)}
+                        accessibilityLabel="Log food"
+                        accessibilityRole="button"
+                    >
+                        <MaterialIcons name="add" size={20} color={colors.text.primary} />
+                        <Text style={styles.secondaryActionText}>Log food</Text>
+                    </TouchableOpacity>
+                </Animated.View>
+
+                {/* Today — nutrition + weekly activity in one block (simplified) */}
+                <Animated.View entering={FadeInDown.delay(300).duration(600).springify()} style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Food logged today</Text>
+                        <TouchableOpacity onPress={() => router.push('/log/calories' as any)}>
+                            <Text style={styles.viewAllLink}>Add food</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.foodSummary}>
+                        <View style={styles.foodTotalRow}>
+                            <Text style={styles.foodTotal}>{Math.round(todayMacros.calories || 0).toLocaleString()} kcal</Text>
+                            {calorieGoal !== null ? <Text style={styles.foodTarget}>Target {calorieGoal.toLocaleString()}</Text>
+                                : <TouchableOpacity style={{ minHeight: 44, justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel="Set up food targets" onPress={() => router.push('/member/fitness-profile')}><Text style={styles.viewAllLink}>Set up targets</Text></TouchableOpacity>}
+                        </View>
+                        <Text style={styles.foodHint}>{todayMacros.calories > 0 ? 'Based on your food log. Unlogged meals are not included.' : 'No food logged yet. Add a meal to see your progress.'}</Text>
+                        <View style={styles.foodMacros}>
+                            {(['protein', 'carbs', 'fat'] as const).map(macro => <View key={macro} style={styles.foodMacro}>
+                                <Text style={styles.foodMacroName}>{macro === 'protein' ? 'Protein' : macro === 'carbs' ? 'Carbs' : 'Fat'}</Text>
+                                <Text style={styles.foodMacroValue}>{Math.round(todayMacros[macro] || 0)}{macroTargets ? ` / ${macroTargets[macro]}` : ''} g</Text>
+                            </View>)}
+                        </View>
+                    </View>
+                    <View style={{ marginTop: spacing.md }}>
+                        <WeeklyProgress history={data?.streak.history || []} />
+                    </View>
+                    <TouchableOpacity
+                        style={styles.insightsButton}
+                        onPress={() => router.push('/member/nutrition-insights' as any)}
+                    >
+                        <MaterialIcons name="insights" size={16} color={colors.primary} />
+                        <Text style={styles.insightsButtonText}>Nutrition details</Text>
+                        <MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
+                    </TouchableOpacity>
+                </Animated.View>
+
+                <RecoveryCheckIn key={user?.id} userId={user?.id} />
+
+                {/* Daily AI Note — taps through to the coach chat */}
+                {dailyInsight ? (
+                    <Animated.View entering={FadeInDown.delay(50).duration(600).springify()}>
+                        <Pressable
+                            onPress={() => router.push('/ai-coach' as any)}
+                            accessibilityLabel="Open AI Coach chat"
+                            accessibilityRole="button"
+                        >
+                            <GlassCard style={styles.insightCard}>
+                                <View style={styles.insightHeader}>
+                                    <MaterialIcons name="insights" size={18} color={colors.primary} />
+                                    <Text style={styles.insightTitle}>From your coach</Text>
+                                    <View style={{ flex: 1 }} />
+                                    <MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
+                                </View>
+                                <Text style={styles.insightMessage}>{dailyInsight}</Text>
+                                <Text style={styles.insightAskHint}>Ask your coach anything →</Text>
+                            </GlassCard>
+                        </Pressable>
+                    </Animated.View>
+                ) : !aiConsented ? (
+                    <Animated.View entering={FadeInDown.delay(50).duration(600).springify()}>
+                        <Pressable
+                            onPress={() => setAiConsentModalVisible(true)}
+                            accessibilityLabel="Enable AI Daily Insights"
+                            accessibilityRole="button"
+                        >
+                            <GlassCard style={styles.insightCard}>
+                                <View style={styles.insightHeader}>
+                                    <MaterialIcons name="auto-awesome" size={18} color={colors.primary} />
+                                    <Text style={styles.insightTitle}>Your coach</Text>
+                                    <View style={{ flex: 1 }} />
+                                    <Text style={[styles.tapHintText, { color: colors.primary }]}>Try it</Text>
+                                    <MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
+                                </View>
+                                <Text style={styles.insightMessage}>
+                                    Ask about your training and food logs. Review how your data is shared before using the coach.
+                                </Text>
+                                <Text style={styles.insightAskHint}>Review data sharing →</Text>
+                            </GlassCard>
+                        </Pressable>
+                    </Animated.View>
+                ) : null}
 
                 {/* Gym Crowd - live green/yellow/red occupancy light */}
                 <Animated.View entering={FadeInDown.delay(150).duration(600).springify()}>
@@ -655,74 +734,6 @@ const HomeScreen: React.FC = () => {
                 {/* "Completed today" used to sit here. It restated numbers the
                     Today block already shows and pushed the next action further
                     down the screen, so it now lives on Stats. */}
-
-                {/* Quick Action Buttons
-                    One primary only. Two identical white CTAs (plus the tab-bar FAB
-                    and the "Let's Go" pill) meant nothing was actually primary, and
-                    users resolved the tie by thumb proximity rather than intent.
-
-                    The primary is context-aware: before an intent is set the useful
-                    next step is declaring the session; once it is set, it is logging
-                    the work. Previously the label said LOG WORKOUT but routed to the
-                    planning screen, disagreeing with the FAB of the same name. */}
-                <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} style={styles.actionButtons}>
-                    <TouchableOpacity
-                        style={styles.primaryActionBtn}
-                        onPress={() => router.push((currentIntent ? '/log/workout' : '/workout-intent') as any)}
-                        accessibilityLabel={currentIntent ? 'Log workout' : 'Start training'}
-                        accessibilityRole="button"
-                    >
-                        <MaterialIcons
-                            name={currentIntent ? 'add' : 'bolt'}
-                            size={20}
-                            color={colors.text.dark}
-                        />
-                        <Text style={styles.primaryActionText}>
-                            {currentIntent ? 'LOG WORKOUT' : 'START TRAINING'}
-                        </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.secondaryActionBtn}
-                        onPress={() => router.push('/log/calories' as any)}
-                        accessibilityLabel="Log calories"
-                        accessibilityRole="button"
-                    >
-                        <MaterialIcons name="add" size={20} color={colors.text.primary} />
-                        <Text style={styles.secondaryActionText}>LOG CALORIES</Text>
-                    </TouchableOpacity>
-                </Animated.View>
-
-                {/* Today — nutrition + weekly activity in one block (simplified) */}
-                <Animated.View entering={FadeInDown.delay(300).duration(600).springify()} style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Today</Text>
-                        <TouchableOpacity onPress={() => router.push('/log/calories' as any)}>
-                            <Text style={styles.viewAllLink}>LOG FOOD</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <MacroPieChart
-                        calories={todayMacros.calories || 0}
-                        calorieTarget={calorieGoal}
-                        protein={todayMacros.protein || 0}
-                        proteinTarget={macroTargets.protein}
-                        carbs={todayMacros.carbs || 0}
-                        carbsTarget={macroTargets.carbs}
-                        fat={todayMacros.fat || 0}
-                        fatTarget={macroTargets.fat}
-                    />
-                    <View style={{ marginTop: spacing.md }}>
-                        <WeeklyProgress history={data?.streak.history || []} />
-                    </View>
-                    <TouchableOpacity
-                        style={styles.insightsButton}
-                        onPress={() => router.push('/member/nutrition-insights' as any)}
-                    >
-                        <MaterialIcons name="insights" size={16} color={colors.primary} />
-                        <Text style={styles.insightsButtonText}>View Detailed Insights</Text>
-                        <MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
-                    </TouchableOpacity>
-                </Animated.View>
 
                 {/* Continue Learning
                     Was buried dead-last above a 120px spacer, roughly two screens
@@ -888,6 +899,14 @@ const HomeScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+    foodSummary: { padding: spacing.lg, borderRadius: borderRadius.lg, backgroundColor: '#101010', gap: 12 },
+    foodTotalRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
+    foodTotal: { fontFamily: typography.fontFamily.semiBold, fontSize: 24, color: colors.text.primary },
+    foodTarget: { fontFamily: typography.fontFamily.regular, fontSize: 13, color: colors.text.secondary },
+    foodHint: { fontFamily: typography.fontFamily.regular, fontSize: 12, lineHeight: 19, color: colors.text.secondary },
+    foodMacros: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 }, foodMacro: { flexGrow: 1 },
+    foodMacroName: { fontFamily: typography.fontFamily.regular, fontSize: 12, color: colors.text.secondary },
+    foodMacroValue: { fontFamily: typography.fontFamily.medium, fontSize: 13, marginTop: 6, color: colors.text.primary },
     container: {
         flex: 1,
         backgroundColor: colors.background,
@@ -1173,12 +1192,16 @@ const styles = StyleSheet.create({
     // Action Buttons
     actionButtons: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         gap: spacing.md,
         marginBottom: spacing['3xl'],
     },
     primaryActionBtn: {
-        flex: 1,
-        height: 64,
+        flexGrow: 1,
+        flexBasis: 170,
+        minHeight: 56,
+        paddingVertical: 16,
+        paddingHorizontal: 14,
         backgroundColor: colors.primary,
         borderRadius: borderRadius.xl,
         borderWidth: 1,
@@ -1187,17 +1210,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: spacing.md,
-        ...shadows.glow,
     },
     primaryActionText: {
-        fontSize: typography.sizes.sm,
+        flexShrink: 1,
+        fontSize: typography.sizes.md,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.dark,
-        letterSpacing: 1,
+        textAlign: 'center',
     },
     secondaryActionBtn: {
-        flex: 1,
-        height: 64,
+        flexGrow: 1,
+        flexBasis: 110,
+        minHeight: 56,
+        paddingVertical: 16,
+        paddingHorizontal: 14,
         backgroundColor: 'transparent',
         borderRadius: borderRadius.xl,
         borderWidth: 1,
@@ -1438,7 +1464,6 @@ const styles = StyleSheet.create({
         padding: spacing.xl,
         borderWidth: 1,
         borderColor: colors.primary + '30',
-        ...shadows.glowMd,
     },
     welcomeInfo: {
         flexDirection: 'row',

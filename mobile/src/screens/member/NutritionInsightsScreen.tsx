@@ -6,7 +6,9 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Svg, Path, Circle } from 'react-native-svg';
 import WeeklyCharts from '../../components/WeeklyCharts';
-import { nutritionAPI, workoutsAPI } from '../../services/api';
+import { nutritionAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import ScreenBackdrop from '../../components/ScreenBackdrop';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -18,11 +20,6 @@ function calFromMacro(macro: 'protein' | 'carbs' | 'fat', grams: number) {
 function pct(value: number, total: number) {
     if (total === 0) return 0;
     return Math.round((value / total) * 100);
-}
-
-// Rough calorie burn estimate: ~5 kcal/min for weight training
-function estimateBurntCalories(durationMinutes: number) {
-    return Math.round(durationMinutes * 5);
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -95,20 +92,24 @@ function MacroPieChart({ slices }: {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function NutritionInsightsScreen() {
+    const { user } = useAuth();
+    return <AccountFoodDetails key={user?.id ?? 'signed-out'} />;
+}
+function AccountFoodDetails() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    const [targets, setTargets] = useState({ calories: 2000, protein: 150, carbs: 200, fat: 67 });
+    const [targets, setTargets] = useState<{ calories: number; protein: number; carbs: number; fat: number } | null>(null);
+    const [loadError, setLoadError] = useState('');
     const [logged, setLogged] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0 });
-    const [caloriesBurnt, setCaloriesBurnt] = useState(0);
-    const [bodyWeightKg, setBodyWeightKg] = useState(70);
+    const [bodyWeightKg, setBodyWeightKg] = useState(0);
 
     const loadData = useCallback(async () => {
+        setLoadError('');
         try {
-            const [todayRes, profileRes, historyRes] = await Promise.all([
-                nutritionAPI.getToday().catch(() => null),
-                nutritionAPI.getProfile().catch(() => null),
-                workoutsAPI.getHistory(10).catch(() => null),
+            const [todayRes, profileRes] = await Promise.all([
+                nutritionAPI.getToday(),
+                nutritionAPI.getProfile(),
             ]);
 
             if (todayRes) {
@@ -120,18 +121,8 @@ export default function NutritionInsightsScreen() {
                 setBodyWeightKg(profileRes.profile.weight_kg);
             }
 
-            // Estimate burnt calories from today's completed workouts
-            if (historyRes?.workouts) {
-                const today = new Date().toISOString().split('T')[0];
-                const todayWorkouts = historyRes.workouts.filter((w: any) => {
-                    const wDate = new Date(w.completed_at || w.date || w.created_at).toISOString().split('T')[0];
-                    return wDate === today && w.duration_minutes;
-                });
-                const totalMins = todayWorkouts.reduce((sum: number, w: any) => sum + (w.duration_minutes || 0), 0);
-                setCaloriesBurnt(estimateBurntCalories(totalMins));
-            }
-        } catch (err) {
-            // Silent — screen shows zeros
+        } catch {
+            setLoadError('Could not load your food details. Try again.');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -145,18 +136,28 @@ export default function NutritionInsightsScreen() {
         loadData();
     };
 
+    if (!loading && (!targets || loadError)) return <SafeAreaView style={styles.container} edges={['top']}>
+        <ScreenBackdrop />
+        <ScrollView contentContainerStyle={{ padding: 24, gap: 16, maxWidth: 600, width: '100%', alignSelf: 'center' }}>
+            <TouchableOpacity style={{ minHeight: 48, justifyContent: 'center' }} accessibilityRole="button" onPress={() => router.back()}><Text style={styles.statLabel}>Back</Text></TouchableOpacity>
+            <Text style={styles.statValue}>Food details</Text>
+            <Text style={styles.statLabel}>{loadError || 'Food targets are optional. Set them up when you want to compare your logs with a daily goal.'}</Text>
+            {!loadError && <Text style={styles.statLabel}>Logged today: {logged.calories} kcal · {logged.protein} g protein · {logged.carbs} g carbs · {logged.fat} g fat</Text>}
+            <TouchableOpacity style={{ minHeight: 48, padding: 16, borderRadius: 14, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.primary }} accessibilityRole="button" onPress={() => loadError ? void loadData() : router.push('/member/fitness-profile')}><Text style={{ fontFamily: typography.fontFamily.semiBold, fontSize: 15, color: colors.text.dark }}>{loadError ? 'Retry' : 'Set up food targets'}</Text></TouchableOpacity>
+            {!loadError && <TouchableOpacity style={{ minHeight: 48, justifyContent: 'center' }} accessibilityRole="button" onPress={() => router.push('/log/calories')}><Text style={styles.statLabel}>Log food without targets</Text></TouchableOpacity>}
+        </ScrollView>
+    </SafeAreaView>;
+    // The loading screen below must return before target-dependent calculations.
+    if (!targets) return <SafeAreaView style={styles.container}><ActivityIndicator color={colors.primary} /></SafeAreaView>;
+
     // Derived values
     const proteinCals = calFromMacro('protein', logged.protein);
     const carbsCals = calFromMacro('carbs', logged.carbs);
     const fatCals = calFromMacro('fat', logged.fat);
     const totalMacroCals = proteinCals + carbsCals + fatCals;
 
-    const netCalories = logged.calories - caloriesBurnt;
-    const maintenanceCalories = targets.calories;
-    const calBalance = netCalories - maintenanceCalories;
-    const isDeficit = calBalance <= 0;
-    const balanceColor = isDeficit ? colors.crowd.low : colors.crowd.high;
-    const balanceLabel = isDeficit ? 'Deficit' : 'Surplus';
+    const caloriesLeft = targets.calories - logged.calories;
+    const balanceLabel = caloriesLeft >= 0 ? 'Remaining' : 'Over target';
 
     const calorieProgress = pct(logged.calories, targets.calories);
     const progressColor =
@@ -165,12 +166,9 @@ export default function NutritionInsightsScreen() {
         colors.crowd.low;
 
     const proteinPerKg = bodyWeightKg > 0 ? (logged.protein / bodyWeightKg).toFixed(1) : '0';
-    const proteinPerKgNum = parseFloat(proteinPerKg);
-    const targetProteinPerKg = bodyWeightKg > 0 && targets.protein > 0 ? targets.protein / bodyWeightKg : 1.6;
-    const proteinAdequacy =
-        proteinPerKgNum >= targetProteinPerKg ? { label: 'Target met', color: colors.crowd.low } :
-        proteinPerKgNum >= targetProteinPerKg * 0.75 ? { label: 'Adequate', color: colors.crowd.medium } :
-        { label: 'Low', color: colors.crowd.high };
+    const proteinAdequacy = targets.protein <= 0 ? { label: 'No protein goal', color: colors.text.secondary }
+        : logged.protein >= targets.protein ? { label: 'Target met', color: colors.crowd.low }
+        : { label: 'Logged so far', color: colors.text.secondary };
 
     if (loading) {
         return (
@@ -224,18 +222,17 @@ export default function NutritionInsightsScreen() {
                     <View style={styles.divider} />
 
                     <StatRow label="Consumed" value={logged.calories} unit="kcal" />
-                    <StatRow label="Burnt (workouts)" value={caloriesBurnt} unit="kcal" color={colors.crowd.low} />
-                    <StatRow label="Net Calories" value={netCalories} unit="kcal" />
-                    <StatRow label="Maintenance" value={maintenanceCalories} unit="kcal" />
+                    <StatRow label="Daily target" value={targets.calories} unit="kcal" />
 
                     <View style={styles.divider} />
 
                     <View style={styles.balanceBadge}>
                         <Text style={styles.balanceBadgeLabel}>{balanceLabel}</Text>
-                        <Text style={[styles.balanceBadgeValue, { color: balanceColor }]}>
-                            {Math.abs(calBalance)} kcal {isDeficit ? 'below' : 'above'} maintenance
+                        <Text style={styles.balanceBadgeValue}>
+                            {Math.abs(caloriesLeft)} kcal
                         </Text>
                     </View>
+                    <Text style={styles.macroSubtitle}>Based on food logged so far. Unlogged meals are not included. Regular activity is already included in your starting target; workout estimates do not change it automatically.</Text>
                 </Animated.View>
 
                 {/* Macro % Breakdown Card */}
@@ -257,13 +254,13 @@ export default function NutritionInsightsScreen() {
 
                 {/* Protein Adequacy Card */}
                 <Animated.View entering={FadeInDown.delay(250).duration(600).springify()} style={styles.card}>
-                    <SectionLabel label="PROTEIN ADEQUACY" />
-                    <Text style={styles.macroSubtitle}>Daily protein target: {targets.protein}g ({bodyWeightKg > 0 ? (targets.protein / bodyWeightKg).toFixed(1) : '1.6'} g/kg body weight).</Text>
+                    <SectionLabel label="PROTEIN LOGGED" />
+                    <Text style={styles.macroSubtitle}>Daily protein target: {targets.protein}g{bodyWeightKg > 0 ? ` (${(targets.protein / bodyWeightKg).toFixed(1)} g/kg body weight)` : ''}.</Text>
 
                     <View style={styles.proteinRow}>
                         <View>
-                            <Text style={styles.proteinBig}>{proteinPerKg}</Text>
-                            <Text style={styles.proteinUnit}>g / kg bodyweight</Text>
+                            <Text style={styles.proteinBig}>{bodyWeightKg > 0 ? proteinPerKg : logged.protein}</Text>
+                            <Text style={styles.proteinUnit}>{bodyWeightKg > 0 ? 'g / kg bodyweight' : 'g logged'}</Text>
                         </View>
                         <View style={[styles.adequacyBadge, { borderColor: proteinAdequacy.color }]}>
                             <Text style={[styles.adequacyLabel, { color: proteinAdequacy.color }]}>
@@ -275,45 +272,16 @@ export default function NutritionInsightsScreen() {
                     <View style={styles.divider} />
 
                     <StatRow label="Protein consumed" value={logged.protein} unit="g" />
-                    <StatRow label="Body weight" value={bodyWeightKg} unit="kg" />
+                    <StatRow label="Body weight" value={bodyWeightKg > 0 ? bodyWeightKg : '—'} unit={bodyWeightKg > 0 ? 'kg' : undefined} />
                     <StatRow
                         label="Target protein"
-                        value={targets.protein || Math.round(bodyWeightKg * 1.6)}
+                        value={targets.protein}
                         unit="g"
                         color={colors.text.muted}
                     />
                 </Animated.View>
 
-                {/* Net Calorie Impact Card */}
-                <Animated.View entering={FadeInDown.delay(300).duration(600).springify()} style={styles.card}>
-                    <SectionLabel label="ENERGY BALANCE" />
-                    <Text style={styles.macroSubtitle}>
-                        {isDeficit
-                            ? `You're in a ${Math.abs(calBalance)} kcal deficit — good for fat loss`
-                            : `You're in a ${calBalance} kcal surplus — good for muscle gain`
-                        }
-                    </Text>
 
-                    <View style={styles.energyRow}>
-                        <View style={styles.energyItem}>
-                            <MaterialIcons name="restaurant" size={18} color={colors.text.secondary} />
-                            <Text style={styles.energyValue}>{logged.calories}</Text>
-                            <Text style={styles.energyLabel}>Eaten</Text>
-                        </View>
-                        <Text style={styles.energyMinus}>-</Text>
-                        <View style={styles.energyItem}>
-                            <MaterialIcons name="local-fire-department" size={18} color={colors.crowd.low} />
-                            <Text style={styles.energyValue}>{caloriesBurnt}</Text>
-                            <Text style={styles.energyLabel}>Burnt</Text>
-                        </View>
-                        <Text style={styles.energyMinus}>=</Text>
-                        <View style={styles.energyItem}>
-                            <MaterialIcons name="bolt" size={18} color={balanceColor} />
-                            <Text style={[styles.energyValue, { color: balanceColor }]}>{netCalories}</Text>
-                            <Text style={styles.energyLabel}>Net</Text>
-                        </View>
-                    </View>
-                </Animated.View>
 
             </ScrollView>
         </SafeAreaView>

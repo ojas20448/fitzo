@@ -62,7 +62,7 @@ const StatsScreen = () => {
 
     const toast = useToast();
     const { calorieGoal } = useNutrition();
-    const TARGET_CALS = calorieGoal || 2500;
+    const TARGET_CALS = calorieGoal;
 
     const loadData = async () => {
         setRecapLoading(true);
@@ -314,21 +314,21 @@ const StatsScreen = () => {
         const barWidth = 28;
         const barSpacing = 18;
         const chartHeight = 180;
-        const maxCals = Math.max(TARGET_CALS, ...history.map(d => d.calories)) * 1.1;
+        const maxCals = Math.max(TARGET_CALS ?? 0, 1, ...history.map(d => d.calories)) * 1.1;
 
         return (
             <View style={styles.chartContainer}>
                 <View style={styles.recapHeader}>
                     <Text style={styles.chartTitle}>Weekly Calories</Text>
-                    <Text style={styles.targetLabel}>Target: {TARGET_CALS} kcal</Text>
+                    <Text style={styles.targetLabel}>{TARGET_CALS !== null ? `Target: ${TARGET_CALS} kcal` : 'No food target set'}</Text>
                 </View>
 
                 <View style={styles.chartSvgWrapper}>
                     <Svg width={SCREEN_WIDTH - 80} height={chartHeight + 40}>
                         {/* Target Line */}
-                        <G y={(1 - TARGET_CALS / maxCals) * chartHeight}>
+                        {TARGET_CALS !== null && <G y={(1 - TARGET_CALS / maxCals) * chartHeight}>
                             <Rect x="0" y="0" width="100%" height="1.5" fill={colors.success} opacity={0.6} />
-                        </G>
+                        </G>}
 
                         {history.map((day, index) => {
                             const height = (day.calories / maxCals) * chartHeight;
@@ -342,7 +342,7 @@ const StatsScreen = () => {
                                         y={y}
                                         width={barWidth}
                                         height={height}
-                                        fill={day.calories > TARGET_CALS * 1.15 ? colors.error : colors.primary}
+                                        fill={TARGET_CALS !== null && day.calories > TARGET_CALS * 1.15 ? colors.error : colors.primary}
                                         rx={4}
                                         opacity={day.calories > 0 ? 0.9 : 0.05}
                                     />

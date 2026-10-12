@@ -61,7 +61,7 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                             </View>
                         )}
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.exerciseName} numberOfLines={1}>
+                            <Text style={styles.exerciseName} numberOfLines={2}>
                                 {exercise.name}
                             </Text>
                             {exercise.target ? (
@@ -99,18 +99,21 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                         onPress={() => onRemoveExercise(exerciseIndex)}
                         hitSlop={12}
                         style={styles.removeBtn}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove ${exercise.name}`}
                     >
                         <MaterialIcons name="delete-outline" size={18} color={colors.text.subtle} />
                     </TouchableOpacity>
                 </View>
 
+                {!!exercise.instructions && <Text style={styles.instructions}>{exercise.instructions}</Text>}
                 {/* Table Header */}
                 <View style={styles.tableHeader}>
                     <Text style={[styles.colLabel, { width: 32 }]}>SET</Text>
                     <Text style={[styles.colLabel, { flex: 1, textAlign: 'center' }]}>KG</Text>
                     <Text style={[styles.colLabel, { flex: 1, textAlign: 'center' }]}>REPS</Text>
                     {showRir && <Text style={[styles.colLabel, { width: 44 }]}>RIR</Text>}
-                    <View style={{ width: 40 }} />
+                    <View style={{ width: 44 }} />
                 </View>
 
                 {/* Set rows */}
@@ -137,9 +140,11 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                             style={styles.valueCell}
                             onPress={() => onOpenPicker(exerciseIndex, setIndex, 'weight')}
                             activeOpacity={0.6}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Weight for ${exercise.name}, set ${setIndex + 1}: ${set.weight_kg === '' || set.weight_kg == null ? 'not entered' : `${set.weight_kg} kilograms`}`}
                         >
-                            <Text style={[styles.valueCellText, !set.weight_kg && styles.valueCellPlaceholder]}>
-                                {set.weight_kg ? `${set.weight_kg}` : '-'}
+                            <Text style={[styles.valueCellText, (set.weight_kg === '' || set.weight_kg == null) && styles.valueCellPlaceholder]}>
+                                {set.weight_kg === '' || set.weight_kg == null ? '-' : `${set.weight_kg}`}
                             </Text>
                             {set.previous && (
                                 <Text style={styles.previousHint}>{set.previous}</Text>
@@ -151,6 +156,8 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                             style={styles.valueCell}
                             onPress={() => onOpenPicker(exerciseIndex, setIndex, 'reps')}
                             activeOpacity={0.6}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Reps for ${exercise.name}, set ${setIndex + 1}: ${set.reps || 'not entered'}`}
                         >
                             <Text style={[styles.valueCellText, !set.reps && styles.valueCellPlaceholder]}>
                                 {set.reps ? `${set.reps}` : '-'}
@@ -162,7 +169,8 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                             <TouchableOpacity
                                 style={[styles.valueCell, { width: 44 }]}
                                 onPress={() => onOpenPicker(exerciseIndex, setIndex, 'rir')}
-                                accessibilityLabel={`RIR for set ${setIndex + 1}`}
+                                accessibilityRole="button"
+                                accessibilityLabel={`Reps in reserve for ${exercise.name}, set ${setIndex + 1}`}
                             >
                                 <Text
                                     style={[
@@ -177,9 +185,13 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
 
                         {/* Checkmark */}
                         <TouchableOpacity
-                            style={{ width: 40, alignItems: 'center', justifyContent: 'center' }}
+                            style={{ width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
                             onPress={() => handleToggleComplete(setIndex, set.completed)}
                             hitSlop={8}
+                            accessibilityRole="checkbox"
+                            accessibilityLabel={`Complete ${exercise.name} set ${setIndex + 1}`}
+                            accessibilityState={{ checked: set.completed }}
+                            aria-checked={set.completed}
                         >
                             <View style={[styles.checkbox, set.completed && styles.checkboxChecked]}>
                                 {set.completed && (
@@ -195,6 +207,8 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                     style={styles.addSetRow}
                     onPress={() => onAddSet(exerciseIndex)}
                     activeOpacity={0.6}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Add set for ${exercise.name}`}
                 >
                     <MaterialIcons name="add" size={16} color={colors.text.muted} />
                     <Text style={styles.addSetText}>Add Set</Text>
@@ -260,8 +274,10 @@ const styles = StyleSheet.create({
     },
     removeBtn: {
         padding: spacing.xs,
+        minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center',
     },
     unilateralPill: {
+        minWidth: 44, minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center',
         paddingHorizontal: spacing.sm,
         paddingVertical: 2,
         borderRadius: borderRadius.sm,
@@ -290,6 +306,7 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: colors.glass.border,
     },
+    instructions: { color: colors.text.secondary, fontFamily: typography.fontFamily.regular, fontSize: 13, lineHeight: 20, paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
     colLabel: {
         fontSize: 9,
         fontFamily: typography.fontFamily.bold,
@@ -329,7 +346,7 @@ const styles = StyleSheet.create({
         marginHorizontal: spacing.xs,
         backgroundColor: colors.glass.surface,
         borderRadius: borderRadius.sm,
-        minHeight: 40,
+        minHeight: 44,
     },
     valueCellText: {
         fontSize: typography.sizes.lg,
@@ -359,6 +376,7 @@ const styles = StyleSheet.create({
         borderColor: colors.primary,
     },
     addSetRow: {
+        minHeight: 44,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',

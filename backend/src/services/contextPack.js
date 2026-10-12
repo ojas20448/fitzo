@@ -10,10 +10,23 @@ const cache = require('./cache');
  * @returns {Promise<Object>} Context pack JSON object
  */
 async function buildContextPack(userId) {
-    // 1. Fetch User Profile
+    // Nutrition editing and onboarding own these targets. Fitness profiles
+    // remain a fallback for older accounts and the source of coach notes.
     const profileResult = await query(
-        `SELECT goal_type, current_weight, target_weight, height, age, gender, activity_level, target_calories, ai_profile_summary
-         FROM fitness_profiles WHERE user_id = $1`,
+        `SELECT COALESCE(n.goal_type::text, CASE WHEN to_jsonb(u)->>'onboarding_completed_at' IS NULL THEN f.goal_type::text END) AS goal_type,
+                COALESCE(n.weight_kg, CASE WHEN to_jsonb(u)->>'onboarding_completed_at' IS NULL THEN f.current_weight END) AS current_weight,
+                COALESCE(n.target_weight_kg, CASE WHEN to_jsonb(u)->>'onboarding_completed_at' IS NULL THEN f.target_weight END) AS target_weight,
+                COALESCE(n.height_cm, CASE WHEN to_jsonb(u)->>'onboarding_completed_at' IS NULL THEN f.height END) AS height,
+                COALESCE(n.age, CASE WHEN to_jsonb(u)->>'onboarding_completed_at' IS NULL THEN f.age END) AS age,
+                COALESCE(n.gender, CASE WHEN to_jsonb(u)->>'onboarding_completed_at' IS NULL THEN f.gender END) AS gender,
+                COALESCE(n.activity_level::text, CASE WHEN to_jsonb(u)->>'onboarding_completed_at' IS NULL THEN f.activity_level::text END) AS activity_level,
+                COALESCE(n.target_calories, CASE WHEN to_jsonb(u)->>'onboarding_completed_at' IS NULL THEN f.target_calories END) AS target_calories,
+                n.target_protein, n.target_carbs, n.target_fat, n.is_vegetarian,
+                f.ai_profile_summary, to_jsonb(u)->'training_preferences' AS training_preferences
+         FROM users u
+         LEFT JOIN nutrition_profiles n ON n.user_id = u.id
+         LEFT JOIN fitness_profiles f ON f.user_id = u.id
+         WHERE u.id = $1 AND (n.user_id IS NOT NULL OR f.user_id IS NOT NULL OR to_jsonb(u)->>'training_preferences' IS NOT NULL)`,
         [userId]
     );
     const profile = profileResult.rows[0] || null;
@@ -151,8 +164,8 @@ async function buildContextPack(userId) {
 
     // 8. Fetch Active Split
     const splitResult = await query(
-        `SELECT split_id, name, days, days_per_week
-         FROM user_splits
+        `SELECT split_id, name, days, days_per_week, to_jsonb(s)->'training_plan' AS training_plan
+         FROM user_splits s
          WHERE user_id = $1 AND is_active = true
          LIMIT 1`,
         [userId]
@@ -185,6 +198,7 @@ async function buildContextPack(userId) {
         wearables: wearableResult.rows,
         weightHistory: weightResult.rows,
         activeSplit,
+        trainingPreferences: profile?.training_preferences || activeSplit?.training_plan?.preferences || null,
         todayIntent
     };
 }

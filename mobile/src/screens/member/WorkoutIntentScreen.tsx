@@ -1,3 +1,4 @@
+import ScreenBackdrop from '../../components/ScreenBackdrop';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -367,6 +368,7 @@ export default function WorkoutIntentScreen() {
     if (initialLoading) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ActivityIndicator size="large" color={colors.primary} />
                 </View>
@@ -376,6 +378,7 @@ export default function WorkoutIntentScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.closeButton}>

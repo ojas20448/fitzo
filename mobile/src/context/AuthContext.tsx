@@ -7,6 +7,7 @@ import { useLastSessionStore } from '../stores/lastSessionStore';
 import { useShareComposerStore } from '../stores/shareComposerStore';
 import { clearAllCache } from '../utils/cache';
 import { useOfflineStore } from '../stores/offlineStore';
+import { clearOnboardingDraft } from '../utils/onboardingDraft';
 
 /**
  * Last-known user profile, cached alongside the auth token.
@@ -84,7 +85,7 @@ interface AuthContextType extends AuthState {
         identityToken: string,
         fullName?: { givenName?: string | null; familyName?: string | null } | null,
     ) => Promise<void>;
-    completeOnboarding: () => void;
+    completeOnboarding: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -233,6 +234,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const logout = async () => {
         if (await getAuthToken()) await notificationsAPI.unregisterPushToken().catch(() => {});
         await removeAuthToken();
+        if (state.user?.id) await clearOnboardingDraft(state.user.id).catch(() => {});
         await cacheUser(null);
         setState({
             user: null,
@@ -315,6 +317,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
+    const completeOnboarding = async () => {
+        if (!state.user) return;
+        const completedUser = { ...state.user, onboarding_completed: true };
+        await cacheUser(completedUser);
+        setState(previous => previous.user?.id === completedUser.id
+            ? { ...previous, user: completedUser } : previous);
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -328,10 +338,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 forgotPassword,
                 resetPassword,
                 devLogin,
-                completeOnboarding: () => setState(prev => prev.user ? ({
-                    ...prev,
-                    user: { ...prev.user, onboarding_completed: true }
-                }) : prev)
+                completeOnboarding
             }}
         >
             {children}

@@ -1,7 +1,8 @@
-jest.mock('../config/database', () => ({ query: jest.fn(async () => ({ rows: [] })) }));
+jest.mock('../config/database', () => ({ query: jest.fn(async () => ({ rows: [] })), getClient: jest.fn() }));
 jest.mock('../middleware/auth', () => ({ authenticate: (req, res, next) => { req.user = { id: 'member' }; next(); }, authenticateAdmin: (req, res, next) => next() }));
 jest.mock('../services/pushNotifications', () => ({}));
-jest.mock('../services/xpService', () => ({ awardXP: jest.fn() }));
+jest.mock('../services/xpService', () => ({ awardXP: jest.fn(async () => {}) }));
+jest.mock('../services/contextPack', () => ({ invalidateContextPack: jest.fn(async () => {}) }));
 const db = require('../config/database');
 require('../routes/notifications');
 const startupQueries = [...db.query.mock.calls];
@@ -19,6 +20,7 @@ test('adopting a preset alias increments the resolved split UUID', async () => {
     db.query.mockReset();
     db.query.mockResolvedValue({ rows: [] });
     db.query.mockResolvedValueOnce({ rows: [{ id, name: 'PPL (6 Day)', program_structure: { 'Day 1': 'Push' }, days_per_week: 6 }] });
+    db.getClient.mockResolvedValue({ query: db.query, release: jest.fn() });
     const res = await request(app).post('/ppl_6/adopt').send({});
     expect(res.status).toBe(200);
     const increment = db.query.mock.calls.find(([sql]) => sql.includes('download_count + 1'));

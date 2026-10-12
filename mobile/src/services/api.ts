@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { localDateString } from '../utils/healthDate';
+import type { StarterWorkoutPlan, SavedTrainingPreferences } from '../utils/starterWorkout';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { authEvents } from './authEvents';
@@ -16,6 +17,7 @@ const api = axios.create({
     timeout: 15000,
     headers: {
         'Content-Type': 'application/json',
+        'X-Fitzo-Setup-Version': '2',
     },
 });
 
@@ -667,8 +669,8 @@ export const workoutsAPI = {
         return response.data;
     },
 
-    getLatest: async (type: string) => {
-        const response = await api.get(`/workouts/latest?type=${encodeURIComponent(type)}`);
+    getLatest: async (type: string, dayName?: string) => {
+        const response = await api.get(`/workouts/latest?type=${encodeURIComponent(type)}${dayName ? `&day_name=${encodeURIComponent(dayName)}` : ''}`);
         return response.data;
     },
 
@@ -692,8 +694,21 @@ export const workoutsAPI = {
         return response.data;
     },
 
-    saveSplit: async (data: any) => {
-        const response = await api.post('/workout-sessions/splits', data);
+    saveSplit: async (data: { split_id: string; name: string; days: string[]; days_per_week?: number; training_plan?: StarterWorkoutPlan }, expectedAuthToken?: string) => {
+        const response = await api.post('/workout-sessions/splits', data, { _expectedAuthToken: expectedAuthToken } as any);
+        return response.data;
+    },
+    getTrainingPreferences: async () => {
+        const response = await api.get('/workout-sessions/training-preferences');
+        return response.data;
+    },
+    saveTrainingPreferences: async (data: { preferences: SavedTrainingPreferences; expected_split_id: string | null;
+        complete_setup?: boolean; replacement?: { split_id: string; name: string; days: string[]; days_per_week: number; training_plan: StarterWorkoutPlan } }, expectedAuthToken?: string) => {
+        const response = await api.put('/workout-sessions/training-preferences', data, { _expectedAuthToken: expectedAuthToken } as any);
+        return response.data;
+    },
+    removeTrainingPreferences: async (expectedAuthToken?: string) => {
+        const response = await api.delete('/workout-sessions/training-preferences', { _expectedAuthToken: expectedAuthToken } as any);
         return response.data;
     },
 
@@ -865,8 +880,8 @@ export interface WeekSummary {
     calorieTargetDays: number;
     /** Days at or above the protein target — a floor. */
     proteinTargetDays: number;
-    targetCalories: number;
-    targetProtein: number;
+    targetCalories: number | null;
+    targetProtein: number | null;
 }
 
 export const nutritionAPI = {
@@ -897,8 +912,8 @@ export const nutritionAPI = {
         target_fat?: number;
         calorie_target_mode?: 'automatic' | 'custom';
         macro_target_mode?: 'automatic' | 'custom';
-    }) => {
-        const response = await api.post('/nutrition/profile', data);
+    }, expectedAuthToken?: string) => {
+        const response = await api.post('/nutrition/profile', data, { _expectedAuthToken: expectedAuthToken } as any);
         return response.data;
     },
 
@@ -922,8 +937,8 @@ export const nutritionAPI = {
         return response.data;
     },
 
-    getPresets: async () => {
-        const response = await api.get('/nutrition/presets');
+    getPresets: async (diet?: 'vegetarian' | 'all') => {
+        const response = await api.get('/nutrition/presets', { params: diet ? { diet } : undefined });
         return response.data;
     },
 
@@ -933,11 +948,13 @@ export const nutritionAPI = {
         protein?: number;
         carbs?: number;
         fat?: number;
-    }>, mealType?: string) => {
+        serving_size?: string;
+        is_estimate?: boolean;
+    }>, mealType?: string, authToken?: string) => {
         const response = await api.post('/nutrition/log-bulk', {
             items,
             ...(mealType ? { meal_type: mealType } : {}),
-        });
+        }, authToken ? { _expectedAuthToken: authToken } as any : undefined);
         return response.data;
     },
 };
@@ -1136,18 +1153,21 @@ export const readinessAPI = {
         soreness: number;
         sleep_hours?: number;
         notes?: string;
+        date?: string;
     }) => {
-        const response = await api.post('/readiness/checkin', data);
+        const token = await getAuthToken();
+        if (!token) throw new Error('Sign in before saving a check-in.');
+        const response = await api.post('/readiness/checkin', { date: localDateString(), ...data }, { _expectedAuthToken: token } as any);
         return response.data;
     },
 
-    getToday: async () => {
-        const response = await api.get('/readiness/today');
+    getToday: async (date = localDateString()) => {
+        const response = await api.get('/readiness/today', { params: { date } });
         return response.data;
     },
 
     getHistory: async (days = 7) => {
-        const response = await api.get(`/readiness/history?days=${days}`);
+        const response = await api.get('/readiness/history', { params: { days, date: localDateString() } });
         return response.data;
     },
 };

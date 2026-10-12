@@ -1,3 +1,4 @@
+import ScreenBackdrop from '../../components/ScreenBackdrop';
 import React, { useState, useCallback, useMemo } from 'react';
 import {
     View,
@@ -97,6 +98,7 @@ const LearnScreen: React.FC = () => {
     if (loading) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
                         <Text style={styles.headerTitle}>LEARN</Text>
@@ -126,6 +128,7 @@ const LearnScreen: React.FC = () => {
     if (error && lessons.length === 0) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
                         <Text style={styles.headerTitle}>LEARN</Text>
@@ -142,6 +145,7 @@ const LearnScreen: React.FC = () => {
     if (!error && lessons.length === 0) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
                         <Text style={styles.headerTitle}>LEARN</Text>
@@ -162,6 +166,7 @@ const LearnScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerLeft}>

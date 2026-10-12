@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import ScreenBackdrop from '../../components/ScreenBackdrop';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FoodDraftSheet } from '../../components/FoodDraftSheet';
 import {
     View,
@@ -130,15 +131,22 @@ const CalorieLogScreen: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const hasSearchQuery = searchQuery.trim().length > 0;
     const [todayEntries, setTodayEntries] = useState<CalorieEntry[]>([]);
+    const [entriesLoading, setEntriesLoading] = useState(true);
+    const [entriesError, setEntriesError] = useState(false);
+    const entriesRequest = useRef(0);
     const [openEntry, setOpenEntry] = useState<CalorieEntry | null>(null);
 
     const loadTodayEntries = useCallback(() => {
+        const request = ++entriesRequest.current;
+        setEntriesLoading(true);
+        setEntriesError(false);
         caloriesAPI.getToday()
-            .then((r) => setTodayEntries(r.entries || []))
-            .catch(() => setTodayEntries([]));
+            .then((r) => { if (request === entriesRequest.current) setTodayEntries(r.entries || []); })
+            .catch(() => { if (request === entriesRequest.current) setEntriesError(true); })
+            .finally(() => { if (request === entriesRequest.current) setEntriesLoading(false); });
     }, []);
 
-    useEffect(() => { loadTodayEntries(); }, [loadTodayEntries]);
+    useEffect(() => { const generation = entriesRequest; loadTodayEntries(); return () => { generation.current++; }; }, [loadTodayEntries]);
 
     // First visit only: surface voice logging, which is faster than searching
     // the catalogue for a home-cooked meal.
@@ -720,6 +728,7 @@ const CalorieLogScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -961,9 +970,14 @@ const CalorieLogScreen: React.FC = () => {
                 </Animated.View>
             )}
 
-            {todayEntries.length > 0 && (
                 <View style={styles.todayBlock}>
-                    <Text style={styles.servingPickerLabel}>TODAY'S LOG</Text>
+                    <Text style={styles.servingPickerLabel}>TODAY&apos;S LOG</Text>
+                    {entriesLoading && <ActivityIndicator accessibilityLabel="Loading today's food log" color={colors.primary} />}
+                    {entriesError && <View>
+                        <Text accessibilityLiveRegion="polite" style={styles.todayServing}>Could not refresh today&apos;s log. {todayEntries.length ? 'Previously loaded entries are shown below.' : 'Try again to see saved meals.'}</Text>
+                        <TouchableOpacity accessibilityRole="button" style={{ minHeight: 48, justifyContent: 'center' }} onPress={loadTodayEntries}><Text style={styles.todayName}>Try again</Text></TouchableOpacity>
+                    </View>}
+                    {!entriesLoading && !entriesError && !todayEntries.length && <Text style={styles.todayServing}>No meals logged today. Search for a food or use Quick Add above.</Text>}
                     {todayEntries.map((e) => (
                         <Pressable
                             key={e.id}
@@ -980,7 +994,6 @@ const CalorieLogScreen: React.FC = () => {
                         </Pressable>
                     ))}
                 </View>
-            )}
             </ScrollView>
             )}
 

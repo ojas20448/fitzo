@@ -16,6 +16,10 @@ export interface PresetItem {
     protein?: number;
     carbs?: number;
     fat?: number;
+    portion?: { amount?: number; unit?: string; grams: number; preparation?: string };
+    alternatives?: PresetItem[];
+    serving_size?: string;
+    is_estimate?: boolean;
 }
 
 /** A preset item plus the quantity the user has chosen for it. */
@@ -72,12 +76,30 @@ export function entriesFromPreset(items: PresetItem[]): BuilderEntry[] {
 export function scaleEntry(entry: BuilderEntry): PresetItem {
     const q = entry.quantity;
     return {
-        meal_name: q === 1 ? entry.meal_name : `${entry.meal_name} (x${q})`,
+        meal_name: entry.portion || q === 1 ? entry.meal_name : `${entry.meal_name} (x${q})`,
         calories: Math.round((entry.calories || 0) * q),
         protein: round1((entry.protein || 0) * q),
         carbs: round1((entry.carbs || 0) * q),
         fat: round1((entry.fat || 0) * q),
+        ...(entry.portion ? { serving_size: portionLabel(entry), is_estimate: true } : {}),
     };
+}
+
+export function portionLabel(entry: BuilderEntry): string {
+    if (!entry.portion) return `${entry.quantity} × base serving`;
+    const { amount, unit, grams, preparation } = entry.portion;
+    const count = amount === undefined ? '' : `${round1(amount * entry.quantity)} ${unit}${amount * entry.quantity > 1 && unit !== 'idli' && unit !== 'cheela' ? 's' : ''} · `;
+    return `${count}${round1(grams * entry.quantity)} g${preparation ? `, ${preparation}` : ''}`;
+}
+
+// A different food has a different base portion. Reset the multiplier and keep
+// the original choices available so a swap can always be undone.
+export function substituteEntry(entries: BuilderEntry[], key: string, choice: PresetItem): BuilderEntry[] {
+    return entries.map(entry => {
+        if (entry.key !== key) return entry;
+        const choices = [entry, ...(entry.alternatives || [])].filter(item => item.meal_name !== choice.meal_name);
+        return { ...choice, key, quantity: 1, alternatives: choices.map(({ alternatives, ...item }) => item) };
+    });
 }
 
 export function mealTotals(entries: BuilderEntry[]): MealTotals {

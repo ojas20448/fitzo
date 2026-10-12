@@ -7,7 +7,7 @@ function appFor(route) { const app = express(); app.use(express.json()); app.use
 beforeEach(() => { jest.clearAllMocks(); db.getClient.mockResolvedValue(client); client.query.mockResolvedValue({ rows: [] }); });
 it('rolls back split deactivation on the same client if the replacement cannot be inserted', async () => {
     client.query.mockImplementation(async sql => { if (sql.includes('INSERT INTO user_splits')) throw new Error('insert failed'); return { rows: [] }; });
-    const res = await request(appFor('workout-sessions')).post('/splits').send({ name: 'Plan', days: ['Push'] });
+    const res = await request(appFor('workout-sessions')).post('/splits').send({ split_id: 'custom', name: 'Plan', days: ['Push'] });
     expect(res.status).toBe(500);
     expect(client.query).toHaveBeenCalledWith('ROLLBACK'); expect(client.release).toHaveBeenCalledTimes(1);
     expect(db.query).not.toHaveBeenCalledWith('BEGIN');

@@ -1,0 +1,75 @@
+[
+  {
+    "id": "north_veg_thali", "name": "Roti, dal & curd", "emoji": "🍛", "vegetarian": true, "meal_type": "lunch",
+    "description": "An everyday plate. Swap dal or bread to match what you have.",
+    "items": [
+      {"food_id": "ind_1", "multiplier": 2, "portion": {"amount": 2, "unit": "roti", "grams": 80}, "alternatives": [{"food_id": "ind_2", "portion": {"amount": 1, "unit": "cup", "grams": 150, "preparation": "cooked"}}]},
+      {"food_id": "ind_3", "portion": {"amount": 1, "unit": "cup", "grams": 200, "preparation": "cooked"}, "alternatives": [{"food_id": "ind_16", "portion": {"amount": 1, "unit": "cup", "grams": 200, "preparation": "cooked"}}, {"food_id": "ind_61", "portion": {"amount": 1, "unit": "cup", "grams": 200, "preparation": "cooked"}}]},
+      {"food_id": "ind_181", "portion": {"amount": 1, "unit": "cup", "grams": 100}, "alternatives": [{"food_id": "ind_180", "portion": {"amount": 1, "unit": "cup", "grams": 150}}]},
+      {"food_id": "ind_25", "multiplier": 0.5, "portion": {"amount": 0.5, "unit": "cup", "grams": 100}, "alternatives": [{"food_id": "ind_26", "portion": {"amount": 1, "unit": "cup", "grams": 150}}]}
+    ]
+  },
+  {
+    "id": "south_breakfast", "name": "Idli & sambar", "emoji": "🥣", "vegetarian": true, "meal_type": "breakfast",
+    "description": "A familiar breakfast with a side of curd.",
+    "items": [
+      {"food_id": "ind_8", "multiplier": 1.5, "portion": {"amount": 3, "unit": "idli", "grams": 120}, "alternatives": [{"food_id": "ind_17", "portion": {"amount": 1, "unit": "cup", "grams": 200, "preparation": "cooked"}}]},
+      {"food_id": "ind_9", "portion": {"amount": 1, "unit": "cup", "grams": 200, "preparation": "cooked"}, "alternatives": [{"food_id": "ind_3", "portion": {"amount": 1, "unit": "cup", "grams": 200, "preparation": "cooked"}}]},
+      {"food_id": "ind_25", "multiplier": 0.5, "portion": {"amount": 0.5, "unit": "cup", "grams": 100}}
+    ]
+  },
+  {
+    "id": "cheela_breakfast", "name": "Cheela, curd & fruit", "emoji": "🥞", "vegetarian": true, "meal_type": "breakfast",
+    "description": "Simple ingredients, with fruit you can switch.",
+    "items": [
+      {"food_id": "ind_39", "portion": {"amount": 2, "unit": "cheela", "grams": 120}, "alternatives": [{"food_id": "ind_34", "portion": {"amount": 1, "unit": "cup", "grams": 150, "preparation": "cooked"}}]},
+      {"food_id": "ind_25", "multiplier": 0.5, "portion": {"amount": 0.5, "unit": "cup", "grams": 100}},
+      {"food_id": "ind_35", "portion": {"amount": 1, "unit": "banana", "grams": 120}, "alternatives": [{"food_id": "ind_131", "portion": {"amount": 1, "unit": "apple", "grams": 180}}]}
+    ]
+  },
+  {
+    "id": "rajma_rice", "name": "Rajma rice bowl", "emoji": "🍚", "vegetarian": true, "meal_type": "lunch",
+    "description": "One bowl of beans, rice and a fresh side.",
+    "items": [
+      {"food_id": "ind_16", "portion": {"amount": 1, "unit": "cup", "grams": 200, "preparation": "cooked"}, "alternatives": [{"food_id": "ind_3", "portion": {"amount": 1, "unit": "cup", "grams": 200, "preparation": "cooked"}}]},
+      {"food_id": "ind_2", "portion": {"amount": 1, "unit": "cup", "grams": 150, "preparation": "cooked"}, "alternatives": [{"food_id": "ind_1", "multiplier": 2, "portion": {"amount": 2, "unit": "roti", "grams": 80}}, {"food_id": "ind_224", "portion": {"amount": 1, "unit": "cup", "grams": 150, "preparation": "cooked"}}]},
+      {"food_id": "ind_181", "portion": {"amount": 1, "unit": "cup", "grams": 100}}
+    ]
+  },
+  {
+    "id": "paneer_roti", "name": "Paneer & roti plate", "emoji": "🧀", "vegetarian": true, "meal_type": "dinner",
+    "description": "Paneer, a roti and salad. Add oil separately if you cook it with oil.",
+    "items": [
+      {"food_id": "ind_5", "multiplier": 0.75, "portion": {"grams": 75}, "alternatives": [{"food_id": "ind_16", "portion": {"amount": 1, "unit": "cup", "grams": 200, "preparation": "cooked"}}]},
+      {"food_id": "ind_1", "portion": {"amount": 1, "unit": "roti", "grams": 40}, "alternatives": [{"food_id": "ind_2", "portion": {"amount": 1, "unit": "cup", "grams": 150, "preparation": "cooked"}}]},
+      {"food_id": "ind_181", "portion": {"amount": 1, "unit": "cup", "grams": 100}}
+    ]
+  },
+  {
+    "id": "gym_post_workout", "name": "Chicken & rice plate", "emoji": "🍗", "vegetarian": false, "meal_type": "dinner",
+    "description": "A regular curry plate. Swap chicken for beans or paneer if you prefer.",
+    "items": [
+      {"food_id": "ind_4", "multiplier": 0.75, "portion": {"amount": 0.75, "unit": "cup", "grams": 150, "preparation": "cooked"}, "alternatives": [{"food_id": "ind_16", "portion": {"amount": 1, "unit": "cup", "grams": 200, "preparation": "cooked"}}, {"food_id": "ind_5", "multiplier": 0.75, "portion": {"grams": 75}}]},
+      {"food_id": "ind_2", "portion": {"amount": 1, "unit": "cup", "grams": 150, "preparation": "cooked"}, "alternatives": [{"food_id": "ind_1", "multiplier": 2, "portion": {"amount": 2, "unit": "roti", "grams": 80}}]},
+      {"food_id": "ind_180", "portion": {"amount": 1, "unit": "cup", "grams": 150}}
+    ]
+  },
+  {
+    "id": "egg_roti", "name": "Egg bhurji & roti", "emoji": "🍳", "vegetarian": false, "meal_type": "breakfast",
+    "description": "Two eggs, one roti and a fresh side.",
+    "items": [
+      {"food_id": "ind_14", "portion": {"amount": 2, "unit": "egg", "grams": 150, "preparation": "cooked"}, "alternatives": [{"food_id": "ind_39", "portion": {"amount": 2, "unit": "cheela", "grams": 120}}]},
+      {"food_id": "ind_1", "portion": {"amount": 1, "unit": "roti", "grams": 40}},
+      {"food_id": "ind_181", "portion": {"amount": 1, "unit": "cup", "grams": 100}}
+    ]
+  },
+  {
+    "id": "sprouts_snack", "name": "Sprouts, curd & fruit", "emoji": "🍎", "vegetarian": true, "meal_type": "snack",
+    "description": "A light meal between sessions. Swap fruit to match what is at home.",
+    "items": [
+      {"food_id": "ind_818", "portion": {"amount": 1, "unit": "cup", "grams": 150}},
+      {"food_id": "ind_25", "multiplier": 0.5, "portion": {"amount": 0.5, "unit": "cup", "grams": 100}},
+      {"food_id": "ind_131", "portion": {"amount": 1, "unit": "apple", "grams": 180}, "alternatives": [{"food_id": "ind_35", "portion": {"amount": 1, "unit": "banana", "grams": 120}}]}
+    ]
+  }
+]

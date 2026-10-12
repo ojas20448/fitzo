@@ -2,6 +2,12 @@
 
 ## Theme: Onyx & Snow
 
+### October 2026 refinement
+
+Onboarding now uses solid charcoal surfaces, Lexend typography and a quiet pale-olive selection/progress accent. Main actions remain white. Use the shared `ScreenBackdrop` for cropped training-track outlines, behind content: static SVG, 3.5–8% stroke opacity, no glow, no touch handling and hidden from accessibility. Keep existing data colours for their established metric roles.
+
+Prefer concrete headings, short explanations and details that expand on demand. Avoid automatic pulsing, decorative gradients and glow on primary actions. The older glass/glow examples below describe existing components rather than a requirement for new screens. See the [implementation record](reviews/2026-10-07-onboarding-and-ui-pass.md) for scope and verification.
+
 A monochromatic design system with pure black backgrounds and white accents, featuring glassmorphism and transparency effects.
 
 ## Color Palette

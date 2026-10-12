@@ -1,3 +1,4 @@
+import ScreenBackdrop from '../../components/ScreenBackdrop';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
@@ -340,6 +341,7 @@ const GymBuddiesScreen: React.FC = () => {
     if (loading) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
                         <Text style={styles.headerTitle}>Friends</Text>
@@ -354,6 +356,7 @@ const GymBuddiesScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerLeft}>

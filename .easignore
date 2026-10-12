@@ -17,6 +17,10 @@ mobile/dist/
 **/dist/
 
 # Ignore environment files
+.env
+.env.*
+**/.env
+**/.env.*
 .env.local
 .env.production.local
 .env.development.local
@@ -24,6 +28,9 @@ mobile/dist/
 # Never upload the Play service-account key to EAS build servers
 google-services-key.json
 mobile/google-services-key.json
+**/*.p8
+**/*.p12
+**/*.pem
 
 # Ignore heavy media launch folders recursively
 brag-output/
@@ -36,6 +43,9 @@ brag-output-*/
 .tdad/
 .idea/
 .vscode/
+.codex/
+.antigravity/
+.playwright-mcp/
 
 # The .git directory is 124 MB and is not needed to build. EAS resolves the
 # commit hash client-side before upload, so nothing server-side reads this.
@@ -64,3 +74,8 @@ mobile/feature-graphic.png
 docs/
 test_compile/
 temp.txt
+output/
+mobile/.dtest/
+mobile/.icon-backup/
+mobile/_w13.mjs
+**/coverage/

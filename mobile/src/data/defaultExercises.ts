@@ -6,9 +6,14 @@ export interface Exercise {
     equipment: string;
     gifUrl?: string; // Optional for local, can add static images later
     custom?: boolean;
+    instructions?: string;
 }
 
 export const defaultExercises: Exercise[] = [
+    { id: 'bodyweight_squat', name: 'Bodyweight Squat', bodyPart: 'legs', target: 'quads', equipment: 'body weight', instructions: 'Feet about shoulder-width apart. Bend your hips and knees, then stand again.' },
+    { id: 'bodyweight_reverse_lunge', name: 'Bodyweight Reverse Lunge', bodyPart: 'legs', target: 'quads', equipment: 'body weight', instructions: 'Step back, bend both knees, then return to standing. Log reps for one side and repeat on the other.' },
+    { id: 'knee_push_up', name: 'Knee Push Up', bodyPart: 'chest', target: 'pectorals', equipment: 'body weight', instructions: 'Hands under your shoulders, knees on the floor. Lower your chest, then press up, keeping your torso aligned.' },
+    { id: 'prone_arm_raise', name: 'Prone Arm Raise', bodyPart: 'back', target: 'upper back', equipment: 'body weight', instructions: 'Lie face down with arms in a Y shape. Lift your arms a little, then lower slowly. Keep your neck relaxed.' },
     // --- CHEST ---
     // Barbell
     { id: 'bench_press_barbell', name: 'Barbell Bench Press', bodyPart: 'chest', target: 'pectorals', equipment: 'barbell', gifUrl: 'https://pieyjxokfjvsnfygblmv.supabase.co/storage/v1/object/public/exercise-images/Barbell_Bench_Press_-_Medium_Grip/0.jpg'  },

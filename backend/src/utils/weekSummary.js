@@ -21,9 +21,6 @@
 /** A calorie day counts as on-target within +/- this fraction of the target. */
 const CALORIE_BAND = 0.10;
 
-const DEFAULT_TARGET_CALORIES = 2000;
-const DEFAULT_TARGET_PROTEIN = 150;
-
 function num(value) {
     const n = Number(value);
     return Number.isFinite(n) ? n : 0;
@@ -34,11 +31,11 @@ function num(value) {
  * @param {{target_calories?: number|string, target_protein?: number|string}} targets
  * @returns {{daysLogged: number, avgCalories: number, avgProtein: number,
  *            calorieTargetDays: number, proteinTargetDays: number,
- *            targetCalories: number, targetProtein: number}}
+ *            targetCalories: number|null, targetProtein: number|null}}
  */
 function summariseWeek(history, targets) {
-    const targetCalories = num(targets && targets.target_calories) || DEFAULT_TARGET_CALORIES;
-    const targetProtein = num(targets && targets.target_protein) || DEFAULT_TARGET_PROTEIN;
+    const targetCalories = targets?.target_calories != null ? num(targets.target_calories) : null;
+    const targetProtein = targets?.target_protein != null ? num(targets.target_protein) : null;
 
     const days = (Array.isArray(history) ? history : []).filter(
         (d) => d && typeof d === 'object',
@@ -72,9 +69,9 @@ function summariseWeek(history, targets) {
         totalProtein += protein;
 
         // Band, not ceiling: under-eating misses the target as surely as over.
-        if (calories >= lower && calories <= upper) calorieTargetDays += 1;
+        if (targetCalories !== null && calories >= lower && calories <= upper) calorieTargetDays += 1;
         // Floor: at or above counts.
-        if (protein >= targetProtein) proteinTargetDays += 1;
+        if (targetProtein !== null && protein >= targetProtein) proteinTargetDays += 1;
     }
 
     return {
@@ -91,6 +88,4 @@ function summariseWeek(history, targets) {
 module.exports = {
     summariseWeek,
     CALORIE_BAND,
-    DEFAULT_TARGET_CALORIES,
-    DEFAULT_TARGET_PROTEIN,
 };

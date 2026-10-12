@@ -1,3 +1,4 @@
+import ScreenBackdrop from '../../components/ScreenBackdrop';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
     View,
@@ -48,6 +49,8 @@ import { useLastSessionStore } from '../../stores/lastSessionStore';
 import { normalizePrs } from '../../utils/normalizePr';
 import { buildShareExercises } from '../../utils/buildShareExercises';
 import { finalizeWorkout } from '../../utils/finalizeWorkout';
+import { useAuth } from '../../context/AuthContext';
+import { chooseWorkoutDraft, parseWorkoutIntent, previousWorkoutDraft } from '../../utils/workoutSetup';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -56,15 +59,16 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const WorkoutLogScreen: React.FC = () => {
     const toast = useToast();
     const params = useLocalSearchParams();
+    const { user } = useAuth();
     const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(false);
 
     // Intent parsing
-    const initialIntent = params.intent ? JSON.parse(params.intent as string) : null;
+    const initialIntent = useMemo(() => parseWorkoutIntent(params.intent), [params.intent]);
 
     const mapIntentToType = (label: string) => {
         const lower = label?.toLowerCase() || '';
-        if (lower.includes('leg')) return 'legs';
+        if (lower.includes('leg') || lower.includes('lower')) return 'legs';
         if (lower.includes('chest') || lower.includes('push')) return 'chest';
         if (lower.includes('back') || lower.includes('pull')) return 'back';
         if (lower.includes('shoulder')) return 'shoulders';
@@ -90,15 +94,13 @@ const WorkoutLogScreen: React.FC = () => {
 
     // workoutType is still the value persisted to the API and used to look up the
     // previous session, but it is now derived only — never chosen by hand.
-    const [workoutType, setWorkoutType] = useState(
-        mapIntentToType(initialIntent?.session_label || ''),
-    );
+    const workoutType = mapIntentToType(initialIntent?.session_label || '');
 
     // What the user actually declared ("Push"), not the muscle it collapses to.
     // mapIntentToType has to fold push -> chest because WORKOUT_TYPES has no
     // push/pull concept, which is why the header used to read "Chest" on a push
     // day. Show the intent's own words when we have them.
-    const sessionLabel = (initialIntent?.session_label || initialIntent?.display || '').trim();
+    const sessionLabel = (initialIntent?.session_label || '').trim();
     const sessionTitle = sessionLabel
         ? sessionLabel.charAt(0).toUpperCase() + sessionLabel.slice(1)
         : workoutType.charAt(0).toUpperCase() + workoutType.slice(1);
@@ -112,6 +114,19 @@ const WorkoutLogScreen: React.FC = () => {
 
     // Core state
     const [userExercises, setUserExercises] = useState<UserExercise[]>([]);
+    const exercisesSnapshot = useRef(userExercises);
+    exercisesSnapshot.current = userExercises;
+    const editedExercises = useRef(false);
+    const [starterLoaded, setStarterLoaded] = useState(false);
+    const [setupError, setSetupError] = useState('');
+    const [setupRetry, setSetupRetry] = useState(0);
+    const loadedAccount = useRef(user?.id);
+    useEffect(() => {
+        if (loadedAccount.current === user?.id) return;
+        loadedAccount.current = user?.id;
+        editedExercises.current = false;
+        setUserExercises([]); setLastWorkoutPreview(null); setStarterLoaded(false); setSetupError('');
+    }, [user?.id]);
     const [startTime] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
 
@@ -169,10 +184,11 @@ const WorkoutLogScreen: React.FC = () => {
         },
     });
 
-    const openVoice = async () => {
+    const startVoiceCapture = voice.start;
+    const openVoice = useCallback(async () => {
         setVoiceSheetOpen(true);
-        await voice.start();
-    };
+        await startVoiceCapture();
+    }, [startVoiceCapture]);
 
     const cancelVoice = async () => {
         await voice.cancel();
@@ -276,45 +292,36 @@ const WorkoutLogScreen: React.FC = () => {
     // -----------------------------------------------------------------------
 
     useEffect(() => {
-        if (workoutType) {
-            fetchLatestWorkout();
-        }
-    }, [workoutType]);
-
-    const fetchLatestWorkout = async () => {
+        let active = true;
+        if (params.curatedExercises) return;
         setFetchingLastWorkout(true);
-        try {
-            const res = await workoutsAPI.getLatest(workoutType);
-            if (res.found && res.workout) {
-                const prevExercises = res.workout.exercises;
-                if (Array.isArray(prevExercises)) {
-                    const prefilled: UserExercise[] = prevExercises.map((ex: any) => ({
-                        ...ex,
-                        sets: ex.sets.map((s: any) => ({
-                            ...s,
-                            id: Math.random().toString(),
-                            completed: false,
-                            previous: `${s.weight_kg}kg x ${s.reps}`,
-                        })),
-                    }));
-                    setLastWorkoutPreview(prefilled);
-                    // Auto-fill exercises into current log if user has no exercises set yet
-                    if (!params.curatedExercises) {
-                        setUserExercises((prev) => (prev.length === 0 ? prefilled : prev));
-                    }
-                }
-            } else {
-                setLastWorkoutPreview(null);
+        setSetupError('');
+        void (async () => {
+            const [latest, saved] = await Promise.allSettled([
+                workoutsAPI.getLatest(workoutType, sessionLabel || undefined),
+                sessionLabel ? workoutsAPI.getMySplits() : Promise.resolve({ splits: [] }),
+            ]);
+            if (!active) return;
+            const previous = latest.status === 'fulfilled' && latest.value.found
+                ? previousWorkoutDraft(latest.value.workout?.exercises) : null;
+            setLastWorkoutPreview(previous);
+            const splits = saved.status === 'fulfilled' && Array.isArray(saved.value.splits) ? saved.value.splits : [];
+            const chosen = chooseWorkoutDraft(previous, splits, sessionLabel, initialIntent?.training_pattern);
+            if (chosen && !editedExercises.current && exercisesSnapshot.current.length === 0) {
+                setUserExercises(prev => prev.length === 0 ? chosen.exercises : prev);
+                setStarterLoaded(chosen.source === 'starter');
             }
-        } catch {
-            setLastWorkoutPreview(null);
-        } finally {
+            if (latest.status === 'rejected' || (saved.status === 'rejected' && !previous)) {
+                setSetupError('Some saved workout details could not load. Retry or add exercises yourself.');
+            }
             setFetchingLastWorkout(false);
-        }
-    };
+        })();
+        return () => { active = false; };
+    }, [workoutType, sessionLabel, initialIntent?.training_pattern, user?.id, params.curatedExercises, setupRetry]);
 
     const handleRepeatLast = useCallback(() => {
         if (!lastWorkoutPreview) return;
+        editedExercises.current = true;
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setUserExercises(lastWorkoutPreview);
         setShowRepeatPreview(false);
@@ -330,6 +337,7 @@ const WorkoutLogScreen: React.FC = () => {
             try {
                 const parsed = JSON.parse(params.curatedExercises as string) as UserExercise[];
                 if (Array.isArray(parsed) && parsed.length > 0) {
+                    editedExercises.current = true;
                     setUserExercises(parsed);
                     const label = params.curatedName ? (params.curatedName as string) : 'template';
                     toast.success('Template Loaded', `Loaded "${label}" — fill in your weights!`);
@@ -364,6 +372,7 @@ const WorkoutLogScreen: React.FC = () => {
 
     const handleAddExercise = useCallback(
         (exercise: any) => {
+            editedExercises.current = true;
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
             // Previous-set ghosting: if this exercise appeared in the last
@@ -397,6 +406,7 @@ const WorkoutLogScreen: React.FC = () => {
                 name: exercise.name,
                 gifUrl: exercise.gifUrl,
                 target: exercise.target,
+                instructions: exercise.instructions,
                 sets: ghostSets,
             };
             setUserExercises((prev) => [...prev, newExercise]);
@@ -406,6 +416,7 @@ const WorkoutLogScreen: React.FC = () => {
     );
 
     const addSet = useCallback((exerciseIndex: number) => {
+        editedExercises.current = true;
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setUserExercises((prev) => {
             const updated = [...prev];
@@ -438,6 +449,7 @@ const WorkoutLogScreen: React.FC = () => {
                 onPress: () => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    editedExercises.current = true;
                     setUserExercises((prev) => {
                         const updated = [...prev];
                         const sets = [...updated[exerciseIndex].sets];
@@ -452,6 +464,7 @@ const WorkoutLogScreen: React.FC = () => {
 
     const updateSet = useCallback(
         (exerciseIndex: number, setIndex: number, field: keyof ExerciseSet, value: any) => {
+            editedExercises.current = true;
             setUserExercises((prev) => {
                 const updated = [...prev];
                 const sets = [...updated[exerciseIndex].sets];
@@ -480,6 +493,7 @@ const WorkoutLogScreen: React.FC = () => {
     );
 
     const handleToggleUnilateral = useCallback((eIdx: number) => {
+        editedExercises.current = true;
         setUserExercises((prev) =>
             prev.map((ex, i) => (i === eIdx ? { ...ex, is_unilateral: !ex.is_unilateral } : ex)),
         );
@@ -494,6 +508,7 @@ const WorkoutLogScreen: React.FC = () => {
                 onPress: () => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    editedExercises.current = true;
                     setUserExercises((prev) => {
                         const updated = [...prev];
                         updated.splice(index, 1);
@@ -588,6 +603,10 @@ const WorkoutLogScreen: React.FC = () => {
     // -----------------------------------------------------------------------
 
     const handleFinish = async () => {
+        if (userExercises.some(ex => ex.sets.some(set => set.completed && (set.weight_kg === '' || set.weight_kg == null)))) {
+            toast.error('Enter a weight', 'Enter the weight for each checked set. Use 0 kg for bodyweight exercises.');
+            return;
+        }
         const finishedExercises = finalizeWorkout(userExercises);
         if (finishedExercises.length === 0) {
             toast.error('No completed sets', 'Check off at least one set with reps before finishing. Use 0 kg for bodyweight exercises.');
@@ -680,11 +699,13 @@ const WorkoutLogScreen: React.FC = () => {
     const ListHeader = useMemo(
         () => (
             <View>
+                {starterLoaded && <Text style={styles.setupNote}>Starting workout loaded. Adjust reps and weights, then check off each set after doing it.</Text>}
+                {!!setupError && <View><Text style={styles.setupNote}>{setupError}</Text><TouchableOpacity onPress={() => setSetupRetry(value => value + 1)} accessibilityRole="button" accessibilityLabel="Retry loading workout" style={{ minHeight: 44, justifyContent: 'center' }}><Text style={styles.setupNote}>Retry</Text></TouchableOpacity></View>}
                 {/* Warm-up sits above the exercises: read it, tick it off, or
                     skip it. It never blocks getting to the first set. */}
                 {showWarmUp && (
                     <WarmUpCard
-                        workoutType={workoutType}
+                        workoutType={sessionLabel || workoutType}
                         onDismiss={() => setShowWarmUp(false)}
                         onNeverShowAgain={() => {
                             setShowWarmUp(false);
@@ -751,7 +772,7 @@ const WorkoutLogScreen: React.FC = () => {
         ),
         // showWarmUp must be here — without it the memo holds the old header and
         // dismissing the warm-up card does nothing on screen.
-        [workoutType, sessionMuscles, lastWorkoutPreview, userExercises.length, showWarmUp],
+        [workoutType, sessionLabel, sessionMuscles, lastWorkoutPreview, userExercises.length, showWarmUp, starterLoaded, setupError, fetchingLastWorkout],
     );
 
     // Footer component for FlatList
@@ -761,6 +782,8 @@ const WorkoutLogScreen: React.FC = () => {
                 {/* Browse Templates Button */}
                 <TouchableOpacity
                     style={styles.browseTemplatesBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel="Browse workout templates"
                     onPress={() =>
                         router.push({
                             pathname: '/member/curated-workouts',
@@ -779,6 +802,8 @@ const WorkoutLogScreen: React.FC = () => {
                         style={[styles.addExerciseBtn, { flex: 1, marginTop: 0 }]}
                         onPress={() => setShowPicker(true)}
                         activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel="Add exercise"
                     >
                         <MaterialIcons name="add" size={20} color={colors.text.muted} />
                         <Text style={styles.addExerciseText}>Add Exercise</Text>
@@ -790,6 +815,8 @@ const WorkoutLogScreen: React.FC = () => {
                         disabled={voice.isBusy}
                         activeOpacity={0.7}
                         accessibilityLabel="Log exercises by voice"
+                        accessibilityRole="button"
+                        accessibilityState={{ disabled: voice.isBusy }}
                     >
                         {voice.isBusy ? (
                             <ActivityIndicator size="small" color={colors.primary} />
@@ -803,7 +830,7 @@ const WorkoutLogScreen: React.FC = () => {
         // footerHeight must be here: it is measured after first layout, and
         // without it the memo keeps the initial 140 forever and the last
         // exercise stays hidden behind the footer.
-        [workoutType, footerHeight],
+        [workoutType, footerHeight, openVoice, voice.isBusy],
     );
 
     // -----------------------------------------------------------------------
@@ -812,6 +839,7 @@ const WorkoutLogScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -831,6 +859,7 @@ const WorkoutLogScreen: React.FC = () => {
                 onClose={() => setShowDraftSheet(false)}
                 items={draftItems}
                 onConfirm={(added) => {
+                    editedExercises.current = true;
                     const enhanced = added.map(ex => ({
                         ...ex,
                         id: Math.random().toString(),
@@ -842,7 +871,7 @@ const WorkoutLogScreen: React.FC = () => {
             />
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.headerBtn}>
+                <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel="Close workout">
                     <MaterialIcons name="close" size={22} color={colors.text.muted} />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
@@ -967,7 +996,7 @@ const WorkoutLogScreen: React.FC = () => {
                     <ExerciseList
                         mode="select"
                         onSelect={handleAddExercise}
-                        initialFilter={workoutType !== 'Workout' ? workoutType : undefined}
+                        initialFilter={sessionLabel.toLowerCase().includes('full') ? undefined : workoutType}
                         allowedBodyParts={getAllowedBodyParts(workoutType, initialIntent?.session_label)}
                     />
                 </View>
@@ -1236,6 +1265,7 @@ const WorkoutLogScreen: React.FC = () => {
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
+    setupNote: { color: colors.text.secondary, fontFamily: typography.fontFamily.regular, fontSize: 13, lineHeight: 20, marginVertical: 12 },
     // Layout
     container: {
         flex: 1,
@@ -1257,6 +1287,7 @@ const styles = StyleSheet.create({
         borderBottomColor: colors.glass.border,
     },
     headerBtn: {
+        minWidth: 44, minHeight: 44,
         width: 40,
         height: 40,
         alignItems: 'center',

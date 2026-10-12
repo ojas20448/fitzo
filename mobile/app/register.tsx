@@ -12,6 +12,7 @@ import {
 import { useToast } from '../src/components/Toast';
 import AvatarPicker from '../src/components/AvatarPicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ScreenBackdrop from '../src/components/ScreenBackdrop';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
@@ -277,6 +278,7 @@ export default function RegisterScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
+            <ScreenBackdrop />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}

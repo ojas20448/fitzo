@@ -10,6 +10,7 @@ export interface HealthSummary {
     sleepHours: number | null;
     date: string;
     lastSynced: number;
+    readErrors?: number;
 }
 let apple: AppleHealth | null = null;
 let android: HealthConnectModule | null = null;
@@ -78,35 +79,36 @@ export async function getSummaryForDate(date: string, now = new Date()): Promise
     const { start, end } = healthDayWindow(date, now);
     const result: HealthSummary = { steps: null, activeCalories: null, restingHeartRate: null,
         sleepHours: null, date, lastSynced: now.getTime() };
+    const unreadable = () => { result.readErrors = (result.readErrors ?? 0) + 1; };
     if (apple) {
         const hk = apple;
         const filter = { date: { startDate: start, endDate: end } };
         await Promise.all([
             hk.queryStatisticsForQuantity('HKQuantityTypeIdentifierStepCount', ['cumulativeSum'], { filter, unit: 'count' })
-                .then(r => { result.steps = rounded(r.sumQuantity?.quantity); }).catch(() => {}),
+                .then(r => { result.steps = rounded(r.sumQuantity?.quantity); }).catch(unreadable),
             hk.queryStatisticsForQuantity('HKQuantityTypeIdentifierActiveEnergyBurned', ['cumulativeSum'], { filter, unit: 'kcal' })
-                .then(r => { result.activeCalories = rounded(r.sumQuantity?.quantity); }).catch(() => {}),
+                .then(r => { result.activeCalories = rounded(r.sumQuantity?.quantity); }).catch(unreadable),
             hk.queryQuantitySamples('HKQuantityTypeIdentifierRestingHeartRate', {
                 filter: { date: { startDate: start, endDate: end } }, unit: 'count/min', ascending: false, limit: 1,
-            }).then(r => { result.restingHeartRate = rounded(r[0]?.quantity); }).catch(() => {}),
+            }).then(r => { result.restingHeartRate = rounded(r[0]?.quantity); }).catch(unreadable),
             hk.queryCategorySamples('HKCategoryTypeIdentifierSleepAnalysis', {
                 filter: { date: { startDate: start, endDate: end } }, limit: 0,
             }).then(rows => { result.sleepHours = sleepHours(rows.filter(s => [1, 3, 4, 5].includes(s.value))
-                .map(s => [new Date(s.startDate).getTime(), new Date(s.endDate).getTime()]), start.getTime(), end.getTime()); }).catch(() => {}),
+                .map(s => [new Date(s.startDate).getTime(), new Date(s.endDate).getTime()]), start.getTime(), end.getTime()); }).catch(unreadable),
         ]);
     } else if (android) {
         const hc = android;
-        if (await hc.getSdkStatus() !== hc.SdkAvailabilityStatus.SDK_AVAILABLE || !await hc.initialize()) return result;
+        if (await hc.getSdkStatus() !== hc.SdkAvailabilityStatus.SDK_AVAILABLE || !await hc.initialize()) throw new Error('Health Connect is currently unavailable.');
         const permissions = await hc.getGrantedPermissions();
         const allowed = (type: string) => permissions.some(p => p.accessType === 'read' && p.recordType === type);
         const timeRangeFilter = { operator: 'between' as const, startTime: start.toISOString(), endTime: end.toISOString() };
         await Promise.all([
             allowed('Steps') ? hc.aggregateRecord({ recordType: 'Steps', timeRangeFilter })
-                .then(r => { if (r.dataOrigins.length) result.steps = rounded(r.COUNT_TOTAL); }).catch(() => {}) : undefined,
+                .then(r => { if (r.dataOrigins.length) result.steps = rounded(r.COUNT_TOTAL); }).catch(unreadable) : undefined,
             allowed('ActiveCaloriesBurned') ? hc.aggregateRecord({ recordType: 'ActiveCaloriesBurned', timeRangeFilter })
-                .then(r => { if (r.dataOrigins.length) result.activeCalories = rounded(r.ACTIVE_CALORIES_TOTAL?.inKilocalories); }).catch(() => {}) : undefined,
+                .then(r => { if (r.dataOrigins.length) result.activeCalories = rounded(r.ACTIVE_CALORIES_TOTAL?.inKilocalories); }).catch(unreadable) : undefined,
             allowed('RestingHeartRate') ? hc.readRecords('RestingHeartRate', { timeRangeFilter, ascendingOrder: false, pageSize: 1 })
-                .then(r => { result.restingHeartRate = rounded(r.records[0]?.beatsPerMinute); }).catch(() => {}) : undefined,
+                .then(r => { result.restingHeartRate = rounded(r.records[0]?.beatsPerMinute); }).catch(unreadable) : undefined,
             allowed('SleepSession') ? (async () => {
                 // Include overnight sessions whose start is before this calendar day.
                 // Only their overlapping asleep stages count toward this day's total.
@@ -128,7 +130,7 @@ export async function getSummaryForDate(date: string, now = new Date()): Promise
                     pageToken = page.pageToken || undefined;
                 } while (pageToken);
                 result.sleepHours = sleepHours(intervals, start.getTime(), end.getTime());
-            })().catch(() => {}) : undefined,
+            })().catch(unreadable) : undefined,
         ]);
     }
     return result;

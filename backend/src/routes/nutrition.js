@@ -13,8 +13,9 @@ const { invalidateContextPack } = require('../services/contextPack');
 const foodPrefs = require('../services/foodPrefs');
 const cache = require('../services/cache');
 const { validateComboItems } = require('../utils/mealCombo');
-const mealPresets = require('../data/meal-presets.json');
+const { getMealIdeas } = require('../utils/mealIdeas');
 const { IST_TODAY_SQL } = require('../utils/dayBoundary');
+const { supportsTrainingFirst, legacyNutritionTargets } = require('../utils/clientCapabilities');
 
 const { resolveTargets, legacyModes } = require('../utils/nutritionTargets');
 
@@ -120,7 +121,7 @@ router.post('/profile', authenticate, asyncHandler(async (req, res) => {
     const profile = result.rows[0];
 
     // Invalidate context pack cache for fresh AI responses
-    invalidateContextPack(userId).catch(() => {});
+    await invalidateContextPack(userId).catch(() => {});
 
     res.json({
         message: 'Profile updated',
@@ -150,12 +151,7 @@ router.get('/today', authenticate, asyncHandler(async (req, res) => {
         [userId]
     );
 
-    const profile = profileResult.rows[0] || {
-        target_calories: 2000,
-        target_protein: 150,
-        target_carbs: 200,
-        target_fat: 67,
-    };
+    const profile = profileResult.rows[0] || (supportsTrainingFirst(req) ? null : legacyNutritionTargets);
 
     // Get today's logged calories
     const logsResult = await query(
@@ -174,28 +170,28 @@ router.get('/today', authenticate, asyncHandler(async (req, res) => {
     // The activity estimate already includes regular training. An intent is not
     // measured energy expenditure: do not add protein/calories or cut rest days.
     const { target_calories: targetCalories, target_protein: targetProtein,
-        target_carbs: targetCarbs, target_fat: targetFat } = profile;
+        target_carbs: targetCarbs, target_fat: targetFat } = profile || {};
 
     res.json({
-        targets: {
+        targets: profile ? {
             calories: targetCalories,
             protein: targetProtein,
             carbs: targetCarbs,
             fat: targetFat,
-        },
+        } : null,
         logged: {
             calories: parseInt(logged.total_calories),
             protein: parseInt(logged.total_protein),
             carbs: parseInt(logged.total_carbs),
             fat: parseInt(logged.total_fat),
         },
-        remaining: {
+        remaining: profile ? {
             calories: profile.target_calories - parseInt(logged.total_calories),
             protein: profile.target_protein - parseInt(logged.total_protein),
             carbs: profile.target_carbs - parseInt(logged.total_carbs),
             fat: profile.target_fat - parseInt(logged.total_fat),
-        },
-        goal_type: profile.goal_type,
+        } : null,
+        goal_type: profile?.goal_type ?? null,
     });
 }));
 
@@ -230,11 +226,10 @@ router.get('/weekly', authenticate, asyncHandler(async (req, res) => {
     ]);
 
     // `history` keeps its existing shape and meaning — StatsScreen consumes it.
-    // `summary` is additive. summariseWeek applies its own target defaults when
-    // the member has no nutrition_profiles row.
+    // `summary` is additive. Absent food setup leaves its targets null.
     res.json({
         history: result.rows,
-        summary: summariseWeek(result.rows, profileResult.rows[0]),
+        summary: summariseWeek(result.rows, profileResult.rows[0] || (supportsTrainingFirst(req) ? null : legacyNutritionTargets)),
     });
 }));
 
@@ -298,6 +293,9 @@ router.post('/log', authenticate, asyncHandler(async (req, res) => {
 router.post('/log-bulk', authenticate, asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const { items, meal_type = 'snack', visibility = 'friends' } = req.body;
+    if (!['breakfast', 'lunch', 'dinner', 'snack'].includes(meal_type)) {
+        throw new ValidationError('Choose breakfast, lunch, dinner or snack');
+    }
 
     const { valid, error, items: cleaned } = validateComboItems(items);
     if (!valid) throw new ValidationError(error);
@@ -314,19 +312,19 @@ router.post('/log-bulk', authenticate, asyncHandler(async (req, res) => {
     // column here — the same field this app already renames once elsewhere.)
     const values = [];
     const placeholders = cleaned.map((it, i) => {
-        const b = i * 9;
+        const b = i * 10;
         values.push(
             userId, it.meal_name, it.calories, it.protein, it.carbs, it.fat,
-            null, meal_type, visibility
+            it.serving_size, meal_type, visibility, it.is_estimate
         );
         // logged_date is appended as a literal SQL expression, not a bound
         // value — it must not consume a $n or shift any placeholder index.
-        return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}, $${b + 6}, $${b + 7}, $${b + 8}, $${b + 9}, ${IST_TODAY_SQL})`;
+        return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}, $${b + 6}, $${b + 7}, $${b + 8}, $${b + 9}, $${b + 10}, ${IST_TODAY_SQL})`;
     });
 
     await query(
         `INSERT INTO calorie_logs (
-            user_id, food_name, calories, protein, carbs, fat, serving_size, meal_type, visibility, logged_date
+            user_id, food_name, calories, protein, carbs, fat, serving_size, meal_type, visibility, is_estimate, logged_date
         ) VALUES ${placeholders.join(', ')}`,
         values
     );
@@ -397,7 +395,15 @@ router.post('/recalculate-all', authenticate, asyncHandler(async (req, res) => {
  * Common Indian meal combos for one-tap logging.
  */
 router.get('/presets', authenticate, asyncHandler(async (req, res) => {
-    res.json({ presets: mealPresets });
+    const { diet } = req.query;
+    if (diet !== undefined && !['vegetarian', 'all'].includes(diet)) {
+        throw new ValidationError('Choose vegetarian or all meals');
+    }
+    const profile = diet === undefined
+        ? await query('SELECT is_vegetarian FROM nutrition_profiles WHERE user_id = $1', [req.user.id])
+        : null;
+    const vegetarian = diet === 'vegetarian' || (diet === undefined && profile.rows[0]?.is_vegetarian === true);
+    res.json({ presets: getMealIdeas({ vegetarian }), diet: vegetarian ? 'vegetarian' : 'all' });
 }));
 
 module.exports = router;

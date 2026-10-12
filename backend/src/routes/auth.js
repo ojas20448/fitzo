@@ -14,6 +14,7 @@ const { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema }
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID_WEB);
 const { verifyAppleToken } = require('../services/appleAuth');
+const { supportsTrainingFirst } = require('../utils/clientCapabilities');
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // Rate limiter for password-based endpoints only (not Google OAuth)
@@ -143,7 +144,7 @@ router.post('/login', passwordLimiter, validate({ body: loginSchema }), asyncHan
     const user = result.rows[0];
 
     // Check onboarding status
-    const profileResult = await query('SELECT id FROM nutrition_profiles WHERE user_id = $1', [user.id]);
+    const profileResult = await query("SELECT id FROM nutrition_profiles WHERE user_id = $1 UNION ALL SELECT id FROM users u WHERE u.id = $1 AND $2::boolean AND to_jsonb(u)->>'onboarding_completed_at' IS NOT NULL LIMIT 1", [user.id, supportsTrainingFirst(req)]);
     const onboarding_completed = profileResult.rows.length > 0;
 
     // Verify password
@@ -189,7 +190,7 @@ router.get('/me', require('../middleware/auth').authenticate, asyncHandler(async
     const user = result.rows[0];
 
     // Check onboarding status
-    const profileResult = await query('SELECT id FROM nutrition_profiles WHERE user_id = $1', [user.id]);
+    const profileResult = await query("SELECT id FROM nutrition_profiles WHERE user_id = $1 UNION ALL SELECT id FROM users u WHERE u.id = $1 AND $2::boolean AND to_jsonb(u)->>'onboarding_completed_at' IS NOT NULL LIMIT 1", [user.id, supportsTrainingFirst(req)]);
     const onboarding_completed = profileResult.rows.length > 0;
 
     res.json({
@@ -467,7 +468,7 @@ router.post('/google', asyncHandler(async (req, res) => {
         }
 
         // Check onboarding status
-        const profileCheck = await query('SELECT id FROM nutrition_profiles WHERE user_id = $1', [user.id]);
+        const profileCheck = await query("SELECT id FROM nutrition_profiles WHERE user_id = $1 UNION ALL SELECT id FROM users u WHERE u.id = $1 AND $2::boolean AND to_jsonb(u)->>'onboarding_completed_at' IS NOT NULL LIMIT 1", [user.id, supportsTrainingFirst(req)]);
         const onboarding_completed = profileCheck.rows.length > 0;
 
         // Generate Token using helper
@@ -623,7 +624,7 @@ router.post('/apple', asyncHandler(async (req, res) => {
             user.name = name;
         }
 
-        const profileCheck = await query('SELECT id FROM nutrition_profiles WHERE user_id = $1', [user.id]);
+        const profileCheck = await query("SELECT id FROM nutrition_profiles WHERE user_id = $1 UNION ALL SELECT id FROM users u WHERE u.id = $1 AND $2::boolean AND to_jsonb(u)->>'onboarding_completed_at' IS NOT NULL LIMIT 1", [user.id, supportsTrainingFirst(req)]);
         const onboarding_completed = profileCheck.rows.length > 0;
 
         res.json({

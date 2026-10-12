@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, TextInput, ScrollView, StyleSheet } from 'react-native';
 import CalorieLogScreen from '../CalorieLogScreen';
-import { foodAPI } from '../../../services/api';
+import { foodAPI, caloriesAPI } from '../../../services/api';
 const { create, act } = jest.requireActual('react-test-renderer');
 
 jest.mock('react-native-reanimated', () => ({ ...jest.requireActual('react-native-reanimated/mock'), useReducedMotion: () => true }));
@@ -11,9 +11,10 @@ jest.mock('../../../utils/firstRun', () => ({ hasSeenTip: async () => true, TIP_
 jest.mock('../../../hooks/useVoiceCapture', () => ({ useVoiceCapture: () => ({ isBusy: false }) }));
 jest.mock('../../../components/Toast', () => ({ useToast: () => ({ error: jest.fn(), success: jest.fn() }) }));
 jest.mock('../../../context/NutritionContext', () => ({ useNutrition: () => ({ refreshToday: jest.fn(), logFoodOptimistic: jest.fn() }) }));
+jest.mock('../../../context/AuthContext', () => ({ useAuth: () => ({ user: { id: 'a' } }) }));
 jest.mock('../../../services/FoodCacheService', () => ({ FoodCacheService: { searchLocal: async () => [] } }));
 jest.mock('../../../services/api', () => ({
-    caloriesAPI: { getToday: async () => ({ entries: [{ id: 'meal', food_name: 'Lunch', calories: 400 }] }), getFrequentFoods: async () => ({ frequent: [] }) },
+    caloriesAPI: { getToday: jest.fn(async () => ({ entries: [{ id: 'meal', food_name: 'Lunch', calories: 400 }] })), getFrequentFoods: async () => ({ frequent: [] }) },
     settingsAPI: { getSharingPreference: async () => ({ share_logs: false }) },
     nutritionAPI: { getPresets: async () => ({ presets: [{ id: 'veg', name: 'Veg Thali', emoji: '🍛', items: [{ name: 'Rice', calories: 130 }] }] }) },
     foodAPI: { search: jest.fn() },
@@ -24,6 +25,16 @@ const texts = () => screen.root.findAllByType(Text).map((n: any) => n.props.chil
 beforeEach(() => { jest.useFakeTimers(); });
 afterEach(async () => { await act(async () => screen?.unmount()); jest.useRealTimers(); });
 async function open() { await act(async () => { screen = create(<CalorieLogScreen />); }); }
+it('distinguishes failed meal loading from an empty log and retries', async () => {
+    (caloriesAPI.getToday as jest.Mock).mockRejectedValueOnce(new Error('Offline'));
+    await open();
+    expect(texts()).toContain('Could not refresh');
+    expect(texts()).not.toContain('No meals logged today');
+    const retry = screen.root.findAll((node: any) => typeof node.props.onPress === 'function' && node.findAllByType(Text).some((text: any) => text.props.children === 'Try again'))[0];
+    await act(async () => retry.props.onPress());
+    expect(texts()).toContain('Lunch');
+    expect(texts()).not.toContain('Could not refresh');
+});
 async function search(value: string) {
     await act(async () => { screen.root.findByProps({ placeholder: 'Search foods...' }).props.onChangeText(value); });
     await act(async () => { jest.advanceTimersByTime(300); });
@@ -59,6 +70,6 @@ it('ignores an old catalogue response after clearing the search', async () => {
 
 it('aligns the quick-meal section with the rest of the food screen instead of touching the screen edge', async () => {
     await open();
-    const title = screen.root.findAllByType(Text).find((n: any) => n.props.children === 'QUICK MEALS');
+    const title = screen.root.findAllByType(Text).find((n: any) => n.props.children === 'MEAL IDEAS');
     expect(StyleSheet.flatten(title.parent.props.style).paddingHorizontal ?? 0).toBeGreaterThanOrEqual(12);
 });

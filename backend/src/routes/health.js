@@ -56,7 +56,7 @@ router.post('/sync', validate({ body: syncHealthSchema }), asyncHandler(async (r
     );
 
     // Invalidate context pack cache for fresh AI responses
-    invalidateContextPack(userId).catch(() => {});
+    await invalidateContextPack(userId);
 
     res.json({ success: true, health: result.rows[0] });
 }));

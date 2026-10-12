@@ -23,8 +23,8 @@ interface DailyLog {
 export default function WeeklyCharts() {
     const [history, setHistory] = useState<DailyLog[]>([]);
     const [loading, setLoading] = useState(true);
-    const [targetCalories, setTargetCalories] = useState(2000);
-    const [targetMacros, setTargetMacros] = useState({ p: 150, c: 200, f: 70 });
+    const [targetCalories, setTargetCalories] = useState(0);
+    const [targetMacros, setTargetMacros] = useState({ p: 0, c: 0, f: 0 });
 
     useEffect(() => {
         loadData();
@@ -43,11 +43,11 @@ export default function WeeklyCharts() {
             setHistory(filledHistory);
 
             if (profileRes.profile) {
-                setTargetCalories(profileRes.profile.target_calories || 2000);
+                setTargetCalories(profileRes.profile.target_calories ?? 0);
                 setTargetMacros({
-                    p: profileRes.profile.target_protein || 150,
-                    c: profileRes.profile.target_carbs || 200,
-                    f: profileRes.profile.target_fat || 70
+                    p: profileRes.profile.target_protein ?? 0,
+                    c: profileRes.profile.target_carbs ?? 0,
+                    f: profileRes.profile.target_fat ?? 0
                 });
             }
         } catch (error) {
@@ -95,7 +95,7 @@ export default function WeeklyCharts() {
     }
 
     // --- CALORIE CHART CALCULATIONS ---
-    const maxCal = Math.max(targetCalories * 1.2, ...history.map(d => d.total_calories));
+    const maxCal = Math.max(1, targetCalories * 1.2, ...history.map(d => d.total_calories));
     const scaleY = (val: number) => (val / maxCal) * CHART_HEIGHT;
     const targetY = CHART_HEIGHT - scaleY(targetCalories);
 
@@ -116,7 +116,7 @@ export default function WeeklyCharts() {
                 <View style={styles.chartContainer}>
                     <Svg width={CHART_WIDTH} height={CHART_HEIGHT + 30}>
                         {/* Target Line */}
-                        <Line
+                        {targetCalories > 0 && <Line
                             x1="0"
                             y1={targetY}
                             x2={CHART_WIDTH}
@@ -125,7 +125,7 @@ export default function WeeklyCharts() {
                             strokeWidth="1"
                             strokeDasharray="4, 4"
                             opacity={0.5}
-                        />
+                        />}
 
                         {history.map((day: any, i) => {
                             const x = i * (BAR_WIDTH + BAR_GAP);
@@ -232,7 +232,7 @@ export default function WeeklyCharts() {
 
                     {/* Floating Info */}
                     <View style={[styles.targetBadge, { top: -5 }]}>
-                        <Text style={styles.targetText}>{targetCalories.toLocaleString()} Target</Text>
+                        <Text style={styles.targetText}>{targetCalories > 0 ? `${targetCalories.toLocaleString()} Target` : 'No food target set'}</Text>
                     </View>
                 </View>
 

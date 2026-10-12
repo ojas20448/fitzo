@@ -50,6 +50,13 @@ function validateComboItems(items) {
         const protein = toNonNegativeInt(raw.protein);
         const carbs = toNonNegativeInt(raw.carbs);
         const fat = toNonNegativeInt(raw.fat);
+        const servingSize = raw.serving_size == null ? null : raw.serving_size;
+        if (raw.is_estimate !== undefined && typeof raw.is_estimate !== 'boolean') {
+            return { valid: false, error: 'Invalid estimate flag', items: [] };
+        }
+        if (servingSize !== null && (typeof servingSize !== 'string' || !servingSize.trim() || servingSize.length > 100)) {
+            return { valid: false, error: `Portion for "${name}" looks wrong`, items: [] };
+        }
         if (protein > MAX_ITEM_MACRO_GRAMS || carbs > MAX_ITEM_MACRO_GRAMS || fat > MAX_ITEM_MACRO_GRAMS) {
             return { valid: false, error: `Macros for "${name}" look wrong`, items: [] };
         }
@@ -59,6 +66,8 @@ function validateComboItems(items) {
             protein,
             carbs,
             fat,
+            serving_size: servingSize === null ? null : servingSize.trim(),
+            is_estimate: raw.is_estimate === true,
             cooking_medium: typeof raw.cooking_medium === 'string' ? raw.cooking_medium : null,
         });
     }

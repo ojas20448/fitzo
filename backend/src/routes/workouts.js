@@ -287,7 +287,7 @@ router.get('/history', asyncHandler(async (req, res) => {
 // ============================================
 router.get('/latest', asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const { type } = req.query;
+    const { type, day_name } = req.query;
 
     if (!type) {
         throw new ValidationError('Workout type is required');
@@ -299,12 +299,18 @@ router.get('/latest', asyncHandler(async (req, res) => {
     if (lowerType === 'back' || lowerType === 'pull') typeMatches = ['back', 'pull'];
     if (lowerType === 'legs') typeMatches = ['legs', 'lower'];
 
+    if (day_name !== undefined && (typeof day_name !== 'string' || !day_name.trim() || day_name.length > 80)) {
+        throw new ValidationError('Invalid workout day');
+    }
     const result = await query(
-        `SELECT * FROM workout_logs
-         WHERE user_id = $1 AND LOWER(workout_type::text) = ANY($2)
+        `SELECT w.* FROM workout_logs w
+         WHERE w.user_id = $1 AND w.completed = true AND LOWER(w.workout_type::text) = ANY($2)
+         ${day_name ? `AND EXISTS (SELECT 1 FROM workout_sessions s
+             WHERE s.source_workout_log_id = w.id AND s.user_id = $1
+               AND LOWER(s.day_name) = LOWER($3))` : ''}
          ORDER BY logged_date DESC, created_at DESC
          LIMIT 1`,
-        [userId, typeMatches]
+        [userId, typeMatches, ...(day_name ? [day_name.trim()] : [])]
     );
 
     res.json({

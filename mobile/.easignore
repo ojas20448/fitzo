@@ -12,7 +12,17 @@ ios/
 dist/
 
 # Ignore environment files
+.env
+.env.*
+**/.env
+**/.env.*
 .env.local
+
+# Local credentials and test output are never build inputs.
+**/*.p8
+**/*.p12
+**/*.pem
+coverage/
 
 # Never upload the Play service-account key to EAS build servers
 google-services-key.json

@@ -1,3 +1,4 @@
+import ScreenBackdrop from '../../components/ScreenBackdrop';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
     View,
@@ -14,13 +15,11 @@ import {
     Easing,
     Linking,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AIConsentModal, { getAIConsent } from '../../components/AIConsentModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
-import GlassCard from '../../components/GlassCard';
-import Button from '../../components/Button';
 import { aiAPI } from '../../services/api';
 import {
     useAudioRecorder,
@@ -44,13 +43,14 @@ export default function AICoachScreen() {
         {
             id: '1',
             role: 'assistant',
-            content: "I've read your last 14 days — training, food and recovery. Ask me anything.",
+            content: 'Ask about your workouts or food. I can use the recent logs available in Fitzo.',
             timestamp: new Date(),
         },
     ]);
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(false);
     const [historyLoading, setHistoryLoading] = useState(true);
+    const [historyError, setHistoryError] = useState(false);
     // expo-audio recorder — replaces the deprecated expo-av Recording API.
     const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
     const [isRecording, setIsRecording] = useState(false);
@@ -59,8 +59,7 @@ export default function AICoachScreen() {
     const toast = useToast();
 
     useEffect(() => {
-        AsyncStorage.getItem('@fitzo_ai_data_consent')
-            .then(val => setHasConsented(val === 'true'))
+        getAIConsent().then(setHasConsented)
             .catch(() => setHasConsented(false));
     }, []);
 
@@ -139,6 +138,8 @@ export default function AICoachScreen() {
             return;
         }
         const loadHistory = async () => {
+            setHistoryLoading(true);
+            setHistoryError(false);
             try {
                 const response = await aiAPI.getChatHistory();
                 if (response.success && response.history && response.history.length > 0) {
@@ -150,8 +151,8 @@ export default function AICoachScreen() {
                     }));
                     setMessages(formatted);
                 }
-            } catch (err) {
-                console.error('Failed to load chat history:', err);
+            } catch {
+                setHistoryError(true);
             } finally {
                 setHistoryLoading(false);
             }
@@ -192,12 +193,14 @@ export default function AICoachScreen() {
             };
             setMessages((prev) => [...prev, aiMessage]);
         } catch (error: any) {
+            // Keep the question available for retry without overwriting a newer draft.
+            setInputText(current => current.trim() ? current : messageText);
             const errorMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
                 content: error.message?.includes('Network')
                     ? 'I\'m having trouble connecting. Please check your internet connection and try again.'
-                    : 'Sorry, I encountered an error. Please try rephrasing your question.',
+                    : 'The coach is unavailable right now. Your question is kept below so you can try again.',
                 timestamp: new Date(),
             };
             setMessages((prev) => [...prev, errorMessage]);
@@ -283,96 +286,18 @@ function TypingDots() {
         );
     };
 
+    if (hasConsented === null) {
+        return <SafeAreaView style={styles.container}><ScreenBackdrop /><ActivityIndicator accessibilityLabel="Loading coach preferences" color={colors.primary} /></SafeAreaView>;
+    }
     if (hasConsented === false) {
-        return (
-            <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton} accessibilityLabel="Go back">
-                        <MaterialIcons name="chevron-left" size={32} color={colors.text.primary} />
-                    </TouchableOpacity>
-                    <View style={styles.headerText}>
-                        <Text style={styles.headerTitle}>SPOTTER</Text>
-                        <Text style={styles.headerSubtitle}>AI Coach Privacy & Data Consent</Text>
-                    </View>
-                </View>
-
-                <ScrollView style={styles.consentContent} contentContainerStyle={styles.consentScroll}>
-                    <View style={styles.consentIconWrap}>
-                        <MaterialIcons name="psychology" size={44} color={colors.primary} />
-                    </View>
-
-                    <Text style={styles.consentHeading}>AI Coach & Data Sharing Disclosure</Text>
-                    <Text style={styles.consentDescription}>
-                        Fitzo uses artificial intelligence to analyze your workout and nutrition logs to provide personalized coaching. In accordance with Apple Guidelines 5.1.1(i) and 5.1.2(i), please review what data is shared:
-                    </Text>
-
-                    <View style={styles.consentCard}>
-                        <View style={styles.consentCardHeader}>
-                            <MaterialIcons name="data-usage" size={18} color={colors.primary} />
-                            <Text style={styles.consentCardTitle}>Data Sent to AI</Text>
-                        </View>
-                        <Text style={styles.consentCardText}>
-                            Only relevant fitness context is processed: your logged exercises, set volume, calorie targets, and dietary goal summaries.
-                        </Text>
-                        <Text style={styles.consentCardSubtext}>
-                            Personal identity information (name, email address, passwords, or payment details) is NEVER transmitted to the AI.
-                        </Text>
-                    </View>
-
-                    <View style={styles.consentCard}>
-                        <View style={styles.consentCardHeader}>
-                            <MaterialIcons name="cloud" size={18} color={colors.primary} />
-                            <Text style={styles.consentCardTitle}>Third-Party AI Service Provider</Text>
-                        </View>
-                        <Text style={styles.consentCardText}>
-                            Data is processed by <Text style={{ color: colors.text.primary, fontFamily: typography.fontFamily.bold }}>Google Cloud (Google Gemini AI API)</Text> for real-time text analysis.
-                        </Text>
-                        <Text style={styles.consentCardSubtext}>
-                            Under Google Cloud enterprise terms, your personal data is encrypted in transit and at rest, and is NOT used to train AI models.
-                        </Text>
-                    </View>
-
-                    <View style={styles.consentCard}>
-                        <View style={styles.consentCardHeader}>
-                            <MaterialIcons name="medical-services" size={18} color={colors.primary} />
-                            <Text style={styles.consentCardTitle}>Safety & Medical Disclaimer</Text>
-                        </View>
-                        <Text style={styles.consentCardText}>
-                            Spotter is an AI coach designed strictly for fitness motivation and informational purposes. It does NOT provide medical advice, diagnosis, or clinical treatment.
-                        </Text>
-                    </View>
-
-                    <TouchableOpacity
-                        style={styles.consentPolicyLink}
-                        onPress={() => Linking.openURL('https://www.fitzoapp.in/privacy-policy')}
-                    >
-                        <MaterialIcons name="open-in-new" size={16} color={colors.primary} />
-                        <Text style={styles.consentPolicyText}>Read our full Privacy Policy</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.consentAcceptBtn}
-                        onPress={async () => {
-                            await AsyncStorage.setItem('@fitzo_ai_data_consent', 'true');
-                            setHasConsented(true);
-                        }}
-                    >
-                        <Text style={styles.consentAcceptText}>I Consent & Continue</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.consentCancelBtn}
-                        onPress={() => router.back()}
-                    >
-                        <Text style={styles.consentCancelText}>Cancel</Text>
-                    </TouchableOpacity>
-                </ScrollView>
-            </SafeAreaView>
-        );
+        return <SafeAreaView style={styles.container}><ScreenBackdrop />
+            <AIConsentModal visible featureTitle="AI Coach" onAccept={() => setHasConsented(true)} onDecline={() => router.back()} />
+        </SafeAreaView>;
     }
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
           <KeyboardAvoidingView
             style={styles.flex}
             // iOS needs padding; on Android the window already resizes, and
@@ -387,7 +312,7 @@ function TypingDots() {
                 </TouchableOpacity>
                 <View style={styles.headerText}>
                     <Text style={styles.headerTitle}>SPOTTER</Text>
-                    <Text style={styles.headerSubtitle}>Has read your last 14 days</Text>
+                    <Text style={styles.headerSubtitle}>Workouts, food and recovery</Text>
                 </View>
             </View>
 
@@ -422,6 +347,7 @@ function TypingDots() {
                 </View>
             ) : (
                 <>
+                    {historyError && <Text accessibilityLiveRegion="polite" style={{ color: colors.text.secondary, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, fontSize: 13, lineHeight: 20 }}>Previous messages could not load. You can still ask a question.</Text>}
                     {/* Quick Actions */}
                     {messages.length <= 1 && (
                         <View style={styles.quickActionsContainer}>

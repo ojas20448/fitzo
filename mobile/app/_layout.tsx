@@ -47,16 +47,9 @@ async function registerForPushNotificationsAsync(): Promise<string | undefined> 
 
     // Check existing permissions
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    // Request permissions if not already granted
+    // The Settings notification toggle owns the user-initiated request.
+    // Launching or signing up must not interrupt onboarding with a prompt.
     if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-    }
-
-    if (finalStatus !== 'granted') {
-        console.log('Push notification permission not granted');
         return undefined;
     }
 
@@ -112,12 +105,12 @@ function routeFromNotification(data: Record<string, unknown>) {
 
 // Component that handles push notification registration once user is authenticated
 function PushNotificationHandler() {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const notificationListener = useRef<Notifications.Subscription | null>(null);
     const responseListener = useRef<Notifications.Subscription | null>(null);
 
     useEffect(() => {
-        if (!isAuthenticated) return;
+        if (!isAuthenticated || !user?.onboarding_completed) return;
 
         // Register for push notifications and send token to backend
         registerForPushNotificationsAsync()
@@ -151,7 +144,7 @@ function PushNotificationHandler() {
             notificationListener.current?.remove();
             responseListener.current?.remove();
         };
-    }, [isAuthenticated]);
+    }, [isAuthenticated, user?.id, user?.onboarding_completed]);
 
     return null;
 }

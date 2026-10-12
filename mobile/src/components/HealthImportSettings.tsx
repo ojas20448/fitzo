@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import GlassCard from './GlassCard';
+import HealthSyncStatusDetails from './HealthSyncStatusDetails';
 import { colors, typography } from '../styles/theme';
 import { isHealthAvailable, requestBackgroundHealthPermission, requestPermissions } from '../services/healthService';
 import { syncHealthDays } from '../services/healthSync';
@@ -44,7 +45,9 @@ export default function HealthImportSettings({ userId }: { userId?: string }) {
             const result = await syncHealthDays(userId, { days, onProgress: p => {
                 if (mounted.current) setMessage(`Checked ${p.checked} of ${p.total} days…`);
             } });
-            if (mounted.current) setMessage(result.imported
+            if (mounted.current) setMessage(result.unreadableDays
+                ? `Saved ${result.imported} ${result.imported === 1 ? 'day' : 'days'} with readable data. Some readings could not be checked; you can retry.`
+                : result.imported
                 ? `Updated ${result.imported} ${result.imported === 1 ? 'day' : 'days'}. Checked ${result.total} days.`
                 : 'No readable data available for this period. You can sync again when new readings are recorded.');
         } catch (error) {
@@ -97,6 +100,7 @@ export default function HealthImportSettings({ userId }: { userId?: string }) {
                 <Text style={styles.detail}>Open Fitzo on a supported iPhone or Android device to import health data. A current native build is required.</Text> : <>
                 <Text style={styles.detail}>{enabled ? 'Importing is on for this account.' : 'Import steps, active calories, resting heart rate and sleep to your Fitzo account.'}</Text>
                 {!enabled ? button('Continue', () => { void run(2, true); }, busy || !userId) : <>
+                    <HealthSyncStatusDetails key={userId} userId={userId} />
                     {button('Sync now', () => { void run(2); })}
                     {button('Import last 30 days', () => { void run(30); })}
                     <View style={styles.toggleRow}>

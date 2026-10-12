@@ -44,12 +44,12 @@ const WeeklyNutritionCard: React.FC<WeeklyNutritionCardProps> = ({ summary, onPr
                             <View style={styles.stat}>
                                 <Text style={styles.value}>{summary!.avgCalories}</Text>
                                 <Text style={styles.label}>avg kcal</Text>
-                                <Text style={styles.sub}>target {summary!.targetCalories}</Text>
+                                {summary!.targetCalories !== null && <Text style={styles.sub}>target {summary!.targetCalories}</Text>}
                             </View>
                             <View style={styles.stat}>
                                 <Text style={styles.value}>{summary!.avgProtein}g</Text>
                                 <Text style={styles.label}>avg protein</Text>
-                                <Text style={styles.sub}>target {summary!.targetProtein}g</Text>
+                                {summary!.targetProtein !== null && <Text style={styles.sub}>target {summary!.targetProtein}g</Text>}
                             </View>
                         </View>
 
@@ -57,7 +57,7 @@ const WeeklyNutritionCard: React.FC<WeeklyNutritionCardProps> = ({ summary, onPr
                             is shown beside them — the pair tells the truth where
                             either alone would mislead. */}
                         <Text style={styles.footer}>
-                            {logged} of 7 days logged · {summary!.calorieTargetDays} on calories · {summary!.proteinTargetDays} on protein
+                            {logged} of 7 days logged{summary!.targetCalories !== null && summary!.targetProtein !== null ? ` · ${summary!.calorieTargetDays} on calories · ${summary!.proteinTargetDays} on protein` : ' · No food targets set'}
                         </Text>
                     </>
                 )}

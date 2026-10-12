@@ -1,6 +1,8 @@
 const mockApi = { getAuthToken: jest.fn(), authAPI: { getMe: jest.fn() }, healthAPI: { sync: jest.fn() } };
 const mockEnabled = jest.fn();
 const mockRead = jest.fn();
+const mockRecordStatus = jest.fn(async (...args: unknown[]) => { void args; });
+jest.mock('../healthSyncStatus', () => ({ recordHealthSyncStatus: (...args: unknown[]) => mockRecordStatus(...args) }));
 jest.mock('../../services/api', () => mockApi);
 jest.mock('../healthImportPreference', () => ({ isHealthImportEnabled: mockEnabled }));
 jest.mock('../../services/healthService', () => ({
@@ -28,11 +30,13 @@ it('does not upload empty readings', async () => {
     mockRead.mockImplementation(async date => ({ date, steps: null }));
     expect(await syncHealthDays('a', { days: 2 })).toMatchObject({ imported: 0 });
     expect(mockApi.healthAPI.sync).not.toHaveBeenCalled();
+    expect(mockRecordStatus).toHaveBeenCalledWith('a', expect.objectContaining({ outcome: 'empty', imported: 0 }));
 });
 it('stops before upload if the account changes during a native read', async () => {
     mockRead.mockImplementation(async date => { mockApi.getAuthToken.mockResolvedValue('session-b'); return { date, steps: 12 }; });
     await expect(syncHealthDays('a')).rejects.toThrow('Account');
     expect(mockApi.healthAPI.sync).not.toHaveBeenCalled();
+    expect(mockRecordStatus).not.toHaveBeenCalled();
 });
 it('stops before upload if importing is turned off during a native read', async () => {
     mockRead.mockImplementation(async date => { mockEnabled.mockResolvedValue(false); return { date, steps: 12 }; });
@@ -46,5 +50,18 @@ it('refuses a stale user identity before reading device health', async () => {
 it('reports failed imports and allows an idempotent retry', async () => {
     mockApi.healthAPI.sync.mockRejectedValueOnce(new Error('Offline'));
     await expect(syncHealthDays('a', { days: 2 })).rejects.toThrow('Offline');
+    expect(mockRecordStatus).toHaveBeenCalledWith('a', expect.objectContaining({ outcome: 'failed' }));
     expect(await syncHealthDays('a', { days: 2 })).toMatchObject({ checked: 2, imported: 2 });
+    expect(mockRecordStatus).toHaveBeenLastCalledWith('a', expect.objectContaining({ outcome: 'imported' }));
+});
+it('keeps a successful upload timestamp when the following day fails', async () => {
+    mockApi.healthAPI.sync.mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('Offline'));
+    await expect(syncHealthDays('a', { days: 2 })).rejects.toThrow('Offline');
+    expect(mockRecordStatus).toHaveBeenCalledWith('a', expect.objectContaining({ lastImportedAt: expect.any(String) }));
+    expect(mockRecordStatus).toHaveBeenLastCalledWith('a', expect.objectContaining({ outcome: 'failed', imported: 1, checked: 1 }));
+});
+it('imports available metrics but marks failed native queries as incomplete', async () => {
+    mockRead.mockImplementation(async date => ({ date, steps: 12, readErrors: 1 }));
+    expect(await syncHealthDays('a', { days: 2 })).toMatchObject({ imported: 2, unreadableDays: 2 });
+    expect(mockRecordStatus).toHaveBeenLastCalledWith('a', expect.objectContaining({ outcome: 'incomplete' }));
 });

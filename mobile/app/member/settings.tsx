@@ -1,3 +1,4 @@
+import ScreenBackdrop from '../../src/components/ScreenBackdrop';
 import HealthImportSettings from '../../src/components/HealthImportSettings';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, Linking, ActivityIndicator, Platform, TextInput } from 'react-native';
@@ -260,6 +261,7 @@ export default function SettingsScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
@@ -435,6 +437,16 @@ export default function SettingsScreen() {
                     </TouchableOpacity>
                 </GlassCard>
 
+                <Text style={styles.sectionTitle}>Your plan</Text>
+                <GlassCard style={styles.card}>
+                    <TouchableOpacity style={styles.row} accessibilityRole="button" accessibilityLabel="Training preferences" onPress={() => router.push('/member/training-preferences' as any)}>
+                        <View style={styles.rowLeft}><MaterialIcons name="fitness-center" size={24} color={colors.text.secondary} /><View style={{ flex: 1 }}><Text style={styles.rowLabel}>Training preferences</Text><Text style={styles.rowSub}>Equipment, experience, time and routine</Text></View></View><MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                    </TouchableOpacity>
+                    <View style={styles.divider} />
+                    <TouchableOpacity style={styles.row} accessibilityRole="button" accessibilityLabel="Food targets" onPress={() => router.push('/member/fitness-profile')}>
+                        <View style={styles.rowLeft}><MaterialIcons name="restaurant" size={24} color={colors.text.secondary} /><View style={{ flex: 1 }}><Text style={styles.rowLabel}>Food targets</Text><Text style={styles.rowSub}>Optional calorie and macro setup</Text></View></View><MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                    </TouchableOpacity>
+                </GlassCard>
                 <HealthImportSettings key={user?.id} userId={user?.id} />
 
                 {/* AI Features & Privacy */}

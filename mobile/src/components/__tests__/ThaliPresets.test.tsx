@@ -1,0 +1,38 @@
+import React from 'react';
+import { Text } from 'react-native';
+import ThaliPresets from '../ThaliPresets';
+import { nutritionAPI } from '../../services/api';
+const { create, act } = jest.requireActual('react-test-renderer');
+let mockUserId = 'a';
+jest.mock('../../context/AuthContext', () => ({ useAuth: () => ({ user: { id: mockUserId } }) }));
+jest.mock('../../services/api', () => ({ nutritionAPI: { getPresets: jest.fn() }, getAuthToken: jest.fn(async () => 'account-a') }));
+jest.mock('../../utils/haptics', () => ({ selectionAsync: jest.fn(), impactAsync: jest.fn(), ImpactFeedbackStyle: { Light: 'light', Medium: 'medium' } }));
+let screen: any;
+const texts = () => screen.root.findAllByType(Text).map((node: any) => node.props.children).flat().join(' ');
+const button = (label: string) => screen.root.findAllByProps({ accessibilityLabel: label }).find((node: any) => typeof node.props.onPress === 'function');
+const response = { diet: 'vegetarian', presets: [{ id: 'veg', name: 'Roti & dal', emoji: '🍛', vegetarian: true, items: [{ meal_name: 'Dal', calories: 198, protein: 11 }] }] };
+beforeEach(() => { jest.clearAllMocks(); mockUserId = 'a'; (nutritionAPI.getPresets as jest.Mock).mockResolvedValue(response); });
+afterEach(async () => { await act(async () => screen?.unmount()); });
+it('makes load failures visible and provides a retry without logging', async () => {
+    (nutritionAPI.getPresets as jest.Mock).mockRejectedValueOnce(new Error('Offline'));
+    await act(async () => { screen = create(<ThaliPresets />); });
+    expect(texts()).toContain('Meal ideas could not load');
+    await act(async () => button('Retry meal ideas').props.onPress());
+    expect(texts()).toContain('Roti & dal');
+    expect(button('Show vegetarian meal ideas').props.accessibilityState.selected).toBe(true);
+    await act(async () => button('Show all meal ideas').props.onPress());
+    expect(nutritionAPI.getPresets).toHaveBeenLastCalledWith('all');
+});
+it('resets the filter and discards pending results when the account changes', async () => {
+    await act(async () => { screen = create(<ThaliPresets />); });
+    let finish!: (value: unknown) => void;
+    (nutritionAPI.getPresets as jest.Mock).mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    await act(async () => button('Show all meal ideas').props.onPress());
+    mockUserId = 'b';
+    (nutritionAPI.getPresets as jest.Mock).mockResolvedValueOnce({ ...response, presets: [{ ...response.presets[0], name: 'New account meal' }] });
+    await act(async () => screen.update(<ThaliPresets />));
+    expect(nutritionAPI.getPresets).toHaveBeenLastCalledWith(undefined);
+    await act(async () => finish({ ...response, presets: [{ ...response.presets[0], name: 'Old account meal' }] }));
+    expect(texts()).toContain('New account meal');
+    expect(texts()).not.toContain('Old account meal');
+});

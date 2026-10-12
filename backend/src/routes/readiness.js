@@ -8,7 +8,21 @@ const express = require('express');
 const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
-const { asyncHandler, ValidationError } = require('../utils/errors');
+const { asyncHandler } = require('../utils/errors');
+const { validate } = require('../middleware/validate');
+const { z } = require('zod');
+const { isValidDateString, istDateString } = require('../utils/dayBoundary');
+const { invalidateContextPack } = require('../services/contextPack');
+
+const dateSchema = z.string().refine(isValidDateString, 'Use a valid YYYY-MM-DD date');
+const checkinSchema = z.object({
+    energy_level: z.number().int().min(1).max(5),
+    sleep_quality: z.number().int().min(1).max(5),
+    soreness: z.number().int().min(1).max(5),
+    sleep_hours: z.number().min(0).max(24).nullable().optional(),
+    notes: z.string().max(1000).optional(),
+    date: dateSchema.optional(),
+});
 
 router.use(authenticate);
 
@@ -23,7 +37,7 @@ function computeReadiness({ energy_level, sleep_quality, soreness, sleep_hours }
 
     // Sleep hours bonus: optimal is 7-9h
     let hoursBonus = 0;
-    if (sleep_hours) {
+    if (sleep_hours != null) {
         if (sleep_hours >= 7 && sleep_hours <= 9) hoursBonus = 10;
         else if (sleep_hours >= 6 && sleep_hours < 7)  hoursBonus = 6;
         else if (sleep_hours > 9 && sleep_hours <= 10) hoursBonus = 7;
@@ -39,23 +53,23 @@ function computeReadiness({ energy_level, sleep_quality, soreness, sleep_hours }
 function getRecommendation(score) {
     if (score >= 85) return {
         recommendation: 'peak',
-        message: "You're primed. Push hard today -- PR territory."
+        message: 'You reported high energy and good recovery. Choose your effort based on how you feel during warm-up.'
     };
     if (score >= 70) return {
         recommendation: 'push',
-        message: "Solid readiness. Good session ahead -- stick to plan."
+        message: 'You reported generally good recovery. Adjust your session to how you feel.'
     };
     if (score >= 50) return {
         recommendation: 'normal',
-        message: "Decent energy. Train as planned, listen to your body."
+        message: 'Your ratings are mixed. Consider how you feel before choosing your session.'
     };
     if (score >= 30) return {
         recommendation: 'light',
-        message: "Below average. Consider lighter weights or active recovery."
+        message: 'You reported lower recovery. A lighter session or rest may suit you today.'
     };
     return {
         recommendation: 'deload',
-        message: "Low readiness. Prioritize rest or easy mobility work today."
+        message: 'You reported low energy or recovery. Consider rest or an easier session.'
     };
 }
 
@@ -63,20 +77,9 @@ function getRecommendation(score) {
  * POST /api/readiness/checkin
  * Log today's morning check-in
  */
-router.post('/checkin', asyncHandler(async (req, res) => {
+router.post('/checkin', validate({ body: checkinSchema }), asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const { energy_level, sleep_quality, soreness, sleep_hours, notes } = req.body;
-
-    if (!energy_level || !sleep_quality || !soreness) {
-        throw new ValidationError('energy_level, sleep_quality, and soreness are required (1-5)');
-    }
-
-    for (const [field, val] of [['energy_level', energy_level], ['sleep_quality', sleep_quality], ['soreness', soreness]]) {
-        const n = parseInt(val);
-        if (isNaN(n) || n < 1 || n > 5) {
-            throw new ValidationError(`${field} must be between 1 and 5`);
-        }
-    }
+    const { energy_level, sleep_quality, soreness, sleep_hours, notes, date } = req.body;
 
     const readiness_score = computeReadiness({ energy_level, sleep_quality, soreness, sleep_hours });
     const { recommendation, message: recommendation_message } = getRecommendation(readiness_score);
@@ -84,8 +87,9 @@ router.post('/checkin', asyncHandler(async (req, res) => {
     const result = await query(
         `INSERT INTO readiness_logs
          (user_id, energy_level, sleep_quality, soreness, sleep_hours,
+          log_date,
           readiness_score, recommendation, recommendation_message, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         VALUES ($1, $2, $3, $4, $5, $10::date, $6, $7, $8, $9)
          ON CONFLICT (user_id, log_date)
          DO UPDATE SET
            energy_level = EXCLUDED.energy_level,
@@ -95,12 +99,14 @@ router.post('/checkin', asyncHandler(async (req, res) => {
            readiness_score = EXCLUDED.readiness_score,
            recommendation = EXCLUDED.recommendation,
            recommendation_message = EXCLUDED.recommendation_message,
-           notes = EXCLUDED.notes,
+           notes = CASE WHEN $11::boolean THEN EXCLUDED.notes ELSE readiness_logs.notes END,
            created_at = NOW()
          RETURNING *`,
-        [userId, energy_level, sleep_quality, soreness, sleep_hours || null,
-         readiness_score, recommendation, recommendation_message, notes || null]
+        [userId, energy_level, sleep_quality, soreness, sleep_hours ?? null,
+         readiness_score, recommendation, recommendation_message, notes || null, date || istDateString(), notes !== undefined]
     );
+
+    await invalidateContextPack(userId);
 
     res.json({
         success: true,
@@ -112,13 +118,13 @@ router.post('/checkin', asyncHandler(async (req, res) => {
  * GET /api/readiness/today
  * Get today's check-in (if exists)
  */
-router.get('/today', asyncHandler(async (req, res) => {
+router.get('/today', validate({ query: z.object({ date: dateSchema.optional() }) }), asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
     const result = await query(
         `SELECT * FROM readiness_logs
-         WHERE user_id = $1 AND log_date = CURRENT_DATE`,
-        [userId]
+         WHERE user_id = $1 AND log_date = $2::date`,
+        [userId, req.query.date || istDateString()]
     );
 
     if (result.rows.length === 0) {
@@ -135,16 +141,18 @@ router.get('/today', asyncHandler(async (req, res) => {
  * GET /api/readiness/history?days=7
  * Get recent check-in history
  */
-router.get('/history', asyncHandler(async (req, res) => {
+router.get('/history', validate({ query: z.object({
+    date: dateSchema.optional(), days: z.coerce.number().int().min(1).max(30).default(7),
+}) }), asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const days = Math.min(parseInt(req.query.days) || 7, 30);
+    const days = req.query.days;
 
     const result = await query(
         `SELECT * FROM readiness_logs
          WHERE user_id = $1
-           AND log_date >= CURRENT_DATE - INTERVAL '1 day' * $2
+           AND log_date BETWEEN $3::date - ($2::int - 1) AND $3::date
          ORDER BY log_date DESC`,
-        [userId, days]
+        [userId, days, req.query.date || istDateString()]
     );
 
     const avgScore = result.rows.length > 0

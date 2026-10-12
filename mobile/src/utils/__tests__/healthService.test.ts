@@ -39,6 +39,19 @@ function service(os: string): typeof import('../../services/healthService') {
 beforeEach(() => { jest.clearAllMocks(); jest.useFakeTimers().setSystemTime(new Date(2026, 8, 10, 14)); });
 afterEach(() => jest.useRealTimers());
 
+it('exposes native query failures without converting missing readings to zeros', async () => {
+    mockHK.queryStatisticsForQuantity.mockRejectedValueOnce(new Error('Unavailable'));
+    const result = await service('ios').getSummaryForDate('2026-09-10');
+    expect(result.steps).toBeNull();
+    expect(result.activeCalories).toBe(210);
+    expect(result.readErrors).toBe(1);
+    expect(service('ios').healthSyncPayload(result)).not.toHaveProperty('readErrors');
+});
+it('reports an unavailable Android health service rather than a completed empty check', async () => {
+    mockHC.getSdkStatus.mockResolvedValueOnce(1);
+    await expect(service('android').getSummaryForDate('2026-09-10')).rejects.toThrow('unavailable');
+});
+
 it('requests read-only Apple Health access using the installed API', async () => {
     expect(await service('ios').requestPermissions()).toBe(true);
     expect(mockHK.requestAuthorization).toHaveBeenCalledWith({ toRead: [

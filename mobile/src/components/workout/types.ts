@@ -16,6 +16,7 @@ export interface UserExercise {
     name: string;
     gifUrl?: string;
     target?: string;
+    instructions?: string;
     /** Entered per side — volume counts both. See backend/src/utils/volume.js */
     is_unilateral?: boolean;
     sets: ExerciseSet[];

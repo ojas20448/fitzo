@@ -1,3 +1,4 @@
+import ScreenBackdrop from '../../components/ScreenBackdrop';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
@@ -273,6 +274,7 @@ export default function UserProfileScreen() {
     if (loading) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
                 <View style={styles.header}>
                     <TouchableOpacity onPress={goBack} style={styles.backBtn}>
                         <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
@@ -293,6 +295,7 @@ export default function UserProfileScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
             <View style={styles.header}>
                 <TouchableOpacity onPress={goBack} style={styles.backBtn}>
                     <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />

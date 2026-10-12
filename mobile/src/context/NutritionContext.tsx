@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { nutritionAPI, workoutsAPI } from '../services/api';
 import { useAuth } from './AuthContext';
@@ -18,8 +18,8 @@ interface MacroTargets {
 
 interface NutritionContextType {
     todayMacros: Macros;
-    calorieGoal: number;
-    macroTargets: MacroTargets;
+    calorieGoal: number | null;
+    macroTargets: MacroTargets | null;
     weeklyWorkoutGoal: number;
     updateWeeklyGoal: (days: number) => Promise<void>;
     lastUpdatedAt: number;
@@ -32,17 +32,24 @@ const NutritionContext = createContext<NutritionContextType | undefined>(undefin
 
 const AccountNutritionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
+    const userId = user?.id;
     const [todayMacros, setTodayMacros] = useState<Macros>({ calories: 0, protein: 0, carbs: 0, fat: 0 });
-    const [calorieGoal, setCalorieGoal] = useState<number>(2000);
-    const [macroTargets, setMacroTargets] = useState<MacroTargets>({ protein: 150, carbs: 200, fat: 65 });
+    const [calorieGoal, setCalorieGoal] = useState<number | null>(null);
+    const [macroTargets, setMacroTargets] = useState<MacroTargets | null>(null);
     const [lastUpdatedAt, setLastUpdatedAt] = useState<number>(Date.now());
     const [isLoading, setIsLoading] = useState(false);
+    const requestVersion = useRef(0);
+    const mounted = useRef(true);
+    useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
     const refreshToday = useCallback(async () => {
-        if (!user) return;
+        if (!userId) return;
+        const version = ++requestVersion.current;
+        setIsLoading(true);
 
         try {
             const data = await nutritionAPI.getToday();
+            if (!mounted.current || version !== requestVersion.current) return;
             if (data?.logged) {
                 setTodayMacros({
                     calories: data.logged.calories || 0,
@@ -53,30 +60,14 @@ const AccountNutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 setLastUpdatedAt(Date.now());
             }
 
-            // Also refresh profile for goal
-            const profile = await nutritionAPI.getProfile();
-            if (profile?.profile?.target_calories) {
-                setCalorieGoal(profile.profile.target_calories);
-                setMacroTargets({
-                    protein: profile.profile.target_protein || 150,
-                    carbs: profile.profile.target_carbs || 200,
-                    fat: profile.profile.target_fat || 65,
-                });
-            }
-        } catch (error) {
+            setCalorieGoal(data.targets?.calories ?? null);
+            setMacroTargets(data.targets ? { protein: data.targets.protein, carbs: data.targets.carbs, fat: data.targets.fat } : null);
+        } catch {
             // Silently fail - non-critical
-        }
-    }, [user?.id]);
+        } finally { if (mounted.current && version === requestVersion.current) setIsLoading(false); }
+    }, [userId]);
 
     const [weeklyWorkoutGoal, setWeeklyWorkoutGoal] = useState<number>(4);
-
-    // Initial load - only depend on user.id to prevent infinite re-renders
-    useEffect(() => {
-        if (user) {
-            refreshToday();
-            loadWeeklyGoal();
-        }
-    }, [user?.id]);
 
     /**
      * Resolve the weekly workout goal.
@@ -91,37 +82,43 @@ const AccountNutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
      * Picking a split is already a statement of how often you intend to train;
      * the goal should follow it without being asked twice.
      */
-    const loadWeeklyGoal = async () => {
+    const weeklyGoalVersion = useRef(0);
+    const loadWeeklyGoal = useCallback(async () => {
+        if (!userId) return;
+        const version = ++weeklyGoalVersion.current;
         try {
-            const stored = await AsyncStorage.getItem(`weekly_goal_${user?.id}`);
+            const stored = await AsyncStorage.getItem(`weekly_goal_${userId}`);
             if (stored) {
-                const n = parseInt(stored, 10);
+                const n = Number(stored);
                 // Guard the parse: a corrupt key used to yield NaN, and
                 // `workouts >= NaN` is false forever, so the goal could never
                 // be met.
-                if (Number.isFinite(n) && n > 0) {
+                if (Number.isInteger(n) && n >= 1 && n <= 7 && mounted.current && version === weeklyGoalVersion.current) {
                     setWeeklyWorkoutGoal(n);
                     return;
                 }
             }
 
             const res = await workoutsAPI.getMySplits();
-            const days = res?.splits?.[0]?.days_per_week;
-            if (Number.isFinite(days) && days > 0) {
+            const days = res?.splits?.find((split: any) => split.is_active)?.days_per_week;
+            if (Number.isInteger(days) && days >= 1 && days <= 7 && mounted.current && version === weeklyGoalVersion.current) {
                 setWeeklyWorkoutGoal(days);
             }
-        } catch (e) {
+        } catch {
             // Non-critical: the useState default of 4 stands.
         }
-    };
+    }, [userId]);
+    useEffect(() => { if (userId) { void refreshToday(); void loadWeeklyGoal(); } }, [userId, refreshToday, loadWeeklyGoal]);
 
     const updateWeeklyGoal = async (days: number) => {
+        if (!Number.isInteger(days) || days < 1 || days > 7) throw new Error('Choose between 1 and 7 workouts per week.');
+        weeklyGoalVersion.current++;
         setWeeklyWorkoutGoal(days);
         try {
-            if (user?.id) {
-                await AsyncStorage.setItem(`weekly_goal_${user.id}`, String(days));
+            if (userId) {
+                await AsyncStorage.setItem(`weekly_goal_${userId}`, String(days));
             }
-        } catch (e) {
+        } catch {
         }
     };
 
@@ -140,6 +137,8 @@ const AccountNutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }) => {
         const previousMacros = { ...todayMacros };
         const previousUpdate = lastUpdatedAt;
+        requestVersion.current++;
+        setIsLoading(false);
 
         const newMacros = {
             calories: previousMacros.calories + (food.calories || 0),
@@ -151,8 +150,8 @@ const AccountNutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setTodayMacros(newMacros);
         setLastUpdatedAt(Date.now());
 
-        const threshold = calorieGoal * 0.9;
-        const isGoalHit = previousMacros.calories < threshold && newMacros.calories >= threshold;
+        const threshold = (calorieGoal ?? 0) * 0.9;
+        const isGoalHit = calorieGoal !== null && previousMacros.calories < threshold && newMacros.calories >= threshold;
 
         try {
             await nutritionAPI.logFood(food);

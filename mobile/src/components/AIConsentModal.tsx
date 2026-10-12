@@ -78,7 +78,7 @@ export default function AIConsentModal({
                             {featureTitle ? `${featureTitle} & Privacy` : 'AI Features & Data Privacy'}
                         </Text>
                         <Text style={styles.subtitle}>
-                            In accordance with Apple App Store Review Guidelines 5.1.1(i) and 5.1.2(i), please review how your personal data is handled before using AI features in Fitzo.
+                            Choose whether Fitzo can send the information below to its AI services. You can keep logging workouts and meals without AI.
                         </Text>
                     </View>
 
@@ -92,14 +92,14 @@ export default function AIConsentModal({
                             Depending on the AI feature you use, Fitzo sends only the relevant fitness context required to generate an answer:
                         </Text>
                         <View style={styles.bulletList}>
-                            <Text style={styles.bulletItem}>• <Text style={styles.bold}>AI Coach & Insights:</Text> Your logged workout volume, exercise sets, nutrition targets, and recovery summaries.</Text>
+                            <Text style={styles.bulletItem}>• <Text style={styles.bold}>AI Coach & Insights:</Text> Your questions and relevant saved context: workout logs, schedule and training preferences, food logs and targets, fitness profile and dietary preferences, check-in ratings, imported health readings, and weight history.</Text>
                             <Text style={styles.bulletItem}>• <Text style={styles.bold}>Photo Food Scanner:</Text> The meal photo for nutrition estimates. In worker mode, it is temporarily stored in Fitzo's private queue and on the processing laptop, then removed after completion or expiry.</Text>
                             <Text style={styles.bulletItem}>• <Text style={styles.bold}>Voice Logging:</Text> The short voice clip for speech-to-text transcription and meal/workout extraction (analyzed and immediately discarded; never stored).</Text>
                         </View>
                         <View style={styles.protectedBox}>
                             <MaterialIcons name="shield" size={16} color={colors.success} />
                             <Text style={styles.protectedText}>
-                                Personal identifiers (name, email address, password, and payment info) are NEVER sent to the AI service.
+                                Fitzo does not add your name, email, password or payment details to the coach context. Information you type or include in photos and recordings may still be sent. Avoid sharing sensitive details.
                             </Text>
                         </View>
                     </View>

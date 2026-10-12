@@ -279,7 +279,7 @@ async function safeGenerateInsight(userId, streak) {
         const avgProtein = parseFloat(proteinResult.rows[0].avg_protein) || 0;
 
         // Get target from nutrition profile if exists
-        let targetProtein = 150;
+        let targetProtein = null;
         try {
             const profileRes = await query(`SELECT target_protein FROM nutrition_profiles WHERE user_id = $1`, [userId]);
             if (profileRes.rows.length > 0) targetProtein = profileRes.rows[0].target_protein;
@@ -287,7 +287,7 @@ async function safeGenerateInsight(userId, streak) {
             // fallback to default
         }
 
-        if (avgProtein > 0 && avgProtein < targetProtein * 0.7) {
+        if (targetProtein !== null && avgProtein > 0 && avgProtein < targetProtein * 0.7) {
             return {
                 type: 'warning',
                 message: `Your protein is low this week (${Math.round(avgProtein)}g avg). Hit ${targetProtein}g to fuel recovery! 🥩`

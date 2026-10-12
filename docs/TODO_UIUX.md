@@ -1,5 +1,7 @@
 # Fitzo - TODO & UI/UX Improvements
 
+> Current priorities: [October 2026 product and onboarding to-do](roadmap/2026-10-07-product-and-onboarding-todo.md). The older styling suggestions below are historical and should not override that direction.
+
 > Last Updated: January 16, 2026 (Continued Refinement Pass)
 
 This document outlines all identified UI/UX issues and improvement opportunities across the Fitzo mobile app.

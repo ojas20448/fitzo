@@ -13,6 +13,8 @@ const xpService = require('../services/xpService');
 const { resolveMuscleGroup } = require('../utils/muscleGroup');
 const { invalidateContextPack } = require('../services/contextPack');
 const { completeWorkoutAttendance } = require('../utils/workoutAttendance');
+const { validateStarterPlan } = require('../utils/starterWorkoutPlan');
+router.use('/training-preferences', require('./training-preferences'));
 
 /**
  * GET /api/workouts/exercises
@@ -544,10 +546,18 @@ router.get('/splits', authenticate, asyncHandler(async (req, res) => {
  */
 router.post('/splits', authenticate, asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const { split_id, name, days, days_per_week } = req.body;
+    const { split_id, name, days, days_per_week, training_plan } = req.body;
 
-    if (!name || !days || days.length === 0) {
+    if (typeof split_id !== 'string' || !split_id.trim() || split_id.length > 50
+        || typeof name !== 'string' || !name.trim() || name.length > 100
+        || !Array.isArray(days) || days.length < 1 || days.length > 7
+        || !days.every(day => typeof day === 'string' && day.trim() && day.length <= 80)
+        || (days_per_week !== undefined && (!Number.isInteger(days_per_week) || days_per_week < 1 || days_per_week > 7))) {
         throw new ValidationError('Name and days are required');
+    }
+    const plan = validateStarterPlan(training_plan, days);
+    if (plan && days_per_week !== undefined && days_per_week !== days.length) {
+        throw new ValidationError('Starting workouts must match your weekly training days.');
     }
 
     // Use a transaction to ensure atomicity — prevent orphaned states
@@ -555,6 +565,7 @@ router.post('/splits', authenticate, asyncHandler(async (req, res) => {
     const client = await getClient();
     try {
         await client.query('BEGIN');
+        await client.query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [userId]);
         // Deactivate existing splits
         await client.query(
             `UPDATE user_splits SET is_active = false WHERE user_id = $1`,
@@ -562,15 +573,19 @@ router.post('/splits', authenticate, asyncHandler(async (req, res) => {
         );
 
         // Save new split (explicitly set is_active = true)
+        // Keep legacy clients working before migration 021. New templates must
+        // persist in full or fail the transaction; never silently drop them.
         const result = await client.query(
-            `INSERT INTO user_splits (user_id, split_id, name, days, days_per_week, is_active)
-             VALUES ($1, $2, $3, $4, $5, true)
-             RETURNING *`,
-            [userId, split_id, name, days, days_per_week || days.length]
+            plan ? `INSERT INTO user_splits (user_id, split_id, name, days, days_per_week, is_active, training_plan)
+             VALUES ($1, $2, $3, $4, $5, true, $6::jsonb) RETURNING *`
+                : `INSERT INTO user_splits (user_id, split_id, name, days, days_per_week, is_active)
+             VALUES ($1, $2, $3, $4, $5, true) RETURNING *`,
+            [userId, split_id, name, days, days_per_week || days.length, ...(plan ? [JSON.stringify(plan)] : [])]
         );
 
         await client.query('COMMIT');
 
+        await invalidateContextPack(userId).catch(() => {});
         res.status(201).json({
             message: 'Split saved!',
             split: result.rows[0],

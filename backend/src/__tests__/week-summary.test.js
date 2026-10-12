@@ -84,10 +84,10 @@ describe('summariseWeek', () => {
         expect(r.avgCalories).toBe(1000);
     });
 
-    it('falls back to sane targets when none are supplied', () => {
+    it('keeps targets absent when food setup is skipped', () => {
         const r = summariseWeek([{ calories: 2000, protein: 150 }], null);
-        expect(r.targetCalories).toBe(2000);
-        expect(r.targetProtein).toBe(150);
+        expect(r.targetCalories).toBeNull();
+        expect(r.targetProtein).toBeNull();
     });
 
     it('echoes the targets it used so the card need not fetch them', () => {

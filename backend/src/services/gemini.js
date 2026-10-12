@@ -308,11 +308,15 @@ async function chatWithCoach(question, contextPack = {}, messageHistory = []) {
     let contextStr = '';
     
     if (contextPack && Object.keys(contextPack).length > 0) {
-        const { profile, streak, training, nutrition, readiness, activeSplit, todayIntent, wearables, weightHistory } = contextPack;
+        const { profile, streak, training, nutrition, readiness, activeSplit, trainingPreferences, todayIntent, wearables, weightHistory } = contextPack;
         
         contextStr += `\nUSER DATA & METRICS (LAST 14 DAYS):`;
         if (profile) {
             contextStr += `\n- Profile: Goal is ${profile.goal_type || 'maintenance'}. Age: ${profile.age || 'N/A'}, Weight: ${profile.current_weight || 'N/A'}kg (Target: ${profile.target_weight || 'N/A'}kg). Target Calories: ${profile.target_calories || 'N/A'} kcal/day.`;
+            if ([profile.target_protein, profile.target_carbs, profile.target_fat].every(value => value != null && Number.isFinite(Number(value)))) {
+                contextStr += `\n- Saved daily macro targets: Protein ${profile.target_protein}g, Carbs ${profile.target_carbs}g, Fat ${profile.target_fat}g. Use these saved targets; do not replace them with generic macro percentages.`;
+            }
+            if (profile.is_vegetarian === true) contextStr += '\n- Food preference: vegetarian.';
             if (profile.ai_profile_summary) {
                 contextStr += `\n- Monthly Coach Notes: ${profile.ai_profile_summary}`;
             }
@@ -337,7 +341,7 @@ async function chatWithCoach(question, contextPack = {}, messageHistory = []) {
         }
         
         if (readiness && readiness.length > 0) {
-            contextStr += `\n- Recent Readiness Scores (0-100): ${readiness.slice(0, 3).map(r => `${r.log_date}: Score ${r.readiness_score}/100 (${r.recommendation})`).join('; ')}`;
+            contextStr += `\n- Optional self-reported recovery check-ins (not a medical assessment or wearable score; energy and sleep quality 1=low, 5=high; soreness 1=none, 5=high): ${readiness.slice(0, 3).map(r => `${r.log_date}: energy ${r.energy_level}/5, sleep quality ${r.sleep_quality}/5, soreness ${r.soreness}/5${r.sleep_hours != null ? `, sleep ${r.sleep_hours}h` : ''}`).join('; ')}. Use these as subjective context, not proof that the user is ready for maximal effort.`;
         }
 
         if (wearables && wearables.length > 0) {
@@ -350,7 +354,9 @@ async function chatWithCoach(question, contextPack = {}, messageHistory = []) {
         
         if (activeSplit) {
             contextStr += `\n- Active Workout Split: ${activeSplit.name} (${activeSplit.days_per_week} days/week).`;
+
         }
+        if (trainingPreferences) contextStr += `\n- Saved Training Preferences: goal=${trainingPreferences.goal_type || 'unspecified'}, experience=${trainingPreferences.experience}, equipment=${trainingPreferences.equipment}, time budget=${trainingPreferences.session_minutes} minutes. Starting exercises are suggestions, not completed workouts. No food targets are set unless the nutrition profile provides them.`;
         if (todayIntent) {
             contextStr += `\n- Today's Gym Intent: Focus is ${todayIntent.muscle_group} ("${todayIntent.note || 'No notes'}") logged under label "${todayIntent.session_label || 'Normal'}".`;
         }

@@ -20,6 +20,9 @@ export const colors = {
     primary: '#FFFFFF',
     primaryMuted: 'rgba(255, 255, 255, 0.8)',
 
+    // Restrained training-track motif; decorative, not status colours.
+    decoration: { line: '#DCE6CA', accent: '#DCE6CA' },
+
     // Text colors - contrast ratios improved for accessibility
     text: {
         primary: '#FFFFFF',

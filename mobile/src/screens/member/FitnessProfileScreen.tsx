@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Pressable, Linking } from 'react-native';
+import ScreenBackdrop from '../../components/ScreenBackdrop';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { nutritionAPI } from '../../services/api';
+import { nutritionAPI, workoutsAPI, getAuthToken } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { EMPTY_ONBOARDING, validateBody } from '../../utils/onboardingPlan';
 import { useNutrition } from '../../context/NutritionContext';
 import { calculateEnergy, calculateCalories, calculateMacros, proteinPerKgForGoal } from '../../utils/nutritionTargets';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
@@ -24,18 +27,25 @@ const ACTIVITY_LEVELS = [
 ];
 
 export default function FitnessProfileScreen() {
+    const { user } = useAuth();
+    return <ProfileEditor key={user?.id ?? 'signed-out'} />;
+}
+function ProfileEditor() {
+    const mounted = useRef(true);
+    const [loadError, setLoadError] = useState('');
     const toast = useToast();
+    const showError = toast.error;
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
     // Form state
-    const [height, setHeight] = useState('170');
-    const [weight, setWeight] = useState('70');
-    const [age, setAge] = useState('25');
-    const [gender, setGender] = useState<'male' | 'female'>('male');
-    const [goalType, setGoalType] = useState('maintenance');
-    const [activityLevel, setActivityLevel] = useState('sedentary');
-    const [isVegetarian, setIsVegetarian] = useState(false);
+    const [height, setHeight] = useState('');
+    const [weight, setWeight] = useState('');
+    const [age, setAge] = useState('');
+    const [gender, setGender] = useState<'male' | 'female' | null>(null);
+    const [goalType, setGoalType] = useState('');
+    const [activityLevel, setActivityLevel] = useState('');
+    const [isVegetarian, setIsVegetarian] = useState<boolean | null>(null);
     // Manual calorie override. Off by default so the app keeps auto-calculating
     // from biometrics; on, it sends target_calories and the backend stops
     // recomputing it (routes/nutrition.js treats a supplied target as final).
@@ -47,15 +57,13 @@ export default function FitnessProfileScreen() {
 
     // Calculated values
     const bmi = parseFloat(weight) / Math.pow(parseFloat(height) / 100, 2) || 0;
-    const bmiCategory = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
-    const bmiColor = bmi < 18.5 || bmi >= 30 ? '#FF6B6B' : bmi < 25 ? '#4ECDC4' : '#FFE66D';
 
-    const w = parseFloat(weight) || 70;
-    const h = parseFloat(height) || 170;
-    const a = parseInt(age, 10) || 25;
-    const liveEnergy = calculateEnergy(w, h, a, gender, activityLevel);
-    const autoCalories = calculateCalories(liveEnergy.tdee, goalType, gender, bmi);
-    const customCalNum = parseInt(customCalories, 10);
+    const basicsError = validateBody({ ...EMPTY_ONBOARDING, height, weight, age, gender, vegetarian: isVegetarian })
+        || (!activityLevel ? 'Choose your everyday activity.' : null) || (!goalType ? 'Choose your goal.' : null);
+    const bodyValid = !basicsError;
+    const w = Number(weight), h = Number(height), a = Number(age);
+    const autoCalories = bodyValid ? calculateCalories(calculateEnergy(w, h, a, gender!, activityLevel).tdee, goalType, gender!, bmi) : 0;
+    const customCalNum = Number(customCalories);
     const effectiveCalories = useCustomCalories && Number.isFinite(customCalNum) && customCalNum >= 800 && customCalNum <= 8000
         ? customCalNum
         : autoCalories;
@@ -63,27 +71,27 @@ export default function FitnessProfileScreen() {
         ? { protein: savedMacros.protein, fat: savedMacros.fat } : {}, goalType);
 
     const { weeklyWorkoutGoal, updateWeeklyGoal, refreshToday } = useNutrition();
+    const [showWeeklyGoal, setShowWeeklyGoal] = useState(false);
+    const weeklyGoalTouched = useRef(false);
     const [weeklyGoal, setWeeklyGoal] = useState('4');
 
     // ... existing state ...
 
-    useEffect(() => {
-        loadProfile();
-        // Set initial weekly goal from context
-        setWeeklyGoal(String(weeklyWorkoutGoal));
-    }, [weeklyWorkoutGoal]);
+    useEffect(() => { if (!weeklyGoalTouched.current) setWeeklyGoal(String(weeklyWorkoutGoal)); }, [weeklyWorkoutGoal]);
 
-    const loadProfile = async () => {
+    const loadProfile = useCallback(async () => {
+        setLoading(true); setLoadError('');
         try {
             const { profile } = await nutritionAPI.getProfile();
+            if (!mounted.current) return;
             if (profile) {
-                setHeight(String(Math.round(profile.height_cm || 170)));
-                setWeight(String(Math.round(profile.weight_kg || 70)));
-                setAge(String(profile.age || 25));
-                setGender(profile.gender || 'male');
-                setGoalType(profile.goal_type || 'maintenance');
-                setActivityLevel(profile.activity_level || 'sedentary');
-                setIsVegetarian(profile.is_vegetarian || false);
+                setHeight(profile.height_cm != null ? String(profile.height_cm) : '');
+                setWeight(profile.weight_kg != null ? String(profile.weight_kg) : '');
+                setAge(String(profile.age ?? ''));
+                setGender(profile.gender ?? null);
+                setGoalType(profile.goal_type ?? '');
+                setActivityLevel(profile.activity_level ?? '');
+                setIsVegetarian(profile.is_vegetarian ?? null);
                 setCalculatedCalories(profile.target_calories ?? null);
                 setUseCustomCalories(profile.calorie_target_mode === 'custom');
                 const custom = profile.macro_target_mode === 'custom'
@@ -93,17 +101,31 @@ export default function FitnessProfileScreen() {
                 if (profile.target_calories) {
                     setCustomCalories(String(Math.round(profile.target_calories)));
                 }
+            } else {
+                const training = await workoutsAPI.getTrainingPreferences();
+                if (mounted.current) setGoalType(training.preferences?.goal_type ?? '');
             }
         } catch (error: any) {
-            toast.error('Error', error.message || 'Something went wrong');
+            if (!mounted.current) return;
+            setLoadError('Could not load your food profile. Retry before editing.');
+            showError('Error', error.message || 'Something went wrong');
         } finally {
-            setLoading(false);
+            if (mounted.current) setLoading(false);
         }
-    };
+    }, [showError]);
+
+    useEffect(() => {
+        mounted.current = true; void loadProfile();
+        return () => { mounted.current = false; };
+    }, [loadProfile]);
+
+
 
     const handleSave = async () => {
-        const override = parseInt(customCalories, 10);
-        if (useCustomCalories && (!Number.isFinite(override) || override < 800 || override > 8000)) {
+        if (saving || loadError) return;
+        if (basicsError) { toast.error('Complete your food basics', basicsError); return; }
+        const override = Number(customCalories);
+        if (useCustomCalories && (!Number.isInteger(override) || override < 800 || override > 8000)) {
             toast.error('Check that number', 'Enter a daily target between 800 and 8000 kcal.');
             return;
         }
@@ -114,37 +136,44 @@ export default function FitnessProfileScreen() {
 
         setSaving(true);
         try {
+            const token = await getAuthToken();
+            if (!token || !mounted.current) return;
             const result = await nutritionAPI.updateProfile({
                 height_cm: parseFloat(height),
                 weight_kg: parseFloat(weight),
-                age: parseInt(age, 10),
-                gender,
+                age: Number(age),
+                gender: gender!,
                 activity_level: activityLevel as any,
                 goal_type: goalType as any,
-                is_vegetarian: isVegetarian,
+                is_vegetarian: isVegetarian!,
                 calorie_target_mode: useCustomCalories ? 'custom' : 'automatic',
                 macro_target_mode: keepCustomMacros ? 'custom' : 'automatic',
                 ...(keepCustomMacros ? { target_protein: liveMacros.protein, target_carbs: liveMacros.carbs, target_fat: liveMacros.fat } : {}),
                 // Omitted entirely when off, so the backend recalculates.
                 ...(useCustomCalories ? { target_calories: override } : {}),
-            });
+            }, token);
+            if (!mounted.current) return;
 
             // Save weekly goal
-            await updateWeeklyGoal(parseInt(weeklyGoal, 10));
+            if (weeklyGoalTouched.current) await updateWeeklyGoal(Number(weeklyGoal));
             await refreshToday();
 
+            if (!mounted.current) return;
             toast.success('Profile Updated!', `Daily target: ${result.profile.target_calories} kcal`);
             router.back();
         } catch (error: any) {
+            if (!mounted.current) return;
             toast.error('Could not save profile', error.message || 'Please check your details and try again.');
         } finally {
-            setSaving(false);
+            if (mounted.current) setSaving(false);
         }
     };
 
+    if (loadError) return <SafeAreaView style={styles.container}><View style={{ padding: 24 }}><Text style={styles.toggleDesc}>{loadError}</Text><TouchableOpacity style={{ minHeight: 48 }} accessibilityRole="button" onPress={() => { void loadProfile(); }}><Text style={styles.toggleLabel}>Retry</Text></TouchableOpacity><TouchableOpacity style={{ minHeight: 48 }} accessibilityRole="button" onPress={() => router.back()}><Text style={styles.toggleLabel}>Back</Text></TouchableOpacity></View></SafeAreaView>;
     if (loading) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>Loading...</Text>
                 </View>
@@ -154,12 +183,13 @@ export default function FitnessProfileScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            <ScreenBackdrop />
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Back">
                     <MaterialIcons name="arrow-back" size={24} color={colors.text.primary} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Fitness Profile</Text>
+                <Text style={styles.headerTitle}>Food targets</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -168,43 +198,22 @@ export default function FitnessProfileScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* BMI Display */}
-                <View style={styles.bmiCard}>
-                    <Text style={styles.bmiLabel}>Your BMI</Text>
-                    <Text style={[styles.bmiValue, { color: bmiColor }]}>{bmi.toFixed(1)}</Text>
-                    <Text style={[styles.bmiCategory, { color: bmiColor }]}>{bmiCategory}</Text>
-                    <View style={styles.bmiCitationContainer}>
-                        <Text style={styles.bmiCitationText}>
-                            Source:{' '}
-                            <Text
-                                style={styles.bmiCitationLink}
-                                onPress={() => Linking.openURL('https://www.who.int/data/gho/data/themes/topics/topic-details/GHO/body-mass-index')}
-                            >
-                                World Health Organization (WHO) BMI Standards
-                            </Text>
-                        </Text>
-                        <Text style={styles.bmiDisclaimerText}>
-                            For informational and fitness tracking purposes only. Not medical advice.
-                        </Text>
-                    </View>
-                </View>
-
                 {/* Physical Stats */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>PHYSICAL STATS</Text>
+                    <Text style={styles.sectionTitle}>Your measurements</Text>
 
                     {/* Gender Toggle */}
                     <View style={styles.genderRow}>
                         <Pressable
                             style={[styles.genderBtn, gender === 'male' && styles.genderBtnActive]}
-                            onPress={() => setGender('male')}
+                            onPress={() => setGender('male')} accessibilityRole="radio" accessibilityLabel="Male" accessibilityState={{ checked: gender === 'male' }} aria-checked={gender === 'male'}
                         >
                             <MaterialIcons name="male" size={20} color={gender === 'male' ? colors.text.dark : colors.text.muted} />
                             <Text style={[styles.genderText, gender === 'male' && styles.genderTextActive]}>Male</Text>
                         </Pressable>
                         <Pressable
                             style={[styles.genderBtn, gender === 'female' && styles.genderBtnActive]}
-                            onPress={() => setGender('female')}
+                            onPress={() => setGender('female')} accessibilityRole="radio" accessibilityLabel="Female" accessibilityState={{ checked: gender === 'female' }} aria-checked={gender === 'female'}
                         >
                             <MaterialIcons name="female" size={20} color={gender === 'female' ? colors.text.dark : colors.text.muted} />
                             <Text style={[styles.genderText, gender === 'female' && styles.genderTextActive]}>Female</Text>
@@ -218,7 +227,7 @@ export default function FitnessProfileScreen() {
                             <View style={styles.inputWrapper}>
                                 <TextInput
                                     style={styles.input}
-                                    value={height}
+                                    accessibilityLabel="Height" value={height}
                                     onChangeText={setHeight}
                                     keyboardType="numeric"
                                     placeholder="170"
@@ -232,7 +241,7 @@ export default function FitnessProfileScreen() {
                             <View style={styles.inputWrapper}>
                                 <TextInput
                                     style={styles.input}
-                                    value={weight}
+                                    accessibilityLabel="Weight" value={weight}
                                     onChangeText={setWeight}
                                     keyboardType="numeric"
                                     placeholder="70"
@@ -246,7 +255,7 @@ export default function FitnessProfileScreen() {
                             <View style={styles.inputWrapper}>
                                 <TextInput
                                     style={styles.input}
-                                    value={age}
+                                    accessibilityLabel="Age" value={age}
                                     onChangeText={setAge}
                                     keyboardType="numeric"
                                     placeholder="25"
@@ -260,7 +269,7 @@ export default function FitnessProfileScreen() {
 
                 {/* Goal Selection */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>YOUR GOAL</Text>
+                    <Text style={styles.sectionTitle}>Your goal</Text>
                     <View style={styles.goalsRow}>
                         {GOALS.map((goal) => (
                             <Pressable
@@ -269,7 +278,7 @@ export default function FitnessProfileScreen() {
                                     styles.goalCard,
                                     goalType === goal.id && [styles.goalCardActive, { borderColor: goal.color }]
                                 ]}
-                                onPress={() => setGoalType(goal.id)}
+                                onPress={() => setGoalType(goal.id)} accessibilityRole="radio" accessibilityLabel={goal.label} accessibilityState={{ checked: goalType === goal.id }} aria-checked={goalType === goal.id}
                             >
                                 <View style={[styles.goalIcon, { backgroundColor: goal.color + '20' }]}>
                                     <MaterialIcons name={goal.icon as any} size={24} color={goal.color} />
@@ -285,8 +294,8 @@ export default function FitnessProfileScreen() {
 
                 {/* Weekly Goal Selection */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>WEEKLY WORKOUT TARGET</Text>
-                    <View style={styles.weeklyGoalContainer}>
+                    <TouchableOpacity style={{ minHeight: 48, justifyContent: 'center' }} accessibilityRole="button" accessibilityLabel="Adjust weekly workout target (optional)" accessibilityState={{ expanded: showWeeklyGoal }} aria-expanded={showWeeklyGoal} onPress={() => setShowWeeklyGoal(!showWeeklyGoal)}><Text style={styles.toggleLabel}>Weekly workout target (optional)</Text></TouchableOpacity>
+                    {showWeeklyGoal && <View style={styles.weeklyGoalContainer}>
                         <Text style={styles.weeklyGoalValue}>{weeklyGoal} days/week</Text>
                         <View style={styles.daysRow}>
                             {[1, 2, 3, 4, 5, 6, 7].map((days) => (
@@ -296,7 +305,7 @@ export default function FitnessProfileScreen() {
                                         styles.dayBtn,
                                         weeklyGoal === String(days) && styles.dayBtnActive
                                     ]}
-                                    onPress={() => setWeeklyGoal(String(days))}
+                                    onPress={() => { weeklyGoalTouched.current = true; setWeeklyGoal(String(days)); }} accessibilityRole="radio" accessibilityLabel={`${days} workouts per week`} accessibilityState={{ checked: weeklyGoal === String(days) }} aria-checked={weeklyGoal === String(days)}
                                 >
                                     <Text style={[
                                         styles.dayBtnText,
@@ -305,12 +314,12 @@ export default function FitnessProfileScreen() {
                                 </Pressable>
                             ))}
                         </View>
-                    </View>
+                    </View>}
                 </View>
 
                 {/* Activity Level */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>ACTIVITY LEVEL</Text>
+                    <Text style={styles.sectionTitle}>Daily activity</Text>
                     {ACTIVITY_LEVELS.map((level) => (
                         <Pressable
                             key={level.id}
@@ -318,7 +327,7 @@ export default function FitnessProfileScreen() {
                                 styles.activityRow,
                                 activityLevel === level.id && styles.activityRowActive
                             ]}
-                            onPress={() => setActivityLevel(level.id)}
+                            onPress={() => setActivityLevel(level.id)} accessibilityRole="radio" accessibilityLabel={level.label} accessibilityState={{ checked: activityLevel === level.id }} aria-checked={activityLevel === level.id}
                         >
                             <View style={styles.activityRadio}>
                                 {activityLevel === level.id && <View style={styles.activityRadioInner} />}
@@ -331,20 +340,9 @@ export default function FitnessProfileScreen() {
                     ))}
                 </View>
 
-                {/* Vegetarian Toggle */}
                 <View style={styles.section}>
-                    <Pressable
-                        style={styles.toggleRow}
-                        onPress={() => setIsVegetarian(!isVegetarian)}
-                    >
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.toggleLabel}>Vegetarian</Text>
-                            <Text style={styles.toggleDesc}>Show vegetarian food suggestions first</Text>
-                        </View>
-                        <View style={[styles.toggle, isVegetarian && styles.toggleActive]}>
-                            <View style={[styles.toggleKnob, isVegetarian && styles.toggleKnobActive]} />
-                        </View>
-                    </Pressable>
+                    <Text style={styles.toggleLabel}>Food preference</Text>
+                    {[{ value: true, label: 'Vegetarian' }, { value: false, label: 'No food restriction' }].map(option => <TouchableOpacity key={option.label} style={styles.activityRow} accessibilityRole="radio" accessibilityLabel={option.label} accessibilityState={{ checked: isVegetarian === option.value }} aria-checked={isVegetarian === option.value} onPress={() => setIsVegetarian(option.value)}><Text style={styles.toggleLabel}>{option.label}{isVegetarian === option.value ? ' ✓' : ''}</Text></TouchableOpacity>)}
                 </View>
 
                 {/* Daily calorie target — auto by default, overridable */}
@@ -397,7 +395,7 @@ export default function FitnessProfileScreen() {
                             </View>
                         </Pressable>
                     )}
-                    <Text style={styles.sectionTitle}>TARGET BREAKDOWN</Text>
+                    {bodyValid && <><Text style={styles.sectionTitle}>Target breakdown</Text>
                     <View style={styles.macroPreviewCard}>
                         <View style={styles.macroPreviewRow}>
                             <View style={styles.macroPreviewItem}>
@@ -439,19 +437,20 @@ export default function FitnessProfileScreen() {
                             </View>
                         </View>
                     </View>
+                    </>}
                 </View>
 
                 {/* Save Button */}
                 <Text style={styles.toggleDesc}>
-                    {keepCustomMacros ? 'Your custom protein and fat are kept. Carbs fill the remaining calories. ' : `Suggested protein uses ${proteinPerKgForGoal(goalType)} g per kg. Fat provides about 30% of calories; carbs fill the rest. `}
+                    {!bodyValid ? 'Complete your measurements, goal, activity and food preference to preview targets. ' : keepCustomMacros ? 'Your custom protein and fat are kept. Carbs fill the remaining calories. ' : `Suggested protein uses ${proteinPerKgForGoal(goalType)} g per kg. Fat provides about 30% of calories; carbs fill the rest. `}
                     Calories are a starting estimate; review your progress over a few weeks.
                 </Text>
                 <TouchableOpacity
                     style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
                     onPress={handleSave}
-                    disabled={saving}
+                    disabled={saving} accessibilityRole="button" accessibilityLabel="Save food targets"
                 >
-                    <Text style={styles.saveBtnText}>{saving ? 'Saving...' : 'Save Profile'}</Text>
+                    <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save food targets'}</Text>
                 </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
@@ -473,8 +472,8 @@ const styles = StyleSheet.create({
         borderBottomColor: colors.glass.border,
     },
     backBtn: {
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -587,10 +586,13 @@ const styles = StyleSheet.create({
     // Inputs
     inputRow: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         gap: spacing.md,
     },
     inputGroup: {
         flex: 1,
+        flexBasis: 120,
+        minWidth: 0,
     },
     inputLabel: {
         fontSize: typography.sizes.xs,
@@ -609,6 +611,7 @@ const styles = StyleSheet.create({
     },
     input: {
         flex: 1,
+        minWidth: 0,
         fontSize: typography.sizes.xl,
         fontFamily: typography.fontFamily.semiBold,
         color: colors.text.primary,
@@ -799,8 +802,8 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
     },
     dayBtn: {
-        width: 36,
-        height: 36,
+        width: 44,
+        height: 44,
         borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',

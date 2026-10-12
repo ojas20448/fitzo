@@ -10,6 +10,8 @@ import {
     QUANTITY_STEP,
     MIN_QUANTITY,
     MAX_QUANTITY,
+    portionLabel,
+    substituteEntry,
 } from '../mealBuilder';
 
 describe('clampQuantity', () => {
@@ -30,6 +32,30 @@ describe('clampQuantity', () => {
     it('treats non-finite input as the minimum', () => {
         expect(clampQuantity(NaN)).toBe(MIN_QUANTITY);
         expect(clampQuantity(Infinity)).toBe(MIN_QUANTITY);
+    });
+});
+
+describe('practical portions and substitutions', () => {
+    const dal = { meal_name: 'Dal', calories: 198, protein: 11, carbs: 34, fat: 1, portion: { amount: 1, unit: 'cup', grams: 200, preparation: 'cooked' } };
+    const roti = { meal_name: 'Roti', calories: 240, protein: 7, carbs: 40, fat: 6, portion: { amount: 2, unit: 'roti', grams: 80 } };
+    it('scales actual grams and cup/count portions in both display and saved payload', () => {
+        const entries = entriesFromPreset([dal, roti]);
+        const next = setQuantity(entries, entries[0].key, 0.5);
+        expect(portionLabel(next[0])).toBe('0.5 cup · 100 g, cooked');
+        expect(toLogPayload(next)[0]).toMatchObject({ meal_name: 'Dal', calories: 99, protein: 5.5, serving_size: '0.5 cup · 100 g, cooked' });
+        expect(portionLabel({ ...entries[1], quantity: 0.5 })).toBe('1 roti · 40 g');
+    });
+    it('resets the multiplier on a swap, recalculates totals, and allows returning to the original food', () => {
+        const entries = entriesFromPreset([{ ...dal, alternatives: [roti] }]);
+        const next = substituteEntry(setQuantity(entries, entries[0].key, 2), entries[0].key, roti);
+        expect(next[0].quantity).toBe(1);
+        expect(next[0].key).toBe(entries[0].key);
+        expect(displayTotals(next)).toEqual({ calories: 240, protein: 7, carbs: 40, fat: 6 });
+        const original = next[0].alternatives![0];
+        const reverted = substituteEntry(next, next[0].key, original);
+        expect(reverted[0]).toMatchObject({ meal_name: 'Dal', quantity: 1 });
+        expect(displayTotals(reverted).calories).toBe(198);
+        expect(toLogPayload(next)[0]).not.toHaveProperty('alternatives');
     });
 });
 

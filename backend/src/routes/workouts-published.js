@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { query } = require('../config/database');
+const { query, getClient } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler, NotFoundError } = require('../utils/errors');
 const xpService = require('../services/xpService');
+const { invalidateContextPack } = require('../services/contextPack');
 
 // All routes require authentication
 router.use(authenticate);
@@ -100,57 +101,23 @@ router.post('/:id/adopt', asyncHandler(async (req, res) => {
 
     const split = splitResult.rows[0];
 
-    // 2. Increment download count
-    await query(
-        `UPDATE published_splits SET download_count = download_count + 1 WHERE id = $1`,
-        [split.id]
-    );
-
-    // 3. Deactivate current active split
-    await query(
-        `UPDATE user_splits SET is_active = false WHERE user_id = $1`,
-        [userId]
-    );
-
-    // 4. Save as user split
-    // Extract days from program_structure (JSON)
-    // Structure: { "Day 1": "Push", "Day 2": "Pull" }
-    // We need to convert this to an array of day names for the user_splits table if needed, OR store the full structure.
-    // The user_splits table has `days TEXT[]` which usually stores ["Monday", ...]. 
-    // But here we are adopting a program structure.
-    // Let's adapt the user_splits table or reuse the logic.
-    // For now, let's assume we map the "Day 1", "Day 2" to generic days and the user assigns them later.
-    // Or simpler: We save this split as a new reference type.
-
-    // Actually, looking at user_splits table:
-    // split_id VARCHAR(50) -- 'ppl_6' etc
-    // days TEXT[] -- array of day names
-    // It seems user_splits was designed for preset patterns.
-    // For adopted splits, we might need to be flexible.
-
-    // Let's Just insert it as a 'custom' split for now but with the published data
-    // OR ideally we should store the `program_structure` in user_splits too.
-
-    // For MVP: Let's just create a user_split entry with the name and basic days array
-    const dayNames = Object.values(split.program_structure);
-    // This gives ["Push", "Pull", "Legs"] etc.
-
-    const newSplit = await query(
-        `INSERT INTO user_splits (user_id, split_id, name, days, days_per_week, is_active)
-         VALUES ($1, $2, $3, $4, $5, true)
-         RETURNING *`,
-        [
-            userId,
-            'adopted_' + split.id, // distinct ID 
-            split.name,
-            dayNames,
-            split.days_per_week
-        ]
-    );
-
-    // 4. Award XP through xpService so it lands in xp_logs (a bare xp_points
-    //    UPDATE would never reach the weekly gym leaderboard).
-    await xpService.awardXP(userId, 5, 'workout', split.id);
+    const client = await getClient();
+    let newSplit;
+    try {
+        await client.query('BEGIN');
+        await client.query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [userId]);
+        await client.query('UPDATE published_splits SET download_count = download_count + 1 WHERE id = $1', [split.id]);
+        await client.query('UPDATE user_splits SET is_active = false WHERE user_id = $1', [userId]);
+        newSplit = await client.query(`INSERT INTO user_splits (user_id, split_id, name, days, days_per_week, is_active)
+            VALUES ($1, $2, $3, $4, $5, true) RETURNING *`,
+        [userId, 'adopted_' + split.id, split.name, Object.values(split.program_structure), split.days_per_week]);
+        await client.query('COMMIT');
+    } catch (error) { await client.query('ROLLBACK'); throw error; }
+    finally { client.release(); }
+    await invalidateContextPack(userId).catch(() => {});
+    // A non-critical reward failure must not invite a repeat adoption after the
+    // routine transaction has already succeeded.
+    await xpService.awardXP(userId, 5, 'workout', split.id).catch(() => {});
 
     res.json({
         success: true,
