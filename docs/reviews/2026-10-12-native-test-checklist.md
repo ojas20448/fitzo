@@ -1,4 +1,4 @@
-# Native verification before release
+# Native verification for Fitzo 1.4.0
 
 All items below remain pending on physical devices. Web previews and automated tests do not count as native completion. Test iPhone, iPad and a supported Android device with a build containing this local work.
 
@@ -9,4 +9,4 @@ All items below remain pending on physical devices. Web previews and automated t
 5. **Usability and accessibility:** test the smallest supported phone, iPad portrait/landscape, enlarged system text, VoiceOver and TalkBack. Check labels, focus order, checkbox/radio states, back navigation, safe areas, visible error/retry actions, unit labels and controls with keyboards open. Faint graphics must not obscure text or block touch targets.
 6. **Health:** first native permission request must stay in context and never redirect to device settings beforehand. Test partial/denied categories, real zero readings, missing readings, repeated historical imports, local-day boundaries and account changes. Verify locked-device/background delivery, then foreground recovery and truthful last-sync/partial/failure status. Capture evidence on each supported platform; platform restrictions must not be presented as successful syncing.
 
-Record build number, device/OS, scenario, result and evidence for each item. For functional native testing, first apply migrations 021–022 and deploy the compatible backend through the normal release process, then produce a matching internal/TestFlight build. Complete these scenarios using test accounts before public App Store/Play rollout. Local UI previews can be checked before that deployment. No production migration, deploy or build was performed in this implementation pass.
+Record build number, device/OS, scenario, result and evidence for each item. Migrations 021–022 and the compatible backend are now deployed. Matching production builds are iOS 24 and Android 27, version 1.4.0; Google Play availability was verified on 13 October 2026. Use test accounts for these scenarios and record actual results. The release/build work is complete, but these physical-device checks have not been verified by this agent. See `docs/releases/2026-10-12-fitzo-1.4.0.md` for store status and remaining work.
