@@ -21,7 +21,7 @@ const HERO_CIRCLE_W = 860;
 const HERO_CIRCLE_H = 230;
 const HERO_MIN_SIZE = 90;
 
-export default function Chalk({ payload, onBackgroundLoad, onBackgroundError }: ShareThemeProps) {
+export default function Chalk({ payload, photoMode, onBackgroundLoad, onBackgroundError }: ShareThemeProps) {
     const eyebrowText = (payload.subtitle || formatDate(payload.date)).toUpperCase();
     const rows = pickSummaryRows(payload, MAX_CHALK_ROWS);
     const overflow = pickSummaryRows(payload, Number.MAX_SAFE_INTEGER).length - rows.length;
@@ -29,7 +29,7 @@ export default function Chalk({ payload, onBackgroundLoad, onBackgroundError }: 
     const heroLineHeight = Math.round(heroFontSize * HERO_LH_RATIO);
 
     return (
-        <View style={styles.frame}>
+        <View style={[styles.frame, photoMode && styles.photoFrame]}>
 
             <CardBackground background={payload.background} scrimOpacity={0.7} onLoad={onBackgroundLoad} onError={onBackgroundError} />
 
@@ -81,6 +81,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     spacer: { flex: 1 },
+    photoFrame: { backgroundColor: 'rgba(27,42,34,0.9)', borderRadius: 48 },
     header: {
         fontFamily: MONO,
         fontSize: 40,

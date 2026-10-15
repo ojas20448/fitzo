@@ -8,7 +8,7 @@ import CardBackground from '../CardBackground';
 import type { ShareThemeProps } from './index';
 
 const MAX_ROWS = 6;
-export default function Spec({ payload, onBackgroundLoad, onBackgroundError }: ShareThemeProps) {
+export default function Spec({ payload, photoMode, onBackgroundLoad, onBackgroundError }: ShareThemeProps) {
     // Records include a previous value, so reserve more vertical space per row.
     const rowLimit = payload.prs.length ? 4 : MAX_ROWS;
     const prs = payload.prs.slice(0, rowLimit);
@@ -18,7 +18,7 @@ export default function Spec({ payload, onBackgroundLoad, onBackgroundError }: S
     const overflow = generic ? payload.rows.length - rows.length : payload.prs.length + payload.exercises.length - prs.length - exercises.length;
     const headlineSize = fitFontSize(payload.headline, 936, 140, 56);
     return (
-        <View style={styles.frame}>
+        <View style={[styles.frame, photoMode && styles.photoFrame]}>
             <CardBackground background={payload.background} scrimOpacity={0.72} onLoad={onBackgroundLoad} onError={onBackgroundError} />
             <View>
                 <Text style={styles.eyebrow} numberOfLines={2}>{(payload.subtitle || formatDate(payload.date)).toUpperCase()}</Text>
@@ -61,6 +61,7 @@ export default function Spec({ payload, onBackgroundLoad, onBackgroundError }: S
 }
 const styles = StyleSheet.create({
     frame: { width: CARD_W, height: CARD_H, backgroundColor: '#000', paddingHorizontal: 72, paddingTop: 110, paddingBottom: 90, justifyContent: 'space-between', overflow: 'hidden' },
+    photoFrame: { backgroundColor: 'rgba(0,0,0,0.82)', borderRadius: 48 },
     eyebrow: { fontFamily: typography.fontFamily.semiBold, fontSize: 36, lineHeight: 44, letterSpacing: 2, color: '#bfbfbf' },
     context: { fontFamily: typography.fontFamily.medium, fontSize: 44, lineHeight: 52, color: '#fff', marginTop: 24 },
     headline: { fontFamily: typography.fontFamily.extraBold, letterSpacing: -2, color: '#fff', marginTop: 28 },

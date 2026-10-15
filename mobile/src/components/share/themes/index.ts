@@ -21,6 +21,8 @@ import Chalk from './Chalk';
  */
 export interface ShareThemeProps {
     payload: SharePayload;
+    /** Render the workout as a readable panel over the composer's fixed photo. */
+    photoMode?: boolean;
     onBackgroundLoad?: () => void;
     onBackgroundError?: () => void;
     onArtworkLoad?: () => void;
