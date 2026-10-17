@@ -1,0 +1,4 @@
+{$API_DOMAIN:api.fitzoapp.in} {
+    encode gzip
+    reverse_proxy api:3001
+}

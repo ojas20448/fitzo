@@ -14,13 +14,21 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      API_ORIGIN: ${{ vars.FITZO_API_ORIGIN || 'https://fitzo.onrender.com' }}
     steps:
+      - name: Validate API origin
+        run: |
+          [[ "$API_ORIGIN" =~ ^https://[A-Za-z0-9.-]+(:[0-9]+)?$ ]] || {
+            echo "FITZO_API_ORIGIN must be an HTTPS origin without a path or credentials"
+            exit 1
+          }
       - name: Check API health (DB included)
         run: |
-          echo "Pinging https://fitzo.onrender.com/api/health ..."
+          echo "Pinging $API_ORIGIN/api/health ..."
           # Render free tier cold start can take ~60s — retry up to 3 times
           for i in 1 2 3; do
-            RESPONSE=$(curl -s -m 90 https://fitzo.onrender.com/api/health || echo '{}')
+            RESPONSE=$(curl -s -m 90 "$API_ORIGIN/api/health" || echo '{}')
             echo "Attempt $i: $RESPONSE"
             STATUS=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status','unreachable'))" 2>/dev/null || echo "unreachable")
             if [ "$STATUS" = "ok" ]; then
@@ -30,5 +38,5 @@ jobs:
             sleep 20
           done
           echo "❌ API status: $STATUS — database or server is degraded!"
-          echo "Check: Render dashboard (service logs) and Supabase dashboard (project may be paused)."
+          echo "Check the API host's service logs and the Supabase dashboard."
           exit 1
