@@ -46,6 +46,23 @@ from tested application source `221b4888909cacdc6383b219f4f78a7bb53bbe1d`, using
 the existing signing credentials and frozen credential configuration. EAS's normal
 local auto-increment advanced only the iOS build number from 26 to 27.
 
-The candidate must finish signing and pass artifact checks before store upload.
-An upload to TestFlight does not replace the public App Review build automatically.
-The currently installed build 26 cannot receive these UI fixes over the air.
+The signed build finished successfully. Its IPA is 26,195,105 bytes, SHA-256
+`8fa0c125bbf5b716d609972e305c93531972de2204299921e480c338c133d06f`.
+Artifact checks confirmed version 1.4.2 / 27, the existing app identifier,
+camera/Health descriptions, the production API URL, absence of the old Render API
+URL, and compiled photo-retry/progress and Health-result messages. The actual
+signed HealthKit and background-delivery entitlements were also retained.
+
+The [TestFlight upload](https://expo.dev/accounts/fiskerr/projects/fitzo/submissions/3828170d-9f6c-44e9-bb6a-34176bdd8a10)
+finished successfully with no EAS submission error. App Store Connect initially
+showed build 27 Processing, then completed processing and automatically assigned
+it to the existing internal group. Final group readback confirmed **1.4.2 (27) —
+Testing**, available to the existing tester. The tester's previously installed
+version was confirmed as build 26; no tester was added and no new audience was
+created.
+
+The public 1.4.2 submission remained Waiting for Review, and this upload did not
+replace its selected build. The currently installed build 26 cannot receive these
+UI fixes over the air. Update to the now-available build 27 through TestFlight to
+exercise the camera and Health sync feedback on the actual phone. This check did
+not establish physical-camera or real HealthKit read success.
