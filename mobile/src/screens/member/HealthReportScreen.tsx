@@ -165,7 +165,14 @@ export default function HealthReportScreen() {
         if (!user?.id || connectingHealth) return;
         setConnectingHealth(true);
         setConnectionMessage('');
-        try { await syncHealthDays(user.id); }
+        try {
+            const result = await syncHealthDays(user.id);
+            setConnectionMessage(result.unreadableDays
+                ? `Some ${healthSource} readings could not be read. Saved ${result.imported} days. Check read access and try again.`
+                : result.imported
+                    ? `Updated ${result.imported} ${result.imported === 1 ? 'day' : 'days'}. Checked ${result.total} days.`
+                    : `No readable ${healthSource} readings were found. Check that readings exist and Fitzo has read access, then try again.`);
+        }
         catch { setConnectionMessage('Import did not finish. Saved readings are kept; you can retry.'); }
         finally { await loadData(false); setConnectingHealth(false); }
     };
