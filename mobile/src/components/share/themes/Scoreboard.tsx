@@ -23,7 +23,7 @@ const BRACKET_COLOR = colors.accent.gold; // "achievements" hue in the design sy
 
 const MUTED = 'rgba(255,255,255,0.55)';
 
-export default function Scoreboard({ payload, onBackgroundLoad, onBackgroundError }: ShareThemeProps) {
+export default function Scoreboard({ payload, photoMode, onBackgroundLoad, onBackgroundError }: ShareThemeProps) {
     const hasPr = payload.prs.length === 1;
     const pr = hasPr ? payload.prs[0] : undefined;
     const eyebrowText = (hasPr && pr ? pr.exercise : payload.contextLabel || payload.subtitle || formatDate(payload.date)).toUpperCase();
@@ -32,7 +32,7 @@ export default function Scoreboard({ payload, onBackgroundLoad, onBackgroundErro
     const heroLineHeight = Math.round(heroFontSize * HERO_LH_RATIO);
 
     return (
-        <View style={styles.frame}>
+        <View style={[styles.frame, photoMode && styles.photoFrame]}>
 
             <CardBackground background={payload.background} scrimOpacity={0.65} onLoad={onBackgroundLoad} onError={onBackgroundError} />
 
@@ -87,6 +87,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     spacer: { flex: 1 },
+    photoFrame: { backgroundColor: 'rgba(0,0,0,0.78)', borderRadius: 48 },
     eyebrow: {
         fontFamily: typography.fontFamily.semiBold,
         fontSize: MICRO,

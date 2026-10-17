@@ -20,8 +20,8 @@ export interface ShareExercise {
 }
 
 /**
- * A camera photo placed behind a card, positioned and sized by gesture in
- * the composer — Task 10.
+ * A camera photo placed behind a card. The composer keeps it at cover-fit;
+ * cardTransform.ts owns the independent workout card's gesture placement.
  *
  * RULING R29 — every field here is NORMALIZED, never a pixel value. The
  * composer renders the active theme TWICE, at two different physical sizes:

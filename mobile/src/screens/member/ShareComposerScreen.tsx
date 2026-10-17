@@ -17,8 +17,10 @@ import { hasMuscleVolume } from '../../components/share/format';
 import { CARD_W, CARD_H } from '../../components/share/SharePayload';
 import type { SharePayload, ShareBackground } from '../../components/share/SharePayload';
 import { useShareCapture } from '../../hooks/useShareCapture';
-import { createBackground, clampBackgroundScale, pixelDeltaToFraction } from '../../utils/backgroundTransform';
-import { BackgroundTransformContext } from '../../components/share/BackgroundTransformContext';
+import { createBackground, pixelDeltaToFraction } from '../../utils/backgroundTransform';
+import ShareCard from '../../components/share/ShareCard';
+import { constrainCardTransform, DEFAULT_CARD_TRANSFORM } from '../../utils/cardTransform';
+import type { CardTransform } from '../../utils/cardTransform';
 import * as Haptics from '../../utils/haptics';
 import { logger } from '../../utils/logger';
 import { getCaptureFrame } from '../../utils/shareCapture';
@@ -48,41 +50,34 @@ export default function ShareComposerScreen() {
     const [loadedAssets, setLoadedAssets] = useState({ key: '', background: false, artwork: false });
     const [imageError, setImageError] = useState<{ key: string; message: string } | null>(null);
     const [captureGeneration, setCaptureGeneration] = useState(0);
-    const [captureSnapshot, setCaptureSnapshot] = useState<SharePayload | null>(null);
+    const [captureSnapshot, setCaptureSnapshot] = useState<{ payload: SharePayload; cardTransform: CardTransform } | null>(null);
+    const [cardTransform, setCardTransform] = useState(DEFAULT_CARD_TRANSFORM);
     const editingLocked = useRef(false);
     const activeCaptureKey = useRef('');
     const [showCamera, setShowCamera] = useState(false);
     const [cameraFacing, setCameraFacing] = useState<'front' | 'back'>('back');
     const [permission, requestPermission] = useCameraPermissions();
     const cameraRef = useRef<any>(null);
-    const bgTranslateX = useSharedValue(0);
-    const bgTranslateY = useSharedValue(0);
-    const bgSavedX = useSharedValue(0);
-    const bgSavedY = useSharedValue(0);
-    const bgScale = useSharedValue(1);
-    const bgSavedScale = useSharedValue(1);
-    const bgRotation = useSharedValue(0);
-    const bgSavedRotation = useSharedValue(0);
+    const liveCardTransform = useSharedValue(DEFAULT_CARD_TRANSFORM);
+    const dragStart = useSharedValue(DEFAULT_CARD_TRANSFORM);
+    const pinchStart = useSharedValue(DEFAULT_CARD_TRANSFORM.scale);
+    const rotationStart = useSharedValue(DEFAULT_CARD_TRANSFORM.rotation);
+    const cardEditingEnabled = useSharedValue(true);
 
-    // Shared translations are fractions of the card, independent of layout size.
-    // Drive the hero preview background on the UI thread.
-    // Shared values are updated directly by gesture handlers (no
-    // runOnJS round-trip), so the image moves in lockstep with the
-    // finger. React state (commitBackground) is updated only on
-    // gesture END, keeping the hidden capture tree in sync without
-    // choking the JS thread during the gesture itself.
-    const animatedBgStyle = useAnimatedStyle(() => {
+    // Animate only the workout layer on the UI thread. Commit normalized
+    // placement at gesture end so the separate export tree matches it.
+    const animatedCardStyle = useAnimatedStyle(() => {
         'worklet';
+        const placement = liveCardTransform.value;
         return {
             transform: [
-                { translateX: bgTranslateX.value * CARD_W },
-                { translateY: bgTranslateY.value * CARD_H },
-                { scale: bgScale.value },
-                { rotate: `${(bgRotation.value * 180) / Math.PI}deg` },
+                { translateX: placement.offsetX * CARD_W },
+                { translateY: placement.offsetY * CARD_H },
+                { scale: placement.scale },
+                { rotate: `${(placement.rotation * 180) / Math.PI}deg` },
             ],
         };
     });
-    const bgTransformCtxValue = useMemo(() => ({ animatedStyle: animatedBgStyle }), [animatedBgStyle]);
 
     useEffect(() => {
         if (!source || isStale()) {
@@ -161,7 +156,6 @@ export default function ShareComposerScreen() {
         return <View style={styles.container} />;
     }
 
-    const ActiveTheme = THEMES[theme].Component;
     const heroScale = heroWidth > 0 ? heroWidth / CARD_W : 0;
     const heroHeight = heroWidth * (CARD_H / CARD_W);
     const themeSupportsBackground = !!THEMES[theme].supportsBackground;
@@ -170,14 +164,6 @@ export default function ShareComposerScreen() {
         if (!cameraRef.current) return;
         try {
             const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
-            bgTranslateX.value = 0;
-            bgTranslateY.value = 0;
-            bgSavedX.value = 0;
-            bgSavedY.value = 0;
-            bgScale.value = 1;
-            bgSavedScale.value = 1;
-            bgRotation.value = 0;
-            bgSavedRotation.value = 0;
             setBackground(createBackground(photo.uri));
             setCaptureGeneration(value => value + 1);
             setShowCamera(false);
@@ -206,20 +192,22 @@ export default function ShareComposerScreen() {
         setBackground(null);
     };
     const handleBackgroundLoad = () => markAssetLoaded('background');
-    // Normalize preview gestures so the separate export tree matches the photo.
-    const commitBackground = (translateX: number, translateY: number, scale: number, rotation: number) => {
+    const commitCardTransform = (placement: CardTransform) => {
         if (editingLocked.current) return;
-        setBackground((prev) =>
-            prev
-                ? {
-                      ...prev,
-                      offsetX: translateX,
-                      offsetY: translateY,
-                      scale,
-                      rotation,
-                  }
-                : prev,
-        );
+        setCardTransform(placement);
+    };
+    const resetCardTransform = () => {
+        if (editingLocked.current) return;
+        liveCardTransform.value = DEFAULT_CARD_TRANSFORM;
+        setCardTransform(DEFAULT_CARD_TRANSFORM);
+        Haptics.selectionAsync();
+    };
+    const resizeCard = (delta: number) => {
+        if (editingLocked.current) return;
+        const placement = constrainCardTransform({ ...liveCardTransform.value, scale: liveCardTransform.value.scale + delta });
+        liveCardTransform.value = placement;
+        setCardTransform(placement);
+        Haptics.selectionAsync();
     };
     if (showCamera) {
         return (
@@ -263,41 +251,55 @@ export default function ShareComposerScreen() {
     }
     const dragGesture = Gesture.Pan()
         .averageTouches(true)
+        .onStart(() => {
+            'worklet';
+            dragStart.value = liveCardTransform.value;
+        })
         .onUpdate((e) => {
             'worklet';
-            bgTranslateX.value = bgSavedX.value + pixelDeltaToFraction(e.translationX, heroWidth);
-            bgTranslateY.value = bgSavedY.value + pixelDeltaToFraction(e.translationY, heroHeight);
+            if (!cardEditingEnabled.value) return;
+            liveCardTransform.value = constrainCardTransform({
+                ...liveCardTransform.value,
+                offsetX: dragStart.value.offsetX + pixelDeltaToFraction(e.translationX, heroWidth),
+                offsetY: dragStart.value.offsetY + pixelDeltaToFraction(e.translationY, heroHeight),
+            });
         })
         .onFinalize(() => {
             'worklet';
-            bgSavedX.value = bgTranslateX.value;
-            bgSavedY.value = bgTranslateY.value;
-            runOnJS(commitBackground)(bgTranslateX.value, bgTranslateY.value, bgScale.value, bgRotation.value);
+            runOnJS(commitCardTransform)(liveCardTransform.value);
         });
 
     const pinchGesture = Gesture.Pinch()
+        .onStart(() => {
+            'worklet';
+            pinchStart.value = liveCardTransform.value.scale;
+        })
         .onUpdate((e) => {
             'worklet';
-            bgScale.value = clampBackgroundScale(bgSavedScale.value * e.scale);
+            if (!cardEditingEnabled.value) return;
+            liveCardTransform.value = constrainCardTransform({ ...liveCardTransform.value, scale: pinchStart.value * e.scale });
         })
         .onFinalize(() => {
             'worklet';
-            bgSavedScale.value = bgScale.value;
-            runOnJS(commitBackground)(bgTranslateX.value, bgTranslateY.value, bgScale.value, bgRotation.value);
+            runOnJS(commitCardTransform)(liveCardTransform.value);
         });
 
     const rotateGesture = Gesture.Rotation()
+        .onStart(() => {
+            'worklet';
+            rotationStart.value = liveCardTransform.value.rotation;
+        })
         .onUpdate((e) => {
             'worklet';
-            bgRotation.value = bgSavedRotation.value + e.rotation;
+            if (!cardEditingEnabled.value) return;
+            liveCardTransform.value = constrainCardTransform({ ...liveCardTransform.value, rotation: rotationStart.value + e.rotation });
         })
         .onFinalize(() => {
             'worklet';
-            bgSavedRotation.value = bgRotation.value;
-            runOnJS(commitBackground)(bgTranslateX.value, bgTranslateY.value, bgScale.value, bgRotation.value);
+            runOnJS(commitCardTransform)(liveCardTransform.value);
         });
 
-    const backgroundGesture = Gesture.Simultaneous(dragGesture, pinchGesture, rotateGesture);
+    const cardGesture = Gesture.Simultaneous(dragGesture, pinchGesture, rotateGesture);
     const gestureActive = !!background && themeSupportsBackground && !isSharing;
     const shareText = [payload.subtitle, payload.contextLabel, [payload.headlineLabel, payload.headline].filter(Boolean).join(': '),
         ...payload.rows.map(row => row.label + ': ' + row.value),
@@ -307,9 +309,7 @@ export default function ShareComposerScreen() {
     const heroCard = (
         <View style={[styles.heroOuter, { width: heroWidth, height: heroHeight }]} accessible accessibilityRole="image" accessibilityLabel={shareText}>
             <View style={[styles.heroInner, { transform: [{ scale: heroScale }] }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
-                <BackgroundTransformContext.Provider value={bgTransformCtxValue}>
-                    <ActiveTheme payload={payload} />
-                </BackgroundTransformContext.Provider>
+                <ShareCard theme={theme} payload={payload} cardTransform={cardTransform} animatedCardStyle={animatedCardStyle} />
             </View>
         </View>
     );
@@ -341,16 +341,16 @@ export default function ShareComposerScreen() {
     const handleShare = async () => {
         if (editingLocked.current || isSharing || backgroundGateActive) return;
         editingLocked.current = true;
+        cardEditingEnabled.value = false;
         // Read the final UI-thread placement even if its queued React update
         // has not rendered yet when Share is tapped.
-        setCaptureSnapshot({ ...payload, background: background ? {
-            ...background, offsetX: bgTranslateX.value, offsetY: bgTranslateY.value,
-            scale: bgScale.value, rotation: bgRotation.value,
-        } : null });
+        setCaptureSnapshot({ payload, cardTransform: liveCardTransform.value });
         try {
             await captureAndShare(cardRef, { dialogTitle: 'Share your workout', fallbackMessage: shareText + '\nFITZO' });
         } finally {
             editingLocked.current = false;
+            cardEditingEnabled.value = true;
+            setCardTransform(liveCardTransform.value);
             setCaptureSnapshot(null);
         }
     };
@@ -363,7 +363,8 @@ export default function ShareComposerScreen() {
                 <ViewShot ref={cardRef} style={{ width: captureFrame.width, height: captureFrame.height, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
 
                     <View key={captureKey} style={{ width: CARD_W, height: CARD_H, flexShrink: 0, transform: [{ scale: captureFrame.scale }] }}>
-                        <ActiveTheme payload={captureSnapshot ?? payload} onBackgroundLoad={handleBackgroundLoad} onBackgroundError={markAssetError}
+                        <ShareCard theme={theme} payload={captureSnapshot?.payload ?? payload} cardTransform={captureSnapshot?.cardTransform ?? cardTransform}
+                            onBackgroundLoad={handleBackgroundLoad} onBackgroundError={markAssetError}
                             onArtworkLoad={() => markAssetLoaded('artwork')} onArtworkError={markAssetError} />
                     </View>
                 </ViewShot>
@@ -383,9 +384,10 @@ export default function ShareComposerScreen() {
                         const { width, height } = event.nativeEvent.layout;
                         setPreviewBounds({ width, height });
                     }}>
-                        {heroScale > 0 && (gestureActive ? <GestureDetector gesture={backgroundGesture}>{heroCard}</GestureDetector> : heroCard)}
+                        {heroScale > 0 && (gestureActive ? <GestureDetector gesture={cardGesture}>{heroCard}</GestureDetector> : heroCard)}
                     </View>
-                    <View style={styles.compactThemes} accessibilityRole="radiogroup" accessibilityLabel="Card style">
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.themeScroller} contentContainerStyle={styles.compactThemes}
+                        accessibilityRole="radiogroup" accessibilityLabel="Card style">
                         {THEME_ORDER.map(id => {
                             const active = theme === id;
                             return <TouchableOpacity key={id} onPress={() => onSelectTheme(id)} disabled={isSharing}
@@ -394,7 +396,7 @@ export default function ShareComposerScreen() {
                                 <Text style={[styles.compactThemeText, active && styles.themePillTextActive]}>{THEMES[id].label}</Text>
                             </TouchableOpacity>;
                         })}
-                    </View>
+                    </ScrollView>
                     <View style={styles.compactActions}>
                         {isSession && <TouchableOpacity style={styles.photoBtn} onPress={() => setShowHighlights(true)} disabled={isSharing}
                             accessibilityRole="button" accessibilityLabel="Choose highlights">
@@ -407,12 +409,28 @@ export default function ShareComposerScreen() {
                             <MaterialIcons name={background ? 'close' : 'camera-alt'} size={18} color={colors.primary} />
                             <Text style={styles.photoBtnText}>{background ? 'Remove photo' : 'Photo'}</Text>
                         </TouchableOpacity>}
-                        {!!background && themeSupportsBackground && <TouchableOpacity onPress={handleOpenCamera} disabled={isSharing} style={styles.retakeButton}
-                            accessibilityRole="button" accessibilityLabel="Retake background photo">
-                            <MaterialIcons name="replay" size={20} color={colors.primary} />
-                        </TouchableOpacity>}
                     </View>
-                    {!!background && <Text style={styles.compactHint}>{themeSupportsBackground ? 'Drag, pinch or rotate the photo' : 'Photo is hidden in Anatomy'}</Text>}
+                    {!!background && themeSupportsBackground && <View style={styles.cardControls}>
+                        <TouchableOpacity onPress={() => resizeCard(-0.1)} disabled={isSharing} style={styles.headerBtn}
+                            accessibilityRole="button" accessibilityLabel="Make workout card smaller">
+                            <MaterialIcons name="remove" size={22} color={colors.primary} />
+                        </TouchableOpacity>
+                        <Text style={styles.photoBtnText} accessibilityLiveRegion="polite">{Math.round(cardTransform.scale * 100)}%</Text>
+                        <TouchableOpacity onPress={() => resizeCard(0.1)} disabled={isSharing} style={styles.headerBtn}
+                            accessibilityRole="button" accessibilityLabel="Make workout card larger">
+                            <MaterialIcons name="add" size={22} color={colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={resetCardTransform} disabled={isSharing} style={styles.resetButton}
+                            accessibilityRole="button" accessibilityLabel="Reset workout card placement">
+                            <MaterialIcons name="restart-alt" size={18} color={colors.primary} />
+                            <Text style={styles.photoBtnText}>Reset</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleOpenCamera} disabled={isSharing} style={styles.retakeButton}
+                            accessibilityRole="button" accessibilityLabel="Retake background photo">
+                            <MaterialIcons name="camera-alt" size={20} color={colors.primary} />
+                        </TouchableOpacity>
+                    </View>}
+                    {!!background && <Text style={styles.compactHint}>{themeSupportsBackground ? 'Drag, pinch or rotate the workout card' : 'Photo is hidden in Anatomy'}</Text>}
                     {!!selectionHint && <Text style={styles.compactHint} accessibilityLiveRegion="polite">{selectionHint}</Text>}
                 </View>
 
@@ -485,10 +503,13 @@ export default function ShareComposerScreen() {
 const styles = StyleSheet.create({
     compactContent: { flex: 1, minHeight: 0, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12, gap: 10 },
     previewSpace: { flex: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-    compactThemes: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 6 },
+    themeScroller: { flexGrow: 0, flexShrink: 0 },
+    compactThemes: { flexDirection: 'row', flexGrow: 1, justifyContent: 'center', gap: 6 },
     compactTheme: { paddingHorizontal: 5, paddingVertical: 10, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 24, borderWidth: 1, borderColor: colors.glass.border, backgroundColor: colors.glass.surface },
     compactThemeText: { fontFamily: typography.fontFamily.semiBold, fontSize: 12, color: colors.text.primary },
     compactActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 8 },
+    cardControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
+    resetButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12 },
     selectionCount: { fontFamily: typography.fontFamily.semiBold, fontSize: 12, color: colors.text.muted },
     compactHint: { fontFamily: typography.fontFamily.regular, fontSize: 12, color: colors.text.muted, textAlign: 'center' },
     retakeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
@@ -563,7 +584,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        paddingHorizontal: spacing.lg,
+        paddingHorizontal: spacing.md,
         paddingVertical: spacing.sm + 2,
         borderRadius: borderRadius.full,
         backgroundColor: colors.glass.surface,
