@@ -8,7 +8,7 @@ import { useOfflineStore } from '../stores/offlineStore';
 
 // API base URL - EAS Build injects EXPO_PUBLIC_API_URL at build time from eas.json.
 // Falls back to production server when not set.
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fitzo.onrender.com/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.fitzoapp.in/api';
 const API_ROOT = API_BASE_URL.replace(/\/api$/, '');
 
 // Create axios instance

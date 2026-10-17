@@ -89,14 +89,24 @@ function backendRoutes() {
     while ((m = mountRe.exec(indexSrc)) !== null) mounts[m[2]] = m[1];
 
     const table = []; // {method, full}
-    for (const [file, prefix] of Object.entries(mounts)) {
-        const src = fs.readFileSync(path.join(BACKEND_ROUTES, `${file}.js`), 'utf8');
-        const rre = /router\.(get|post|put|patch|delete)\(\s*'([^']*)'/g;
+    function collect(file, prefix, ancestors = []) {
+        const resolved = path.extname(file) ? file : `${file}.js`;
+        if (ancestors.includes(resolved)) throw new Error(`Cyclic router mount: ${resolved}`);
+        const src = fs.readFileSync(resolved, 'utf8');
+        const rre = /router\.(get|post|put|patch|delete)\(\s*['"]([^'"]*)['"]/g;
         let r;
         while ((r = rre.exec(src)) !== null) {
             const sub = r[2] === '/' ? '' : r[2];
             table.push({ method: r[1].toUpperCase(), full: (prefix + sub).replace(/\/$/, '') || prefix });
         }
+        const nestedRe = /router\.use\(\s*['"]([^'"]*)['"]\s*,\s*require\(\s*['"](\.[^'"]+)['"]\s*\)\s*\)/g;
+        while ((r = nestedRe.exec(src)) !== null) {
+            const childPrefix = (prefix + (r[1] === '/' ? '' : r[1])).replace(/\/$/, '');
+            collect(path.resolve(path.dirname(resolved), r[2]), childPrefix, [...ancestors, resolved]);
+        }
+    }
+    for (const [file, prefix] of Object.entries(mounts)) {
+        collect(path.join(BACKEND_ROUTES, file), prefix);
     }
     return table;
 }

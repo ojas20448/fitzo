@@ -114,7 +114,7 @@ app.get('/api/health', async (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         version: '1.0.0',
-        commit: process.env.RENDER_GIT_COMMIT?.slice(0, 40) || null,
+        commit: (process.env.APP_GIT_COMMIT || process.env.RENDER_GIT_COMMIT)?.slice(0, 40) || null,
         services: {
             database: 'unknown',
             api: 'ok'
