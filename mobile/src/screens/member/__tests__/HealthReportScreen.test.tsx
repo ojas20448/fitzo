@@ -4,6 +4,8 @@ import HealthReportScreen from '../HealthReportScreen';
 import { healthAPI } from '../../../services/api';
 import { requestPermissions } from '../../../services/healthService';
 import { enableHealthImport } from '../../../utils/healthImportPreference';
+import { isHealthImportEnabled } from '../../../utils/healthImportPreference';
+import { syncHealthDays } from '../../../services/healthSync';
 const { create, act } = jest.requireActual('react-test-renderer');
 jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('react-native-reanimated', () => jest.requireActual('react-native-reanimated/mock'));
@@ -24,7 +26,7 @@ jest.mock('../../../services/api', () => ({
 }));
 let screen: any;
 const texts = () => screen.root.findAllByType(Text).map((node: any) => node.props.children).flat().join(' ').replace(/\s+/g, ' ');
-afterEach(async () => { await act(async () => screen?.unmount()); jest.clearAllMocks(); });
+afterEach(async () => { await act(async () => screen?.unmount()); jest.clearAllMocks(); (isHealthImportEnabled as jest.Mock).mockResolvedValue(false); });
 it('shows coverage for partial readings and keeps connection controls out of the exported report', async () => {
     await act(async () => { screen = create(<HealthReportScreen />); });
     expect(texts()).toContain('2 of 4 readings available today');
@@ -49,4 +51,18 @@ it('does not export a report when saved data could not load', async () => {
     await act(async () => { screen = create(<HealthReportScreen />); });
     expect(texts()).toContain('load your report');
     expect(screen.root.findAllByProps({ accessibilityLabel: 'Share health report' })).toHaveLength(0);
+});
+
+it.each([
+    [{ checked: 2, imported: 0, total: 2 }, 'No readable'],
+    [{ checked: 2, imported: 0, total: 2, unreadableDays: 2 }, 'could not be read'],
+    [{ checked: 2, imported: 2, total: 2 }, 'Updated 2 days'],
+])('reports the result of a manual sync instead of silently finishing (%j)', async (result, message) => {
+    (isHealthImportEnabled as jest.Mock).mockResolvedValue(true);
+    (syncHealthDays as jest.Mock).mockResolvedValue(result);
+    await act(async () => { screen = create(<HealthReportScreen />); });
+    const sync = screen.root.findAll((node: any) => typeof node.props.onPress === 'function'
+        && node.findAllByType(Text).some((text: any) => text.props.children === 'Sync now'))[0];
+    await act(async () => sync.props.onPress());
+    expect(texts()).toContain(message);
 });
