@@ -7,7 +7,9 @@ Always Free `fitzo-api-prod` E2 micro in Mumbai: Ubuntu 24.04 AMD64, 1 GB RAM,
 47 GB boot disk, public IPv4 `130.210.3.149`. No paid account upgrade or extra
 block volume was used. A 1 GB swap file uses the existing disk.
 
-The running application is pinned to `f721d4092e97ad66300558a667bd38fe942ebe6a`.
+The initial migration ran `f721d4092e97ad66300558a667bd38fe942ebe6a`; after the
+live acceptance fixes below, the API now runs
+`caba87b2f556a32b992fc36abddcb7988ea3b454`.
 Docker built the production image, and Caddy validated and obtained public TLS.
 Localhost, container-to-public-HTTPS, and external-workstation acceptance checks
 all passed: healthy API/database, expected revision, protected routes reject
@@ -146,7 +148,31 @@ suffixes, and uses the existing database exercise catalog for paginated browsing
 and detail lookup when the upstream is unavailable. No database migration is
 required. Six real-SQL regression cases reproduced four failures before the fix
 and passed afterward; the full backend suite passed 53 suites / 486 Jest tests.
-Deployment and the final live recheck are recorded separately below when complete.
+The [acceptance fixes PR #4](https://github.com/ojas20448/fitzo/pull/4) passed
+GitHub checks and merged. Its tested revision
+`caba87b2f556a32b992fc36abddcb7988ea3b454` was built on the VM and deployed without
+changing production credentials or the database schema. The previous tested
+image is retained for rollback. Container and public-HTTPS checks confirm the
+new revision, healthy API/database, enforced authentication, and zero restarts.
+API memory after the AI/media tests was 145.6 MiB of the 512 MiB limit.
+
+The final authenticated API pass completed **41/41 checks** successfully. The
+post-deployment synthetic-account run verified the long-email signup fix, catalog
+browsing/detail fallback, correct training-preferences route, private workout
+intent/log/structured sets/history, food/nutrition updates, and AI text/coach flows.
+The disposable account and its test records were removed, and its token then
+returned 401. No store-review credentials or existing user records were changed.
+
+Voice transcription of synthetic speech passed through Groq. Food-photo analysis
+of Google's public scones sample returned four food items and aggregate nutrition
+totals. The initial rapid test burst hit the expected three-per-minute AI limit;
+media checks passed separately without changing any quota. The photo check was
+corrected to validate the endpoint's actual `items` / `total` response, rather
+than the single `food` field used by text analysis.
+
+Final store-console readback still showed Apple **Waiting for Review** with
+automatic release to all users, and Google **Changes in review — Start full
+rollout**, with managed publishing off. Publication remains pending review.
 
 Native camera, microphone permissions, Apple Health, OAuth account selection,
 push delivery, and real-device startup still require phone acceptance. Provider
