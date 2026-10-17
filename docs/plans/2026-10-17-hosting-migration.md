@@ -25,8 +25,8 @@ requires a healthy API and is enabled separately after DNS is ready.
 The uptime and AI cron workflows accept repository variable `FITZO_API_ORIGIN`,
 with the existing Render origin as their fallback. Repository variable
 `FITZO_API_ORIGIN` is now `https://api.fitzoapp.in`; a dedicated `CRON_SECRET`
-matches the private API runtime. The prepared workflows use these settings when
-they reach the default branch. Cron jobs validate their endpoint choice
+matches the private API runtime. The workflows merged to the default branch and
+the uptime verification run passed against the new API. Cron jobs validate their endpoint choice
 and require a configured secret before sending the authenticated request.
 
 Verification completed: 52 backend suites / 485 tests passed, Compose YAML parsed,
@@ -76,9 +76,13 @@ tree from the backend checkout would regress released features.
 
 The main workspace's EAS profiles, API fallback, and ignored mobile environment
 files now use the verified API domain. Its unrelated pending app changes were
-preserved. No replacement store build or submission has been started by this
-migration yet. A real test-account login, OAuth, AI, email, and upload flow remain
-release acceptance checks.
+preserved. The user selected a hosting-only hotfix from the last built 1.4.1
+release. Signed 1.4.2 builds completed: Android 29 and iOS 26. Both binaries were
+verified to contain the new API URL, and the hotfix merged after CI passed.
+No store submission has occurred. A real test-account login, OAuth, AI, email,
+and upload flow remain release acceptance checks. See the
+[final verification record](../reviews/2026-10-17-oracle-migration.md) for build
+links and the separate FatSecret credential issue.
 
 ## Hosting acceptance gates
 

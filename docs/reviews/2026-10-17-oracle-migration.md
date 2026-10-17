@@ -43,13 +43,24 @@ The user selected a hosting-only hotfix from the latest built 1.4.1 release,
 source `0e7797922adc8edbc64129b9dcb3bd44e5df649f`. Version 1.4.2 retains that
 release's changes, updates the three EAS API URLs and runtime fallback, and uses
 fresh native build numbers. TypeScript and the resolved production profile passed.
+All 45 mobile suites / 349 tests passed locally and CI passed type checking,
+lint, tests, wiring audit, and web export. CI runs the tests serially to avoid
+repeatable five-second timeouts caused by parallel workers; assertions and their
+timeouts were retained. [Hotfix PR #3](https://github.com/ojas20448/fitzo/pull/3)
+merged after its checks passed.
 The Expo account was verified as Free with 7 of 30 builds used before these jobs.
 
 - [Android 1.4.2 / 29](https://expo.dev/accounts/fiskerr/projects/fitzo/builds/eacba6f0-ed7c-4484-94cb-b642bd6981be)
 - [iOS 1.4.2 / 26](https://expo.dev/accounts/fiskerr/projects/fitzo/builds/af55dd5c-8398-4702-bfa7-e2157904496a)
 
-Both jobs were queued using the existing remote signing credentials. They have
-not been submitted to stores. Store release and one existing-account acceptance
+Both signed builds finished using the existing remote signing credentials. The
+IPA identifies version 1.4.2 / 26 and `in.fitzoapp.fitzo`; the AAB identifies
+version 1.4.2 and `com.fitzo.app`, with build 29 confirmed by EAS. Both compiled
+JavaScript bundles contain the new API URL and omit the old Render API URL.
+Android JAR signature verification passed. Private local artifact copies and
+verification receipts are retained outside Git.
+
+Neither build has been submitted to stores. Store release and one existing-account acceptance
 flow remain necessary before calling the end-user cutover complete. Keep the
 existing app IDs and signing credentials. Suggested release note: “Restored app
 connectivity and improved reliability.”
@@ -67,7 +78,9 @@ advance its app/build numbers; its local 1.4.1 / 25 / 28 configuration is stale.
 ## Existing integration issue
 
 Gemini's configured `gemini-3.1-flash-lite` model returned HTTP 200 and supports
-content generation; API fallback is enabled. No generation request was made.
+content generation; API fallback is enabled. Groq's configured `whisper-large-v3`
+model was available with HTTP 200, and USDA food search returned HTTP 200 and a
+food result from the VM. No AI generation or transcription request was made.
 FatSecret token authentication returns HTTP 400 `invalid_client` using both the
 original Render export on the PC and the same settings on Oracle. Its production
 credentials need correction. This is separate from the hosting change.
