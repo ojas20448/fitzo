@@ -1,8 +1,9 @@
 # Fitzo API on Oracle Always Free
 
-Preparation only: no server, DNS change, app release, or production cutover has
-been performed. This package keeps the existing Express API and Supabase
-database. It never runs database setup, seeds, or migrations.
+This package runs the existing Express API against the same Supabase database.
+It never runs database setup, seeds, or migrations. See
+[`2026-10-17-hosting-migration.md`](../../docs/plans/2026-10-17-hosting-migration.md)
+for the verified deployment state and remaining mobile release work.
 
 ## Server prerequisites
 
@@ -11,6 +12,10 @@ database. It never runs database setup, seeds, or migrations.
 - Prefer Ubuntu 24.04 on `VM.Standard.A1.Flex`, at most 2 OCPUs and 12 GB RAM
   **combined across the tenancy**, and a 50 GB boot disk. Stay within 200 GB
   combined boot/block storage. Do not choose a paid shape if capacity is absent.
+- The deployed Mumbai fallback is `VM.Standard.E2.1.Micro` with 1 GB RAM and a
+  47 GB boot disk. It passed the runtime checks below; its 1/8 OCPU baseline
+  still requires real traffic monitoring. The configured 1 GB swap file uses
+  space on that existing boot disk.
 - Review the account's resource limits and recurring cost estimate before
   creating anything. Trial credit is not evidence a resource is Always Free.
 - Install Docker Engine from its official Ubuntu repository, with Docker Compose
@@ -21,8 +26,8 @@ database. It never runs database setup, seeds, or migrations.
   wholesale; add only the required rules. Docker publishes directly through
   host packet filtering, so check OCI security lists and actual host rules.
 
-The local workstation currently has no Docker installation. An actual container
-build, ARM runtime, and Caddy configuration validation remain required on the VM.
+The local workstation has no Docker installation. The production image and Caddy
+configuration were built and validated on the AMD64 VM. ARM64 was not exercised.
 
 ## Private configuration
 
@@ -64,9 +69,10 @@ privately if a check fails; do not change DNS or release the mobile app.
 
 ## Enable HTTPS and cut over
 
-After API and runtime checks pass, replace only the Cloudflare DNS record for
-`api.fitzoapp.in`: the existing Vercel CNAME becomes an A record for the VM's
-public IPv4. Keep it DNS-only initially so Caddy can obtain a public certificate.
+After API and runtime checks pass, configure only the Cloudflare DNS record for
+`api.fitzoapp.in` as an A record for the VM's public IPv4. Before this migration,
+the hostname inherited the wildcard Vercel CNAME; an explicit API A record now
+overrides that wildcard. Keep it DNS-only initially so Caddy can obtain a public certificate.
 Do not alter the apex website, `www`, nameservers, email, or unrelated records.
 Do not add an AAAA record unless IPv6 routing and firewall rules were tested.
 
