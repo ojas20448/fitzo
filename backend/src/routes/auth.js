@@ -79,11 +79,13 @@ router.post('/register', passwordLimiter, validate({ body: registerSchema }), as
     const password_hash = await bcrypt.hash(password, 10);
 
     // Generate username from email with collision-safe retry
-    let username = email.split('@')[0];
+    const usernameBase = email.split('@')[0].slice(0, 30);
+    let username = usernameBase;
     for (let attempt = 0; attempt < 5; attempt++) {
         const existingUsername = await query('SELECT id FROM users WHERE username = $1', [username]);
         if (existingUsername.rows.length === 0) break;
-        username = email.split('@')[0] + Math.floor(Math.random() * 100000);
+        const suffix = String(Math.floor(Math.random() * 100000));
+        username = usernameBase.slice(0, 30 - suffix.length) + suffix;
     }
 
     // Create user

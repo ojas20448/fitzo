@@ -82,11 +82,14 @@ verified to contain the new API URL, and the hotfix merged after CI passed.
 Both approved store uploads finished successfully. Android production build 29
 is verified at 100% (`completed`, no user fraction), and Google reports it is in
 review while build 28 remains published. The submission profile retains full
-rollout. iOS build 26 was uploaded to App Store Connect/TestFlight; a public App
-Store release has not been submitted. The old Render origin still returns HTTP
+rollout; managed publishing is off, so Google publishes after approval. The user
+submitted iOS build 26 / 1.4.2 for public App Review; it is Waiting for Review,
+with automatic release after approval to all users selected. The old Render origin still returns HTTP
 503, so installed old binaries remain affected until they update or Render lifts
-the suspension. A real test-account login, OAuth, AI, email, and upload flow
-remain release acceptance checks. See the
+the suspension. Test-account login, private intent/workout/food logging, structured
+history, nutrition totals, food text AI, workout extraction, and AI coach calls
+passed on the new API. Phone-specific OAuth, camera/microphone, Apple Health,
+and push delivery remain acceptance checks. See the
 [final verification record](../reviews/2026-10-17-oracle-migration.md) for build
 links and the separate FatSecret credential issue.
 

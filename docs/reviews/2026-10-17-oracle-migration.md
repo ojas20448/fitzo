@@ -74,12 +74,18 @@ The separate publication-state API reports build 29 `IN_REVIEW`; build 28 / 1.4.
 remains `PUBLISHED`. Full rollout configuration does not mean review has finished
 or that users have installed the update.
 
-iOS 1.4.2 / 26 was uploaded to App Store Connect/TestFlight. This submission did
-not publish a public App Store update or submit it for App Review. Apple processing
-and public-release review remain separate steps. One existing-account acceptance
-flow also remains necessary before calling the end-user cutover complete. Keep
-the existing app IDs and signing credentials. Suggested release note: “Restored
-app connectivity and improved reliability.”
+iOS 1.4.2 / 26 was uploaded to App Store Connect/TestFlight, and the user then
+submitted the public App Store update. Direct App Store Connect inspection
+confirmed 1.4.2 is **Waiting for Review**, with build 26 selected, the required
+release notes saved, **Automatically release this version** selected, and
+**Release update to all users immediately** selected. Version 1.4.1 remains
+Ready for Distribution. No additional manual release action is currently needed
+if Apple approves the submission without issues.
+
+Direct Google Play Publishing overview inspection confirmed **Changes in review**
+contains **1.4.2 — Start full rollout** and **Managed publishing off**. The update
+is set to publish automatically after approval, within the existing 12-country
+availability. No extra upload or manual publish action is currently needed.
 
 Installed apps still use Render and have no configured OTA update channel.
 Users need a normal store update; they keep their accounts and data. Valid
@@ -109,6 +115,39 @@ FatSecret token authentication returns HTTP 400 `invalid_client` using both the
 original Render export on the PC and the same settings on Oracle. Its production
 credentials need correction. This is separate from the hosting change.
 
-Real-account login, OAuth, email, AI generation, and uploads still need an
-authorized test-account acceptance run. No real user was impersonated and no
-test emails or push notifications were sent.
+## Live feature acceptance
+
+The designated store-review account successfully signed in against the new API.
+Authenticated checks covered home, workout history/splits/sessions, exercise
+search, food logs/history, nutrition totals/profile/week, Indian/global food
+search, recipes, measurements, PRs/volume, readiness/health, lessons, classes,
+settings, notifications configuration, and AI context/history/quota. An initial
+training-preferences 404 came from the test's incorrect URL; the application uses
+the nested `/api/workout-sessions/training-preferences` route.
+
+An isolated synthetic account successfully registered, signed in, saved/read a
+private **Chest + Back** workout intent, saved a completed workout with structured
+sets/history, logged/deleted private food, reflected nutrition totals, analyzed
+food text, extracted a workout from text, and received an AI coach answer. Only
+test-created data was removed; deleting the disposable account invalidated its
+token. No real user was impersonated, and no test emails or push notifications
+were sent. The review account's temporary intent was cleared after verification.
+
+The app's production-source web export reached the login screen in the browser.
+This does not establish native iOS/Android behavior. The user had not yet installed
+TestFlight 1.4.2 / 26 when reporting “Failed to set intent.” The new API accepted
+both short and longer day labels, with no corresponding intent errors in server
+logs; the older installed binary still targets suspended Render.
+
+Acceptance exposed two existing server issues: usernames generated from long
+email local parts exceeded `VARCHAR(30)`, and a rate-limited ExerciseDB catalog
+returned 500. The follow-up bounds generated usernames including collision
+suffixes, and uses the existing database exercise catalog for paginated browsing
+and detail lookup when the upstream is unavailable. No database migration is
+required. Six real-SQL regression cases reproduced four failures before the fix
+and passed afterward; the full backend suite passed 53 suites / 486 Jest tests.
+Deployment and the final live recheck are recorded separately below when complete.
+
+Native camera, microphone permissions, Apple Health, OAuth account selection,
+push delivery, and real-device startup still require phone acceptance. Provider
+configuration and backend checks do not establish those device flows.
