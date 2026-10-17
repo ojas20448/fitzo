@@ -79,8 +79,14 @@ files now use the verified API domain. Its unrelated pending app changes were
 preserved. The user selected a hosting-only hotfix from the last built 1.4.1
 release. Signed 1.4.2 builds completed: Android 29 and iOS 26. Both binaries were
 verified to contain the new API URL, and the hotfix merged after CI passed.
-No store submission has occurred. A real test-account login, OAuth, AI, email,
-and upload flow remain release acceptance checks. See the
+Both approved store uploads finished successfully. Android production build 29
+is verified at 100% (`completed`, no user fraction), and Google reports it is in
+review while build 28 remains published. The submission profile retains full
+rollout. iOS build 26 was uploaded to App Store Connect/TestFlight; a public App
+Store release has not been submitted. The old Render origin still returns HTTP
+503, so installed old binaries remain affected until they update or Render lifts
+the suspension. A real test-account login, OAuth, AI, email, and upload flow
+remain release acceptance checks. See the
 [final verification record](../reviews/2026-10-17-oracle-migration.md) for build
 links and the separate FatSecret credential issue.
 

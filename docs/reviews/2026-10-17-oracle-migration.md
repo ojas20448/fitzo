@@ -60,15 +60,39 @@ JavaScript bundles contain the new API URL and omit the old Render API URL.
 Android JAR signature verification passed. Private local artifact copies and
 verification receipts are retained outside Git.
 
-Neither build has been submitted to stores. Store release and one existing-account acceptance
-flow remain necessary before calling the end-user cutover complete. Keep the
-existing app IDs and signing credentials. Suggested release note: “Restored app
-connectivity and improved reliability.”
+Both store uploads finished successfully after the user's approval:
+
+- [Android submission](https://expo.dev/accounts/fiskerr/projects/fitzo/submissions/289523c7-5cc8-4985-b39c-832b95a4ba68)
+- [iOS submission](https://expo.dev/accounts/fiskerr/projects/fitzo/submissions/cf397730-096b-461f-b471-e694eb12bc82)
+
+The user subsequently requested Android at 100%. Direct Android Publisher API
+readback on 2026-10-17 confirmed production release 1.4.2 / 29 has status
+`completed`, with no `userFraction` (full rollout). It was already in this state
+when checked, so no duplicate upload or track mutation was necessary. The EAS
+submission profile now retains full rollout for future Android submissions.
+The separate publication-state API reports build 29 `IN_REVIEW`; build 28 / 1.4.1
+remains `PUBLISHED`. Full rollout configuration does not mean review has finished
+or that users have installed the update.
+
+iOS 1.4.2 / 26 was uploaded to App Store Connect/TestFlight. This submission did
+not publish a public App Store update or submit it for App Review. Apple processing
+and public-release review remain separate steps. One existing-account acceptance
+flow also remains necessary before calling the end-user cutover complete. Keep
+the existing app IDs and signing credentials. Suggested release note: “Restored
+app connectivity and improved reliability.”
 
 Installed apps still use Render and have no configured OTA update channel.
 Users need a normal store update; they keep their accounts and data. Valid
 sessions should remain usable; expired or revoked sessions can require login.
 The stable API domain makes future server moves independent of app releases.
+
+Outage check on 2026-10-17 at 17:55 UTC: the installed-app origin
+`https://fitzo.onrender.com/api/health` returns HTTP 503 / “Service Suspended.”
+The replacement API returns HTTP 200 with database and API healthy, and the
+website returns HTTP 200. Existing binaries cannot be remotely pointed at the new
+server or given a maintenance screen because they have no OTA update channel.
+Restoring the old provider-owned URL requires Render to lift the suspension;
+DNS for `fitzoapp.in` cannot change it. No paid Render upgrade was authorized.
 
 The primary workspace's unfinished app changes were excluded from this hotfix.
 Its API configuration was updated while its other edits were preserved. Before
