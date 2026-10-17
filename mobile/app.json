@@ -34,7 +34,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "usesAppleSignIn": true,
-      "buildNumber": "26"
+      "buildNumber": "27"
     },
     "android": {
       "adaptiveIcon": {
