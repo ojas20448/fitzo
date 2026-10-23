@@ -61,9 +61,15 @@ jobs:
           echo "endpoint=$ENDPOINT" >> "$GITHUB_OUTPUT"
 
       - name: Check server reachability
+        if: steps.pick.outputs.endpoint == 'quiet-alerts'
         run: curl --fail --silent --show-error -m 90 "$API_ORIGIN/api/health"
 
+      - name: Skip AI batches until account consent is server-verifiable
+        if: steps.pick.outputs.endpoint != 'quiet-alerts'
+        run: echo "Daily and weekly AI processing is paused. Opted-in users can request reports in the app."
+
       - name: Trigger ${{ steps.pick.outputs.endpoint }}
+        if: steps.pick.outputs.endpoint == 'quiet-alerts'
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           ENDPOINT: ${{ steps.pick.outputs.endpoint }}
