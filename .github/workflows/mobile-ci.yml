@@ -37,7 +37,7 @@ jobs:
 
       - name: Unit tests
         working-directory: mobile
-        run: npm test -- --ci
+        run: npm test -- --ci --runInBand
 
       - name: Wiring audit (nav targets ↔ screens, api.ts ↔ backend routes)
         run: |
@@ -51,4 +51,4 @@ jobs:
         working-directory: mobile
         run: npx expo export --platform web --no-minify
         env:
-          EXPO_PUBLIC_API_URL: https://fitzo.onrender.com/api
+          EXPO_PUBLIC_API_URL: https://api.fitzoapp.in/api

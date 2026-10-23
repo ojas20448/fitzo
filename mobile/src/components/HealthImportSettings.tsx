@@ -49,7 +49,7 @@ export default function HealthImportSettings({ userId }: { userId?: string }) {
                 ? `Saved ${result.imported} ${result.imported === 1 ? 'day' : 'days'} with readable data. Some readings could not be checked; you can retry.`
                 : result.imported
                 ? `Updated ${result.imported} ${result.imported === 1 ? 'day' : 'days'}. Checked ${result.total} days.`
-                : 'No readable data available for this period. You can sync again when new readings are recorded.');
+                : `No readable data available for this period. Check that readings exist in ${provider} and Fitzo has read access, then sync again.`);
         } catch (error) {
             if (mounted.current) setMessage(`${error instanceof Error ? error.message : 'Import could not finish.'} You can retry; saved days are kept.`);
         } finally { if (mounted.current) setBusy(false); }

@@ -17,6 +17,7 @@ export default function FoodScannerScreen() {
     const params = useLocalSearchParams<{ meal_type?: string }>();
     const [permission, requestPermission] = useCameraPermissions();
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
+    const [preparingPhoto, setPreparingPhoto] = useState(false);
     const [analyzing, setAnalyzing] = useState(false);
     const [consentModalVisible, setConsentModalVisible] = useState(false);
     const [detectedFood, setDetectedFood] = useState<any>(null);
@@ -106,12 +107,13 @@ export default function FoodScannerScreen() {
     const takePicture = async () => {
         if (!cameraRef.current || running.current) return;
 
+        running.current = true;
+        setPreparingPhoto(true);
         try {
             // base64 is deliberately NOT requested here — we only need the file
             // URI, and asking for base64 of the full-size shot would allocate the
             // multi-MB string we are trying to avoid.
             const photo = await cameraRef.current.takePictureAsync({ quality: 0.9 });
-            setCapturedImage(photo.uri);
 
             const rendered = await ImageManipulator
                 .manipulate(photo.uri)
@@ -124,9 +126,20 @@ export default function FoodScannerScreen() {
                 base64: true,
             });
 
-            if (base64) setBase64Image(base64);
+            if (!base64) throw new Error('Image preparation returned no data');
+            if (mounted.current) {
+                setBase64Image(base64);
+                setCapturedImage(photo.uri);
+            }
         } catch (error: any) {
-            Alert.alert('Error', 'Failed to capture photo');
+            if (mounted.current) {
+                setCapturedImage(null);
+                setBase64Image(null);
+                Alert.alert('Photo unavailable', 'Could not prepare that photo. Please take it again.');
+            }
+        } finally {
+            running.current = false;
+            if (mounted.current) setPreparingPhoto(false);
         }
     };
 
@@ -262,8 +275,10 @@ export default function FoodScannerScreen() {
             {/* Controls */}
             <View style={styles.controls}>
                 {!capturedImage ? (
-                    <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
-                        <View style={styles.captureButtonInner} />
+                    <TouchableOpacity style={styles.captureButton} onPress={takePicture}
+                        accessibilityRole="button" accessibilityLabel="Take food photo"
+                        accessibilityState={{ disabled: preparingPhoto, busy: preparingPhoto }} disabled={preparingPhoto}>
+                        {preparingPhoto ? <ActivityIndicator accessibilityLabel="Preparing photo" /> : <View style={styles.captureButtonInner} />}
                     </TouchableOpacity>
                 ) : detectedFood ? (
                     <GlassCard style={styles.resultCard}>
@@ -312,6 +327,7 @@ export default function FoodScannerScreen() {
                             title={analyzing ? "Analyzing..." : "Analyze Photo"}
                             onPress={analyzeFoodPhoto}
                             loading={analyzing}
+                            disabled={!base64Image || preparingPhoto}
                             fullWidth
                         />
                         <View style={styles.aiBadgeRow}>

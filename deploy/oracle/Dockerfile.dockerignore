@@ -1,0 +1,19 @@
+# Allow only the production runtime into the build context. No local secrets,
+# mobile signing files, Git history, databases, or installed dependencies.
+**
+!backend/
+!backend/package.json
+!backend/package-lock.json
+!backend/src/
+!backend/src/**
+backend/src/**/__tests__/**
+backend/src/**/*.test.js
+!backend/certs/
+!backend/certs/**
+!backend/scripts/
+!backend/scripts/check_deployment.js
+!ai-worker/
+!ai-worker/contracts.js
+!deploy/
+!deploy/oracle/
+!deploy/oracle/Dockerfile

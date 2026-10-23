@@ -1,8 +1,23 @@
 const axios = require('axios');
+const { query } = require('../config/database');
 
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
 const RAPIDAPI_HOST = 'exercisedb.p.rapidapi.com';
 const BASE_URL = `https://${RAPIDAPI_HOST}`;
+
+// Keep exercise selection available when the optional upstream is throttled.
+function formatLocalExercise(row) {
+    const muscles = Array.isArray(row.muscle_groups) ? row.muscle_groups : [];
+    const bodyParts = { arms: 'upper arms', legs: 'upper legs', core: 'waist' };
+    return {
+        id: row.id, name: row.name,
+        bodyPart: bodyParts[row.category] || row.category,
+        target: muscles[0] || row.category,
+        equipment: row.equipment,
+        secondaryMuscles: muscles.slice(1),
+        gifUrl: '', instructions: [],
+    };
+}
 
 /**
  * Get all exercises (paginated)
@@ -11,6 +26,7 @@ async function getAllExercises(limit = 20, offset = 0) {
     try {
         const response = await axios.get(`${BASE_URL}/exercises`, {
             params: { limit, offset },
+            timeout: 5000,
             headers: {
                 'x-rapidapi-key': RAPIDAPI_KEY,
                 'x-rapidapi-host': RAPIDAPI_HOST
@@ -19,7 +35,12 @@ async function getAllExercises(limit = 20, offset = 0) {
         return response.data;
     } catch (error) {
         console.error('ExerciseDB API error:', error.response?.data || error.message);
-        throw new Error('Failed to fetch exercises');
+        const result = await query(
+            `SELECT id, name, category, equipment, muscle_groups FROM exercises
+             ORDER BY name LIMIT $1 OFFSET $2`,
+            [limit, offset]
+        );
+        return result.rows.map(formatLocalExercise);
     }
 }
 
@@ -83,6 +104,7 @@ async function getExercisesByEquipment(equipment) {
 async function getExerciseById(id) {
     try {
         const response = await axios.get(`${BASE_URL}/exercises/exercise/${id}`, {
+            timeout: 5000,
             headers: {
                 'x-rapidapi-key': RAPIDAPI_KEY,
                 'x-rapidapi-host': RAPIDAPI_HOST
@@ -91,7 +113,11 @@ async function getExerciseById(id) {
         return response.data;
     } catch (error) {
         console.error('ExerciseDB API error:', error.response?.data || error.message);
-        throw new Error('Failed to fetch exercise details');
+        const result = await query(
+            'SELECT id, name, category, equipment, muscle_groups FROM exercises WHERE id::text = $1',
+            [String(id)]
+        );
+        return result.rows[0] ? formatLocalExercise(result.rows[0]) : null;
     }
 }
 
