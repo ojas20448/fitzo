@@ -17,6 +17,11 @@ AI processing and consent notes below updated on 2026-10-23. The owner reports
 funding the paid Gemini API; the production project's billing and optional
 data-sharing settings still need to be checked in Google AI Studio.
 
+The production API moved from Render to Oracle Cloud on 2026-10-17; the public
+API hostname currently resolves to the Oracle VM. Render references below
+describe legacy hosting/configuration and must not be read as current deployment
+verification.
+
 ---
 
 ## 1. Data at rest
