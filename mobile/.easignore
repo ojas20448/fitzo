@@ -4,8 +4,10 @@
 node_modules/
 
 # Ignore native builds
-android/
-ios/
+/android/
+/ios/
+
+modules/**/android/build/
 
 # Ignore Expo and Metro caching
 .expo/

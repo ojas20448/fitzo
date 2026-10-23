@@ -8,7 +8,7 @@ const { create, act } = jest.requireActual('react-test-renderer');
 const mockSave = jest.fn(async () => ({ base64: 'prepared-jpeg' }));
 const mockRender = jest.fn(async () => ({ saveAsync: mockSave }));
 jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock').default);
-jest.mock('expo-router', () => ({ router: { back: jest.fn(), push: jest.fn() } }));
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}), router: { back: jest.fn(), push: jest.fn() } }));
 jest.mock('../../../utils/haptics', () => ({ impactAsync: jest.fn(), ImpactFeedbackStyle: { Light: 'light' } }));
 jest.mock('expo-camera', () => {
     const React = jest.requireActual('react');
