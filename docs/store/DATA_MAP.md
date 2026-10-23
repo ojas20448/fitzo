@@ -13,6 +13,10 @@ so guesses are worse than gaps.
 Last verified against: `backend/src/`, `mobile/src/`, `mobile/app.json`,
 `backend/package.json`.
 
+AI processing and consent notes below updated on 2026-10-23. The owner reports
+funding the paid Gemini API; the production project's billing and optional
+data-sharing settings still need to be checked in Google AI Studio.
+
 ---
 
 ## 1. Data at rest
@@ -65,33 +69,46 @@ Anything the backend sends outward. Ordered by how sensitive the payload is.
 | 9 | **API Ninjas** | Food strings, activity descriptions | No | Nutrition + calories-burned fallback |
 | 10 | **RapidAPI / ExerciseDB** | Exercise names | No | Exercise catalogue |
 | 11 | **YouTube Data API** | Exercise names | No | Form-check videos |
+| 12 | **Groq** (when configured for transcription or fallback) | Voice recordings | May contain spoken fitness or health details | Voice transcription |
+| 13 | **Google Antigravity / designated laptop** (optional worker mode) | Queued food photos and AI requests | Yes | Worker processing; separate account terms from the paid Gemini API |
 
 Rows 6–11 receive **search strings only** — never a user identifier. "chicken
 biryani" leaves the server with no way to tie it back to a person. That
 distinction is what lets the Data safety form answer *not shared* for them, and
 it is worth preserving in any future refactor.
 
-### ⚠️ The Gemini free-tier problem — decide before production
+### Paid Gemini API handling and shared consent
 
 Google's Gemini API treats the two tiers very differently:
 
 - **Free tier** — prompts and responses **may be used to improve Google's
   products**, and may be human-reviewed.
-- **Paid tier** — inputs are **not** used to train models.
+- **Paid tier** — Google excludes prompts and responses from product/model
+  improvement under its paid API terms. This does not mean zero storage:
+  safety and legal retention still apply, and authorized human review for
+  policy enforcement is possible. Voluntary log/dataset sharing is separate.
 
-Fitzo sends voice recordings, food photos, and a health-data context pack. On the
-free tier, that is user health data flowing into a vendor's training pipeline.
-Two consequences:
+Paid treatment applies to the Cloud project used by Fitzo's actual backend key,
+not just any project with a prepaid balance. Keep voluntary data sharing off.
+Groq and Antigravity have their own terms/settings; funding Gemini does not
+change those services' handling.
 
-1. **The privacy policy must not claim** AI providers don't train on the data
-   until billing is enabled. Saying so while on the free tier is a false
-   statement in a store-facing legal document.
-2. **Google Play's Health apps policy** and Apple's HealthKit terms both restrict
-   onward use of health data. The free tier is difficult to reconcile with either.
+The app asks once through the shared **Enable Fitzo AI** sheet, before first use
+of coaching, insights, photo analysis, text food estimates or voice logging.
+The existing stored permission is reused across features on that installation.
+**Profile → Fitzo AI** changes that choice; manual logging stays available.
+Worker-mode consent retains its separate existing storage key and disclosure.
+Camera, microphone and connected-health permissions remain separate OS choices.
 
-**Owner action:** enable billing on the Gemini API key, then the policy's "not
-used for model training" line becomes true. This is listed as a launch blocker in
-`STORE_LAUNCH.md`.
+The server cannot verify this device-only permission for background batches.
+The daily/weekly AI cron routes therefore skip processing until account-level
+consent and revocation exist. Opted-in app requests still generate insights and
+recaps on demand. This also pauses scheduled AI report push notifications.
+
+Sources: [Gemini API terms](https://ai.google.dev/gemini-api/terms),
+[abuse monitoring](https://ai.google.dev/gemini-api/docs/usage-policies),
+[logging and sharing](https://ai.google.dev/gemini-api/docs/logs-policy),
+[Groq data handling](https://console.groq.com/docs/your-data).
 
 ---
 
@@ -99,15 +116,17 @@ used for model training" line becomes true. This is listed as a launch blocker i
 
 | Source | Permission | Data | Leaves the device? |
 |---|---|---|---|
-| Microphone | `RECORD_AUDIO` / `NSMicrophoneUsageDescription` | Voice clip, ≤90s | **Yes** — to Gemini for transcription. Not stored by Fitzo |
-| Camera | `CAMERA` / `NSCameraUsageDescription` | Gym QR frames; food photos | QR: **no**, decoded on device. Food photo: **yes** — to Gemini, **not persisted anywhere** |
+| Microphone | `RECORD_AUDIO` / `NSMicrophoneUsageDescription` | Temporary voice recording | **Yes** — to Gemini or Groq for transcription; provider retention applies |
+| Camera | `CAMERA` / `NSCameraUsageDescription` | Gym QR frames; food photos | QR: **no**, decoded on device. Food photo: **yes** — to Gemini or the optional worker; provider retention applies |
 | Health Connect (Android) | `health.READ_STEPS`, `READ_HEART_RATE`, `READ_SLEEP`, `READ_ACTIVE_CALORIES_BURNED` | Steps, HR, sleep, active calories | Yes — stored in Postgres, and included in the coach context pack |
 | HealthKit (iOS) | `NSHealthShareUsageDescription` | Same four categories | Same |
 
-**Confirmed transient:** the food photo is never written to disk or database.
-`routes/food.js` has no insert of image bytes — the base64 goes to Gemini, the
-parsed macros come back, and the image is dropped. This is a genuinely good
-privacy property and is worth stating plainly in the policy.
+The direct photo route sends base64 to the provider without creating a backend
+photo archive. Camera/recording files can exist temporarily on the device.
+Optional worker mode also stores queued photos and laptop artifacts until
+completion or expiry. Local cleanup does not delete provider records, so do
+not describe these flows as "never stored" or promise provider-wide ephemeral
+processing.
 
 ---
 
@@ -136,8 +155,8 @@ row. Two columns are deliberately `ON DELETE SET NULL` (`trainer_id`,
 | Data | Retention |
 |---|---|
 | Account + all fitness history | Until the user deletes the account |
-| Voice recordings | Not retained by Fitzo. Gemini's own retention governs — free tier differs from paid (§2) |
-| Food photos | Not retained by Fitzo. Same Gemini caveat |
+| Voice recordings | Temporary device recording and request processing; Google/Groq retention and account settings apply separately |
+| Food photos | Temporary device file and request processing; optional worker queue/laptop copies until cleanup or expiry; Google retention applies separately |
 | Cache entries | TTL-bounded, minutes to hours |
 | Backend error traces | Sentry's retention (90 days default — **VERIFY** the plan) |
 | Backups | Supabase automatic PITR — **VERIFY** window on the current plan |

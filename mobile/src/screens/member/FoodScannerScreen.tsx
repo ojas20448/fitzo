@@ -345,7 +345,6 @@ export default function FoodScannerScreen() {
 
             <AIConsentModal
                 visible={consentModalVisible}
-                featureTitle="Photo Food Scanner"
                 onAccept={() => {
                     setConsentModalVisible(false);
                     executeAnalysis();

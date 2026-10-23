@@ -2,10 +2,10 @@
 import { Asset } from 'expo-asset';
 import sources from '../../assets/exercise-demos/SOURCES.json';
 export const exerciseAnimations = [
-    { ...sources.records[0], animation: Asset.fromModule(require('../../assets/exercise-demos/push-up.gif')).uri, poster: Asset.fromModule(require('../../assets/exercise-demos/push-up.jpg')).uri },
-    { ...sources.records[1], animation: Asset.fromModule(require('../../assets/exercise-demos/bodyweight-squat.gif')).uri, poster: Asset.fromModule(require('../../assets/exercise-demos/bodyweight-squat.jpg')).uri },
-    { ...sources.records[2], animation: Asset.fromModule(require('../../assets/exercise-demos/sit-up.gif')).uri, poster: Asset.fromModule(require('../../assets/exercise-demos/sit-up.jpg')).uri },
-    { ...sources.records[3], animation: Asset.fromModule(require('../../assets/exercise-demos/lying-leg-raise.gif')).uri, poster: Asset.fromModule(require('../../assets/exercise-demos/lying-leg-raise.jpg')).uri },
-    { ...sources.records[4], animation: Asset.fromModule(require('../../assets/exercise-demos/jump-rope.gif')).uri, poster: Asset.fromModule(require('../../assets/exercise-demos/jump-rope.jpg')).uri },
-    { ...sources.records[5], animation: Asset.fromModule(require('../../assets/exercise-demos/pull-up.gif')).uri, poster: Asset.fromModule(require('../../assets/exercise-demos/pull-up.jpg')).uri },
+    { ...sources.records[0], animation: Asset.fromModule(require('../../assets/exercise-demos/push-up.gif')).uri, poster: Asset.fromModule(require('../../assets/exercise-demos/push-up-poster.jpg')).uri },
+    { ...sources.records[1], animation: Asset.fromModule(require('../../assets/exercise-demos/bodyweight-squat.gif')).uri, poster: Asset.fromModule(require('../../assets/exercise-demos/bodyweight-squat-poster.jpg')).uri },
+    { ...sources.records[2], animation: Asset.fromModule(require('../../assets/exercise-demos/sit-up.gif')).uri, poster: Asset.fromModule(require('../../assets/exercise-demos/sit-up-poster.jpg')).uri },
+    { ...sources.records[3], animation: Asset.fromModule(require('../../assets/exercise-demos/lying-leg-raise.gif')).uri, poster: Asset.fromModule(require('../../assets/exercise-demos/lying-leg-raise-poster.jpg')).uri },
+    { ...sources.records[4], animation: Asset.fromModule(require('../../assets/exercise-demos/jump-rope.gif')).uri, poster: Asset.fromModule(require('../../assets/exercise-demos/jump-rope-poster.jpg')).uri },
+    { ...sources.records[5], animation: Asset.fromModule(require('../../assets/exercise-demos/pull-up.gif')).uri, poster: Asset.fromModule(require('../../assets/exercise-demos/pull-up-poster.jpg')).uri },
 ];

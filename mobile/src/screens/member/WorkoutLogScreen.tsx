@@ -980,7 +980,7 @@ const WorkoutLogScreen: React.FC = () => {
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-            <AIConsentModal {...voice.consentModalProps} featureTitle="Voice Workout Logging" />
+            <AIConsentModal {...voice.consentModalProps} />
             <VoiceCaptureSheet
                 visible={voiceSheetOpen && voice.stage !== 'idle' && !voice.isAwaitingConsent}
                 stage={voice.stage}

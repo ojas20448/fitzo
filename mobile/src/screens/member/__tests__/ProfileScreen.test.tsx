@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, TextInput, TouchableOpacity, Modal } from 'react-native';
+import { Text, TextInput, TouchableOpacity, Modal, Switch } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import ProfileScreen from '../../../../app/(tabs)/profile';
@@ -44,21 +44,24 @@ const press = async (label: string) => {
 };
 const nameInput = () => screen.root.findAllByType(TextInput).find((node: any) => node.props.accessibilityLabel === 'Display name');
 const inputName = async (value: string) => { await act(async () => nameInput().props.onChangeText(value)); };
+const toggleAI = async (enabled: boolean) => { await act(async () => { await screen.root.findByType(Switch).props.onValueChange(enabled); }); };
 const editor = () => screen.root.findAllByType(Modal).find((node: any) => node.props.presentationStyle === 'pageSheet');
 beforeEach(async () => { jest.clearAllMocks(); mockUser = { id: 'me', name: 'Test' }; mockRefresh.mockResolvedValue(undefined); (memberAPI.updateProfile as jest.Mock).mockResolvedValue({}); await AsyncStorage.clear(); });
 afterEach(async () => { await act(async () => screen?.unmount()); });
 
-it('shows AI privacy before activity history and opens consent directly without navigation', async () => {
+it('offers one Fitzo AI switch and asks for permission before enabling it', async () => {
     await mount();
-    expect(texts().indexOf('AI Data Sharing & Privacy')).toBeLessThan(texts().indexOf('Activity History'));
-    expect(texts()).toContain('Disabled · Enable here or when you use AI');
+    expect(texts().indexOf('Fitzo AI')).toBeLessThan(texts().indexOf('Activity History'));
+    expect(texts()).toContain('Off · Manual logging still works');
     expect(screen.root.findByType(AIConsentModal).props.visible).toBe(false);
-    await press('AI Data Sharing & Privacy');
+    await toggleAI(true);
     expect(screen.root.findByType(AIConsentModal).props.visible).toBe(true);
+    expect(screen.root.findByType(Switch).props.value).toBe(false);
+    expect(await getAIConsent()).toBe(false);
     expect(router.push).not.toHaveBeenCalled();
-    await press('Agree & Continue');
+    await press('Enable Fitzo AI');
     expect(await getAIConsent()).toBe(true);
-    expect(texts()).toContain('Enabled · Tap to review or turn off');
+    expect(texts()).toContain('On for all AI features');
     expect(screen.root.findByType(AIConsentModal).props.visible).toBe(false);
 });
 
@@ -66,11 +69,21 @@ it('reflects consent granted elsewhere on focus and lets the user disable AI fro
     await mount();
     await AsyncStorage.setItem(AI_CONSENT_KEY, 'true');
     await act(async () => { mockFocus(); });
-    expect(texts()).toContain('Enabled · Tap to review or turn off');
-    await press('AI Data Sharing & Privacy');
-    await press('Not Now (Keep AI Disabled)');
+    expect(texts()).toContain('On for all AI features');
+    await toggleAI(false);
     expect(await getAIConsent()).toBe(false);
-    expect(texts()).toContain('Disabled · Enable here or when you use AI');
+    expect(texts()).toContain('Off · Manual logging still works');
+    expect(screen.root.findByType(AIConsentModal).props.visible).toBe(false);
+});
+
+it('keeps the switch on and reports a failed attempt to save the off preference', async () => {
+    await AsyncStorage.setItem(AI_CONSENT_KEY, 'true');
+    await mount();
+    (AsyncStorage.setItem as jest.Mock).mockRejectedValueOnce(new Error('Storage unavailable'));
+    await toggleAI(false);
+    expect(await getAIConsent()).toBe(true);
+    expect(screen.root.findByType(Switch).props.value).toBe(true);
+    expect(mockToast.error).toHaveBeenCalledWith('Could not turn off AI', 'Please try again.');
 });
 
 it('preserves the default profile picture when only the display name changes', async () => {

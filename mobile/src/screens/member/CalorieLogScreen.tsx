@@ -533,6 +533,7 @@ const AccountCalorieLogScreen: React.FC = () => {
         setGramAmount('100');
         // Handle AI Trigger
         if (food.isAiTrigger) {
+            if (!(await voice.requestAIConsent())) return;
             setPendingFoodName(searchQuery);
             setAiAnalyzing(true);
             setLoadingDetail(true);
@@ -1463,7 +1464,7 @@ const AccountCalorieLogScreen: React.FC = () => {
                     </ScrollView>
                 </SafeAreaView>
             </Modal>
-            <AIConsentModal {...voice.consentModalProps} featureTitle="Voice Food Logging" />
+            <AIConsentModal {...voice.consentModalProps} />
             <VoiceCaptureSheet
                 visible={voiceSheetOpen && voice.stage !== 'idle' && !voice.isAwaitingConsent}
                 stage={voice.stage}

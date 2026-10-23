@@ -24,4 +24,23 @@ Fitzo calls the Gemini API from its backend. Google AI Pro/Antigravity subscript
 - Archived laptop worker: pause its queue and revoke its dedicated production credential. Preserve shared contracts and additive tables.
 - No new Android or iOS EAS builds are authorized for this cost-control rollout; wait until the owner's remaining app changes are ready. These changes are backend-only and existing direct-API builds inherit them immediately.
 
-Official references: https://ai.google.dev/gemini-api/docs/billing , https://ai.google.dev/gemini-api/docs/pricing , https://ai.google.dev/gemini-api/docs/rate-limits .
+## Privacy and consent
+
+- Confirm the production key's project is Paid/Tier 1 and voluntary log/dataset
+  sharing is off. A prepaid balance on an unrelated project does not change
+  Fitzo's data terms. These settings were not inspected in this code change.
+- Paid Gemini terms exclude prompts/responses from model improvement, but still
+  allow safety/legal retention and authorized policy-enforcement review. Do not
+  promise zero storage, purely in-memory processing or no human access.
+- Groq transcription and optional Antigravity worker mode have separate terms.
+- The app reuses one saved AI permission across features, managed by the
+  Profile → Fitzo AI switch. Camera/microphone/health OS permissions stay separate.
+- Daily/weekly AI cron endpoints now skip processing: device-only consent cannot
+  authorize a server batch. Foreground requests still generate reports on
+  demand after permission. Scheduled AI report pushes are paused until the
+  server can verify per-account consent and revocation.
+- Store submission drafts in `docs/store/` reflect this handling. Check the live
+  privacy policy and store forms before releasing; this change does not publish
+  either or create a mobile build.
+
+Official references: https://ai.google.dev/gemini-api/docs/billing , https://ai.google.dev/gemini-api/docs/pricing , https://ai.google.dev/gemini-api/docs/rate-limits , https://ai.google.dev/gemini-api/terms , https://ai.google.dev/gemini-api/docs/logs-policy .

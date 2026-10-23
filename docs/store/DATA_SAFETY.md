@@ -37,8 +37,8 @@ for the request only, never persisted.
 | **User IDs** | Yes | No | No | Required | App functionality; Account management |
 | **Health info** (weight, height, body measurements, heart rate, sleep) | Yes | No | No | Optional | App functionality; Personalisation |
 | **Fitness info** (workouts, steps, calories, nutrition logs) | Yes | No | No | Optional | App functionality; Personalisation |
-| **Photos** (food photos for macro scanning) | **Yes** | No | **Yes** | Optional | App functionality |
-| **Voice or sound recordings** (voice logging) | **Yes** | No | **Yes** | Optional | App functionality |
+| **Photos** (food photos for macro scanning) | **Yes** | No | **No** | Optional | App functionality |
+| **Voice or sound recordings** (voice logging) | **Yes** | No | **No** | Optional | App functionality |
 | **Crash logs** | Yes | No | No | Required | Diagnostics |
 | **Diagnostics** | Yes | No | No | Required | Diagnostics |
 | **App interactions** | Yes | No | No | Required | Analytics; App functionality |
@@ -52,29 +52,39 @@ Device or other IDs, Advertising ID.
 
 ### A.3 Two judgement calls, explained
 
-**Why Photos and Voice are declared "Collected" but "Ephemeral".**
-Google lets you skip a declaration when data is *only* processed ephemerally.
-Both qualify — Fitzo never writes either to disk or database (verified: no image
-or audio insert exists in `routes/food.js` or `routes/ai.js`). But both leave the
-device to reach Gemini, so the conservative reading is to **declare collection
-and tick Ephemeral**. Declaring more than the minimum is safe here. Silently
-omitting a data type the app demonstrably uploads is what gets apps pulled.
+**Why Photos and Voice are collected, without a blanket ephemeral claim.**
+Both leave the device. Paid Gemini terms permit retention for safety and legal
+purposes, Groq has separate account settings, and worker mode persists queued
+images. Backend request handling alone cannot establish end-to-end ephemeral
+processing. Keep Ephemeral **No** unless every active processing route has been
+verified to meet Play's memory-only, real-time definition. Even qualifying
+ephemeral collection must be included in the form response.
 
-**Why "Shared" is No everywhere — and the one condition that makes it true.**
+**When the service-provider exception supports "Shared: No".**
 Google excludes transfers to a *service provider* processing on your behalf.
 Two things must hold:
 
 1. Food/nutrition APIs (FatSecret, USDA, Open Food Facts, API Ninjas, ExerciseDB,
    YouTube) receive **search strings with no user identifier** — "paneer tikka"
    with nothing attached. Not personal data, so not sharing. ✅ True today.
-2. Gemini must be acting purely as a processor. **On the Gemini free tier this
-   is not true** — Google may use submitted content to improve its products,
-   which is processing for Google's own purposes, i.e. sharing.
+2. Each AI provider must process only on Fitzo's behalf under the applicable
+   terms/settings. Paid Gemini excludes prompts and responses from model
+   improvement, but this does not verify Groq, Antigravity, voluntary dataset
+   sharing or any other route.
 
-> ⚠️ **"Shared: No" is only accurate once Gemini API billing is enabled.**
-> Until then the honest answer for Health info, Fitness info, Photos and Voice is
-> *Shared: Yes*. Enabling billing is the cheaper fix and is a launch blocker in
-> [`STORE_LAUNCH.md`](../STORE_LAUNCH.md).
+The table's **Shared: No** answers are conditional on that verification.
+Funding the matching Gemini project supports the service-provider exception;
+it does not automatically establish "Shared: No" for the whole app or remove
+collection/disclosure obligations. Keep voluntary data sharing off and check
+every active provider before submitting the form.
+
+The app keeps one explicit, shared AI permission and one **Profile → Fitzo AI**
+switch. Paid billing does not remove Apple's requirement to disclose third-party
+AI transfers and obtain permission. Server-scheduled AI batches skip processing
+while consent exists only on the device; reports remain available on demand.
+
+References: [Google Play Data safety](https://support.google.com/googleplay/android-developer/answer/10787469),
+[Apple guideline 5.1.2(i)](https://developer.apple.com/app-store/review/guidelines/#data-use-and-sharing).
 
 ---
 
@@ -231,12 +241,15 @@ rate, sleep, active calories — to compute daily calorie targets and a
 recovery readiness score.
 
 MICROPHONE
-Used only for voice logging ("I did 5 sets of bench at 80 kilos"). Audio is
-transcribed and discarded; it is never stored.
+Used for voice logging and coach dictation. The shared Fitzo AI permission is
+requested before first use; OS microphone permission is separate. Audio is sent
+for transcription to Google or Groq. Provider safety/legal retention may apply.
 
 CAMERA
 Two uses: scanning a gym QR code for check-in, and photographing a meal for
-macro estimation. Food photos are sent for analysis and never stored.
+macro estimation. Food photos are sent for analysis after the shared AI
+permission. Google retention applies; optional worker mode temporarily stores
+queued photos until completion or expiry.
 
 NO ADS, NO PURCHASES
 The app contains no advertising and no in-app purchases.

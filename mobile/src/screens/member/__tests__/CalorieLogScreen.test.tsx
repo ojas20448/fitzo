@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const { create, act } = jest.requireActual('react-test-renderer');
 const mockSave = jest.fn(async (_food: any) => ({ isGoalHit: false }));
 const mockToast = { error: jest.fn(), success: jest.fn() };
+const mockRequestAIConsent = jest.fn(async () => true);
 let mockAccount = 'a';
 let mockParams: Record<string, string> = {};
 
@@ -15,7 +16,7 @@ jest.mock('react-native-reanimated', () => ({ ...jest.requireActual('react-nativ
 jest.mock('expo-router', () => ({ router: { push: jest.fn(), canGoBack: () => false, replace: jest.fn() }, useLocalSearchParams: () => mockParams }));
 jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('../../../utils/firstRun', () => ({ hasSeenTip: async () => true, TIP_KEYS: {} }));
-jest.mock('../../../hooks/useVoiceCapture', () => ({ useVoiceCapture: () => ({ isBusy: false }) }));
+jest.mock('../../../hooks/useVoiceCapture', () => ({ useVoiceCapture: () => ({ isBusy: false, requestAIConsent: mockRequestAIConsent }) }));
 jest.mock('../../../components/Toast', () => ({ useToast: () => mockToast }));
 jest.mock('../../../context/NutritionContext', () => ({ useNutrition: () => ({ refreshToday: jest.fn(), logFoodOptimistic: mockSave }) }));
 jest.mock('../../../context/AuthContext', () => ({ useAuth: () => ({ user: { id: mockAccount } }) }));
@@ -24,7 +25,7 @@ jest.mock('../../../services/api', () => ({
     caloriesAPI: { getToday: jest.fn(async () => ({ entries: [{ id: 'meal', food_name: 'Lunch', calories: 400 }] })), getFrequentFoods: jest.fn(async () => ({ frequent: [] })) },
     settingsAPI: { getSharingPreference: async () => ({ share_logs: false }) },
     nutritionAPI: { logBulk: jest.fn(async () => ({})), getPresets: async () => ({ presets: [{ id: 'veg', name: 'Veg Thali', emoji: '🍛', items: [{ name: 'Rice', calories: 130 }] }] }) },
-    foodAPI: { search: jest.fn() },
+    foodAPI: { search: jest.fn(), analyzeText: jest.fn(async () => ({ food: null })) },
 }));
 
 let screen: any;
@@ -46,6 +47,22 @@ async function search(value: string) {
     await act(async () => { screen.root.findByProps({ placeholder: 'Search foods...' }).props.onChangeText(value); });
     await act(async () => { jest.advanceTimersByTime(300); });
 }
+
+it.each([false, true])('only sends a text food estimate after the shared permission returns %s', async (granted) => {
+    let decide!: (value: boolean) => void;
+    mockRequestAIConsent.mockReturnValueOnce(new Promise<boolean>(resolve => { decide = resolve; }));
+    (foodAPI.search as jest.Mock).mockResolvedValueOnce({ foods: [] });
+    await open();
+    await search('a meal description');
+    const estimate = screen.root.findAll((node: any) => typeof node.props.onPress === 'function' &&
+        node.findAllByType(Text).some((text: any) => text.props.children === 'Ask AI: "a meal description"'))[0];
+    await act(async () => { void estimate.props.onPress(); });
+    expect(mockRequestAIConsent).toHaveBeenCalledTimes(1);
+    expect(foodAPI.analyzeText).not.toHaveBeenCalled();
+    await act(async () => { decide(granted); });
+    expect(foodAPI.analyzeText).toHaveBeenCalledTimes(granted ? 1 : 0);
+    if (granted) expect(foodAPI.analyzeText).toHaveBeenCalledWith('a meal description');
+});
 
 it('keeps quick-add and the existing meal log in one scrollable flow without an intervening fork prompt', async () => {
     await open();

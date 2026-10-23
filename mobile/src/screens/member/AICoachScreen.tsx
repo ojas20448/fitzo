@@ -82,6 +82,10 @@ export default function AICoachScreen() {
 
     const startRecording = async () => {
         try {
+            if (!(await getAIConsent())) {
+                setHasConsented(false);
+                return;
+            }
             const permission = await requestRecordingPermissionsAsync();
             if (!permission.granted) {
                 toast.error('Permission Denied', 'Microphone access is required to record audio');
@@ -111,6 +115,10 @@ export default function AICoachScreen() {
         setTranscribing(true);
         try {
             await recorder.stop();
+            if (!(await getAIConsent())) {
+                setHasConsented(false);
+                return;
+            }
             const uri = recorder.uri;
             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -173,6 +181,10 @@ export default function AICoachScreen() {
     const handleSend = async (customMessage?: string) => {
         const messageText = customMessage || inputText.trim();
         if (!messageText || loading) return;
+        if (!(await getAIConsent())) {
+            setHasConsented(false);
+            return;
+        }
 
         const userMessage: Message = {
             id: Date.now().toString(),
@@ -293,7 +305,7 @@ function TypingDots() {
     }
     if (hasConsented === false) {
         return <SafeAreaView style={styles.container}><ScreenBackdrop />
-            <AIConsentModal visible featureTitle="AI Coach" onAccept={() => setHasConsented(true)} onDecline={() => router.back()} />
+            <AIConsentModal visible onAccept={() => setHasConsented(true)} onDecline={() => router.back()} />
         </SafeAreaView>;
     }
 
@@ -408,7 +420,7 @@ function TypingDots() {
                 <View style={styles.aiPrivacyBadge}>
                     <MaterialIcons name="lock" size={11} color={colors.text.muted} />
                     <Text style={styles.aiPrivacyBadgeText}>
-                        Powered by Google Gemini AI · Private & Encrypted ·{' '}
+                        Fitzo AI ·{' '}
                         <Text
                             style={styles.aiPrivacyBadgeLink}
                             onPress={() => Linking.openURL('https://www.fitzoapp.in/privacy-policy')}
@@ -448,6 +460,8 @@ function TypingDots() {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+                        accessibilityRole="button"
+                        accessibilityLabel="Send message"
                         onPress={() => handleSend()}
                         disabled={!inputText.trim() || loading || isRecording}
                     >

@@ -183,6 +183,7 @@ export function useVoiceCapture({ mode, onResult, onError }: UseVoiceCaptureOpti
         isBusy: isStarting || stage === 'transcribing' || stage === 'thinking',
         isAwaitingConsent,
         consentModalProps,
+        requestAIConsent: requestConsent,
         durationMs,
         /** mm:ss for the live counter */
         durationLabel: formatDuration(durationMs),

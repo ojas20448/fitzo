@@ -74,7 +74,7 @@ BUILT FOR GYM LIFE
 ━━━━━━━━━━━━━━━━━━━━━━
 YOUR DATA
 ━━━━━━━━━━━━━━━━━━━━━━
-Stored in India. Never sold. No ads, ever. Voice recordings and food photos are analysed and immediately discarded — never stored. Delete your account and everything in it at any time, from inside the app.
+Never sold. No ads, ever. AI features are optional, with one choice you can change in Profile. Photos and voice clips you choose are sent to cloud providers for analysis; provider safety and legal retention may apply. Delete your account and its saved history at any time, from inside the app.
 
 Health Connect access is entirely optional. Fitzo works fully without it.
 

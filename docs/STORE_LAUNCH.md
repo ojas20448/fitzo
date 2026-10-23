@@ -26,7 +26,14 @@ Companion documents:
 
 ---
 
-## 1. The Gemini decision — you asked what happens if you don't upgrade
+## 1. The Gemini decision — historical free-tier guidance
+
+**2026-10-23 update:** the owner reports adding INR 3,000 to the paid API.
+Use the current handling in [DATA_MAP.md](store/DATA_MAP.md) and
+[DATA_SAFETY.md](store/DATA_SAFETY.md) when preparing a release. The app now has
+one shared AI permission and a Profile → Fitzo AI switch. Paid terms do not
+promise zero retention or make all Data safety sharing answers automatic.
+Confirm the production project's plan and voluntary data-sharing settings.
 
 **The situation.** Google's Gemini API has two tiers with materially different
 data terms. On the **free tier**, submitted content may be used to improve
@@ -36,7 +43,7 @@ summary to Gemini — so on the free tier, user health data is in scope for that
 
 **You do not have to upgrade.** Here are the four real options, honestly rated.
 
-### Option A — Disclose it plainly and keep the free tier ✅ *done, currently in force*
+### Option A — Disclose it plainly and keep the free tier (historical)
 
 The privacy policy now says outright that content sent to the AI features may
 be used by Google to improve its products, and tells the user they can simply
@@ -55,8 +62,10 @@ not use those three features. Every other feature works untouched.
 
 ### Option B — Upgrade billing 💰 *recommended when revenue allows*
 
-Enabling billing on the Gemini API key flips the terms. The policy's AI section
-can then be tightened, and Data safety becomes **Shared: No** across the board.
+Enabling billing on the project used by Fitzo's Gemini key changes its data
+terms. The policy can describe the exclusion from model improvement. The
+service-provider exception may support **Shared: No** after checking every
+active provider and its settings; billing alone is not sufficient.
 
 - **Cost:** pay-as-you-go. At Fitzo's current volume this is small, but it is
   not zero and it scales with users.
@@ -77,10 +86,12 @@ metrics. You could:
 This reduces what leaves the system without removing a single feature, and it
 is worth doing even on the paid tier as basic data minimisation.
 
-### Option D — Make AI features explicitly opt-in 🔧 *strongest consent position*
+### Option D — Make AI features explicitly opt-in (implemented)
 
-Add a one-time consent sheet before first use of coach / voice / photo, stating
-what is sent and to whom. Nothing reaches Gemini until the user agrees.
+The shared sheet covers coach, insights, scans, text food estimates and voice,
+stating what is sent and to whom. Existing permission is reused across features.
+Server AI batches skip processing until per-account consent can be verified;
+opted-in users can still request reports in the app.
 
 - Converts a passive disclosure into active consent, which is what DPDP and
   GDPR actually prefer.
@@ -105,7 +116,7 @@ context pack), add **D** before you have meaningful user numbers, and move to
 | 7 | **Apple Developer Program** ($99/yr) | Nothing iOS can proceed without it. |
 | 8 | **Register the Apple Services ID + enable Sign in with Apple capability** | The code is done; the Apple Developer portal side is not. |
 | 9 | **Google OAuth SHA-1** | `cd mobile && eas credentials` → Android → register the fingerprint. |
-| 10 | **Decide on Gemini billing** | See §1. Not a blocker either way. |
+| 10 | **Verify paid Gemini project and data-sharing settings** | See §1 and `gemini-api-billing.md`; check every active AI provider before submitting privacy forms. |
 
 ---
 

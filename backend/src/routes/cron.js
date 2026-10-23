@@ -13,8 +13,6 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const { asyncHandler } = require('../utils/errors');
-const dailyInsightService = require('../services/dailyInsight');
-const weeklyRecapService = require('../services/weeklyRecap');
 const quietHoursService = require('../services/quietHours');
 
 // Constant-time secret comparison
@@ -36,26 +34,11 @@ router.use((req, res, next) => {
     next();
 });
 
-/**
- * POST /api/cron/daily-insights
- * Generate + push the morning coach insight for all active users.
- * Responds immediately; the batch runs in the background.
- */
-router.post('/daily-insights', asyncHandler(async (req, res) => {
-    res.status(202).json({ success: true, message: 'Daily insights batch started' });
-    dailyInsightService.generateAllDailyInsights()
-        .catch(err => console.error('Daily insights batch failed:', err.message));
-}));
-
-/**
- * POST /api/cron/weekly-recaps
- * Generate last week's recap for all active users (run Mondays).
- */
-router.post('/weekly-recaps', asyncHandler(async (req, res) => {
-    res.status(202).json({ success: true, message: 'Weekly recaps batch started' });
-    weeklyRecapService.generateAllWeeklyRecaps()
-        .catch(err => console.error('Weekly recaps batch failed:', err.message));
-}));
+// Device-only AI consent cannot authorize server batches. Keep reports on demand
+// until consent and revocation can be verified for each account on the server.
+router.post(['/daily-insights', '/weekly-recaps'], (req, res) => {
+    res.json({ success: true, skipped: true, message: 'Scheduled AI processing is disabled. Insights are available on demand in the app.' });
+});
 
 /**
  * POST /api/cron/quiet-alerts

@@ -4,6 +4,7 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
+    Switch,
     ScrollView,
     RefreshControl,
     Modal,
@@ -20,7 +21,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { memberAPI, caloriesAPI, nutritionAPI, measurementsAPI, CalorieEntry, WeekSummary } from '../../src/services/api';
 import FoodEntrySheet from '../../src/components/FoodEntrySheet';
-import AIConsentModal, { getAIConsent } from '../../src/components/AIConsentModal';
+import AIConsentModal, { getAIConsent, setAIConsent } from '../../src/components/AIConsentModal';
 import WeeklyNutritionCard from '../../src/components/WeeklyNutritionCard';
 import Avatar from '../../src/components/Avatar';
 import AvatarPicker from '../../src/components/AvatarPicker';
@@ -278,22 +279,34 @@ export default function ProfileScreen() {
                 </View>
 
                 <GlassCard style={{ marginBottom: spacing.xl }}>
-                    <TouchableOpacity
-                        style={styles.settingItem}
-                        onPress={() => setAiModalVisible(true)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`AI Data Sharing & Privacy, ${aiConsentGranted ? 'enabled' : 'disabled'}`}
-                        accessibilityHint="Review or change consent for AI features"
-                    >
+                    <View style={styles.settingItem}>
                         <MaterialIcons name="auto-awesome" size={24} color={aiConsentGranted ? colors.primary : colors.text.secondary} />
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.settingLabel}>AI Data Sharing & Privacy</Text>
+                            <Text style={styles.settingLabel}>Fitzo AI</Text>
                             <Text style={styles.settingSubtext}>
-                                {aiConsentGranted ? 'Enabled · Tap to review or turn off' : 'Disabled · Enable here or when you use AI'}
+                                {aiConsentGranted ? 'On for all AI features' : 'Off · Manual logging still works'}
                             </Text>
                         </View>
-                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
-                    </TouchableOpacity>
+                        <Switch
+                            accessibilityLabel="Fitzo AI"
+                            accessibilityHint="Enable or disable all AI features"
+                            value={aiConsentGranted}
+                            trackColor={{ true: colors.primary }}
+                            onValueChange={async (enabled) => {
+                                if (enabled) {
+                                    setAiModalVisible(true);
+                                    return;
+                                }
+                                try {
+                                    await setAIConsent(false);
+                                    setAiConsentGranted(false);
+                                    toast.info('Fitzo AI is off', 'Manual logging is still available.');
+                                } catch {
+                                    toast.error('Could not turn off AI', 'Please try again.');
+                                }
+                            }}
+                        />
+                    </View>
                 </GlassCard>
 
                 <GlassCard style={{ marginBottom: spacing.xl }}>
@@ -539,16 +552,14 @@ export default function ProfileScreen() {
 
             <AIConsentModal
                 visible={aiModalVisible}
-                featureTitle="AI Data Sharing"
                 onAccept={() => {
                     setAiConsentGranted(true);
                     setAiModalVisible(false);
-                    toast.success('AI Features Enabled', 'Your AI preferences have been updated.');
+                    toast.success('Fitzo AI is on', 'Enabled for all AI features.');
                 }}
                 onDecline={() => {
                     setAiConsentGranted(false);
                     setAiModalVisible(false);
-                    toast.info('AI Features Disabled', 'AI features will remain off.');
                 }}
             />
 

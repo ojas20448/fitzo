@@ -104,7 +104,7 @@ export default function VoiceCaptureSheet({
                     <View style={styles.aiBadgeRow}>
                         <MaterialIcons name="auto-awesome" size={13} color={colors.text.muted} />
                         <Text style={styles.aiBadgeText}>
-                            Powered by Google Gemini AI · Audio is transcribed and never stored
+                            Fitzo AI · Review your log before saving
                         </Text>
                     </View>
 

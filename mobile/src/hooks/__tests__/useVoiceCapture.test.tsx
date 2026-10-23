@@ -36,7 +36,7 @@ let voice: ReturnType<typeof useVoiceCapture>;
 let screen: any;
 function Probe({ mode }: { mode: VoiceMode }) {
     voice = useVoiceCapture({ mode, onResult: mockOnResult, onError: mockOnError });
-    return <AIConsentModal {...voice.consentModalProps} featureTitle="Voice Logging" />;
+    return <AIConsentModal {...voice.consentModalProps} />;
 }
 const mount = async (mode: VoiceMode = 'food') => {
     await act(async () => { screen = create(<Probe mode={mode} />); });
@@ -66,7 +66,7 @@ it.each<VoiceMode>(['food', 'workout'])('asks in place and continues %s voice lo
     expect(mockRecorder.record).not.toHaveBeenCalled();
     expect(aiAPI.transcribeAudio).not.toHaveBeenCalled();
 
-    await press('Agree & Continue');
+    await press('Enable Fitzo AI');
     expect(await started).toBe(true);
     expect(await getAIConsent()).toBe(true);
     expect(voice.consentModalProps.visible).toBe(false);
@@ -83,7 +83,7 @@ it('declining stays idle and another voice tap can request consent again', async
     await mount();
     let started!: Promise<boolean>;
     await act(async () => { started = voice.start(); });
-    await press('Not Now (Keep AI Disabled)');
+    await press('Not now');
     expect(await started).toBe(false);
     expect(voice.stage).toBe('idle');
     expect(await getAIConsent()).toBe(false);
@@ -101,10 +101,41 @@ it('uses existing consent without showing another prompt', async () => {
     expect(mockRecorder.record).toHaveBeenCalledTimes(1);
 });
 
+it('reuses the same accepted permission when switching from food to workout logging', async () => {
+    await mount('food');
+    let started!: Promise<boolean>;
+    await act(async () => { started = voice.start(); });
+    await press('Enable Fitzo AI');
+    expect(await started).toBe(true);
+    await act(async () => { await voice.cancel(); screen.unmount(); });
+
+    await mount('workout');
+    await act(async () => { expect(await voice.start()).toBe(true); });
+    expect(voice.consentModalProps.visible).toBe(false);
+    expect(mockRecorder.record).toHaveBeenCalledTimes(2);
+});
+
+it('keeps AI disabled when saving consent fails and allows a retry', async () => {
+    await mount();
+    let started!: Promise<boolean>;
+    await act(async () => { started = voice.start(); });
+    (AsyncStorage.setItem as jest.Mock).mockRejectedValueOnce(new Error('Storage unavailable'));
+    await press('Enable Fitzo AI');
+    expect(voice.consentModalProps.visible).toBe(true);
+    expect(await getAIConsent()).toBe(false);
+    expect(mockRecorder.record).not.toHaveBeenCalled();
+    expect(requestRecordingPermissionsAsync).not.toHaveBeenCalled();
+    expect(screen.root.findAllByType(Text).some((node: any) =>
+        node.props.children === 'Could not save your AI preference. Please try again.')).toBe(true);
+    await press('Enable Fitzo AI');
+    expect(await started).toBe(true);
+    expect(mockRecorder.record).toHaveBeenCalledTimes(1);
+});
+
 it('rapid voice taps cannot start two recordings after consent', async () => {
     await mount();
     await act(async () => { void voice.start(); void voice.start(); });
-    await press('Agree & Continue');
+    await press('Enable Fitzo AI');
     expect(requestRecordingPermissionsAsync).toHaveBeenCalledTimes(1);
     expect(mockRecorder.record).toHaveBeenCalledTimes(1);
 });
@@ -118,7 +149,7 @@ it('rechecks consent before uploading audio and keeps the recording private if d
     await act(async () => { processed = voice.stopAndProcess(); });
     expect(voice.consentModalProps.visible).toBe(true);
     expect(aiAPI.transcribeAudio).not.toHaveBeenCalled();
-    await press('Not Now (Keep AI Disabled)');
+    await press('Not now');
     await processed;
     expect(voice.stage).toBe('idle');
     expect(aiAPI.transcribeAudio).not.toHaveBeenCalled();
@@ -130,7 +161,7 @@ it('handles microphone permission denial after accepting consent without startin
     await mount();
     let started!: Promise<boolean>;
     await act(async () => { started = voice.start(); });
-    await press('Agree & Continue');
+    await press('Enable Fitzo AI');
     expect(await started).toBe(false);
     expect(voice.stage).toBe('idle');
     expect(voice.isBusy).toBe(false);
@@ -143,7 +174,7 @@ it('waits for the iOS consent sheet to dismiss before starting the microphone', 
     await mount();
     let started!: Promise<boolean>;
     await act(async () => { started = voice.start(); });
-    await press('Agree & Continue');
+    await press('Enable Fitzo AI');
     expect(voice.consentModalProps.visible).toBe(false);
     expect(voice.isAwaitingConsent).toBe(true);
     expect(requestRecordingPermissionsAsync).not.toHaveBeenCalled();

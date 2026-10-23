@@ -703,7 +703,7 @@ const HomeScreen: React.FC<{ trainingOnly?: boolean }> = ({ trainingOnly = false
                     <Animated.View entering={FadeInDown.delay(50).duration(600).springify()}>
                         <Pressable
                             onPress={() => setAiConsentModalVisible(true)}
-                            accessibilityLabel="Enable AI Daily Insights"
+                            accessibilityLabel="Try Fitzo AI"
                             accessibilityRole="button"
                         >
                             <GlassCard style={styles.insightCard}>
@@ -715,9 +715,9 @@ const HomeScreen: React.FC<{ trainingOnly?: boolean }> = ({ trainingOnly = false
                                     <MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
                                 </View>
                                 <Text style={styles.insightMessage}>
-                                    Ask about your training and food logs. Review how your data is shared before using the coach.
+                                    Get coaching based on your training, meals and recovery.
                                 </Text>
-                                <Text style={styles.insightAskHint}>Review data sharing →</Text>
+                                <Text style={styles.insightAskHint}>Try Fitzo AI →</Text>
                             </GlassCard>
                         </Pressable>
                     </Animated.View>
@@ -934,7 +934,6 @@ const HomeScreen: React.FC<{ trainingOnly?: boolean }> = ({ trainingOnly = false
 
             <AIConsentModal
                 visible={aiConsentModalVisible}
-                featureTitle="Daily AI Insights"
                 onAccept={async () => {
                     setAiConsentModalVisible(false);
                     setAiConsented(true);

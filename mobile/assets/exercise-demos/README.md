@@ -4,6 +4,8 @@ Six original, animated GIFs are bundled for push-ups, bodyweight squats, sit-ups
 
 Each record in [SOURCES.json](./SOURCES.json) identifies the author, original file, source page and applicable Creative Commons license. GIFs are unchanged. JPG posters are extracted first frames and remain under the same license as the corresponding original. The app displays source and license links in the exercise guide. These licenses apply to these media files and their posters.
 
+Poster filenames end in `-poster.jpg` so they have distinct Android resource names from the GIFs. Keep this suffix when regenerating media.
+
 The separate `src/data/exercisePhotos.json` manifest contains 873 exact exercise names with photo paths from [free-exercise-db](https://github.com/yuhonas/free-exercise-db), the same public-domain photo collection already used in Fitzo. It contains paths, not copied image binaries. Existing Supabase photos are retained, with the upstream original available as fallback.
 
 Regenerate with Node.js, ffmpeg and ffprobe:
