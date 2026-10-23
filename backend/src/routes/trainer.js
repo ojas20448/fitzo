@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { IST_TODAY_SQL } = require('../utils/dayBoundary');
+const { MEMBER_TODAY_SQL, nutritionDaySql } = require('../utils/nutritionDay');
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { roleGuard, trainerMemberGuard } = require('../middleware/roleGuard');
@@ -151,20 +151,17 @@ router.get('/members/:id/nutrition', trainerMemberGuard, asyncHandler(async (req
     const memberId = req.params.id;
 
     const result = await query(
-        // Group by logged_date, not DATE(created_at), and window on the IST day.
-        // The member's own /nutrition/weekly uses logged_date + IST; deriving the
-        // day differently here would show a trainer and their member the same
-        // meal on different days.
+        // Use the member's timezone and the same day grouping as their diary.
         `SELECT
-            logged_date as date,
+            ${nutritionDaySql()}::text as date,
             SUM(calories) as calories,
             SUM(protein) as protein,
             SUM(carbs) as carbs,
             SUM(fat) as fat
          FROM calorie_logs
          WHERE user_id = $1
-           AND logged_date > ${IST_TODAY_SQL} - INTERVAL '14 days'
-         GROUP BY logged_date
+           AND ${nutritionDaySql()} > ${MEMBER_TODAY_SQL} - INTERVAL '14 days'
+         GROUP BY ${nutritionDaySql()}
          ORDER BY date ASC`,
         [memberId]
     );

@@ -1,5 +1,6 @@
 const { query } = require('../config/database');
 const cache = require('./cache');
+const { MEMBER_TODAY_SQL, nutritionDaySql } = require('../utils/nutritionDay');
 
 /**
  * Compiles a rich 14-day context pack for the user.
@@ -120,12 +121,12 @@ async function buildContextPack(userId) {
 
     // 5. Fetch Last 14 Days Nutrition
     const nutritionResult = await query(
-        `SELECT logged_date, SUM(calories)::int as calories, SUM(protein)::int as protein,
+        `SELECT ${nutritionDaySql()}::text AS logged_date, SUM(calories)::int as calories, SUM(protein)::int as protein,
                 SUM(carbs)::int as carbs, SUM(fat)::int as fat,
                 ARRAY_AGG(food_name) as meals
          FROM calorie_logs
-         WHERE user_id = $1 AND logged_date >= CURRENT_DATE - INTERVAL '14 days'
-         GROUP BY logged_date
+         WHERE user_id = $1 AND ${nutritionDaySql()} >= ${MEMBER_TODAY_SQL} - INTERVAL '14 days'
+         GROUP BY ${nutritionDaySql()}
          ORDER BY logged_date DESC`,
         [userId]
     );

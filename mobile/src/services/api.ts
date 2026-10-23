@@ -68,6 +68,7 @@ export const removeAuthToken = async (): Promise<void> => {
 api.interceptors.request.use(
     async (config) => {
         (config as any)._sessionEpoch = sessionEpoch;
+        config.headers['X-Fitzo-Timezone'] = Intl.DateTimeFormat().resolvedOptions().timeZone;
         // Don't add auth token to login/register/social sign-in endpoints
         const isAuthEndpoint = config.url?.includes('/auth/login') ||
             config.url?.includes('/auth/register') ||

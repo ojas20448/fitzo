@@ -56,6 +56,28 @@ Do not add intermediate transaction-control statements or concurrent index
 creation to files handled by this runner. Seed/demo data and RLS enablement are
 excluded by default; RLS still requires explicit `--with-rls`.
 
+## Member nutrition timezones (024)
+
+Apply `data/migrations/024_member_timezones.sql` before deploying the timezone-aware
+backend, then release the updated mobile app. The migration only adds columns.
+
+```sh
+node apply_migrations.js --only data/migrations/024_member_timezones.sql --dry-run
+node apply_migrations.js --only data/migrations/024_member_timezones.sql
+```
+
+Authenticated mobile requests send the device's named timezone in
+`X-Fitzo-Timezone`; the backend validates and saves it for subsequent requests
+and background nutrition summaries. Older clients retain the saved timezone,
+with India as the default until a device timezone has been received.
+
+New meals save their local date and timezone so travelling does not move their
+history. Legacy meals assigned to their India creation date are grouped from
+their creation timestamp using the member's saved timezone, correcting the
+previous India-only grouping without rewriting food records. Explicitly backdated
+entries keep their chosen dates. A legacy meal's original
+timezone during past travel cannot be inferred from its timestamp alone.
+
 ## Connection configuration
 
 The backend and this runner use the same connection options. `DATABASE_URL` is

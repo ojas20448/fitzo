@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { IST_TODAY_SQL } = require('../utils/dayBoundary');
+const { nutritionDaySql } = require('../utils/nutritionDay');
 const { query, getClient } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { ValidationError, ConflictError, NotFoundError, asyncHandler } = require('../utils/errors');
@@ -60,7 +61,7 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
        EXISTS(
          SELECT 1 FROM calorie_logs cl
          WHERE cl.user_id = u.id
-           AND cl.logged_date = ${IST_TODAY_SQL}
+           AND ${nutritionDaySql('cl', 'u.timezone')} = (NOW() AT TIME ZONE u.timezone)::date
            AND cl.calories > 0
            AND (
              cl.visibility = 'public'

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,11 +13,19 @@ import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
 import FoodEntrySheet from '../../components/FoodEntrySheet';
 import { MemberScreen, MemberAction, memberStyles as s } from '../../components/navigation/MemberScreen';
+import { useLocalDay } from '../../hooks/useLocalDay';
 
 export default function FoodHomeScreen() {
     const { user } = useAuth();
     const { calorieGoal, macroTargets, refreshToday } = useNutrition();
+    const today = useLocalDay();
     const [date, setDate] = useState(localDiaryDate);
+    const previousToday = useRef(today);
+    useEffect(() => {
+        const previous = previousToday.current;
+        previousToday.current = today;
+        setDate(value => value === previous ? today : value);
+    }, [today]);
     const [saved, setSaved] = useState<{ owner: string; date: string; day: CalorieDay } | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -38,7 +46,6 @@ export default function FoodHomeScreen() {
         return () => { request.current++; };
     }, [load]));
     const day = saved?.owner === user?.id && saved?.date === date ? saved.day : null;
-    const today = localDiaryDate();
     const addFood = (meal?: MealType) => {
         setDate(localDiaryDate());
         router.push(meal ? { pathname: '/log/calories', params: { meal_type: meal } } : '/log/calories');

@@ -2,12 +2,13 @@ const jwt = require('jsonwebtoken');
 const { AuthError } = require('../utils/errors');
 const { query } = require('../config/database');
 const cache = require('../services/cache');
+const { normalizeTimezone } = require('../utils/nutritionDay');
 
 // Security state must be fresh: cached principals survive password resets/deletion.
 const userAuthKey = (userId) => `user:${userId}:auth`;
 async function getCurrentUser(userId) {
     const result = await query(
-        'SELECT id, email, name, role, gym_id, trainer_id, xp_points, avatar_url, token_version FROM users WHERE id = $1',
+        'SELECT id, email, name, role, gym_id, trainer_id, xp_points, avatar_url, token_version, timezone FROM users WHERE id = $1',
         [userId]
     );
     return result.rows[0] || null;
@@ -61,6 +62,16 @@ const authenticate = async (req, res, next) => {
 
         // Attach user to request
         assertCurrentSession(user, decoded);
+        const timezoneHeader = req.headers['x-fitzo-timezone'];
+        if (timezoneHeader !== undefined) {
+            const timezone = normalizeTimezone(timezoneHeader);
+            if (user.timezone !== timezone) {
+                await query('UPDATE users SET timezone = $2 WHERE id = $1', [user.id, timezone]);
+                user.timezone = timezone;
+                await require('../services/contextPack').invalidateContextPack(user.id);
+                await cache.del(cache.keys.nutritionToday(user.id));
+            }
+        }
         req.user = user;
         require('../services/aiContext').run({ userId: user.id }, () => next());
     } catch (error) {

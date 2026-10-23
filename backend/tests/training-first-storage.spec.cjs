@@ -30,12 +30,13 @@ before(async () => {
         CREATE TABLE gyms (id uuid, name text);
         CREATE TABLE user_splits (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, split_id text, name text CHECK (name != 'fail-insert'), days text[], days_per_week integer, is_active boolean, created_at timestamptz DEFAULT NOW(), updated_at timestamptz DEFAULT NOW());
         CREATE TABLE nutrition_profiles (id uuid, user_id uuid, goal_type text, age integer, target_calories integer, target_protein integer, target_carbs integer, target_fat integer);
-        CREATE TABLE calorie_logs (user_id uuid, logged_date date, calories integer, protein integer, carbs integer, fat integer);
+        CREATE TABLE calorie_logs (user_id uuid, logged_date date, calories integer, protein integer, carbs integer, fat integer, created_at timestamptz DEFAULT NOW());
         CREATE TABLE workout_logs (user_id uuid, exercises jsonb);
         INSERT INTO users (id, name, role) VALUES ('${user}', 'Example', 'member'), ('${other}', 'Other', 'member');
         INSERT INTO user_splits (user_id, split_id, name, days, days_per_week, is_active) VALUES ('${user}', 'adopted_example', 'My adopted routine', ARRAY['Push'], 1, true);
         INSERT INTO workout_logs VALUES ('${user}', '[{"name":"Bench press","sets":[{"weight":40,"reps":8}]}]');`);
     await db.exec(fs.readFileSync(path.join(__dirname, '../data/migrations/021_starter_workout_plan.sql'), 'utf8'));
+    await db.exec(fs.readFileSync(path.join(__dirname, '../data/migrations/024_member_timezones.sql'), 'utf8'));
     await db.query('UPDATE users SET email = $2, password_hash = $3 WHERE id = $1', [user, 'example@test.invalid', await require('bcryptjs').hash('test-password', 4)]);
     original = (await db.query('SELECT * FROM user_splits WHERE user_id = $1', [user])).rows[0];
 });

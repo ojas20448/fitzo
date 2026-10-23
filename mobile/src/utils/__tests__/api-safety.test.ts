@@ -3,6 +3,20 @@ jest.mock('@react-native-async-storage/async-storage', () => require('@react-nat
 import api, { caloriesAPI, memberAPI, setAuthToken, healthAPI } from '../../services/api';
 import { useOfflineStore } from '../../stores/offlineStore';
 
+it('sends the current device timezone on each request, including after travel', async () => {
+    const formatter = jest.spyOn(Intl, 'DateTimeFormat');
+    try {
+        for (const timeZone of ['Europe/London', 'Asia/Kolkata']) {
+            formatter.mockReturnValue({ resolvedOptions: () => ({ timeZone }) } as Intl.DateTimeFormat);
+            api.defaults.adapter = async config => {
+                expect(config.headers['X-Fitzo-Timezone']).toBe(timeZone);
+                return { data: {}, status: 200, statusText: 'OK', headers: {}, config };
+            };
+            await caloriesAPI.getToday();
+        }
+    } finally { formatter.mockRestore(); }
+});
+
 it('does not replay a meal after a timeout that could follow a successful commit', async () => {
     const adapter = jest.fn(async (config: any) => { throw { code: 'ECONNABORTED', config }; });
     api.defaults.adapter = adapter;

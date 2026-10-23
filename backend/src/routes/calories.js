@@ -6,7 +6,8 @@ const { asyncHandler, ValidationError, NotFoundError } = require('../utils/error
 const communityFoods = require('../services/communityFoods');
 const cache = require('../services/cache');
 const xpService = require('../services/xpService');
-const { IST_TODAY_SQL, isValidDateString } = require('../utils/dayBoundary');
+const { isValidDateString } = require('../utils/dayBoundary');
+const { MEMBER_TIMEZONE_SQL, MEMBER_TODAY_SQL, nutritionDaySql } = require('../utils/nutritionDay');
 const { validateEntryPatch } = require('../utils/entryEdit');
 const { FREQUENT_FOODS_SQL } = require('../utils/frequentFoods');
 
@@ -42,8 +43,8 @@ router.post('/', asyncHandler(async (req, res) => {
     }
 
     const result = await query(
-        `INSERT INTO calorie_logs (user_id, calories, protein, carbs, fat, food_name, visibility, community_food_id, logged_date)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, ${IST_TODAY_SQL})
+        `INSERT INTO calorie_logs (user_id, calories, protein, carbs, fat, food_name, visibility, community_food_id, logged_date, logged_timezone)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, ${MEMBER_TODAY_SQL}, ${MEMBER_TIMEZONE_SQL})
          RETURNING *`,
         [userId, calories, protein, carbs, fat, meal_name || null, visibility, communityFoodId]
     );
@@ -73,8 +74,8 @@ router.get('/today', asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
     const entries = await query(
-        `SELECT * FROM calorie_logs
-         WHERE user_id = $1 AND logged_date = ${IST_TODAY_SQL}
+        `SELECT *, ${nutritionDaySql()}::text AS logged_date FROM calorie_logs
+         WHERE user_id = $1 AND ${nutritionDaySql()} = ${MEMBER_TODAY_SQL}
          ORDER BY created_at DESC`,
         [userId]
     );
@@ -88,7 +89,7 @@ router.get('/today', asyncHandler(async (req, res) => {
             COALESCE(SUM(fat), 0) as total_fat,
             COUNT(*) as entry_count
          FROM calorie_logs
-         WHERE user_id = $1 AND logged_date = ${IST_TODAY_SQL}`,
+         WHERE user_id = $1 AND ${nutritionDaySql()} = ${MEMBER_TODAY_SQL}`,
         [userId]
     );
 
@@ -117,8 +118,8 @@ router.get('/day/:date', asyncHandler(async (req, res) => {
     }
 
     const entries = await query(
-        `SELECT * FROM calorie_logs
-          WHERE user_id = $1 AND logged_date = $2::date
+        `SELECT *, ${nutritionDaySql()}::text AS logged_date FROM calorie_logs
+          WHERE user_id = $1 AND ${nutritionDaySql()} = $2::date
           ORDER BY created_at DESC`,
         [userId, date]
     );
@@ -131,7 +132,7 @@ router.get('/day/:date', asyncHandler(async (req, res) => {
             COALESCE(SUM(fat), 0) as total_fat,
             COUNT(*) as entry_count
          FROM calorie_logs
-         WHERE user_id = $1 AND logged_date = $2::date`,
+         WHERE user_id = $1 AND ${nutritionDaySql()} = $2::date`,
         [userId, date]
     );
 
@@ -156,7 +157,7 @@ router.get('/history', asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 30;
 
     const result = await query(
-        `SELECT logged_date,
+        `SELECT ${nutritionDaySql()}::text AS logged_date,
                 SUM(calories) as total_calories,
                 SUM(protein) as total_protein,
                 SUM(carbs) as total_carbs,
@@ -164,7 +165,7 @@ router.get('/history', asyncHandler(async (req, res) => {
                 COUNT(*) as entry_count
          FROM calorie_logs 
          WHERE user_id = $1
-         GROUP BY logged_date
+         GROUP BY ${nutritionDaySql()}
          ORDER BY logged_date DESC
          LIMIT $2`,
         [userId, limit]
@@ -182,11 +183,11 @@ router.get('/feed', asyncHandler(async (req, res) => {
     // Get daily totals from friends (respecting privacy)
     const result = await query(
         `SELECT u.id as user_id, u.name, u.avatar_url,
-                c.logged_date,
+                ${nutritionDaySql('c', 'u.timezone')}::text AS logged_date,
                 SUM(c.calories) as total_calories
          FROM calorie_logs c
          JOIN users u ON c.user_id = u.id
-         WHERE c.logged_date >= ${IST_TODAY_SQL} - INTERVAL '7 days'
+         WHERE ${nutritionDaySql('c', 'u.timezone')} >= (NOW() AT TIME ZONE u.timezone)::date - INTERVAL '7 days'
          AND (
              c.visibility = 'public'
              OR 
@@ -198,8 +199,8 @@ router.get('/feed', asyncHandler(async (req, res) => {
              ))
          )
          AND c.user_id != $1
-         GROUP BY u.id, u.name, u.avatar_url, c.logged_date
-         ORDER BY c.logged_date DESC, total_calories DESC
+         GROUP BY u.id, u.name, u.avatar_url, ${nutritionDaySql('c', 'u.timezone')}
+         ORDER BY logged_date DESC, total_calories DESC
          LIMIT 20`,
         [userId]
     );

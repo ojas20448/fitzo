@@ -1,4 +1,5 @@
 import React from 'react';
+import { AppState } from 'react-native';
 import { NutritionProvider, useNutrition } from '../NutritionContext';
 import { nutritionAPI, workoutsAPI, getAuthToken } from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -42,6 +43,59 @@ it('failed food saves restore totals and preserve the original error', async () 
 it('pins the food write to the session that started it', async () => {
     await mount(); await act(async () => { await value.logFoodOptimistic(food); });
     expect(nutritionAPI.logFood).toHaveBeenCalledWith(food, 'token-a');
+});
+it('clears yesterday at local midnight even when the new day cannot load', async () => {
+    jest.useFakeTimers();
+    try {
+        jest.setSystemTime(new Date(2026, 9, 23, 23, 59, 59));
+        await mount(); expect(value.todayMacros.calories).toBe(400);
+        (nutritionAPI.getToday as jest.Mock).mockRejectedValue(new Error('Offline'));
+        await act(async () => { jest.advanceTimersByTime(2000); });
+        expect(value.todayMacros).toEqual({ calories: 0, protein: 0, carbs: 0, fat: 0 });
+    } finally { await act(async () => screen.unmount()); screen = null; jest.useRealTimers(); }
+});
+it('a meal logged on the new day never adds to yesterday while its save is pending', async () => {
+    jest.useFakeTimers();
+    try {
+        jest.setSystemTime(new Date(2026, 9, 23, 23, 59, 59));
+        await mount();
+        jest.setSystemTime(new Date(2026, 9, 24, 0, 1));
+        let resolve!: () => void;
+        (nutritionAPI.logFood as jest.Mock).mockReturnValueOnce(new Promise<void>(done => { resolve = done; }));
+        (nutritionAPI.getToday as jest.Mock).mockResolvedValue({ logged: food, targets: null });
+        let saved!: Promise<unknown>;
+        await act(async () => { saved = value.logFoodOptimistic(food); });
+        expect(value.todayMacros.calories).toBe(600);
+        await act(async () => { resolve(); await saved; });
+    } finally { await act(async () => screen.unmount()); screen = null; jest.useRealTimers(); }
+});
+it('refreshes the local day when returning from an overnight background session', async () => {
+    jest.useFakeTimers();
+    const events = AppState.addEventListener as jest.Mock;
+    try {
+        jest.setSystemTime(new Date(2026, 9, 23, 23));
+        await mount();
+        (nutritionAPI.getToday as jest.Mock).mockRejectedValue(new Error('Offline'));
+        jest.setSystemTime(new Date(2026, 9, 24, 8));
+        const listener = events.mock.calls.find(([event]) => event === 'change')![1];
+        await act(async () => listener('active'));
+        expect(value.todayMacros.calories).toBe(0);
+    } finally { await act(async () => screen.unmount()); screen = null; jest.useRealTimers(); }
+});
+it('a response from yesterday cannot repopulate the totals after midnight', async () => {
+    jest.useFakeTimers();
+    try {
+        jest.setSystemTime(new Date(2026, 9, 23, 23, 59, 59));
+        await mount();
+        let resolve!: (data: unknown) => void;
+        (nutritionAPI.getToday as jest.Mock).mockReturnValueOnce(new Promise(done => { resolve = done; }));
+        let pending!: Promise<void>;
+        await act(async () => { pending = value.refreshToday(); });
+        (nutritionAPI.getToday as jest.Mock).mockRejectedValue(new Error('Offline'));
+        await act(async () => { jest.advanceTimersByTime(2000); });
+        await act(async () => { resolve({ logged, targets: null }); await pending; });
+        expect(value.todayMacros.calories).toBe(0);
+    } finally { await act(async () => screen.unmount()); screen = null; jest.useRealTimers(); }
 });
 it('a pending token lookup cannot write after its account provider unmounts', async () => {
     await mount(); let resolve!: (token: string) => void;

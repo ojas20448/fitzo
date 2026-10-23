@@ -57,6 +57,28 @@ it('distinguishes a failed food load from an empty diary and recovers on refresh
     expect(copy()).toContain('Could not refresh your food diary');
     expect(copy()).not.toContain('No food logged for this day.');
 });
+it('moves an open today diary to the next local date at midnight', async () => {
+    jest.useFakeTimers();
+    try {
+        jest.setSystemTime(new Date(2026, 9, 23, 23, 59, 59));
+        await act(async () => { screen = create(<FoodHomeScreen />); });
+        (caloriesAPI.getDay as jest.Mock).mockClear();
+        await act(async () => { jest.advanceTimersByTime(2000); });
+        expect(caloriesAPI.getDay).toHaveBeenCalledWith('2026-10-24');
+    } finally { await act(async () => screen.unmount()); screen = null; jest.useRealTimers(); }
+});
+it('keeps a deliberately selected historical date when midnight passes', async () => {
+    jest.useFakeTimers();
+    try {
+        jest.setSystemTime(new Date(2026, 9, 23, 23, 59, 59));
+        await act(async () => { screen = create(<FoodHomeScreen />); });
+        await press('Previous day');
+        (caloriesAPI.getDay as jest.Mock).mockClear();
+        await act(async () => { jest.advanceTimersByTime(2000); });
+        expect(caloriesAPI.getDay).not.toHaveBeenCalled();
+        expect(copy()).toContain('22');
+    } finally { await act(async () => screen.unmount()); screen = null; jest.useRealTimers(); }
+});
 it('shows each meal and lets an empty dinner section open food logging in that category', async () => {
     await act(async () => { screen = create(<FoodHomeScreen />); });
     for (const meal of ['Breakfast', 'Lunch', 'Dinner', 'Snacks']) expect(copy()).toContain(meal);

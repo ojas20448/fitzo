@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { nutritionAPI, workoutsAPI, getAuthToken } from '../services/api';
 import { useAuth } from './AuthContext';
+import { useLocalDay } from '../hooks/useLocalDay';
+import { localDiaryDate } from '../utils/foodDiary';
 
 interface Macros {
     calories: number;
@@ -33,6 +35,8 @@ const NutritionContext = createContext<NutritionContextType | undefined>(undefin
 const AccountNutritionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     const userId = user?.id;
+    const today = useLocalDay();
+    const macrosDay = useRef(today);
     const [todayMacros, setTodayMacros] = useState<Macros>({ calories: 0, protein: 0, carbs: 0, fat: 0 });
     const [calorieGoal, setCalorieGoal] = useState<number | null>(null);
     const [macroTargets, setMacroTargets] = useState<MacroTargets | null>(null);
@@ -43,13 +47,18 @@ const AccountNutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
     const refreshToday = useCallback(async () => {
-        if (!userId) return;
+        if (!userId || !mounted.current) return;
+        const requestedDay = localDiaryDate();
         const version = ++requestVersion.current;
+        if (macrosDay.current !== requestedDay) {
+            macrosDay.current = requestedDay;
+            setTodayMacros({ calories: 0, protein: 0, carbs: 0, fat: 0 });
+        }
         setIsLoading(true);
 
         try {
             const data = await nutritionAPI.getToday();
-            if (!mounted.current || version !== requestVersion.current) return;
+            if (!mounted.current || version !== requestVersion.current || requestedDay !== localDiaryDate()) return;
             if (data?.logged) {
                 setTodayMacros({
                     calories: data.logged.calories || 0,
@@ -108,7 +117,8 @@ const AccountNutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             // Non-critical: the useState default of 4 stands.
         }
     }, [userId]);
-    useEffect(() => { if (userId) { void refreshToday(); void loadWeeklyGoal(); } }, [userId, refreshToday, loadWeeklyGoal]);
+    useEffect(() => { if (userId) void refreshToday(); }, [userId, refreshToday, today]);
+    useEffect(() => { if (userId) void loadWeeklyGoal(); }, [userId, loadWeeklyGoal]);
 
     const updateWeeklyGoal = async (days: number) => {
         if (!Number.isInteger(days) || days < 1 || days > 7) throw new Error('Choose between 1 and 7 workouts per week.');
@@ -138,9 +148,12 @@ const AccountNutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }) => {
         const token = await getAuthToken();
         if (!userId || !token || !mounted.current) throw new Error('Your session changed. Please sign in again.');
-        const previousMacros = { ...todayMacros };
+        const loggedDay = localDiaryDate();
+        const previousMacros = today === loggedDay && macrosDay.current === loggedDay
+            ? { ...todayMacros } : { calories: 0, protein: 0, carbs: 0, fat: 0 };
+        macrosDay.current = loggedDay;
         const previousUpdate = lastUpdatedAt;
-        requestVersion.current++;
+        const version = ++requestVersion.current;
         setIsLoading(false);
 
         const newMacros = {
@@ -161,8 +174,11 @@ const AccountNutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             refreshToday();
             return { isGoalHit };
         } catch (error) {
-            setTodayMacros(previousMacros);
-            setLastUpdatedAt(previousUpdate);
+            if (mounted.current && version === requestVersion.current) {
+                const sameDay = loggedDay === localDiaryDate();
+                setTodayMacros(sameDay ? previousMacros : { calories: 0, protein: 0, carbs: 0, fat: 0 });
+                setLastUpdatedAt(sameDay ? previousUpdate : Date.now());
+            }
             throw error;
         }
     };

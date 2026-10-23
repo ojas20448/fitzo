@@ -14,7 +14,7 @@ const foodPrefs = require('../services/foodPrefs');
 const cache = require('../services/cache');
 const { validateComboItems } = require('../utils/mealCombo');
 const { getMealIdeas } = require('../utils/mealIdeas');
-const { IST_TODAY_SQL } = require('../utils/dayBoundary');
+const { MEMBER_TIMEZONE_SQL, MEMBER_TODAY_SQL, nutritionDaySql } = require('../utils/nutritionDay');
 const { supportsTrainingFirst, legacyNutritionTargets } = require('../utils/clientCapabilities');
 
 const { resolveTargets, legacyModes } = require('../utils/nutritionTargets');
@@ -161,7 +161,7 @@ router.get('/today', authenticate, asyncHandler(async (req, res) => {
             COALESCE(SUM(carbs), 0) as total_carbs,
             COALESCE(SUM(fat), 0) as total_fat
          FROM calorie_logs
-         WHERE user_id = $1 AND logged_date = ${IST_TODAY_SQL}`,
+         WHERE user_id = $1 AND ${nutritionDaySql()} = ${MEMBER_TODAY_SQL}`,
         [userId]
     );
 
@@ -206,15 +206,16 @@ router.get('/weekly', authenticate, asyncHandler(async (req, res) => {
     const [result, profileResult] = await Promise.all([
         query(
             `SELECT
-                logged_date as date,
+                ${nutritionDaySql()}::text as date,
                 SUM(calories) as calories,
                 SUM(protein) as protein,
                 SUM(carbs) as carbs,
                 SUM(fat) as fat
              FROM calorie_logs
              WHERE user_id = $1
-               AND logged_date > ${IST_TODAY_SQL} - INTERVAL '7 days'
-             GROUP BY logged_date
+               AND ${nutritionDaySql()} > ${MEMBER_TODAY_SQL} - INTERVAL '7 days'
+               AND ${nutritionDaySql()} <= ${MEMBER_TODAY_SQL}
+             GROUP BY ${nutritionDaySql()}
              ORDER BY date ASC`,
             [userId]
         ),
@@ -269,8 +270,8 @@ router.post('/log', authenticate, asyncHandler(async (req, res) => {
 
     const result = await query(
         `INSERT INTO calorie_logs (
-            user_id, food_name, calories, protein, carbs, fat, serving_size, meal_type, visibility, is_estimate, logged_date
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, ${IST_TODAY_SQL})
+            user_id, food_name, calories, protein, carbs, fat, serving_size, meal_type, visibility, is_estimate, logged_date, logged_timezone
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, ${MEMBER_TODAY_SQL}, ${MEMBER_TIMEZONE_SQL})
         RETURNING *`,
         [userId, food_name, calories, protein || 0, carbs || 0, fat || 0, serving_size, meal_type, visibility, is_estimate]
     );
@@ -326,12 +327,12 @@ router.post('/log-bulk', authenticate, asyncHandler(async (req, res) => {
         );
         // logged_date is appended as a literal SQL expression, not a bound
         // value — it must not consume a $n or shift any placeholder index.
-        return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}, $${b + 6}, $${b + 7}, $${b + 8}, $${b + 9}, $${b + 10}, ${IST_TODAY_SQL})`;
+        return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}, $${b + 6}, $${b + 7}, $${b + 8}, $${b + 9}, $${b + 10}, ${MEMBER_TODAY_SQL}, ${MEMBER_TIMEZONE_SQL})`;
     });
 
     await query(
         `INSERT INTO calorie_logs (
-            user_id, food_name, calories, protein, carbs, fat, serving_size, meal_type, visibility, is_estimate, logged_date
+            user_id, food_name, calories, protein, carbs, fat, serving_size, meal_type, visibility, is_estimate, logged_date, logged_timezone
         ) VALUES ${placeholders.join(', ')}`,
         values
     );

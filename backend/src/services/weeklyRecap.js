@@ -2,6 +2,7 @@ const aiProvider = require('./aiProvider');
 const { DEFAULT_MODEL } = require('./geminiCostControls');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { query } = require('../config/database');
+const { nutritionDaySql } = require('../utils/nutritionDay');
 
 if (!process.env.GEMINI_API_KEY) {
     console.error('⚠️  GEMINI_API_KEY not set — AI Weekly Recaps will fail');
@@ -62,11 +63,11 @@ async function generateWeeklyRecap(userId, weekStartDate) {
         `SELECT AVG(calories)::int as avg_calories, AVG(protein)::int as avg_protein,
                 AVG(carbs)::int as avg_carbs, AVG(fat)::int as avg_fat
          FROM (
-             SELECT logged_date, SUM(calories) as calories, SUM(protein) as protein,
+             SELECT ${nutritionDaySql()} AS logged_date, SUM(calories) as calories, SUM(protein) as protein,
                     SUM(carbs) as carbs, SUM(fat) as fat
              FROM calorie_logs
-             WHERE user_id = $1 AND logged_date >= $2 AND logged_date <= $2::date + INTERVAL '6 days'
-             GROUP BY logged_date
+             WHERE user_id = $1 AND ${nutritionDaySql()} >= $2 AND ${nutritionDaySql()} <= $2::date + INTERVAL '6 days'
+             GROUP BY ${nutritionDaySql()}
          ) daily_totals`,
         [userId, startOfRecapWeek]
     );
