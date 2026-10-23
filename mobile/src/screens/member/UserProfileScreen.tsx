@@ -190,6 +190,18 @@ export default function UserProfileScreen() {
         }
     };
 
+    const handleCancelRequest = async () => {
+        setActionLoading(true);
+        try {
+            await friendsAPI.cancelRequest(userId);
+            setStatus('none');
+        } catch (e: any) {
+            Alert.alert('Could not cancel request', e.message || 'Please try again.');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     const handleAcceptRequest = async () => {
         setActionLoading(true);
         try {
@@ -366,11 +378,21 @@ export default function UserProfileScreen() {
                         </TouchableOpacity>
                     )}
 
-                    {status === 'pending_sent' && (
-                        <View style={styles.secondaryBtn}>
-                            <MaterialIcons name="hourglass-empty" size={18} color={colors.text.secondary} />
-                            <Text style={styles.secondaryBtnText}>Request Sent</Text>
-                        </View>
+                    {!statusFailed && status === 'pending_sent' && (
+                        <TouchableOpacity
+                            style={styles.secondaryBtn}
+                            onPress={handleCancelRequest}
+                            disabled={actionLoading}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Cancel request to ${resolvedName}`}
+                            accessibilityState={{ disabled: actionLoading, busy: actionLoading }}
+                        >
+                            {actionLoading ? (
+                                <ActivityIndicator size="small" color={colors.text.secondary} />
+                            ) : (
+                                <MaterialIcons name="close" size={20} color={colors.text.secondary} />
+                            )}
+                        </TouchableOpacity>
                     )}
 
                     {status === 'pending_received' && (
@@ -526,15 +548,15 @@ export default function UserProfileScreen() {
                                             <Text style={styles.macroLabel}>kcal</Text>
                                         </View>
                                         <View style={styles.macroItem}>
-                                            <Text style={styles.macroValue}>{activity.food.total_protein}g</Text>
+                                            <Text style={[styles.macroValue, { color: colors.macro.protein }]}>{activity.food.total_protein}g</Text>
                                             <Text style={styles.macroLabel}>Protein</Text>
                                         </View>
                                         <View style={styles.macroItem}>
-                                            <Text style={styles.macroValue}>{activity.food.total_carbs}g</Text>
+                                            <Text style={[styles.macroValue, { color: colors.macro.carbs }]}>{activity.food.total_carbs}g</Text>
                                             <Text style={styles.macroLabel}>Carbs</Text>
                                         </View>
                                         <View style={styles.macroItem}>
-                                            <Text style={styles.macroValue}>{activity.food.total_fat}g</Text>
+                                            <Text style={[styles.macroValue, { color: colors.macro.fat }]}>{activity.food.total_fat}g</Text>
                                             <Text style={styles.macroLabel}>Fat</Text>
                                         </View>
                                     </View>

@@ -182,7 +182,7 @@ const MacroPieChart: React.FC<MacroPieChartProps> = ({
                                 ]}
                             />
                         </View>
-                        <Text style={styles.macroValue}>{protein}g / {proteinTarget}g</Text>
+                        <Text style={[styles.macroValue, { color: proteinColor }]}>{protein}g / {proteinTarget}g</Text>
                     </View>
                 </TouchableOpacity>
 
@@ -213,7 +213,7 @@ const MacroPieChart: React.FC<MacroPieChartProps> = ({
                                 ]}
                             />
                         </View>
-                        <Text style={styles.macroValue}>{carbs}g / {carbsTarget}g</Text>
+                        <Text style={[styles.macroValue, { color: carbsColor }]}>{carbs}g / {carbsTarget}g</Text>
                     </View>
                 </TouchableOpacity>
 
@@ -244,7 +244,7 @@ const MacroPieChart: React.FC<MacroPieChartProps> = ({
                                 ]}
                             />
                         </View>
-                        <Text style={styles.macroValue}>{fat}g / {fatTarget}g</Text>
+                        <Text style={[styles.macroValue, { color: fatColor }]}>{fat}g / {fatTarget}g</Text>
                     </View>
                 </TouchableOpacity>
             </View>
@@ -335,8 +335,8 @@ const styles = StyleSheet.create({
         borderRadius: 3,
     },
     macroValue: {
-        fontSize: 10,
-        fontFamily: typography.fontFamily.medium,
+        fontSize: 12,
+        fontFamily: typography.fontFamily.semiBold,
         color: colors.text.muted,
         minWidth: 60,
     },

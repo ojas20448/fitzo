@@ -316,3 +316,19 @@ vendored `node_modules` containing a 194MB `chrome-headless-shell.exe`. GitHub
 hard-rejects files over 100MB, so a `git add -A` would have failed the push
 outright. Nothing in it is needed to build the app; shipped assets live in
 `mobile/assets/`. Back it up outside git.
+
+---
+
+## Fitzo 1.4.0 — Training-First Setup, Starter Workouts & Practical Meal Ideas (Oct 12, 2026)
+
+**Overview:** Shipped Fitzo 1.4.0 encompassing a streamlined training-first onboarding architecture, starter workout plan suggestions, editable training preferences, eight verified Indian meal ideas with portion and substitution customization, and full store release submissions.
+
+**Key Changes:**
+- **Training-First Setup:** Streamlined onboarding flow (Goal → Routine → Plan) via `OnboardingWizard.tsx`, `onboardingPlan.ts`, and `onboardingDraft.ts`. Body measurements and macro targets are now optional.
+- **Starter Workouts & Training Preferences:** Equipment-, experience-, and schedule-aware starter workout suggestions (`starterWorkout.ts`, `starterWorkoutPlan.js`). Added `TrainingPreferencesScreen.tsx` with separate keep/replace choices while retaining past workout logs.
+- **Practical Indian Meal Ideas:** Eight culturally familiar meal ideas (`meal-ideas.json`, `mealIdeas.js`, `MealBuilderSheet.tsx`, `mealBuilder.ts`), defaulting to vegetarian preferences. Portions measured in grams and household measures with 0.5x adjustments and reversible swaps without duplicating food entries. Meal category selection and estimate tracking (`calorie_logs.serving_size`, `calorie_logs.is_estimate`).
+- **UI & Health Refinements:** Added subtle screen graphics (`ScreenBackdrop.tsx`), optional recovery check-in prompts (`RecoveryCheckIn.tsx`, `readiness.js`), and health sync details with granular status indicators (`HealthSyncStatusDetails.tsx`, `healthSyncStatus.ts`).
+- **Database Migrations:** Applied and verified `021_starter_workout_plan` (`user_splits.training_plan` JSONB) and `022_training_first_setup` (`users.onboarding_completed_at` timestamptz and `users.training_preferences` JSONB) on live Supabase.
+- **Verification:** 43 mobile suites (338 tests) and 51 backend suites (479 tests) passed; responsive checks at 390px and 320px verified.
+- **Release & Distribution:** Backend deployed to Render at commit `c5f44fa`. iOS production build 24 (`71d2267d-c326-4d9e-88a5-534784a993da`) uploaded, attached to App Store Connect version 1.4.0, and submitted for review. Android production build 27 (`913148e0-5a10-43e8-b5b6-09600d168220`) compiled and submitted to Google Play Store production track.
+

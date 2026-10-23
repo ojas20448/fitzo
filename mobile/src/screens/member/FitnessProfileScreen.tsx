@@ -408,7 +408,7 @@ function ProfileEditor() {
                             <View style={styles.macroPreviewDivider} />
                             <View style={styles.macroPreviewItem}>
                                 <Text style={[styles.macroPreviewLabel, { color: colors.macro.protein }]}>Protein</Text>
-                                <Text style={styles.macroPreviewValue}>
+                                <Text style={[styles.macroPreviewValue, { color: colors.macro.protein }]}>
                                     {liveMacros.protein} <Text style={styles.macroPreviewUnit}>g</Text>
                                 </Text>
                                 <Text style={styles.macroPreviewSub}>
@@ -418,7 +418,7 @@ function ProfileEditor() {
                             <View style={styles.macroPreviewDivider} />
                             <View style={styles.macroPreviewItem}>
                                 <Text style={[styles.macroPreviewLabel, { color: colors.macro.carbs }]}>Carbs</Text>
-                                <Text style={styles.macroPreviewValue}>
+                                <Text style={[styles.macroPreviewValue, { color: colors.macro.carbs }]}>
                                     {liveMacros.carbs} <Text style={styles.macroPreviewUnit}>g</Text>
                                 </Text>
                                 <Text style={styles.macroPreviewSub}>
@@ -428,7 +428,7 @@ function ProfileEditor() {
                             <View style={styles.macroPreviewDivider} />
                             <View style={styles.macroPreviewItem}>
                                 <Text style={[styles.macroPreviewLabel, { color: colors.macro.fat }]}>Fat</Text>
-                                <Text style={styles.macroPreviewValue}>
+                                <Text style={[styles.macroPreviewValue, { color: colors.macro.fat }]}>
                                     {liveMacros.fat} <Text style={styles.macroPreviewUnit}>g</Text>
                                 </Text>
                                 <Text style={styles.macroPreviewSub}>

@@ -1,11 +1,11 @@
 import React from 'react';
 import { NutritionProvider, useNutrition } from '../NutritionContext';
-import { nutritionAPI, workoutsAPI } from '../../services/api';
+import { nutritionAPI, workoutsAPI, getAuthToken } from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 const { create, act } = jest.requireActual('react-test-renderer');
 jest.mock('../AuthContext', () => ({ useAuth: () => ({ user: { id: 'account-a' } }) }));
 jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
-jest.mock('../../services/api', () => ({ nutritionAPI: { getToday: jest.fn(), logFood: jest.fn() }, workoutsAPI: { getMySplits: jest.fn() } }));
+jest.mock('../../services/api', () => ({ getAuthToken: jest.fn(async () => 'token-a'), nutritionAPI: { getToday: jest.fn(), logFood: jest.fn() }, workoutsAPI: { getMySplits: jest.fn() } }));
 let value: ReturnType<typeof useNutrition>;
 let screen: any;
 const Probe = () => { value = useNutrition(); return null; };
@@ -38,6 +38,18 @@ it('failed food saves restore totals and preserve the original error', async () 
     (nutritionAPI.logFood as jest.Mock).mockRejectedValueOnce(failure);
     let caught: unknown; await act(async () => { try { await value.logFoodOptimistic(food); } catch (error) { caught = error; } });
     expect(caught).toBe(failure); expect(value.todayMacros).toEqual(logged); expect(value.calorieGoal).toBeNull();
+});
+it('pins the food write to the session that started it', async () => {
+    await mount(); await act(async () => { await value.logFoodOptimistic(food); });
+    expect(nutritionAPI.logFood).toHaveBeenCalledWith(food, 'token-a');
+});
+it('a pending token lookup cannot write after its account provider unmounts', async () => {
+    await mount(); let resolve!: (token: string) => void;
+    (getAuthToken as jest.Mock).mockReturnValueOnce(new Promise(r => { resolve = r; }));
+    const save = value.logFoodOptimistic(food).catch(error => error);
+    await act(async () => screen.unmount());
+    let result: any; await act(async () => { resolve('new-account-token'); result = await save; });
+    expect(result.message).toContain('session changed'); expect(nutritionAPI.logFood).not.toHaveBeenCalled();
 });
 it('a delayed split read cannot overwrite a newly selected weekly workout goal', async () => {
     let resolve: any; (workoutsAPI.getMySplits as jest.Mock).mockReturnValueOnce(new Promise(r => { resolve = r; }));

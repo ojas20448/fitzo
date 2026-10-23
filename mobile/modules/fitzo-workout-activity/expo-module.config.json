@@ -1,0 +1,5 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": { "modules": ["FitzoWorkoutActivityModule"] },
+  "android": { "modules": ["expo.modules.fitzoworkoutactivity.FitzoWorkoutActivityModule"] }
+}

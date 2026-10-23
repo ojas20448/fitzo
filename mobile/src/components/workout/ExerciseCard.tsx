@@ -1,16 +1,31 @@
-import React, { useCallback } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
-    Image,
-    Pressable,
+    TextInput,
+    Platform,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import GlassCard from '../GlassCard';
+import ExerciseDetailsModal from '../ExerciseDetailsModal';
+import ExercisePreview from '../ExercisePreview';
 import { ExerciseSet, UserExercise } from './types';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
+import { useExerciseHistory } from '../../hooks/useExerciseHistory';
+import { exerciseHistoryDate, latestExerciseSession } from '../../utils/exerciseHistory';
+import { workoutNumber } from '../../utils/workoutNumber';
+
+type EntryField = 'weight' | 'reps' | 'rir';
+function entryError(set: ExerciseSet, field: EntryField) {
+    const raw = field === 'weight' ? set.weight_kg : field === 'reps' ? set.reps : set.rir;
+    if (field === 'rir' && (raw == null || String(raw).trim() === '')) return '';
+    const value = workoutNumber(raw);
+    if (field === 'weight') return Number.isFinite(value) && value >= 0 ? '' : 'Enter a weight. Use 0 kg for bodyweight.';
+    if (field === 'reps') return Number.isInteger(value) && value > 0 ? '' : 'Enter a whole number of reps greater than 0.';
+    return Number.isInteger(value) && value >= 0 && value <= 5 ? '' : 'RIR must be 0–5, or left empty.';
+}
 
 interface ExerciseCardProps {
     exercise: UserExercise;
@@ -37,91 +52,73 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
         onToggleUnilateral,
         onOpenPicker,
     }) => {
-        const handleToggleComplete = useCallback(
-            (setIndex: number, currentVal: boolean) => {
+        const [showDetails, setShowDetails] = useState(false);
+        const [editingSets, setEditingSets] = useState(false);
+        const inputs = useRef<Record<string, TextInput | null>>({});
+        const [focused, setFocused] = useState('');
+        const [validated, setValidated] = useState<Record<string, boolean>>({});
+        const history = useExerciseHistory(exercise.name);
+        const lastSession = latestExerciseSession(history.sessions);
+        const handleToggleComplete = (setIndex: number, currentVal: boolean) => {
+                const set = exercise.sets[setIndex];
+                if (!currentVal) {
+                    const fields: EntryField[] = showRir ? ['weight', 'reps', 'rir'] : ['weight', 'reps'];
+                    const invalid = fields.find(field => entryError(set, field));
+                    if (invalid) {
+                        setValidated(current => ({ ...current, [`${set.id}:${invalid}`]: true }));
+                        inputs.current[`${set.id}:${invalid}`]?.focus();
+                        return;
+                    }
+                }
                 onUpdateSet(exerciseIndex, setIndex, 'completed', !currentVal);
-            },
-            [exerciseIndex, onUpdateSet],
-        );
+        };
+        const blur = (id: string, field: EntryField) => { setFocused(''); setValidated(current => ({ ...current, [`${id}:${field}`]: true })); };
+        const focus = (id: string, field: EntryField) => {
+            const key = `${id}:${field}`;
+            setFocused(key);
+            // Web focus can leave the bottom of a field clipped by the scroll viewport.
+            if (Platform.OS === 'web') requestAnimationFrame(() => {
+                (inputs.current[key] as unknown as { scrollIntoView?: (options: object) => void })?.scrollIntoView?.({ block: 'center', inline: 'nearest' });
+            });
+        };
 
         return (
             <GlassCard style={styles.exerciseCard}>
                 {/* Exercise Header */}
                 <View style={styles.cardHeader}>
-                    <View style={styles.exerciseHeaderInfo}>
-                        {exercise.gifUrl ? (
-                            <Image
-                                source={{ uri: exercise.gifUrl }}
-                                style={styles.exerciseThumb}
-                                resizeMode="cover"
-                            />
-                        ) : (
-                            <View style={styles.exerciseThumbPlaceholder}>
-                                <MaterialIcons name="fitness-center" size={18} color={colors.text.muted} />
-                            </View>
-                        )}
+                    <TouchableOpacity style={styles.exerciseHeaderInfo} onPress={() => setShowDetails(true)} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={`View ${exercise.name} demo and guide`}>
+                        <ExercisePreview exercise={exercise} style={styles.exerciseThumb} />
                         <View style={{ flex: 1 }}>
                             <Text style={styles.exerciseName} numberOfLines={2}>
                                 {exercise.name}
                             </Text>
-                            {exercise.target ? (
-                                <View style={styles.targetTag}>
-                                    <Text style={styles.targetTagText}>{exercise.target}</Text>
-                                </View>
-                            ) : null}
-                            <TouchableOpacity
-                                onPress={() => onToggleUnilateral(exerciseIndex)}
-                                hitSlop={8}
-                                style={[
-                                    styles.unilateralPill,
-                                    exercise.is_unilateral && styles.unilateralPillActive,
-                                ]}
-                                accessibilityRole="button"
-                                accessibilityState={{ selected: !!exercise.is_unilateral }}
-                                accessibilityLabel={
-                                    exercise.is_unilateral
-                                        ? 'Logged one side at a time. Tap to switch to both sides.'
-                                        : 'Logged both sides. Tap if you do one side at a time.'
-                                }
-                            >
-                                <Text
-                                    style={[
-                                        styles.unilateralPillText,
-                                        exercise.is_unilateral && styles.unilateralPillTextActive,
-                                    ]}
-                                >
-                                    1 SIDE
-                                </Text>
-                            </TouchableOpacity>
+                            <Text style={styles.guideLink}>Guide & history ›</Text>
                         </View>
-                    </View>
+                    </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => onRemoveExercise(exerciseIndex)}
-                        hitSlop={12}
                         style={styles.removeBtn}
                         accessibilityRole="button"
                         accessibilityLabel={`Remove ${exercise.name}`}
                     >
-                        <MaterialIcons name="delete-outline" size={18} color={colors.text.subtle} />
+                        <Ionicons name="trash-outline" size={19} color={colors.text.secondary} />
                     </TouchableOpacity>
                 </View>
 
-                {!!exercise.instructions && <Text style={styles.instructions}>{exercise.instructions}</Text>}
+                {showDetails && <ExerciseDetailsModal exercise={exercise} onClose={() => setShowDetails(false)} onToggleUnilateral={() => onToggleUnilateral(exerciseIndex)} />}
                 {/* Table Header */}
                 <View style={styles.tableHeader}>
-                    <Text style={[styles.colLabel, { width: 32 }]}>SET</Text>
-                    <Text style={[styles.colLabel, { flex: 1, textAlign: 'center' }]}>KG</Text>
-                    <Text style={[styles.colLabel, { flex: 1, textAlign: 'center' }]}>REPS</Text>
+                    <Text style={[styles.colLabel, { width: 44 }]}>SET</Text>
+                    <Text style={[styles.colLabel, { flex: 1, textAlign: 'center' }]}>{exercise.is_unilateral ? 'KG / SIDE' : 'KG'}</Text>
+                    <Text style={[styles.colLabel, { flex: 1, textAlign: 'center' }]}>{exercise.is_unilateral ? 'REPS / SIDE' : 'REPS'}</Text>
                     {showRir && <Text style={[styles.colLabel, { width: 44 }]}>RIR</Text>}
-                    <View style={{ width: 44 }} />
+                    <Text style={[styles.colLabel, { width: 44, textAlign: 'center', letterSpacing: editingSets ? 0 : 1.5 }]}>{editingSets ? 'REMOVE' : 'DONE'}</Text>
                 </View>
 
                 {/* Set rows */}
                 {exercise.sets.map((set, setIndex) => (
-                    <Pressable
-                        key={set.id}
-                        onLongPress={() => onRemoveSet(exerciseIndex, setIndex)}
-                        delayLongPress={600}
+                    <View key={set.id}>
+                    <View
                         style={[
                             styles.setRow,
                             set.completed && styles.setRowCompleted,
@@ -129,65 +126,58 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                         ]}
                     >
                         {/* Set number */}
-                        <View style={{ width: 32, alignItems: 'center' }}>
+                        <TouchableOpacity style={{ width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }} onPress={() => onOpenPicker(exerciseIndex, setIndex, 'weight')} accessibilityRole="button" accessibilityLabel={`Edit ${exercise.name} set ${setIndex + 1}`}>
                             <View style={styles.setBadge}>
                                 <Text style={styles.setNumber}>{setIndex + 1}</Text>
                             </View>
-                        </View>
+                        </TouchableOpacity>
 
                         {/* Weight cell */}
-                        <TouchableOpacity
-                            style={styles.valueCell}
-                            onPress={() => onOpenPicker(exerciseIndex, setIndex, 'weight')}
-                            activeOpacity={0.6}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Weight for ${exercise.name}, set ${setIndex + 1}: ${set.weight_kg === '' || set.weight_kg == null ? 'not entered' : `${set.weight_kg} kilograms`}`}
-                        >
-                            <Text style={[styles.valueCellText, (set.weight_kg === '' || set.weight_kg == null) && styles.valueCellPlaceholder]}>
-                                {set.weight_kg === '' || set.weight_kg == null ? '-' : `${set.weight_kg}`}
-                            </Text>
-                            {set.previous && (
-                                <Text style={styles.previousHint}>{set.previous}</Text>
-                            )}
-                        </TouchableOpacity>
+                        <TextInput ref={node => { inputs.current[`${set.id}:weight`] = node; }}
+                            style={[styles.valueCell, styles.inlineInput, focused === `${set.id}:weight` && styles.inputFocused, validated[`${set.id}:weight`] && !!entryError(set, 'weight') && styles.inputError]}
+                            value={set.weight_kg == null ? '' : String(set.weight_kg)}
+                            onChangeText={value => onUpdateSet(exerciseIndex, setIndex, 'weight_kg', value.replace(',', '.'))}
+                            keyboardType="decimal-pad" selectTextOnFocus returnKeyType="next" submitBehavior="submit"
+                            placeholder="—" placeholderTextColor={colors.text.subtle}
+                            onFocus={() => focus(set.id, 'weight')} onBlur={() => blur(set.id, 'weight')}
+                            onSubmitEditing={() => inputs.current[`${set.id}:reps`]?.focus()}
+                            accessibilityLabel={`Weight for ${exercise.name}, set ${setIndex + 1}${exercise.is_unilateral ? ' per side' : ''}`} />
 
                         {/* Reps cell */}
-                        <TouchableOpacity
-                            style={styles.valueCell}
-                            onPress={() => onOpenPicker(exerciseIndex, setIndex, 'reps')}
-                            activeOpacity={0.6}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Reps for ${exercise.name}, set ${setIndex + 1}: ${set.reps || 'not entered'}`}
-                        >
-                            <Text style={[styles.valueCellText, !set.reps && styles.valueCellPlaceholder]}>
-                                {set.reps ? `${set.reps}` : '-'}
-                            </Text>
-                        </TouchableOpacity>
+                        <TextInput ref={node => { inputs.current[`${set.id}:reps`] = node; }}
+                            style={[styles.valueCell, styles.inlineInput, focused === `${set.id}:reps` && styles.inputFocused, validated[`${set.id}:reps`] && !!entryError(set, 'reps') && styles.inputError]}
+                            value={set.reps == null ? '' : String(set.reps)}
+                            onChangeText={value => onUpdateSet(exerciseIndex, setIndex, 'reps', value)}
+                            keyboardType="number-pad" selectTextOnFocus returnKeyType={showRir || setIndex < exercise.sets.length - 1 ? 'next' : 'done'}
+                            submitBehavior={showRir || setIndex < exercise.sets.length - 1 ? 'submit' : 'blurAndSubmit'}
+                            placeholder="—" placeholderTextColor={colors.text.subtle}
+                            onFocus={() => focus(set.id, 'reps')} onBlur={() => blur(set.id, 'reps')}
+                            onSubmitEditing={() => { if (showRir) inputs.current[`${set.id}:rir`]?.focus(); else if (exercise.sets[setIndex + 1]) inputs.current[`${exercise.sets[setIndex + 1].id}:weight`]?.focus(); }}
+                            accessibilityLabel={`Reps for ${exercise.name}, set ${setIndex + 1}${exercise.is_unilateral ? ' per side' : ''}`} />
 
                         {/* RIR cell */}
                         {showRir && (
-                            <TouchableOpacity
-                                style={[styles.valueCell, { width: 44 }]}
-                                onPress={() => onOpenPicker(exerciseIndex, setIndex, 'rir')}
-                                accessibilityRole="button"
-                                accessibilityLabel={`Reps in reserve for ${exercise.name}, set ${setIndex + 1}`}
-                            >
-                                <Text
-                                    style={[
-                                        styles.valueCellText,
-                                        (set.rir === undefined || set.rir === '') && styles.valueCellPlaceholder,
-                                    ]}
-                                >
-                                    {set.rir === undefined || set.rir === '' ? '-' : `${set.rir}`}
-                                </Text>
-                            </TouchableOpacity>
+                            <TextInput ref={node => { inputs.current[`${set.id}:rir`] = node; }}
+                                style={[styles.valueCell, styles.inlineInput, focused === `${set.id}:rir` && styles.inputFocused, validated[`${set.id}:rir`] && !!entryError(set, 'rir') && styles.inputError]}
+                                value={set.rir == null ? '' : String(set.rir)} onChangeText={value => onUpdateSet(exerciseIndex, setIndex, 'rir', value)}
+                                keyboardType="number-pad" selectTextOnFocus placeholder="—" placeholderTextColor={colors.text.subtle}
+                                accessibilityLabel={`Reps in reserve for ${exercise.name}, set ${setIndex + 1}`} accessibilityHint="Optional. Enter 0 to 5 reps left in reserve. Zero means none left."
+                                returnKeyType={setIndex < exercise.sets.length - 1 ? 'next' : 'done'} submitBehavior={setIndex < exercise.sets.length - 1 ? 'submit' : 'blurAndSubmit'}
+                                onFocus={() => focus(set.id, 'rir')} onBlur={() => blur(set.id, 'rir')}
+                                onSubmitEditing={() => { if (exercise.sets[setIndex + 1]) inputs.current[`${exercise.sets[setIndex + 1].id}:weight`]?.focus(); }} />
                         )}
 
                         {/* Checkmark */}
-                        <TouchableOpacity
-                            style={{ width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+                        {editingSets ? <TouchableOpacity
+                            style={styles.setAction}
+                            onPress={() => onRemoveSet(exerciseIndex, setIndex)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Remove ${exercise.name} set ${setIndex + 1}`}
+                        >
+                            <Ionicons name="trash-outline" size={20} color={colors.text.secondary} />
+                        </TouchableOpacity> : <TouchableOpacity
+                            style={styles.setAction}
                             onPress={() => handleToggleComplete(setIndex, set.completed)}
-                            hitSlop={8}
                             accessibilityRole="checkbox"
                             accessibilityLabel={`Complete ${exercise.name} set ${setIndex + 1}`}
                             accessibilityState={{ checked: set.completed }}
@@ -198,11 +188,24 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                                     <MaterialIcons name="check" size={14} color={colors.background} />
                                 )}
                             </View>
-                        </TouchableOpacity>
-                    </Pressable>
+                        </TouchableOpacity>}
+                    </View>
+                    {(['weight', 'reps', ...(showRir ? ['rir'] : [])] as EntryField[]).map(field => validated[`${set.id}:${field}`] && entryError(set, field)
+                        ? <Text key={field} style={styles.entryError} accessibilityRole="alert" accessibilityLiveRegion="polite">{entryError(set, field)}</Text> : null)}
+                    {(lastSession?.sets[setIndex] || set.previous) && <View style={styles.lastSession}>
+                        <Text style={styles.lastText}>{lastSession?.sets[setIndex]
+                            ? `Last session: ${lastSession.sets[setIndex].weight_kg} kg × ${lastSession.sets[setIndex].reps}${lastSession.isUnilateral ? ' / side' : ''} · ${exerciseHistoryDate(lastSession.date)}`
+                            : `Last session: ${set.previous}`}</Text>
+                        {lastSession?.sets[setIndex] && <TouchableOpacity style={styles.useLast} disabled={set.completed || lastSession.isUnilateral !== !!exercise.is_unilateral} accessibilityRole="button" accessibilityLabel={`Use last session for ${exercise.name} set ${setIndex + 1}`} accessibilityState={{ disabled: set.completed || lastSession.isUnilateral !== !!exercise.is_unilateral }} onPress={() => {
+                            onUpdateSet(exerciseIndex, setIndex, 'weight_kg', lastSession.sets[setIndex].weight_kg);
+                            onUpdateSet(exerciseIndex, setIndex, 'reps', lastSession.sets[setIndex].reps);
+                        }}><Text style={[styles.useText, (set.completed || lastSession.isUnilateral !== !!exercise.is_unilateral) && { opacity: 0.35 }]}>{lastSession.isUnilateral !== !!exercise.is_unilateral ? 'Different mode' : 'Use'}</Text></TouchableOpacity>}
+                    </View>}
+                    </View>
                 ))}
 
                 {/* Add Set */}
+                <View style={styles.setTools}>
                 <TouchableOpacity
                     style={styles.addSetRow}
                     onPress={() => onAddSet(exerciseIndex)}
@@ -213,12 +216,26 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                     <MaterialIcons name="add" size={16} color={colors.text.muted} />
                     <Text style={styles.addSetText}>Add Set</Text>
                 </TouchableOpacity>
+                {(exercise.sets.length > 0 || editingSets) && <TouchableOpacity style={styles.addSetRow} onPress={() => setEditingSets(current => !current)} accessibilityRole="button" accessibilityLabel={`${editingSets ? 'Done editing' : 'Edit sets for'} ${exercise.name}`} accessibilityState={{ expanded: editingSets }}>
+                    <Ionicons name={editingSets ? 'checkmark' : 'create-outline'} size={16} color={colors.text.secondary} />
+                    <Text style={styles.addSetText}>{editingSets ? 'Done editing' : 'Edit sets'}</Text>
+                </TouchableOpacity>}
+                </View>
             </GlassCard>
         );
     },
 );
 
 const styles = StyleSheet.create({
+    inlineInput: { minWidth: 0, flexShrink: 1, color: colors.text.primary, fontFamily: typography.fontFamily.semiBold, fontSize: 16, textAlign: 'center', paddingHorizontal: spacing.xs, borderWidth: 1, borderColor: 'transparent' },
+    inputFocused: { borderColor: colors.text.secondary },
+    inputError: { borderColor: colors.error },
+    entryError: { color: colors.error, fontFamily: typography.fontFamily.regular, fontSize: 11, lineHeight: 17, paddingHorizontal: spacing.lg, paddingVertical: spacing.xs },
+    guideLink: { color: colors.text.secondary, fontFamily: typography.fontFamily.regular, fontSize: 11, marginTop: spacing.xs },
+    lastSession: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, gap: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.glass.border },
+    lastText: { flex: 1, fontFamily: typography.fontFamily.regular, fontSize: 10, lineHeight: 16, paddingVertical: spacing.sm, color: colors.text.muted },
+    useLast: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+    useText: { color: colors.text.primary, fontFamily: typography.fontFamily.medium, fontSize: 12 },
     exerciseCard: {
         padding: 0,
         marginBottom: spacing.md,
@@ -376,6 +393,7 @@ const styles = StyleSheet.create({
         borderColor: colors.primary,
     },
     addSetRow: {
+        flex: 1,
         minHeight: 44,
         flexDirection: 'row',
         alignItems: 'center',
@@ -383,6 +401,8 @@ const styles = StyleSheet.create({
         gap: spacing.xs,
         paddingVertical: spacing.md,
     },
+    setTools: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.glass.border },
+    setAction: { width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
     addSetText: {
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.medium,

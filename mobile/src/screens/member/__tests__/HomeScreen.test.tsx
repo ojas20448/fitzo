@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import HomeScreen from '../HomeScreen';
 import GlassCard from '../../../components/GlassCard';
 import { intentAPI } from '../../../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { saveActiveWorkoutDraft } from '../../../utils/activeWorkoutDraft';
 let mockCalorieGoal: number | null = 2000;
 let mockMacroTargets: { protein: number; carbs: number; fat: number } | null = { protein: 100, carbs: 250, fat: 60 };
 const { create, act } = jest.requireActual('react-test-renderer');
@@ -32,6 +34,43 @@ jest.mock('../../../services/api', () => ({
     aiAPI: {}, checkinAPI: {}, gymAPI: {}, caloriesAPI: {},
     readinessAPI: { getToday: async () => ({ checked_in: false, readiness: null }) },
 }));
+beforeEach(async () => { await AsyncStorage.clear(); });
+
+it('offers the unfinished workout on Home after an app restart', async () => {
+    await saveActiveWorkoutDraft('me', {
+        version: 1, intent: { session_label: 'Pull', training_pattern: 'ppl' }, startedAt: new Date().toISOString(),
+        exercises: [{ id: 'row', name: 'Row', sets: [{ id: 's', reps: 10, weight_kg: 60, completed: true }] }],
+        visibility: 'private', restDuration: 90,
+    });
+    let screen: any;
+    await act(async () => { screen = create(<HomeScreen />); });
+    try {
+        const resume = screen.root.findAllByProps({ accessibilityLabel: 'Resume workout' }).find((node: any) => typeof node.props.onPress === 'function');
+        expect(resume).toBeDefined();
+        await act(async () => resume.props.onPress());
+        expect(router.push).toHaveBeenLastCalledWith('/log/workout');
+    } finally { await act(async () => screen.unmount()); }
+});
+it('focuses the Workout destination on training while retaining the existing presentation', async () => {
+    let screen: any;
+    await act(async () => { screen = create(<HomeScreen trainingOnly />); });
+    try {
+        const labels = screen.root.findAllByType(Text).map((node: any) => node.props.children).flat().join(' ');
+        expect(labels).toContain('Workout'); expect(labels).not.toContain('Food logged today');
+        expect(screen.root.findAllByProps({ accessibilityLabel: 'Explore exercises' }).length).toBeGreaterThan(0);
+        expect(screen.root.findAllByProps({ accessibilityLabel: 'Workout history' }).length).toBeGreaterThan(0);
+    } finally { await act(async () => screen.unmount()); }
+});
+it('starts an empty workout without requiring a split when no suggestion exists', async () => {
+    const suggestion = jest.spyOn(intentAPI, 'getSuggestion').mockResolvedValue({ suggestion: null, reason: null } as any);
+    let screen: any;
+    await act(async () => { screen = create(<HomeScreen trainingOnly />); });
+    try {
+        const start = screen.root.findAllByProps({ accessibilityLabel: 'Start training' }).find((node: any) => typeof node.props.onPress === 'function');
+        await act(async () => start.props.onPress());
+        expect(router.push).toHaveBeenLastCalledWith({ pathname: '/log/workout', params: { start: 'empty' } });
+    } finally { suggestion.mockRestore(); await act(async () => screen.unmount()); }
+});
 it('insets the gym occupancy content from the card edge, including the percentage and live dot', async () => {
     let screen: any;
     await act(async () => { screen = create(<HomeScreen />); });

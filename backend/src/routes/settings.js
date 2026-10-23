@@ -45,24 +45,50 @@ router.get('/gym', asyncHandler(async (req, res) => {
 
 /**
  * POST /api/settings/gym
- * Join (or switch) gym using its access code
- * Body: { gym_code: string }
+ * Join (or switch) gym using its access code or scanned front-desk QR
+ * Body: { gym_code: string } or { gym_qr: string }
  */
 router.post('/gym', asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const { gym_code } = req.body;
+    const { gym_code, gym_qr } = req.body;
+    let gymCode = gym_code;
+    let gymId;
 
-    if (!gym_code || typeof gym_code !== 'string' || !gym_code.trim()) {
+    if (gym_qr !== undefined) {
+        const invalidQr = () => new ValidationError('Scan a Fitzo gym QR code or enter your gym access code instead.');
+        if (typeof gym_qr !== 'string' || !gym_qr.trim() || gym_qr.length > 1024) throw invalidQr();
+        let payload = gym_qr.trim();
+        if (/^[{[\"]/.test(payload)) {
+            try { payload = JSON.parse(payload); } catch { throw invalidQr(); }
+        }
+        const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (typeof payload === 'string') {
+            if (uuid.test(payload)) gymId = payload;
+            else gymCode = payload;
+        } else if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+            gymId = payload.gym_id;
+            gymCode = payload.gym_code;
+        } else throw invalidQr();
+
+        if (gymId !== undefined) {
+            if (typeof gymId !== 'string' || !uuid.test(gymId)) throw invalidQr();
+            gymId = gymId.toLowerCase();
+        } else if (typeof gymCode !== 'string' || !/^[a-z0-9_-]{1,100}$/i.test(gymCode.trim())) throw invalidQr();
+    }
+
+    if (!gymId && (typeof gymCode !== 'string' || !gymCode.trim())) {
         throw new ValidationError('Please enter your gym access code');
     }
 
     const gymResult = await query(
-        'SELECT id, name, capacity FROM gyms WHERE qr_code = $1',
-        [gym_code.trim().toUpperCase()]
+        gymId ? 'SELECT id, name, capacity FROM gyms WHERE id = $1' : 'SELECT id, name, capacity FROM gyms WHERE qr_code = $1',
+        [gymId || gymCode.trim().toUpperCase()]
     );
 
     if (gymResult.rows.length === 0) {
-        throw new NotFoundError("That access code doesn't match any gym. Ask your gym's front desk!");
+        throw new NotFoundError(gym_qr !== undefined
+            ? "That QR code doesn't match any gym. Ask your gym's front desk!"
+            : "That access code doesn't match any gym. Ask your gym's front desk!");
     }
 
     const gym = gymResult.rows[0];

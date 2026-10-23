@@ -6,7 +6,6 @@ import {
     TouchableOpacity,
     Animated,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 
@@ -17,7 +16,6 @@ interface RestTimerPillProps {
 }
 
 const RestTimerPill: React.FC<RestTimerPillProps> = ({ seconds, onDismiss, onAddSeconds }) => {
-    const insets = useSafeAreaInsets();
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -36,7 +34,7 @@ const RestTimerPill: React.FC<RestTimerPillProps> = ({ seconds, onDismiss, onAdd
         <Animated.View
             style={[
                 styles.pill,
-                { bottom: insets.bottom + 80, opacity: fadeAnim },
+                { opacity: fadeAnim },
             ]}
         >
             {/* Timer Display block */}
@@ -49,11 +47,11 @@ const RestTimerPill: React.FC<RestTimerPillProps> = ({ seconds, onDismiss, onAdd
 
             {/* Actions block */}
             <View style={styles.actionBlock}>
-                <TouchableOpacity onPress={() => onAddSeconds(30)} style={styles.actionBtn}>
+                <TouchableOpacity onPress={() => onAddSeconds(30)} style={styles.actionBtn} accessibilityRole="button" accessibilityLabel="Add 30 seconds of rest">
                     <Text style={styles.actionBtnText}>+30S</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={onDismiss} style={styles.skipBtn} accessibilityLabel="Skip rest">
+                <TouchableOpacity onPress={onDismiss} style={styles.skipBtn} accessibilityRole="button" accessibilityLabel="Skip rest">
                     <MaterialIcons name="skip-next" size={18} color={colors.text.muted} />
                 </TouchableOpacity>
             </View>
@@ -63,7 +61,6 @@ const RestTimerPill: React.FC<RestTimerPillProps> = ({ seconds, onDismiss, onAdd
 
 const styles = StyleSheet.create({
     pill: {
-        position: 'absolute',
         alignSelf: 'center',
         flexDirection: 'row',
         alignItems: 'center',
@@ -76,6 +73,7 @@ const styles = StyleSheet.create({
         ...shadows.glass,
         zIndex: 100,
         gap: spacing.md,
+        marginBottom: spacing.md,
     },
     timerBlock: {
         flexDirection: 'row',
@@ -101,6 +99,7 @@ const styles = StyleSheet.create({
         gap: spacing.md,
     },
     actionBtn: {
+        minWidth: 64, minHeight: 44, alignItems: 'center', justifyContent: 'center',
         backgroundColor: 'rgba(255, 255, 255, 0.08)',
         borderRadius: borderRadius.sm,
         paddingHorizontal: spacing.sm,
@@ -115,6 +114,7 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5,
     },
     skipBtn: {
+        minWidth: 44, minHeight: 44,
         padding: spacing.xs,
         justifyContent: 'center',
         alignItems: 'center',

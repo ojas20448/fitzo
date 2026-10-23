@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { useNutrition } from '../context/NutritionContext';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
 import GlassCard from './GlassCard';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 
 interface WeeklyProgressProps {
     history: string[]; // ['YYYY-MM-DD', ...]
@@ -14,45 +14,15 @@ const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 /** Pick a short motivational line based on how the week is going. */
 function getMotivation(done: number, goal: number, isRestDay: boolean, dayOfWeek: number): string {
-    if (done >= goal) return '🎯 Weekly goal crushed!';
+    if (done >= goal) return 'Weekly goal reached.';
     if (done === 0 && dayOfWeek <= 2) return 'Fresh week — let\'s set the tone.';
     if (done === 0 && dayOfWeek > 2) return 'Still time to start strong.';
     if (isRestDay) return 'Rest day. Recovery is growth.';
     const remaining = goal - done;
     if (remaining === 1) return 'One more session to hit your goal!';
-    if (done >= goal - 1) return 'Almost there — finish strong 💪';
+    if (done >= goal - 1) return 'Almost there. Finish strong.';
     return `${remaining} sessions to go this week.`;
 }
-
-/** Pulsing ring for "today" circle */
-const PulseRing: React.FC<{ size: number }> = ({ size }) => {
-    const anim = useRef(new Animated.Value(0)).current;
-    useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(anim, { toValue: 1, duration: 1800, easing: Easing.out(Easing.ease), useNativeDriver: true }),
-                Animated.timing(anim, { toValue: 0, duration: 0, useNativeDriver: true }),
-            ])
-        ).start();
-    }, []);
-    const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.8] });
-    const opacity = anim.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0.5, 0.2, 0] });
-    return (
-        <Animated.View
-            pointerEvents="none"
-            style={{
-                position: 'absolute',
-                width: size,
-                height: size,
-                borderRadius: size / 2,
-                borderWidth: 1.5,
-                borderColor: colors.primary,
-                transform: [{ scale }],
-                opacity,
-            }}
-        />
-    );
-};
 
 const WeeklyProgress: React.FC<WeeklyProgressProps> = ({ history }) => {
     const today = new Date();
@@ -118,7 +88,7 @@ const WeeklyProgress: React.FC<WeeklyProgressProps> = ({ history }) => {
     const motivation = getMotivation(workoutsThisWeek, weeklyWorkoutGoal, todayHasWorkout, currentDay);
 
     return (
-        <GlassCard style={{ padding: spacing.lg }}>
+        <GlassCard style={{ padding: spacing.xl }}>
             {/* Header row */}
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
@@ -129,7 +99,7 @@ const WeeklyProgress: React.FC<WeeklyProgressProps> = ({ history }) => {
                 </View>
                 {goalHit ? (
                     <View style={styles.badge}>
-                        <MaterialIcons name="emoji-events" size={12} color="#4ECDC4" />
+                        <Ionicons name="checkmark-circle-outline" size={16} color={colors.text.primary} />
                         <Text style={styles.badgeText}>GOAL HIT!</Text>
                     </View>
                 ) : workoutsThisWeek > 0 ? (
@@ -146,7 +116,7 @@ const WeeklyProgress: React.FC<WeeklyProgressProps> = ({ history }) => {
                         styles.progressBarFill,
                         {
                             width: barWidth,
-                            backgroundColor: goalHit ? '#4ECDC4' : colors.primary,
+                            backgroundColor: colors.primary,
                         },
                     ]}
                 />
@@ -159,9 +129,8 @@ const WeeklyProgress: React.FC<WeeklyProgressProps> = ({ history }) => {
                     const isToday = date.toDateString() === today.toDateString();
                     const future = isFutureDay(date);
                     return (
-                        <View key={index} style={styles.dayCol}>
+                        <View key={index} style={styles.dayCol} accessible accessibilityLabel={`${date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}${isToday ? ', today' : ''}, ${active ? 'workout logged' : 'no workout logged'}`}>
                             <View style={styles.circleContainer}>
-                                {isToday && !active && <PulseRing size={36} />}
                                 <View
                                     style={[
                                         styles.dayCircle,
@@ -171,7 +140,7 @@ const WeeklyProgress: React.FC<WeeklyProgressProps> = ({ history }) => {
                                     ]}
                                 >
                                     {active ? (
-                                        <MaterialIcons name="check" size={14} color={colors.text.dark} />
+                                        <Ionicons name="checkmark-outline" size={16} color={colors.text.dark} />
                                     ) : isToday ? (
                                         <View style={styles.todayDot} />
                                     ) : null}
@@ -196,12 +165,12 @@ const WeeklyProgress: React.FC<WeeklyProgressProps> = ({ history }) => {
 
             {/* Motivational nudge */}
             <View style={styles.motivationRow}>
-                <MaterialIcons
-                    name={goalHit ? 'celebration' : workoutsThisWeek > 0 ? 'trending-up' : 'flag'}
-                    size={14}
-                    color={goalHit ? '#4ECDC4' : colors.text.muted}
+                <Ionicons
+                    name={goalHit ? 'checkmark-circle-outline' : workoutsThisWeek > 0 ? 'trending-up-outline' : 'flag-outline'}
+                    size={16}
+                    color={colors.text.secondary}
                 />
-                <Text style={[styles.motivationText, goalHit && { color: '#4ECDC4' }]}>
+                <Text style={styles.motivationText}>
                     {motivation}
                 </Text>
             </View>
@@ -214,37 +183,39 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.sm,
+        gap: spacing.md,
+        flexWrap: 'wrap',
+        marginBottom: spacing.lg,
     },
     headerLeft: {
         flex: 1,
     },
     title: {
-        fontSize: typography.sizes.base,
-        fontFamily: typography.fontFamily.bold,
+        fontSize: typography.sizes.lg,
+        fontFamily: typography.fontFamily.medium,
         color: colors.text.primary,
     },
     subtitle: {
-        fontSize: typography.sizes.xs,
+        fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.secondary,
-        marginTop: 2,
+        marginTop: spacing.sm,
     },
     badge: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        backgroundColor: 'rgba(78, 205, 196, 0.15)',
+        backgroundColor: colors.glass.surfaceLight,
         paddingVertical: 4,
         paddingHorizontal: 10,
         borderRadius: borderRadius.full,
         borderWidth: 1,
-        borderColor: 'rgba(78, 205, 196, 0.4)',
+        borderColor: colors.glass.borderLight,
     },
     badgeText: {
         fontSize: 10,
         fontFamily: typography.fontFamily.bold,
-        color: '#4ECDC4',
+        color: colors.text.primary,
     },
     countBadge: {
         backgroundColor: 'rgba(255, 255, 255, 0.08)',
@@ -260,10 +231,10 @@ const styles = StyleSheet.create({
         color: colors.text.secondary,
     },
     progressBarTrack: {
-        height: 3,
+        height: 4,
         backgroundColor: 'rgba(255, 255, 255, 0.06)',
         borderRadius: 2,
-        marginBottom: spacing.lg,
+        marginBottom: spacing['2xl'],
         overflow: 'hidden',
     },
     progressBarFill: {
@@ -275,19 +246,20 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     dayCol: {
+        flex: 1,
         alignItems: 'center',
-        gap: 4,
+        gap: spacing.sm,
     },
     circleContainer: {
-        width: 36,
-        height: 36,
+        width: 32,
+        height: 32,
         justifyContent: 'center',
         alignItems: 'center',
     },
     dayCircle: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         backgroundColor: 'rgba(255, 255, 255, 0.04)',
         justifyContent: 'center',
         alignItems: 'center',
@@ -313,7 +285,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary,
     },
     dayLabel: {
-        fontSize: 10,
+        fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
     },
@@ -325,9 +297,9 @@ const styles = StyleSheet.create({
         color: colors.text.secondary,
     },
     dateNum: {
-        fontSize: 9,
+        fontSize: typography.sizes.xs,
         fontFamily: typography.fontFamily.regular,
-        color: 'rgba(255, 255, 255, 0.25)',
+        color: colors.text.muted,
     },
     dateNumToday: {
         color: colors.text.secondary,
@@ -336,14 +308,16 @@ const styles = StyleSheet.create({
     motivationRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
-        marginTop: spacing.md,
-        paddingTop: spacing.sm,
+        gap: spacing.sm,
+        marginTop: spacing.xl,
+        paddingTop: spacing.lg,
         borderTopWidth: StyleSheet.hairlineWidth,
         borderTopColor: 'rgba(255, 255, 255, 0.06)',
     },
     motivationText: {
-        fontSize: typography.sizes.xs,
+        flex: 1,
+        fontSize: typography.sizes.sm,
+        lineHeight: 20,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.muted,
     },

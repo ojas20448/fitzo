@@ -8,24 +8,19 @@ import { colors, typography, spacing, borderRadius } from '../styles/theme';
 interface Props {
     value: string | null;
     onChange: (preset: string | null) => void;
-    /** Falls back to initials when nothing is picked. */
+    /** Used for the accessible label of the default profile picture. */
     name?: string;
     compact?: boolean;
+    disabled?: boolean;
 }
 
 /**
- * Preset avatar chooser, shared by signup and the profile screen.
- *
- * Presets are KEYS, not URLs — the asset is bundled, so choosing one costs no
- * network request and works offline during signup, which matters because
- * signup is the one moment a member may be on gym wifi that barely resolves.
- *
- * Skipping is a first-class outcome. A member with no avatar gets their
- * initials, which is a perfectly good identity; forcing a choice here just adds
- * a step between someone and the app.
+ * Presets are bundled keys, so choosing a picture needs no network request.
+ * The default silhouette remains an explicit choice alongside the presets.
  */
-const AvatarPicker: React.FC<Props> = ({ value, onChange, name, compact }) => {
-    const pick = (preset: string) => {
+const AvatarPicker: React.FC<Props> = ({ value, onChange, name, compact, disabled = false }) => {
+    const pick = (preset: string | null) => {
+        if (disabled) return;
         Haptics.selectionAsync();
         // Tapping the current selection clears it — otherwise the only way out
         // of a choice you have made is to pick a different one you like less.
@@ -35,20 +30,21 @@ const AvatarPicker: React.FC<Props> = ({ value, onChange, name, compact }) => {
     const size = compact ? 56 : 64;
 
     return (
-        <View>
+        <View style={disabled && styles.disabled}>
             <View style={styles.preview}>
                 <Avatar uri={value} name={name} size="xl" />
                 <Text style={styles.previewLabel}>
-                    {value ? AVATAR_LABELS[value] ?? 'Selected' : 'Your initials'}
+                    {value ? AVATAR_LABELS[value] ?? 'Current photo' : 'Default profile picture'}
                 </Text>
             </View>
 
             <View style={styles.grid}>
-                {AVATAR_PRESETS.map((preset) => {
+                {[null, ...AVATAR_PRESETS].map((preset) => {
                     const selected = value === preset;
                     return (
                         <Pressable
-                            key={preset}
+                            key={preset ?? 'default'}
+                            disabled={disabled}
                             onPress={() => pick(preset)}
                             style={[
                                 styles.cell,
@@ -56,8 +52,8 @@ const AvatarPicker: React.FC<Props> = ({ value, onChange, name, compact }) => {
                                 selected && styles.cellSelected,
                             ]}
                             accessibilityRole="button"
-                            accessibilityState={{ selected }}
-                            accessibilityLabel={`${AVATAR_LABELS[preset] ?? preset} avatar${selected ? ', selected' : ''}`}
+                            accessibilityState={{ selected, disabled }}
+                            accessibilityLabel={`${preset ? `${AVATAR_LABELS[preset]} avatar` : 'Use default profile picture'}${selected ? ', selected' : ''}`}
                         >
                             <Avatar uri={preset} size={compact ? 'md' : 'lg'} />
                             {selected && (
@@ -74,6 +70,7 @@ const AvatarPicker: React.FC<Props> = ({ value, onChange, name, compact }) => {
 };
 
 const styles = StyleSheet.create({
+    disabled: { opacity: 0.55 },
     preview: { alignItems: 'center', marginBottom: spacing.lg },
     previewLabel: {
         marginTop: spacing.sm,
@@ -82,6 +79,7 @@ const styles = StyleSheet.create({
         color: colors.text.muted,
     },
     grid: {
+        width: '100%', maxWidth: 256, alignSelf: 'center',
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'center',

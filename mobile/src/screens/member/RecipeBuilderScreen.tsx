@@ -328,15 +328,15 @@ const RecipeBuilderScreen = () => {
                         </View>
                         <View style={styles.macrosGrid}>
                             <View style={styles.macroItem}>
-                                <Text style={styles.macroVal}>{totals.protein}g</Text>
+                                <Text style={[styles.macroVal, { color: colors.macro.protein }]}>{totals.protein}g</Text>
                                 <Text style={styles.macroLbl}>Protein</Text>
                             </View>
                             <View style={styles.macroItem}>
-                                <Text style={styles.macroVal}>{totals.carbs}g</Text>
+                                <Text style={[styles.macroVal, { color: colors.macro.carbs }]}>{totals.carbs}g</Text>
                                 <Text style={styles.macroLbl}>Carbs</Text>
                             </View>
                             <View style={styles.macroItem}>
-                                <Text style={styles.macroVal}>{totals.fat}g</Text>
+                                <Text style={[styles.macroVal, { color: colors.macro.fat }]}>{totals.fat}g</Text>
                                 <Text style={styles.macroLbl}>Fat</Text>
                             </View>
                         </View>

@@ -130,9 +130,34 @@
 
 ---
 
+### 9. Training Preferences Screen (`TrainingPreferencesScreen`)
+**Purpose:** View and adjust training setup (days/week, experience, equipment, focus).
+
+**Elements:**
+- Keep current routine vs. Replace with starter routine choice
+- Days per week slider/selector
+- Equipment selection (Bodyweight, Dumbbells, Full Gym)
+- Target muscle focus & goals
+- Save preferences CTA with preserved historical logs
+
+---
+
+### 10. Practical Meal Builder (`MealBuilderSheet`)
+**Purpose:** Interactive bottom sheet for reviewing and customizing Indian meal ideas.
+
+**Elements:**
+- 8 curated meal templates with vegetarian priority
+- Base portions with gram and count conversions
+- 0.5x half-portion toggle
+- Item swap selectors
+- Category tagging (Breakfast, Lunch, Dinner, Snack)
+- Estimate flag indicators and draft persistence
+
+---
+
 ## Trainer Screens
 
-### 9. Trainer Home (`TrainerHome`)
+### 11. Trainer Home (`TrainerHome`)
 **Purpose:** Quick view of assigned members.
 
 **Elements:**
@@ -147,7 +172,7 @@
 
 ---
 
-### 10. Member Detail (`TrainerMemberDetail`)
+### 12. Member Detail (`TrainerMemberDetail`)
 **Purpose:** Deep view of a specific member.
 
 **Elements:**
@@ -163,7 +188,7 @@
 
 ## Manager Screens
 
-### 11. Manager Dashboard (`ManagerDashboard`)
+### 13. Manager Dashboard (`ManagerDashboard`)
 **Purpose:** Quick gym status overview.
 
 **Elements:**
@@ -177,7 +202,7 @@
 
 ---
 
-### 12. People Management (`ManagePeople`)
+### 14. People Management (`ManagePeople`)
 **Purpose:** Add trainers and members.
 
 **Flow:**
@@ -230,6 +255,12 @@
 ---
 
 ## Screen Complexity Rating
+
+### Member navigation implementation — 22 October 2026
+
+The local member navigator now exposes **Workout · Food · Gym · Friends · Profile**. Workout keeps the index route and reuses the current Home training presentation; Food adds a daily diary with direct entry/portion edits; Gym gathers current membership, check-in, recorded attendance and classes. Friends retains existing features. Profile links to Progress and the canonical `/member/learn` path; legacy Learn, scan and Stats routes remain compatible and hidden from the bar.
+
+The floating capsule uses existing Lexend and Material Icons with a subtle inset selection. Existing content cards and Onyx & Snow theme remain the visual foundation. Native Liquid Glass is guarded on supported iOS; blur/tint fallbacks and Reduce Transparency/Reduce Motion support are included. Physical-device acceptance remains open. Details and evidence: `docs/reviews/navigation-2026-10-22/implementation.md`.
 
 | Screen | Complexity | Priority |
 |--------|------------|----------|

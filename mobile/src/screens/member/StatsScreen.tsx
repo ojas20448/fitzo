@@ -13,6 +13,7 @@ import AnatomyHeatmap, { getMuscleColors } from '../../components/AnatomyHeatmap
 import { useShareComposerStore } from '../../stores/shareComposerStore';
 import type { SharePayload } from '../../components/share/SharePayload';
 import { getAIConsent } from '../../components/AIConsentModal';
+import { useMemberContentInset } from '../../components/navigation/MemberChromeContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -26,6 +27,7 @@ const SUB_MUSCLES: Record<string, string[]> = {
 };
 
 const StatsScreen = () => {
+    const contentInset = useMemberContentInset();
     const [activeTab, setActiveTab] = useState<'training' | 'nutrition'>('training');
     const [history, setHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -388,17 +390,35 @@ const StatsScreen = () => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header Tabs */}
             <View style={styles.header}>
-                <View style={styles.tabsWrapper}>
+                <View style={styles.headerTop}>
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        accessibilityRole="button"
+                        accessibilityLabel="Back to profile"
+                        onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/profile')}
+                    >
+                        <MaterialIcons name="arrow-back" size={23} color={colors.text.primary} />
+                    </TouchableOpacity>
+                    <Text accessibilityRole="header" style={styles.headerTitle}>Progress</Text>
+                </View>
+                <View style={styles.tabsWrapper} accessibilityRole="tablist">
                     <TouchableOpacity
                         style={[styles.tabButton, activeTab === 'training' && styles.tabActive]}
+                        accessibilityRole="tab"
+                        accessibilityLabel="Training"
+                        accessibilityState={{ selected: activeTab === 'training' }}
+                        aria-selected={activeTab === 'training'}
                         onPress={() => setActiveTab('training')}
                     >
                         <Text style={[styles.tabText, activeTab === 'training' && styles.tabTextActive]}>Training</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.tabButton, activeTab === 'nutrition' && styles.tabActive]}
+                        accessibilityRole="tab"
+                        accessibilityLabel="Nutrition"
+                        accessibilityState={{ selected: activeTab === 'nutrition' }}
+                        aria-selected={activeTab === 'nutrition'}
                         onPress={() => setActiveTab('nutrition')}
                     >
                         <Text style={[styles.tabText, activeTab === 'nutrition' && styles.tabTextActive]}>Nutrition</Text>
@@ -408,7 +428,7 @@ const StatsScreen = () => {
 
             <ScrollView
                 ref={scrollRef}
-                contentContainerStyle={styles.content}
+                contentContainerStyle={[styles.content, { paddingBottom: contentInset }]}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
                 }
@@ -488,38 +508,59 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background,
     },
     header: {
-        paddingVertical: spacing.md,
+        paddingTop: spacing.lg,
+        paddingBottom: spacing.sm,
         paddingHorizontal: spacing.xl,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.glass.border,
+        gap: spacing.xl,
+    },
+    headerTop: {
+        flexDirection: 'row',
         alignItems: 'center',
+        gap: spacing.md,
+    },
+    backButton: {
+        width: 44,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.full,
+    },
+    headerTitle: {
+        fontFamily: typography.fontFamily.semiBold,
+        fontSize: 28,
+        letterSpacing: -0.8,
+        color: colors.text.primary,
     },
     tabsWrapper: {
         flexDirection: 'row',
         backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius.md,
-        padding: 4,
-        width: '100%',
-        maxWidth: 320,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
+        borderRadius: borderRadius.full,
+        padding: spacing.xs,
+        gap: spacing.xs,
     },
     tabButton: {
         flex: 1,
-        paddingVertical: spacing.sm,
+        minHeight: 44,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.sm,
         alignItems: 'center',
-        borderRadius: borderRadius.sm,
+        justifyContent: 'center',
+        borderRadius: borderRadius.full,
     },
     tabActive: {
-        backgroundColor: colors.glass.surfaceLight,
-        ...shadows.glowCard,
+        backgroundColor: colors.primary,
     },
     tabText: {
-        fontSize: typography.sizes.sm,
+        fontSize: typography.sizes.md,
         fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
-        letterSpacing: typography.letterSpacing.tight,
+        color: colors.text.secondary,
     },
     tabTextActive: {
-        color: colors.text.primary,
+        color: colors.text.dark,
     },
     content: {
         padding: spacing.xl,

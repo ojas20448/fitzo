@@ -147,8 +147,8 @@ const MealBuilderSheet: React.FC<Props> = ({ preset, onClose, onLogged, onError 
                     <Text style={styles.description}>Ready-to-eat portions. Calories are estimates; recipes and oil vary. A swap changes the totals.</Text>
                     <View style={styles.mealTypes}>
                         {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map(type => (
-                            <Pressable key={type} disabled={busy} onPress={() => setMealType(type)} style={[styles.mealType, mealType === type && styles.selectedType]} accessibilityRole="button" accessibilityState={{ selected: mealType === type, disabled: busy }} accessibilityLabel={`Log as ${type}`}>
-                                <Text style={styles.itemMeta}>{type.charAt(0).toUpperCase() + type.slice(1)}</Text>
+                            <Pressable key={type} disabled={busy} onPress={() => setMealType(type)} style={[styles.mealType, mealType === type && styles.selectedType]} accessibilityRole="button" accessibilityState={{ selected: mealType === type, disabled: busy }} aria-pressed={mealType === type} accessibilityLabel={`Log as ${type}`}>
+                                <Text style={[styles.itemMeta, mealType === type && { color: colors.text.dark }]}>{type === 'snack' ? 'Snacks' : type.charAt(0).toUpperCase() + type.slice(1)}</Text>
                             </Pressable>
                         ))}
                     </View>
@@ -234,7 +234,7 @@ const MealBuilderSheet: React.FC<Props> = ({ preset, onClose, onLogged, onError 
                     <View>
                         <Text style={styles.totalKcal}>~{totals.calories} kcal</Text>
                         <Text style={styles.totalMacros}>
-                            Protein {totals.protein}g · Carbs {totals.carbs}g · Fat {totals.fat}g
+                            Protein <Text style={{ color: colors.macro.protein }}>{totals.protein}g</Text> · Carbs <Text style={{ color: colors.macro.carbs }}>{totals.carbs}g</Text> · Fat <Text style={{ color: colors.macro.fat }}>{totals.fat}g</Text>
                         </Text>
                     </View>
 
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     portion: { color: colors.text.secondary, fontSize: typography.sizes.sm, lineHeight: 20, marginTop: 4 },
     mealTypes: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
     mealType: { minHeight: 44, paddingHorizontal: spacing.sm, justifyContent: 'center', borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.glass.border },
-    selectedType: { borderColor: colors.primary, backgroundColor: colors.glass.surface },
+    selectedType: { borderColor: colors.primary, backgroundColor: colors.primary },
     swapButton: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center' },
     swapText: { color: colors.primary, fontSize: typography.sizes.sm },
     choice: { padding: spacing.sm, minHeight: 44, marginBottom: spacing.xs, borderRadius: borderRadius.md, backgroundColor: colors.glass.surface },

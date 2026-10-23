@@ -24,14 +24,30 @@ const schema = z.object({
     }).strict()).min(1).max(6),
 }).strict();
 
+const tempo = z.string().regex(/^\d{1,2}(-\d{1,2}){3}$/).optional();
+const customSchema = z.object({
+    version: z.literal(2), type: z.literal('custom'), tempo,
+    sessions: z.array(z.object({
+        day_name: z.string().trim().min(1).max(80),
+        exercises: z.array(z.object({
+            id: z.string().min(1).max(100).optional(), name: z.string().trim().min(1).max(200),
+            target: z.string().max(80).optional(), instructions: z.string().max(2000).optional(),
+            set_count: z.number().int().min(1).max(20), reps_min: z.number().int().min(1).max(100),
+            reps_max: z.number().int().min(1).max(100), tempo, is_unilateral: z.boolean().optional(),
+        }).strict().refine(ex => ex.reps_min <= ex.reps_max)).min(1).max(30),
+    }).strict()).min(1).max(7),
+}).strict();
+
 function validateStarterPlan(value, days) {
     if (value === undefined || value === null) return null;
-    const result = schema.safeParse(value);
+    const result = (value.version === 2 ? customSchema : schema).safeParse(value);
     if (!result.success) throw new ValidationError('Check your starting workout preferences and exercises.');
     const plan = result.data;
     if (plan.sessions.length !== days.length || plan.sessions.some((session, i) => session.day_name !== days[i])) {
         throw new ValidationError('Starting workouts must match the saved training days.');
     }
+    if (new Set(days.map(day => day.trim().toLowerCase())).size !== days.length) throw new ValidationError('Choose distinct training days.');
+    if (plan.version === 2) return plan;
     if (plan.sessions.some(session => new Set(session.exercises.map(ex => ex.id)).size !== session.exercises.length)) {
         throw new ValidationError('Each starting workout needs distinct exercises.');
     }

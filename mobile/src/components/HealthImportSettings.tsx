@@ -114,6 +114,8 @@ export default function HealthImportSettings({ userId }: { userId?: string }) {
                     {button('Turn off health imports', () => { void turnOff(); }, false)}
                 </>}
                 <Text style={styles.detail}>Only readable metrics are imported. Sleep counts time asleep within each local calendar day.</Text>
+                <Text style={styles.detail}>Readings refresh while Fitzo is open. Your phone or watch must save new readings to {provider} before Fitzo can import them.</Text>
+                {Platform.OS === 'android' && <Text style={styles.detail}>Enable sharing to Health Connect in your step tracking app, such as Google Fit or Samsung Health, and allow Fitzo to read steps.</Text>}
             </>}
         </GlassCard>
     </View>;

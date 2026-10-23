@@ -1,5 +1,6 @@
 import type { UserExercise } from '../components/workout/types';
 import { starterSessionDraft } from './starterWorkout';
+import { customSessionDraft } from './savedWorkoutPlan';
 
 export function parseWorkoutIntent(raw: unknown): { session_label: string; training_pattern?: string; emphasis?: string[] } | null {
     try {
@@ -25,11 +26,14 @@ export function previousWorkoutDraft(value: unknown): UserExercise[] | null {
     return draft.length ? draft : null;
 }
 
-/** A user's last performed session takes priority over the initial suggestion.
- * A saved starting plan is a fallback for a day without a previous workout. */
+/** Custom prescriptions own the exercise order and set count; history only
+ * supplies matching previous values. Starter suggestions retain repeat-last behavior. */
 export function chooseWorkoutDraft(previous: UserExercise[] | null, splits: any[], day: string, pattern?: string) {
-    if (previous?.length) return { exercises: previous, source: 'previous' as const };
     const active = splits.find(split => split.is_active && (!pattern || split.split_id === pattern));
-    const draft = active?.days?.includes(day) ? starterSessionDraft(active.training_plan, day) : null;
+    const matchesDay = Array.isArray(active?.days) && active.days.some((item: unknown) => typeof item === 'string' && item.trim().toLowerCase() === day.trim().toLowerCase());
+    const custom = matchesDay ? customSessionDraft(active.training_plan, day, previous) : null;
+    if (custom) return { exercises: custom, source: 'template' as const };
+    if (previous?.length) return { exercises: previous, source: 'previous' as const };
+    const draft = matchesDay ? starterSessionDraft(active.training_plan, day.trim()) : null;
     return draft ? { exercises: draft, source: 'starter' as const } : null;
 }

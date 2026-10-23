@@ -1,636 +1,209 @@
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    TextInput,
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-} from 'react-native';
-import { Image } from 'expo-image';
-import { FlashList, FlashListProps } from '@shopify/flash-list';
-import { MaterialIcons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../styles/theme';
-import GlassCard from './GlassCard';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlashList, FlashListProps, FlashListRef } from '@shopify/flash-list';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { borderRadius, colors, spacing, typography } from '../styles/theme';
+import { bodyPartsList, defaultExercises } from '../data/defaultExercises';
 import { exerciseAPI } from '../services/api';
-import useOfflineStore from '../stores/offlineStore';
+import { useOfflineStore } from '../stores/offlineStore';
+import { apiBodyParts, canonicalBodyPart, exerciseMatches, isExerciseSelected, mergeExerciseResults, SearchExercise } from '../utils/exerciseSearch';
+import { exerciseMediaCandidates, withExerciseMedia } from '../utils/exerciseMedia';
+import Button from './Button';
+import GlassCard from './GlassCard';
+import ExercisePreview from './ExercisePreview';
+import ExerciseDetailsModal from './ExerciseDetailsModal';
 
-// FlashList wrapper to handle typing issues
-const TypedFlashList = FlashList as React.ComponentType<FlashListProps<any> & { estimatedItemSize?: number }>;
-
-interface ExerciseListProps {
-    mode?: 'view' | 'select';
-    onSelect?: (exercise: any) => void;
-    initialFilter?: string; // e.g., 'legs', 'push' (mapped to bodies)
-    allowedBodyParts?: string[];
-}
-
-// Helper function to get icon based on body part
+const TypedFlashList = FlashList as React.ComponentType<FlashListProps<SearchExercise> & React.RefAttributes<FlashListRef<SearchExercise>> & { estimatedItemSize?: number }>;
 const PAGE_SIZE = 50;
+const builtInIds = new Set(defaultExercises.map(exercise => exercise.id));
+interface Props { mode?: 'view' | 'select'; onSelect?: (exercise: any) => void; initialFilter?: string; allowedBodyParts?: string[]; selectedExercises?: Pick<SearchExercise, 'id' | 'name'>[]; selectionAction?: 'Add' | 'Replace' }
 
-const getExerciseIcon = (bodyPart: string): keyof typeof MaterialIcons.glyphMap => {
-    const iconMap: Record<string, keyof typeof MaterialIcons.glyphMap> = {
-        'chest': 'fitness-center',
-        'back': 'fitness-center',
-        'shoulders': 'fitness-center',
-        'upper arms': 'fitness-center',
-        'lower arms': 'fitness-center',
-        'upper legs': 'directions-run',
-        'lower legs': 'directions-run',
-        'waist': 'accessibility-new',
-        'cardio': 'favorite',
-        'neck': 'accessibility-new',
-    };
-    return iconMap[bodyPart?.toLowerCase()] || 'fitness-center';
-};
-
-export default function ExerciseList({ mode = 'view', onSelect, initialFilter, allowedBodyParts }: ExerciseListProps) {
-    const [exercises, setExercises] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+export default function ExerciseList({ mode = 'view', onSelect, initialFilter, allowedBodyParts, selectedExercises = [], selectionAction = 'Add' }: Props) {
+    const insets = useSafeAreaInsets();
+    const [exercises, setExercises] = useState<SearchExercise[]>(() => mergeExerciseResults([], defaultExercises).map(withExerciseMedia));
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedBodyPart, setSelectedBodyPart] = useState<string | null>(initialFilter || null);
-    const [bodyParts, setBodyParts] = useState<string[]>([]);
-    const [isOffline, setIsOffline] = useState(false);
-    // Pagination. The catalogue is ~1,300 exercises but the API is offset-based
-    // and returns them grouped by body part, so fetching only the first page
-    // yields nothing but "back" — alphabetically first. Keep paging on scroll.
+    const [searchFocused, setSearchFocused] = useState(false);
+    const [selectedBodyPart, setSelectedBodyPart] = useState<string | null>(initialFilter ? canonicalBodyPart(initialFilter) : null);
+    const [bodyParts, setBodyParts] = useState(bodyPartsList);
+    const [loading, setLoading] = useState(true);
+    const [limited, setLimited] = useState(false);
+    const [retry, setRetry] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
     const [offset, setOffset] = useState(0);
-    const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [pageError, setPageError] = useState(false);
+    const [detailsExercise, setDetailsExercise] = useState<SearchExercise | null>(null);
+    const generation = useRef(0);
+    const paging = useRef(false);
+    const apiPages = useRef<SearchExercise[]>([]);
+    const list = useRef<FlashListRef<SearchExercise>>(null);
+    const allowedKey = allowedBodyParts?.map(canonicalBodyPart).sort().join('|') || '';
+    useEffect(() => { list.current?.scrollToOffset({ offset: 0, animated: false }); }, [searchQuery, selectedBodyPart, allowedKey]);
 
-    // Load initial data
     useEffect(() => {
-        loadBodyParts();
-    }, [allowedBodyParts]);
+        let active = true;
+        void exerciseAPI.getBodyParts().then(response => {
+            if (active && Array.isArray(response.bodyParts)) setBodyParts([...new Set([...bodyPartsList, ...response.bodyParts.map(canonicalBodyPart)])]);
+        }).catch(() => {});
+        return () => { active = false; };
+    }, []);
+    useEffect(() => { setSelectedBodyPart(initialFilter ? canonicalBodyPart(initialFilter) : null); }, [initialFilter, allowedKey]);
 
-    // Reload when filter or search changes (with 300ms debounce to avoid spamming searches)
     useEffect(() => {
-        const timer = setTimeout(() => {
-            loadExercises();
+        const version = ++generation.current;
+        const query = searchQuery.trim();
+        const store = useOfflineStore.getState();
+        const cached = store.getExercises() || [];
+        const base = mergeExerciseResults(defaultExercises, cached);
+        setExercises(base.map(withExerciseMedia));
+        setLoading(true); setLimited(false); setHasMore(false); setPageError(false); setLoadingMore(false); paging.current = false;
+        const timer = setTimeout(async () => {
+            try {
+                let incoming: SearchExercise[] = [];
+                if (query.length > 2) {
+                    incoming = (await exerciseAPI.search(query)).exercises || [];
+                } else if (!query && selectedBodyPart) {
+                    const responses = await Promise.allSettled(apiBodyParts(selectedBodyPart).map(part => exerciseAPI.getByBodyPart(part)));
+                    if (version !== generation.current) return;
+                    setLimited(responses.some(response => response.status === 'rejected'));
+                    incoming = responses.flatMap(response => response.status === 'fulfilled' ? response.value.exercises || [] : []);
+                } else if (!query) {
+                    const fresh = cached.length > 0 && !store.isExercisesStale();
+                    incoming = fresh ? cached : (await exerciseAPI.getAll(PAGE_SIZE, 0)).exercises || [];
+                    if (version !== generation.current) return;
+                    apiPages.current = incoming;
+                    setOffset(incoming.length); setHasMore(incoming.length >= PAGE_SIZE);
+                    if (!fresh && !allowedKey && incoming.length) store.cacheExercises(incoming);
+                }
+                if (version !== generation.current) return;
+                setExercises(mergeExerciseResults(base, incoming).map(withExerciseMedia));
+            } catch {
+                if (version === generation.current) setLimited(true);
+            } finally {
+                if (version === generation.current) setLoading(false);
+            }
         }, 300);
+        return () => {
+            clearTimeout(timer);
+            // This ref is a request counter; incrementing it rejects pending network responses.
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+            generation.current++;
+        };
+    }, [searchQuery, selectedBodyPart, allowedKey, retry]);
 
-        return () => clearTimeout(timer);
-    }, [selectedBodyPart, searchQuery, allowedBodyParts]);
-
-    const loadBodyParts = async () => {
+    const loadMore = useCallback(async (explicitRetry = false) => {
+        if (paging.current || loading || !hasMore || searchQuery.trim() || selectedBodyPart || (pageError && !explicitRetry)) return;
+        const version = generation.current;
+        paging.current = true; setLoadingMore(true); setPageError(false);
         try {
-            // Use local body parts + any from API if needed
-            const { bodyPartsList } = require('../data/defaultExercises');
-            let list = [...bodyPartsList];
+            const next = (await exerciseAPI.getAll(PAGE_SIZE, offset)).exercises || [];
+            if (version !== generation.current) return;
+            apiPages.current = mergeExerciseResults(apiPages.current, next);
+            if (!allowedKey) useOfflineStore.getState().cacheExercises(apiPages.current);
+            setExercises(current => mergeExerciseResults(current, next).map(withExerciseMedia));
+            setOffset(offset + next.length); setHasMore(next.length >= PAGE_SIZE);
+        } catch { if (version === generation.current) setPageError(true); }
+        finally { if (version === generation.current) { paging.current = false; setLoadingMore(false); } }
+    }, [loading, hasMore, searchQuery, selectedBodyPart, pageError, offset, allowedKey]);
 
-            // Optionally fetch more from API
-            const response = await exerciseAPI.getBodyParts();
-            if (response.bodyParts) {
-                list = Array.from(new Set([...list, ...response.bodyParts]));
-            }
-
-            if (allowedBodyParts && allowedBodyParts.length > 0) {
-                const allowedSet = new Set(allowedBodyParts.map(b => b.toLowerCase()));
-                list = list.filter(b => allowedSet.has(b.toLowerCase()));
-            }
-
-            setBodyParts(list);
-        } catch (error: any) {
-            // Silently handle - parent screen manages error state
-        }
+    const visible = exercises.filter(exercise => exerciseMatches(exercise, searchQuery, selectedBodyPart, allowedBodyParts)).sort((a, b) =>
+        (mode === 'select' ? Number(builtInIds.has(b.id)) - Number(builtInIds.has(a.id)) : 0) || a.name.localeCompare(b.name));
+    const parts = bodyParts.filter(part => !allowedBodyParts?.length || allowedBodyParts.some(allowed => canonicalBodyPart(allowed) === part));
+    const clearFilters = () => { setSearchQuery(''); setSelectedBodyPart(null); };
+    const viewGuide = (exercise: SearchExercise) => {
+        if (mode === 'view' && onSelect) onSelect(exercise);
+        else setDetailsExercise(exercise);
     };
-
-    const loadExercises = async () => {
-        setLoading(true);
-        // Any change of filter or search rebuilds the list from scratch, so the
-        // paging cursor has to go back to the start with it.
-        setOffset(0);
-        setHasMore(true);
-        try {
-            const { defaultExercises } = require('../data/defaultExercises');
-            // Check offline store first
-            const cachedExercises = useOfflineStore.getState().getExercises();
-            const isStale = useOfflineStore.getState().isExercisesStale();
-
-            let baseExercises = [];
-
-            if (cachedExercises && cachedExercises.length > 0 && !isStale && !searchQuery) {
-                baseExercises = cachedExercises;
-            } else {
-                // If no cache or stale, start with default/local
-                baseExercises = [...defaultExercises];
-            }
-
-            let results = [...baseExercises];
-
-            // Helper to map UI body parts to API body parts
-            const getApiBodyParts = (uiPart: string): string[] => {
-                const part = uiPart.toLowerCase();
-                if (part === 'arms') return ['upper arms', 'lower arms'];
-                if (part === 'legs') return ['upper legs', 'lower legs'];
-                if (part === 'core') return ['waist'];
-                return [part];
-            };
-
-            // 1. Filter by Body Part (Local)
-            if (selectedBodyPart) {
-                const mappedParts = new Set([selectedBodyPart.toLowerCase(), ...getApiBodyParts(selectedBodyPart)]);
-                results = results.filter((ex: any) =>
-                    mappedParts.has(ex.bodyPart?.toLowerCase())
-                );
-            } else if (allowedBodyParts && allowedBodyParts.length > 0) {
-                const allowedSet = new Set<string>();
-                allowedBodyParts.forEach(b => {
-                    allowedSet.add(b.toLowerCase());
-                    getApiBodyParts(b).forEach(apiPart => allowedSet.add(apiPart));
-                });
-                results = results.filter((ex: any) =>
-                    allowedSet.has((ex.bodyPart || ex.category || '').toLowerCase())
-                );
-            }
-
-            // 2. Filter by Search Query (Local)
-            if (searchQuery.trim()) {
-                const q = searchQuery.toLowerCase().trim();
-                results = results.filter((ex: any) =>
-                    ex.name.toLowerCase().includes(q) ||
-                    ex.target.toLowerCase().includes(q)
-                );
-            }
-
-            // 3. If local results are few, TRY fetching from API to supplement
-            // Only if we are online and have a search query (to avoid fetching ALL)
-            if (searchQuery.trim().length > 2) {
-                try {
-                    const apiRes = await exerciseAPI.search(searchQuery);
-                    if (apiRes.exercises) {
-                        // Merge API results, avoiding duplicates by ID or Name
-                        const existingIds = new Set(results.map(r => r.id));
-                        const existingNames = new Set(results.map(r => r.name.toLowerCase()));
-
-                        const newFromApi = apiRes.exercises.filter((ex: any) =>
-                            !existingIds.has(ex.id) && !existingNames.has(ex.name.toLowerCase())
-                        );
-                        results = [...results, ...newFromApi];
-                    }
-                } catch (e: any) {
-                    // Silently handle - parent screen manages error state
-                }
-            } else if (!searchQuery && (!cachedExercises || cachedExercises.length === 0 || isStale || selectedBodyPart)) {
-                // Fetch from API and update list live (includes gifUrl)
-                try {
-                    let apiExercises: any[] = [];
-                    if (selectedBodyPart) {
-                        const apiParts = getApiBodyParts(selectedBodyPart);
-                        for (const p of apiParts) {
-                            try {
-                                const res = await exerciseAPI.getByBodyPart(p);
-                                if (res.exercises) apiExercises = [...apiExercises, ...res.exercises];
-                            } catch (e) {
-                                // Skip failing parts silently
-                            }
-                        }
-                    } else {
-                        const res = await exerciseAPI.getAll(PAGE_SIZE, 0);
-                        if (res.exercises) apiExercises = res.exercises;
-                    }
-
-                    if (apiExercises.length > 0) {
-                        if (!selectedBodyPart && (!allowedBodyParts || allowedBodyParts.length === 0)) {
-                            useOfflineStore.getState().cacheExercises(apiExercises);
-                        }
-                        
-                        let apiResults = apiExercises;
-                        // Apply allowedBodyParts if necessary
-                        if (allowedBodyParts && allowedBodyParts.length > 0) {
-                             const allowedSet = new Set(allowedBodyParts.map(b => b.toLowerCase()));
-                             apiResults = apiResults.filter((ex: any) =>
-                                 allowedSet.has((ex.bodyPart || ex.category || '').toLowerCase())
-                             );
-                        }
-
-                        results = apiResults;
-                        
-                        setOffset(apiExercises.length);
-                        setHasMore(!selectedBodyPart && apiExercises.length >= PAGE_SIZE);
-                    } else {
-                        setHasMore(false);
-                    }
-                } catch (err: any) {
-                    // Silently handle - parent screen manages error state
-                }
-            } else if (!searchQuery && !selectedBodyPart && cachedExercises && cachedExercises.length > 0) {
-                // If we are using cache and not fetching from API right now, set offset correctly
-                setOffset(cachedExercises.length);
-                setHasMore(cachedExercises.length >= PAGE_SIZE);
-            }
-
-            setExercises(results);
-            setLoading(false);
-        } catch (error: any) {
-            // Silently handle - parent screen manages error state
-            setLoading(false);
-        }
-    };
-
-    // Fetch the next page and append. Guarded so an in-flight page, an
-    // exhausted catalogue, or a filtered/searched list cannot trigger a fetch —
-    // those paths are resolved entirely client-side.
-    const loadMoreExercises = async () => {
-        if (loadingMore || loading || !hasMore) return;
-        if (searchQuery.trim() || selectedBodyPart) return;
-
-        setLoadingMore(true);
-        try {
-            const apiRes = await exerciseAPI.getAll(PAGE_SIZE, offset);
-            const next = apiRes?.exercises || [];
-
-            if (next.length === 0) {
-                setHasMore(false);
-            } else {
-                setExercises(prev => {
-                    // The API paginates over a live dataset, so a page can repeat
-                    // an item that already arrived. De-dupe on id before appending.
-                    const seen = new Set(prev.map((e: any) => e.id));
-                    let newItems = next.filter((e: any) => !seen.has(e.id));
-                    
-                    if (allowedBodyParts && allowedBodyParts.length > 0) {
-                        const allowedSet = new Set(allowedBodyParts.map(b => b.toLowerCase()));
-                        newItems = newItems.filter((ex: any) =>
-                            allowedSet.has((ex.bodyPart || ex.category || '').toLowerCase())
-                        );
-                    }
-                    
-                    const merged = [...prev, ...newItems];
-                    if (!allowedBodyParts || allowedBodyParts.length === 0) {
-                        useOfflineStore.getState().cacheExercises(merged);
-                    }
-                    return merged;
-                });
-                setOffset(offset + next.length);
-                setHasMore(next.length >= PAGE_SIZE);
-            }
-        } catch {
-            // Offline or API failure — stop paging rather than spinning forever.
-            setHasMore(false);
-        } finally {
-            setLoadingMore(false);
-        }
-    };
-
-    const handleSearch = () => {
-        loadExercises();
-    };
-
-    const handleBodyPartFilter = (bodyPart: string) => {
-        if (selectedBodyPart === bodyPart) {
-            setSelectedBodyPart(null);
-        } else {
-            setSelectedBodyPart(bodyPart);
-        }
-        // useEffect will trigger loadExercises
-    };
-
-    const handlePress = (item: any) => {
-        if (mode === 'select' && onSelect) {
-            onSelect(item);
-        } else {
-            if (onSelect) onSelect(item);
-        }
-    };
-
-    const renderExerciseCard = ({ item }: { item: any }) => (
-        <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => handlePress(item)}
-        >
-            <GlassCard style={styles.exerciseCard}>
-                {item.gifUrl ? (
-                    <Image
-                        source={{ uri: item.gifUrl }}
-                        style={styles.exerciseGif}
-                        contentFit="cover"
-                        transition={200}
-                        cachePolicy="memory-disk"
-                    />
-                ) : (
-                    <View style={styles.exerciseIconContainer}>
-                        <MaterialIcons 
-                            name={getExerciseIcon(item.bodyPart)} 
-                            size={32} 
-                            color={colors.primary} 
-                        />
-                    </View>
-                )}
-                <View style={styles.exerciseInfo}>
-                    <Text style={styles.exerciseName}>{item.name}</Text>
-                    <View style={styles.tags}>
-                        {item.bodyPart && (
-                            <View style={styles.tag}>
-                                <Text style={styles.tagText}>{item.bodyPart}</Text>
-                            </View>
-                        )}
-                        {item.target && (
-                            <View style={[styles.tag, styles.tagSecondary]}>
-                                <Text style={styles.tagText}>{item.target}</Text>
-                            </View>
-                        )}
-                    </View>
-                </View>
-                {mode === 'select' && (
-                    <View style={styles.addIcon}>
-                        <MaterialIcons name="add-circle" size={24} color={colors.primary} />
-                    </View>
-                )}
-            </GlassCard>
-        </TouchableOpacity>
-    );
-
-    return (
-        <View style={styles.container}>
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-                <View style={styles.searchBar}>
-                    <MaterialIcons name="search" size={20} color={colors.text.muted} />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search exercises..."
-                        placeholderTextColor={colors.text.muted}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        onSubmitEditing={handleSearch}
-                    />
-                    {searchQuery.length > 0 && (
-                        <TouchableOpacity onPress={() => {
-                            setSearchQuery('');
-                            loadExercises();
-                        }}>
-                            <MaterialIcons name="close" size={20} color={colors.text.muted} />
-                        </TouchableOpacity>
-                    )}
-                </View>
+    const renderExercise = ({ item }: { item: SearchExercise }) => {
+        const selected = isExerciseSelected(item, selectedExercises);
+        const media = exerciseMediaCandidates(item)[0];
+        return <GlassCard style={styles.card}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`View ${item.name} guide`} onPress={() => viewGuide(item)} style={({ pressed }) => [styles.mainAction, pressed && styles.pressed]}>
+            <ExercisePreview exercise={item} style={styles.preview} />
+            <View style={styles.copy}><Text style={styles.name} numberOfLines={3}>{item.name}</Text>
+                <Text style={styles.meta} numberOfLines={2}>{[item.bodyPart && canonicalBodyPart(item.bodyPart), item.target].filter(Boolean).join(' · ')}</Text>
+                {!!item.equipment && <Text style={styles.equipment} numberOfLines={2}>{item.equipment}</Text>}
+                <Text style={styles.guideLink}>{media?.kind === 'animation' ? 'View demo' : media ? 'View photo & guide' : 'View guide'}</Text>
             </View>
-
-            {/* Filters */}
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.filtersContainer}
-                contentContainerStyle={styles.filtersContent}
-            >
-                <TouchableOpacity
-                    style={[styles.filterChip, !selectedBodyPart && styles.filterChipActive]}
-                    // Set state only, then let the debounced effect below do the
-                    // reload. This used to call loadExercises() inline, which ran
-                    // in the same tick as the setters and so still closed over the
-                    // *previous* selectedBodyPart: it refetched the body part the
-                    // user was leaving and, through `!selectedBodyPart && ...`,
-                    // wrote hasMore=false. That write raced ahead of the correct
-                    // reload and killed infinite scroll, capping "All" at a single
-                    // 50-exercise page instead of paging through the catalogue.
-                    onPress={() => {
-                        setSelectedBodyPart(null);
-                        setSearchQuery('');
-                    }}
-                >
-                    <Text style={[styles.filterText, !selectedBodyPart && styles.filterTextActive]}>
-                        All
-                    </Text>
-                </TouchableOpacity>
-                {bodyParts.map((part) => (
-                    <TouchableOpacity
-                        key={part}
-                        style={[styles.filterChip, selectedBodyPart === part && styles.filterChipActive]}
-                        onPress={() => handleBodyPartFilter(part)}
-                    >
-                        <Text style={[styles.filterText, selectedBodyPart === part && styles.filterTextActive]}>
-                            {part}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-
-            {/* List */}
-            {loading ? (
-                <View style={{ padding: spacing.xl, gap: spacing.md }}>
-                    {[0, 1, 2, 3].map(i => (
-                        <GlassCard key={i} style={[styles.exerciseCard, { opacity: 0.4 }]}>
-                            <View style={[styles.exerciseIconContainer, { backgroundColor: colors.glass.border }]} />
-                            <View style={styles.exerciseInfo}>
-                                <View style={{ width: 120 + (i * 20), height: 14, borderRadius: 4, backgroundColor: colors.glass.border }} />
-                                <View style={{ flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm }}>
-                                    <View style={{ width: 50, height: 16, borderRadius: 4, backgroundColor: colors.glass.border }} />
-                                    <View style={{ width: 60, height: 16, borderRadius: 4, backgroundColor: colors.glass.border }} />
-                                </View>
-                            </View>
-                        </GlassCard>
-                    ))}
-                </View>
-            ) : (
-                <TypedFlashList
-                    data={exercises}
-                    renderItem={renderExerciseCard}
-                    keyExtractor={(item: any, index: number) => `${item.id}-${index}`}
-                    contentContainerStyle={styles.listContent}
-                    estimatedItemSize={100}
-                    showsVerticalScrollIndicator={false}
-                    onEndReached={loadMoreExercises}
-                    onEndReachedThreshold={0.5}
-                    ListFooterComponent={
-                        loadingMore ? (
-                            <View style={styles.footerLoader}>
-                                <ActivityIndicator size="small" color={colors.text.muted} />
-                            </View>
-                        ) : null
-                    }
-                    ListEmptyComponent={
-                        !loading && searchQuery.trim().length > 0 ? (
-                            <View style={styles.emptyContainer}>
-                                <Text style={styles.emptyText}>No exercises found for "{searchQuery}"</Text>
-                                <TouchableOpacity
-                                    style={styles.createBtn}
-                                    onPress={() => {
-                                        const newExercise = {
-                                            id: `custom-${Date.now()}`,
-                                            name: searchQuery,
-                                            bodyPart: 'other',
-                                            target: 'custom',
-                                            gifUrl: null,
-                                            custom: true
-                                        };
-                                        handlePress(newExercise);
-                                    }}
-                                >
-                                    <MaterialIcons name="add" size={20} color={colors.primary} />
-                                    <Text style={styles.createBtnText}>Create "{searchQuery}"</Text>
-                                </TouchableOpacity>
-                            </View>
-                        ) : (
-                            !loading ? (
-                                <View style={styles.emptyContainer}>
-                                    <Text style={styles.emptyText}>No exercises found.</Text>
-                                </View>
-                            ) : null
-                        )
-                    }
-                />
-            )}
+        </Pressable>
+        <View style={styles.actions}>
+            {mode === 'select' && <Pressable accessibilityRole="button" accessibilityLabel={selected ? `${item.name} already in workout` : `${selectionAction} ${item.name} ${selectionAction === 'Add' ? 'to' : 'in'} workout`} accessibilityState={{ disabled: selected }} disabled={selected} style={[styles.addButton, selected && styles.addedButton]} onPress={() => { if (!selected) onSelect?.(item); }}>
+                <Ionicons name={selected ? 'checkmark-outline' : selectionAction === 'Replace' ? 'swap-horizontal-outline' : 'add-outline'} size={18} color={selected ? colors.text.secondary : colors.text.primary} /><Text style={styles.addLabel}>{selected ? 'Added' : selectionAction}</Text>
+            </Pressable>}
         </View>
-    );
-}
+    </GlassCard>;
+    };
 
+    return <View style={styles.container}>
+        {detailsExercise && <ExerciseDetailsModal exercise={detailsExercise} onClose={() => setDetailsExercise(null)} onAdd={mode === 'select' && !isExerciseSelected(detailsExercise, selectedExercises) ? () => { onSelect?.(detailsExercise); setDetailsExercise(null); } : undefined} addLabel={selectionAction === 'Replace' ? 'Replace exercise' : undefined} />}
+        <View style={styles.searchContainer}><View style={[styles.searchBar, searchFocused && styles.searchFocused]}>
+            <Ionicons name="search-outline" size={20} color={colors.text.secondary} />
+            <TextInput accessibilityLabel="Search exercises" placeholder="Search exercises..." placeholderTextColor={colors.text.muted} style={styles.searchInput} value={searchQuery} onChangeText={setSearchQuery} onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)} autoCorrect={false} maxLength={100} returnKeyType="search" onSubmitEditing={() => Keyboard.dismiss()} />
+            {!!searchQuery && <Pressable accessibilityRole="button" accessibilityLabel="Clear exercise search" onPress={() => setSearchQuery('')} style={styles.iconButton}><Ionicons name="close-circle-outline" size={21} color={colors.text.secondary} /></Pressable>}
+        </View></View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filters} contentContainerStyle={styles.filterContent} keyboardShouldPersistTaps="handled">
+            <Pressable accessibilityRole="button" accessibilityLabel={allowedKey ? 'Filter session muscles' : 'Filter all muscles'} aria-pressed={!selectedBodyPart} accessibilityState={{ selected: !selectedBodyPart }} style={[styles.chip, !selectedBodyPart && styles.selectedChip]} onPress={() => setSelectedBodyPart(null)}><Text style={[styles.chipText, !selectedBodyPart && styles.selectedChipText]}>{allowedKey ? 'Session muscles' : 'All muscles'}</Text></Pressable>
+            {parts.map(part => <Pressable key={part} accessibilityRole="button" accessibilityLabel={`Filter ${part}`} aria-pressed={selectedBodyPart === part} accessibilityState={{ selected: selectedBodyPart === part }} style={[styles.chip, selectedBodyPart === part && styles.selectedChip]} onPress={() => setSelectedBodyPart(current => current === part ? null : part)}><Text style={[styles.chipText, selectedBodyPart === part && styles.selectedChipText]}>{part}</Text></Pressable>)}
+        </ScrollView>
+        <View style={styles.resultsHeader}><View style={styles.grow}>
+            <Text style={styles.resultsTitle} accessibilityLiveRegion="polite">{loading && !visible.length ? 'Searching exercises…' : `${visible.length} ${visible.length === 1 ? 'exercise' : 'exercises'}`}</Text>
+            <Text style={styles.hint}>{mode === 'select' ? selectionAction === 'Replace' ? 'Choose the exercise you want to use instead.' : 'Tap Add for each exercise, then Done to start logging.' : 'Tap an exercise to see its movement guide.'}</Text>
+        </View>{loading ? <ActivityIndicator accessibilityLabel="Searching exercise library" size="small" color={colors.text.secondary} /> : null}
+            {(!!searchQuery || !!selectedBodyPart) && <Pressable accessibilityRole="button" accessibilityLabel="Clear exercise filters" style={styles.reset} onPress={clearFilters}><Text style={styles.resetText}>Reset</Text></Pressable>}
+        </View>
+        {limited && <View style={styles.notice}><Text style={styles.noticeText}>More exercises couldn’t load. You can use the available exercises.</Text><Pressable accessibilityRole="button" accessibilityLabel="Retry exercise loading" style={styles.reset} onPress={() => setRetry(value => value + 1)}><Text style={styles.resetText}>Retry</Text></Pressable></View>}
+        <TypedFlashList ref={list} data={visible} renderItem={renderExercise} keyExtractor={item => item.id} estimatedItemSize={112} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} maintainVisibleContentPosition={{ disabled: !!searchQuery || !!selectedBodyPart }}
+            contentContainerStyle={[styles.listContent, { paddingBottom: Math.max(insets.bottom, spacing.xl) + spacing.xl }]} ItemSeparatorComponent={() => <View style={styles.separator} />}
+            onEndReached={() => void loadMore()} onEndReachedThreshold={0.4}
+            ListFooterComponent={<View style={styles.footer}>{loadingMore ? <ActivityIndicator accessibilityLabel="Loading more exercises" color={colors.text.secondary} /> : hasMore && !searchQuery.trim() && !selectedBodyPart ? <Button title={pageError ? 'Try loading more again' : 'Load more exercises'} variant="ghost" onPress={() => void loadMore(true)} /> : null}</View>}
+            ListEmptyComponent={!loading ? <View style={styles.empty}>
+                <Ionicons name="search-outline" size={28} color={colors.text.secondary} /><Text style={styles.emptyTitle}>{limited ? 'Search is limited' : selectedBodyPart ? `No matches in ${selectedBodyPart}` : 'No matching exercises'}</Text><Text style={styles.emptyHint}>Try another exercise name or search across all muscles.</Text>
+                {!!selectedBodyPart && <Button title="Search all muscles" onPress={() => setSelectedBodyPart(null)} />}
+                <Button title="Reset search & filters" variant="secondary" onPress={clearFilters} />
+                {mode === 'select' && !selectedBodyPart && !allowedKey && searchQuery.trim().length > 1 && <Button title={`Add “${searchQuery.trim()}” as custom`} variant="ghost" onPress={() => onSelect?.({ id: `custom-${Date.now()}`, name: searchQuery.trim(), bodyPart: 'other', target: 'custom', custom: true })} />}
+            </View> : null}
+        />
+    </View>;
+}
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    searchContainer: {
-        paddingHorizontal: spacing.xl,
-        paddingBottom: spacing.md,
-    },
-    searchBar: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius.xl,
-        paddingHorizontal: spacing.lg,
-        height: 48,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
-        gap: spacing.sm,
-    },
-    searchInput: {
-        flex: 1,
-        fontSize: typography.sizes.base,
-        fontFamily: typography.fontFamily.regular,
-        color: colors.text.primary,
-    },
-    filtersContainer: {
-        marginBottom: spacing.md,
-        flexGrow: 0,
-    },
-    filtersContent: {
-        paddingHorizontal: spacing.xl,
-        gap: spacing.sm,
-    },
-    filterChip: {
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.lg,
-        backgroundColor: colors.glass.surface,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
-        height: 40,
-        justifyContent: 'center',
-    },
-    filterChipActive: {
-        backgroundColor: colors.primary,
-        borderColor: colors.primary,
-    },
-    filterText: {
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.secondary,
-        textTransform: 'capitalize',
-    },
-    filterTextActive: {
-        color: colors.background,
-    },
-    listContent: {
-        padding: spacing.xl,
-        gap: spacing.lg,
-        paddingBottom: 100,
-    },
-    exerciseCard: {
-        flexDirection: 'row',
-        padding: spacing.md,
-        gap: spacing.md,
-        alignItems: 'center',
-    },
-    exerciseGif: {
-        width: 80,
-        height: 80,
-        borderRadius: borderRadius.lg,
-        backgroundColor: colors.glass.surfaceLight,
-    },
-    exerciseIconContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: borderRadius.lg,
-        backgroundColor: colors.glass.surfaceLight,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    exerciseInfo: {
-        flex: 1,
-        justifyContent: 'space-between',
-        height: 80,
-        paddingVertical: spacing.xs,
-    },
-    exerciseName: {
-        fontSize: typography.sizes.base,
-        fontFamily: typography.fontFamily.semiBold,
-        color: colors.text.primary,
-        textTransform: 'capitalize',
-        marginBottom: spacing.xs,
-    },
-    tags: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.xs,
-    },
-    tag: {
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 2,
-        borderRadius: borderRadius.sm,
-        backgroundColor: colors.primary + '20',
-    },
-    tagSecondary: {
-        backgroundColor: colors.primary + '30',
-    },
-    tagText: {
-        fontSize: 10,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.primary,
-        textTransform: 'capitalize',
-    },
-    addIcon: {
-        padding: spacing.sm,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: spacing.md,
-    },
-    loadingText: {
-        color: colors.text.muted,
-    },
-    footerLoader: {
-        paddingVertical: spacing.xl,
-        alignItems: 'center',
-    },
-    emptyContainer: {
-        padding: spacing.xl,
-        alignItems: 'center',
-        gap: spacing.md,
-    },
-    emptyText: {
-        color: colors.text.muted,
-        fontSize: typography.sizes.base,
-        textAlign: 'center',
-    },
-    createBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        backgroundColor: colors.glass.surface,
-        borderRadius: borderRadius.lg,
-        borderWidth: 1,
-        borderColor: colors.primary,
-        borderStyle: 'dashed',
-    },
-    createBtnText: {
-        color: colors.primary,
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.bold,
-    },
+    container: { flex: 1 },
+    searchContainer: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
+    searchBar: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingLeft: spacing.lg, paddingRight: spacing.xs, borderWidth: 1, borderColor: colors.glass.borderLight, borderRadius: borderRadius.full, backgroundColor: colors.glass.surface },
+    searchFocused: { borderColor: colors.primaryMuted, backgroundColor: colors.glass.surfaceLight },
+    searchInput: { flex: 1, minWidth: 0, minHeight: 52, fontFamily: typography.fontFamily.regular, fontSize: 14, color: colors.text.primary, outlineWidth: 0 },
+    filters: { flexGrow: 0 },
+    filterContent: { paddingHorizontal: spacing.xl, gap: spacing.sm },
+    chip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: borderRadius.full, borderWidth: 1, borderColor: colors.glass.border, backgroundColor: colors.glass.surface },
+    selectedChip: { backgroundColor: colors.primary, borderColor: colors.primary },
+    chipText: { fontFamily: typography.fontFamily.medium, fontSize: 12, color: colors.text.secondary, textTransform: 'capitalize' },
+    selectedChipText: { color: colors.text.dark },
+    resultsHeader: { paddingHorizontal: spacing.xl, paddingVertical: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    grow: { flex: 1, minWidth: 0 },
+    resultsTitle: { fontFamily: typography.fontFamily.medium, fontSize: 13, color: colors.text.primary },
+    hint: { fontFamily: typography.fontFamily.regular, fontSize: 11, lineHeight: 18, color: colors.text.secondary, marginTop: spacing.xs },
+    reset: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.sm },
+    resetText: { fontFamily: typography.fontFamily.medium, fontSize: 12, color: colors.text.primary },
+    notice: { marginHorizontal: spacing.xl, marginBottom: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: borderRadius.md, backgroundColor: colors.glass.surfaceLight },
+    noticeText: { flex: 1, fontFamily: typography.fontFamily.regular, fontSize: 11, lineHeight: 18, color: colors.text.secondary },
+    listContent: { paddingHorizontal: spacing.xl },
+    separator: { height: spacing.md },
+    card: { flexDirection: 'row', alignItems: 'center', padding: spacing.sm, gap: spacing.xs, minHeight: 96 },
+    mainAction: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.xs, borderRadius: borderRadius.md, minHeight: 80 },
+    pressed: { backgroundColor: colors.glass.surfaceHover },
+    preview: { width: 56, height: 64, borderRadius: borderRadius.md },
+    copy: { flex: 1, minWidth: 0, gap: 5 },
+    name: { fontFamily: typography.fontFamily.medium, fontSize: 14, lineHeight: 21, color: colors.text.primary, textTransform: 'capitalize' },
+    meta: { fontFamily: typography.fontFamily.regular, fontSize: 11, lineHeight: 17, color: colors.text.secondary, textTransform: 'capitalize' },
+    equipment: { fontFamily: typography.fontFamily.regular, fontSize: 10, lineHeight: 16, color: colors.text.muted, textTransform: 'capitalize' },
+    guideLink: { fontFamily: typography.fontFamily.medium, fontSize: 11, lineHeight: 18, color: colors.text.secondary },
+    addButton: { minWidth: 64, minHeight: 44, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, borderRadius: borderRadius.full, borderWidth: 1, borderColor: colors.glass.borderLight },
+    addedButton: { borderColor: 'transparent', backgroundColor: colors.surfaceLight },
+    addLabel: { fontFamily: typography.fontFamily.medium, fontSize: 11, color: colors.text.primary },
+    actions: { justifyContent: 'center' },
+    iconButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+    footer: { paddingTop: spacing.lg },
+    empty: { paddingVertical: spacing['2xl'], gap: spacing.lg, alignItems: 'stretch' },
+    emptyTitle: { fontFamily: typography.fontFamily.medium, fontSize: 18, color: colors.text.primary },
+    emptyHint: { fontFamily: typography.fontFamily.regular, fontSize: 13, lineHeight: 21, color: colors.text.secondary },
 });

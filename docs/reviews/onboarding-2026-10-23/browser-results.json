@@ -1,0 +1,260 @@
+{
+  "layouts": [
+    {
+      "name": "signup-details",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "name": "signup-details",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "name": "signup-details",
+      "width": 430,
+      "overflow": false
+    },
+    {
+      "name": "signup-details",
+      "width": 844,
+      "overflow": false
+    },
+    {
+      "name": "signup-gym",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "name": "signup-gym",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "name": "signup-password",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "name": "signup-password",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "name": "signup-password",
+      "width": 430,
+      "overflow": false
+    },
+    {
+      "name": "signup-password",
+      "width": 844,
+      "overflow": false
+    },
+    {
+      "name": "signup-retry",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "name": "signup-retry",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "name": "onboarding-goal",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "name": "onboarding-goal",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "name": "onboarding-goal",
+      "width": 430,
+      "overflow": false
+    },
+    {
+      "name": "onboarding-goal",
+      "width": 844,
+      "overflow": false
+    },
+    {
+      "name": "onboarding-routine-empty",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "name": "onboarding-routine-empty",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "name": "onboarding-routine",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "name": "onboarding-routine",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "name": "onboarding-routine",
+      "width": 430,
+      "overflow": false
+    },
+    {
+      "name": "onboarding-plan",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "name": "onboarding-plan",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "name": "onboarding-plan",
+      "width": 430,
+      "overflow": false
+    }
+  ],
+  "writes": [
+    {
+      "path": "/auth/register",
+      "body": {
+        "email": "review@example.test",
+        "password": "[test credential redacted]",
+        "name": "Ojas",
+        "gym_code": "GYM123"
+      }
+    },
+    {
+      "path": "/auth/register",
+      "body": {
+        "email": "review@example.test",
+        "password": "[test credential redacted]",
+        "name": "Ojas",
+        "gym_code": "GYM123"
+      }
+    },
+    {
+      "path": "/workout-sessions/splits",
+      "body": {
+        "split_id": "full_body",
+        "name": "Full Body · 3 days",
+        "days": [
+          "Full Body A",
+          "Full Body B",
+          "Full Body C"
+        ],
+        "days_per_week": 3,
+        "training_plan": {
+          "version": 1,
+          "preferences": {
+            "experience": "new",
+            "equipment": "gym",
+            "session_minutes": 35
+          },
+          "sessions": [
+            {
+              "day_name": "Full Body A",
+              "exercises": [
+                {
+                  "id": "leg_press",
+                  "set_count": 2,
+                  "reps": 10
+                },
+                {
+                  "id": "chest_press_machine",
+                  "set_count": 2,
+                  "reps": 10
+                },
+                {
+                  "id": "lat_pulldown",
+                  "set_count": 2,
+                  "reps": 10
+                },
+                {
+                  "id": "romanian_deadlift_dumbbell",
+                  "set_count": 2,
+                  "reps": 10
+                }
+              ]
+            },
+            {
+              "day_name": "Full Body B",
+              "exercises": [
+                {
+                  "id": "romanian_deadlift_dumbbell",
+                  "set_count": 2,
+                  "reps": 10
+                },
+                {
+                  "id": "machine_row",
+                  "set_count": 2,
+                  "reps": 10
+                },
+                {
+                  "id": "chest_press_machine",
+                  "set_count": 2,
+                  "reps": 10
+                },
+                {
+                  "id": "leg_press",
+                  "set_count": 2,
+                  "reps": 10
+                }
+              ]
+            },
+            {
+              "day_name": "Full Body C",
+              "exercises": [
+                {
+                  "id": "leg_press",
+                  "set_count": 2,
+                  "reps": 10
+                },
+                {
+                  "id": "chest_press_machine",
+                  "set_count": 2,
+                  "reps": 10
+                },
+                {
+                  "id": "lat_pulldown",
+                  "set_count": 2,
+                  "reps": 10
+                },
+                {
+                  "id": "romanian_deadlift_dumbbell",
+                  "set_count": 2,
+                  "reps": 10
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "path": "/workout-sessions/training-preferences",
+      "body": {
+        "preferences": {
+          "experience": "new",
+          "equipment": "gym",
+          "session_minutes": 35,
+          "goal_type": "maintenance"
+        },
+        "expected_split_id": "review-split",
+        "complete_setup": true
+      }
+    }
+  ],
+  "errors": [
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load."
+  ],
+  "registrations": 2,
+  "passed": true
+}

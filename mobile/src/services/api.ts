@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { localDateString } from '../utils/healthDate';
 import type { StarterWorkoutPlan, SavedTrainingPreferences } from '../utils/starterWorkout';
+import type { CustomWorkoutPlan } from '../utils/savedWorkoutPlan';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { authEvents } from './authEvents';
@@ -8,7 +9,7 @@ import { useOfflineStore } from '../stores/offlineStore';
 
 // API base URL - EAS Build injects EXPO_PUBLIC_API_URL at build time from eas.json.
 // Falls back to production server when not set.
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://fitzo.onrender.com/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.fitzoapp.in/api';
 const API_ROOT = API_BASE_URL.replace(/\/api$/, '');
 
 // Create axios instance
@@ -222,7 +223,7 @@ export const memberAPI = {
         }
     },
 
-    updateProfile: async (data: { name?: string; avatar_url?: string }) => {
+    updateProfile: async (data: { name?: string; avatar_url?: string | null }) => {
         const response = await api.put('/member/profile', data);
         return response.data;
     },
@@ -335,6 +336,11 @@ export const friendsAPI = {
         return response.data;
     },
 
+    cancelRequest: async (friendId: string) => {
+        const response = await api.post('/friends/cancel', { friend_id: friendId });
+        return response.data;
+    },
+
     removeFriend: async (friendId: string) => {
         const response = await api.delete(`/friends/${friendId}`);
         return response.data;
@@ -420,6 +426,11 @@ export const settingsAPI = {
 
     joinGym: async (gymCode: string) => {
         const response = await api.post('/settings/gym', { gym_code: gymCode });
+        return response.data;
+    },
+
+    joinGymWithQR: async (gymQR: string) => {
+        const response = await api.post('/settings/gym', { gym_qr: gymQR });
         return response.data;
     },
 
@@ -674,8 +685,8 @@ export const workoutsAPI = {
         return response.data;
     },
 
-    getHistory: async (limit = 30) => {
-        const response = await api.get(`/workouts/history?limit=${limit}`);
+    getHistory: async (limit = 30, expectedAuthToken?: string) => {
+        const response = await api.get(`/workouts/history?limit=${limit}`, ...(expectedAuthToken ? [{ _expectedAuthToken: expectedAuthToken } as any] : []));
         return response.data;
     },
 
@@ -691,6 +702,10 @@ export const workoutsAPI = {
 
     getMySplits: async () => {
         const response = await api.get('/workouts/splits');
+        return response.data;
+    },
+    updateRoutine: async (id: string, training_plan: CustomWorkoutPlan, expected_plan: unknown, expectedAuthToken: string) => {
+        const response = await api.patch(`/workout-sessions/splits/${encodeURIComponent(id)}/plan`, { training_plan, expected_plan }, { _expectedAuthToken: expectedAuthToken } as any);
         return response.data;
     },
 
@@ -712,13 +727,23 @@ export const workoutsAPI = {
         return response.data;
     },
 
-    getPublishedSplits: async (filters?: { days?: number; difficulty?: string; official?: boolean }) => {
-        const response = await api.get('/workouts/published', { params: filters });
+    getPublishedSplits: async (filters?: { days?: number; difficulty?: string; official?: boolean; search?: string; sort?: 'most_liked' | 'newest' | 'most_used'; page?: number }, expectedAuthToken?: string) => {
+        const response = await api.get('/workouts/published', { params: filters, _expectedAuthToken: expectedAuthToken } as any);
         return response.data;
     },
 
-    adoptSplit: async (splitId: string) => {
-        const response = await api.post(`/workouts/published/${splitId}/adopt`);
+    getPublishedSplit: async (id: string, expectedAuthToken?: string) => {
+        const response = await api.get(`/workouts/published/${encodeURIComponent(id)}`, { _expectedAuthToken: expectedAuthToken } as any);
+        return response.data;
+    },
+
+    setSplitHeart: async (id: string, liked: boolean, expectedAuthToken: string) => {
+        const response = await api.put(`/workouts/published/${encodeURIComponent(id)}/heart`, { liked }, { _expectedAuthToken: expectedAuthToken } as any);
+        return response.data;
+    },
+
+    adoptSplit: async (splitId: string, expectedAuthToken?: string) => {
+        const response = await api.post(`/workouts/published/${encodeURIComponent(splitId)}/adopt`, {}, { _expectedAuthToken: expectedAuthToken } as any);
         return response.data;
     },
 
@@ -743,14 +768,13 @@ export const workoutsAPI = {
     },
 
     publishSplit: async (data: {
+        source_split_id: string;
         name: string;
         description: string;
-        days_per_week: number;
         difficulty_level: string;
-        program_structure: Record<string, string>;
         tags: string[];
-    }) => {
-        const response = await api.post('/workouts/published', data);
+    }, expectedAuthToken?: string) => {
+        const response = await api.post('/workouts/published', data, { _expectedAuthToken: expectedAuthToken } as any);
         return response.data;
     },
 
@@ -931,9 +955,10 @@ export const nutritionAPI = {
         serving_size: string;
         cooking_medium?: string;
         meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+        is_estimate?: boolean;
         visibility?: string;
-    }) => {
-        const response = await api.post('/nutrition/log', data);
+    }, authToken?: string) => {
+        const response = await api.post('/nutrition/log', data, authToken ? { _expectedAuthToken: authToken } as any : undefined);
         return response.data;
     },
 
@@ -1074,7 +1099,7 @@ export const exerciseAPI = {
     },
 
     search: async (query: string) => {
-        const response = await api.get(`/exercises/search/${query}`);
+        const response = await api.get(`/exercises/search/${encodeURIComponent(query)}`);
         return response.data;
     },
 

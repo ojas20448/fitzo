@@ -1,0 +1,437 @@
+[
+  {
+    "width": 390,
+    "reducedMotion": false,
+    "expanded": {
+      "height": 64,
+      "labelOpacity": 1,
+      "targets": [
+        {
+          "name": "Workout tab",
+          "width": 69.59375,
+          "height": 54
+        },
+        {
+          "name": "Food tab",
+          "width": 69.609375,
+          "height": 54
+        },
+        {
+          "name": "Gym tab",
+          "width": 69.59375,
+          "height": 54
+        },
+        {
+          "name": "Friends tab",
+          "width": 69.609375,
+          "height": 54
+        },
+        {
+          "name": "Profile tab",
+          "width": 69.59375,
+          "height": 54
+        }
+      ],
+      "overflow": false
+    },
+    "collapsed": {
+      "height": 54,
+      "labelOpacity": 0,
+      "targets": [
+        {
+          "name": "Workout tab",
+          "width": 69.59375,
+          "height": 44
+        },
+        {
+          "name": "Food tab",
+          "width": 69.609375,
+          "height": 44
+        },
+        {
+          "name": "Gym tab",
+          "width": 69.59375,
+          "height": 44
+        },
+        {
+          "name": "Friends tab",
+          "width": 69.609375,
+          "height": 44
+        },
+        {
+          "name": "Profile tab",
+          "width": 69.59375,
+          "height": 44
+        }
+      ],
+      "overflow": false
+    },
+    "restored": {
+      "height": 64,
+      "labelOpacity": 1,
+      "targets": [
+        {
+          "name": "Workout tab",
+          "width": 69.59375,
+          "height": 54
+        },
+        {
+          "name": "Food tab",
+          "width": 69.609375,
+          "height": 54
+        },
+        {
+          "name": "Gym tab",
+          "width": 69.59375,
+          "height": 54
+        },
+        {
+          "name": "Friends tab",
+          "width": 69.609375,
+          "height": 54
+        },
+        {
+          "name": "Profile tab",
+          "width": 69.59375,
+          "height": 54
+        }
+      ],
+      "overflow": false
+    },
+    "switched": {
+      "height": 64,
+      "labelOpacity": 1,
+      "targets": [
+        {
+          "name": "Workout tab",
+          "width": 69.59375,
+          "height": 54
+        },
+        {
+          "name": "Food tab",
+          "width": 69.609375,
+          "height": 54
+        },
+        {
+          "name": "Gym tab",
+          "width": 69.59375,
+          "height": 54
+        },
+        {
+          "name": "Friends tab",
+          "width": 69.609375,
+          "height": 54
+        },
+        {
+          "name": "Profile tab",
+          "width": 69.59375,
+          "height": 54
+        }
+      ],
+      "overflow": false
+    },
+    "lastActionClearance": 27,
+    "errors": [
+      "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load."
+    ],
+    "interceptedWrites": [],
+    "mockedPaths": [
+      "/health",
+      "/api/auth/me",
+      "/api/nutrition/today",
+      "/api/calories/day/2026-10-23",
+      "/api/workouts/splits",
+      "/api/settings/gym"
+    ]
+  },
+  {
+    "width": 320,
+    "reducedMotion": false,
+    "expanded": {
+      "height": 64,
+      "labelOpacity": 1,
+      "targets": [
+        {
+          "name": "Workout tab",
+          "width": 57.1875,
+          "height": 54
+        },
+        {
+          "name": "Food tab",
+          "width": 57.203125,
+          "height": 54
+        },
+        {
+          "name": "Gym tab",
+          "width": 57.203125,
+          "height": 54
+        },
+        {
+          "name": "Friends tab",
+          "width": 57.203125,
+          "height": 54
+        },
+        {
+          "name": "Profile tab",
+          "width": 57.203125,
+          "height": 54
+        }
+      ],
+      "overflow": false
+    },
+    "collapsed": {
+      "height": 54,
+      "labelOpacity": 0,
+      "targets": [
+        {
+          "name": "Workout tab",
+          "width": 57.1875,
+          "height": 44
+        },
+        {
+          "name": "Food tab",
+          "width": 57.203125,
+          "height": 44
+        },
+        {
+          "name": "Gym tab",
+          "width": 57.203125,
+          "height": 44
+        },
+        {
+          "name": "Friends tab",
+          "width": 57.203125,
+          "height": 44
+        },
+        {
+          "name": "Profile tab",
+          "width": 57.203125,
+          "height": 44
+        }
+      ],
+      "overflow": false
+    },
+    "restored": {
+      "height": 64,
+      "labelOpacity": 1,
+      "targets": [
+        {
+          "name": "Workout tab",
+          "width": 57.1875,
+          "height": 54
+        },
+        {
+          "name": "Food tab",
+          "width": 57.203125,
+          "height": 54
+        },
+        {
+          "name": "Gym tab",
+          "width": 57.203125,
+          "height": 54
+        },
+        {
+          "name": "Friends tab",
+          "width": 57.203125,
+          "height": 54
+        },
+        {
+          "name": "Profile tab",
+          "width": 57.203125,
+          "height": 54
+        }
+      ],
+      "overflow": false
+    },
+    "switched": {
+      "height": 64,
+      "labelOpacity": 1,
+      "targets": [
+        {
+          "name": "Workout tab",
+          "width": 57.1875,
+          "height": 54
+        },
+        {
+          "name": "Food tab",
+          "width": 57.203125,
+          "height": 54
+        },
+        {
+          "name": "Gym tab",
+          "width": 57.203125,
+          "height": 54
+        },
+        {
+          "name": "Friends tab",
+          "width": 57.203125,
+          "height": 54
+        },
+        {
+          "name": "Profile tab",
+          "width": 57.203125,
+          "height": 54
+        }
+      ],
+      "overflow": false
+    },
+    "lastActionClearance": 27,
+    "errors": [
+      "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load."
+    ],
+    "interceptedWrites": [],
+    "mockedPaths": [
+      "/health",
+      "/api/auth/me",
+      "/api/nutrition/today",
+      "/api/calories/day/2026-10-23",
+      "/api/workouts/splits",
+      "/api/settings/gym"
+    ]
+  },
+  {
+    "width": 430,
+    "reducedMotion": true,
+    "expanded": {
+      "height": 64,
+      "labelOpacity": 1,
+      "targets": [
+        {
+          "name": "Workout tab",
+          "width": 77.59375,
+          "height": 54
+        },
+        {
+          "name": "Food tab",
+          "width": 77.609375,
+          "height": 54
+        },
+        {
+          "name": "Gym tab",
+          "width": 77.59375,
+          "height": 54
+        },
+        {
+          "name": "Friends tab",
+          "width": 77.609375,
+          "height": 54
+        },
+        {
+          "name": "Profile tab",
+          "width": 77.59375,
+          "height": 54
+        }
+      ],
+      "overflow": false
+    },
+    "collapsed": {
+      "height": 54,
+      "labelOpacity": 0,
+      "targets": [
+        {
+          "name": "Workout tab",
+          "width": 77.59375,
+          "height": 44
+        },
+        {
+          "name": "Food tab",
+          "width": 77.609375,
+          "height": 44
+        },
+        {
+          "name": "Gym tab",
+          "width": 77.59375,
+          "height": 44
+        },
+        {
+          "name": "Friends tab",
+          "width": 77.609375,
+          "height": 44
+        },
+        {
+          "name": "Profile tab",
+          "width": 77.59375,
+          "height": 44
+        }
+      ],
+      "overflow": false
+    },
+    "restored": {
+      "height": 64,
+      "labelOpacity": 1,
+      "targets": [
+        {
+          "name": "Workout tab",
+          "width": 77.59375,
+          "height": 54
+        },
+        {
+          "name": "Food tab",
+          "width": 77.609375,
+          "height": 54
+        },
+        {
+          "name": "Gym tab",
+          "width": 77.59375,
+          "height": 54
+        },
+        {
+          "name": "Friends tab",
+          "width": 77.609375,
+          "height": 54
+        },
+        {
+          "name": "Profile tab",
+          "width": 77.59375,
+          "height": 54
+        }
+      ],
+      "overflow": false
+    },
+    "switched": {
+      "height": 64,
+      "labelOpacity": 1,
+      "targets": [
+        {
+          "name": "Workout tab",
+          "width": 77.59375,
+          "height": 54
+        },
+        {
+          "name": "Food tab",
+          "width": 77.609375,
+          "height": 54
+        },
+        {
+          "name": "Gym tab",
+          "width": 77.59375,
+          "height": 54
+        },
+        {
+          "name": "Friends tab",
+          "width": 77.609375,
+          "height": 54
+        },
+        {
+          "name": "Profile tab",
+          "width": 77.59375,
+          "height": 54
+        }
+      ],
+      "overflow": false
+    },
+    "lastActionClearance": 27,
+    "errors": [
+      "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load."
+    ],
+    "interceptedWrites": [],
+    "mockedPaths": [
+      "/health",
+      "/api/auth/me",
+      "/api/nutrition/today",
+      "/api/calories/day/2026-10-23",
+      "/api/workouts/splits",
+      "/api/settings/gym"
+    ]
+  }
+]

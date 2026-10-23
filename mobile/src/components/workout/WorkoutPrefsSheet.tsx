@@ -23,7 +23,7 @@ const WorkoutPrefsSheet: React.FC<WorkoutPrefsSheetProps> = ({
                 <View style={styles.row}>
                     <Text style={styles.rowTitle}>One side at a time</Text>
                     <Text style={styles.rowBody}>
-                        Doing single-arm rows or split squats? Tap 1 SIDE on the exercise and
+                        Doing single-arm rows or split squats? Open the exercise guide, choose Each side, and
                         enter what you did on one side. We'll count both.
                     </Text>
                 </View>
@@ -35,6 +35,9 @@ const WorkoutPrefsSheet: React.FC<WorkoutPrefsSheetProps> = ({
                             value={rirEnabled}
                             onValueChange={onChangeRir}
                             accessibilityLabel="Track reps in reserve"
+                            trackColor={{ false: colors.surfaceLighter, true: colors.primary }}
+                            thumbColor={rirEnabled ? colors.background : colors.text.secondary}
+                            ios_backgroundColor={colors.surfaceLighter}
                         />
                     </View>
                     <Text style={styles.rowBody}>

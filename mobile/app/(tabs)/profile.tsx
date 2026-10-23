@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
     View,
     Text,
@@ -10,26 +10,33 @@ import {
     Pressable,
     TextInput,
     Linking,
-    ActivityIndicator,
     Platform,
+    Keyboard,
+    KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
-import { memberAPI, caloriesAPI, nutritionAPI, measurementsAPI, settingsAPI, CalorieEntry, WeekSummary } from '../../src/services/api';
+import { memberAPI, caloriesAPI, nutritionAPI, measurementsAPI, CalorieEntry, WeekSummary } from '../../src/services/api';
 import FoodEntrySheet from '../../src/components/FoodEntrySheet';
+import AIConsentModal, { getAIConsent } from '../../src/components/AIConsentModal';
 import WeeklyNutritionCard from '../../src/components/WeeklyNutritionCard';
 import Avatar from '../../src/components/Avatar';
+import AvatarPicker from '../../src/components/AvatarPicker';
 import GlassCard from '../../src/components/GlassCard';
 import Button from '../../src/components/Button';
 import WorkoutCalendar from '../../src/components/WorkoutCalendar';
 import Skeleton, { SkeletonCard } from '../../src/components/Skeleton';
 import { useToast } from '../../src/components/Toast';
-import { colors, typography, spacing, borderRadius, shadows } from '../../src/styles/theme';
+import { colors, typography, spacing, borderRadius } from '../../src/styles/theme';
 import { displayName } from '../../src/utils/displayName';
+import { useMemberContentInset } from '../../src/components/navigation/MemberChromeContext';
+import { useMemberTabScroll } from '../../src/hooks/useMemberTabScroll';
 
 export default function ProfileScreen() {
+    const contentInset = useMemberContentInset();
+    const onScroll = useMemberTabScroll();
     const { user, logout, refreshUser } = useAuth();
     const toast = useToast();
     const [refreshing, setRefreshing] = useState(false);
@@ -45,6 +52,8 @@ export default function ProfileScreen() {
     const [weekSummary, setWeekSummary] = useState<WeekSummary | null>(null);
     const [dayView, setDayView] = useState<{ date: string; entries: CalorieEntry[] } | null>(null);
     const [openEntry, setOpenEntry] = useState<CalorieEntry | null>(null);
+    const [aiConsentGranted, setAiConsentGranted] = useState(false);
+    const [aiModalVisible, setAiModalVisible] = useState(false);
 
     // Tapping a calendar dot opens that day's food. Failures show an empty day
     // rather than nothing at all, so a tap always produces a visible response.
@@ -57,29 +66,20 @@ export default function ProfileScreen() {
     // Edit State
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState('');
-    const [editAvatar, setEditAvatar] = useState('');
+    const [editAvatar, setEditAvatar] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
-
-    // Gym join states
-    const [showJoinInput, setShowJoinInput] = useState(false);
-    const [gymCode, setGymCode] = useState('');
-    const [joining, setJoining] = useState(false);
-
-    // Preset Avatars
-    const AVATAR_PRESETS = [
-        'avatar_zeus',
-        'avatar_discobolus',
-        'avatar_lion',
-        'avatar_kettlebell',
-        'avatar_trophy',
-        'avatar_runner',
-        'avatar_heart',
-        'avatar_barbell',
-    ];
+    const [editError, setEditError] = useState('');
+    const [nameFocused, setNameFocused] = useState(false);
+    const [confirmDiscard, setConfirmDiscard] = useState(false);
+    const profileSaving = useRef(false);
+    const profileChanged = editName.trim() !== (user?.name || '').trim() || editAvatar !== (user?.avatar_url || null);
 
     useFocusEffect(
         useCallback(() => {
             loadData();
+            let active = true;
+            getAIConsent().then((granted) => { if (active) setAiConsentGranted(granted); });
+            return () => { active = false; };
         }, [])
     );
 
@@ -146,16 +146,27 @@ export default function ProfileScreen() {
 
     const handleEditOpen = () => {
         setEditName(user?.name || '');
-        setEditAvatar(user?.avatar_url || AVATAR_PRESETS[0]);
+        setEditAvatar(user?.avatar_url || null);
+        setEditError(''); setConfirmDiscard(false); setNameFocused(false);
         setIsEditing(true);
     };
 
+    const closeEditor = () => {
+        if (profileSaving.current) return;
+        Keyboard.dismiss();
+        if (profileChanged) setConfirmDiscard(true);
+        else setIsEditing(false);
+    };
+
     const handleUpdateProfile = async () => {
-        if (!editName.trim()) return;
-        setSaving(true);
+        if (profileSaving.current) return;
+        const name = editName.trim();
+        if (!name || name.length > 100) { setEditError('Enter a display name between 1 and 100 characters.'); return; }
+        if (!profileChanged) return;
+        Keyboard.dismiss(); profileSaving.current = true; setSaving(true); setEditError('');
         try {
             await memberAPI.updateProfile({
-                name: editName,
+                name,
                 avatar_url: editAvatar
             });
 
@@ -165,31 +176,10 @@ export default function ProfileScreen() {
             setIsEditing(false);
             toast.success('Profile updated', 'Your changes have been saved');
         } catch (error: any) {
-            console.error('Failed to update profile', error);
-            toast.error('Update failed', error?.message || 'Could not save profile changes');
+            setEditError(error?.message || 'Couldn’t save your profile. Your changes are still here. Try again.');
         } finally {
+            profileSaving.current = false;
             setSaving(false);
-        }
-    };
-
-    const handleJoinGym = async () => {
-        if (!gymCode.trim()) {
-            toast.error('Missing Code', 'Enter the access code from your gym');
-            return;
-        }
-
-        setJoining(true);
-        try {
-            const res = await settingsAPI.joinGym(gymCode.trim());
-            toast.success('Gym Joined', `Welcome to ${res.gym.name}!`);
-            setGymCode('');
-            setShowJoinInput(false);
-            await refreshUser();
-            await loadData();
-        } catch (err: any) {
-            toast.error('Error', err.response?.data?.error || 'Could not join gym');
-        } finally {
-            setJoining(false);
         }
     };
 
@@ -256,7 +246,9 @@ export default function ProfileScreen() {
 
             <ScrollView
                 style={styles.content}
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: contentInset }]}
+                onScroll={onScroll}
+                scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
@@ -284,6 +276,39 @@ export default function ProfileScreen() {
                         )}
                     </View>
                 </View>
+
+                <GlassCard style={{ marginBottom: spacing.xl }}>
+                    <TouchableOpacity
+                        style={styles.settingItem}
+                        onPress={() => setAiModalVisible(true)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`AI Data Sharing & Privacy, ${aiConsentGranted ? 'enabled' : 'disabled'}`}
+                        accessibilityHint="Review or change consent for AI features"
+                    >
+                        <MaterialIcons name="auto-awesome" size={24} color={aiConsentGranted ? colors.primary : colors.text.secondary} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.settingLabel}>AI Data Sharing & Privacy</Text>
+                            <Text style={styles.settingSubtext}>
+                                {aiConsentGranted ? 'Enabled · Tap to review or turn off' : 'Disabled · Enable here or when you use AI'}
+                            </Text>
+                        </View>
+                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                    </TouchableOpacity>
+                </GlassCard>
+
+                <GlassCard style={{ marginBottom: spacing.xl }}>
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Progress" style={styles.settingItem} onPress={() => router.push('/stats' as any)}>
+                        <MaterialIcons name="bar-chart" size={24} color={colors.text.secondary} /><Text style={styles.settingLabel}>Progress</Text><MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                    </TouchableOpacity>
+                    <View style={styles.settingDivider} />
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Learn" style={styles.settingItem} onPress={() => router.push('/member/learn' as any)}>
+                        <MaterialIcons name="menu-book" size={24} color={colors.text.secondary} /><Text style={styles.settingLabel}>Learn</Text><MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                    </TouchableOpacity>
+                    <View style={styles.settingDivider} />
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Your gym" style={styles.settingItem} onPress={() => router.navigate('/(tabs)/gym' as any)}>
+                        <MaterialIcons name="business" size={24} color={colors.text.secondary} /><Text style={styles.settingLabel}>Your gym</Text><MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
+                    </TouchableOpacity>
+                </GlassCard>
 
                 {/* Monthly Progress */}
                 <View style={styles.section}>
@@ -331,16 +356,6 @@ export default function ProfileScreen() {
                             </View>
                         </View>
 
-                        <View style={styles.settingDivider} />
-
-                        <TouchableOpacity
-                            style={styles.settingItem}
-                            onPress={() => router.push('/stats' as any)}
-                        >
-                            <MaterialIcons name="blur-on" size={24} color={colors.text.secondary} />
-                            <Text style={styles.settingLabel}>Anatomy Heatmap</Text>
-                            <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
-                        </TouchableOpacity>
                         <View style={styles.settingDivider} />
 
                         <TouchableOpacity
@@ -415,62 +430,6 @@ export default function ProfileScreen() {
                     </GlassCard>
                 </View>
 
-                {/* Join Gym Card - Show if user has no gym */}
-                {!user?.gym_name && (
-                    <GlassCard style={[styles.joinGymCard, { marginHorizontal: 0, marginTop: spacing.xl, marginBottom: spacing.sm }]}>
-                        <TouchableOpacity 
-                            style={styles.joinGymHeader} 
-                            onPress={() => setShowJoinInput(!showJoinInput)}
-                            accessibilityLabel="Join your gym"
-                            accessibilityRole="button"
-                        >
-                            <View style={styles.joinGymLeft}>
-                                <MaterialIcons name="add-business" size={22} color={colors.text.secondary} />
-                                <View style={{ marginLeft: spacing.sm, flex: 1 }}>
-                                    <Text style={styles.joinGymTitle}>Join your gym</Text>
-                                    <Text style={styles.joinGymSub}>
-                                        Enter your gym's access code to unlock crowd & check-ins
-                                    </Text>
-                                </View>
-                            </View>
-                            <MaterialIcons 
-                                name={showJoinInput ? 'expand-less' : 'expand-more'} 
-                                size={22} 
-                                color={colors.text.muted} 
-                            />
-                        </TouchableOpacity>
-
-                        {showJoinInput && (
-                            <View style={styles.joinForm}>
-                                <TextInput
-                                    style={styles.codeInput}
-                                    value={gymCode}
-                                    onChangeText={(t) => setGymCode(t.toUpperCase())}
-                                    placeholder="e.g. FITZO-A1B2C3D4"
-                                    placeholderTextColor={colors.text.muted}
-                                    autoCapitalize="characters"
-                                    autoCorrect={false}
-                                    editable={!joining}
-                                    onSubmitEditing={handleJoinGym}
-                                    returnKeyType="go"
-                                    accessibilityLabel="Gym access code"
-                                />
-                                <TouchableOpacity
-                                    style={[styles.joinBtn, joining && styles.joinBtnDisabled]}
-                                    onPress={handleJoinGym}
-                                    disabled={joining}
-                                >
-                                    {joining ? (
-                                        <ActivityIndicator size="small" color={colors.background} />
-                                    ) : (
-                                        <Text style={styles.joinBtnText}>JOIN</Text>
-                                    )}
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </GlassCard>
-                )}
-
                 {/* Logout */}
                 <Button
                     title="Log Out"
@@ -489,60 +448,54 @@ export default function ProfileScreen() {
                 visible={isEditing}
                 animationType="slide"
                 presentationStyle="pageSheet"
-                onRequestClose={() => setIsEditing(false)}
+                allowSwipeDismissal={false}
+                onRequestClose={closeEditor}
             >
                 <SafeAreaView style={styles.modalContainer}>
+                    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
                     <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Edit Profile</Text>
-                        <TouchableOpacity onPress={() => setIsEditing(false)} accessibilityRole="button" accessibilityLabel="Close editor">
-                            <GlassCard style={styles.closeBtn}>
+                        <Text style={styles.modalTitle} accessibilityRole="header">Edit profile</Text>
+                        <TouchableOpacity onPress={closeEditor} disabled={saving} style={styles.closeBtn} accessibilityRole="button" accessibilityLabel="Close editor" accessibilityState={{ disabled: saving }}>
                                 <MaterialIcons name="close" size={20} color={colors.text.primary} />
-                            </GlassCard>
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView contentContainerStyle={styles.modalContent}>
+                    <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
+                        <Text style={styles.editorHint}>Choose how you appear in Fitzo.</Text>
+                        <AvatarPicker value={editAvatar} name={editName.trim()} disabled={saving} onChange={value => { setEditAvatar(value); setEditError(''); setConfirmDiscard(false); }} />
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Display Name</Text>
+                            <Text style={styles.inputLabel}>Display name</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, nameFocused && styles.inputFocused]}
                                 value={editName}
-                                onChangeText={setEditName}
-                                placeholder="Your Name"
+                                onChangeText={value => { setEditName(value); setEditError(''); setConfirmDiscard(false); }}
+                                placeholder="Your name"
                                 placeholderTextColor={colors.text.subtle}
+                                accessibilityLabel="Display name"
+                                editable={!saving}
+                                autoComplete="name"
+                                textContentType="name"
+                                autoCapitalize="words"
+                                autoCorrect={false}
+                                maxLength={100}
+                                onFocus={() => setNameFocused(true)}
+                                onBlur={() => setNameFocused(false)}
+                                returnKeyType="done"
+                                onSubmitEditing={() => { void handleUpdateProfile(); }}
                             />
-                        </View>
-
-                        <Text style={styles.inputLabel}>Choose Avatar</Text>
-                        <View style={styles.avatarGrid}>
-                            {AVATAR_PRESETS.map((uri, index) => (
-                                <TouchableOpacity
-                                    key={index}
-                                    style={[
-                                        styles.avatarOption,
-                                        editAvatar === uri && styles.avatarOptionSelected
-                                    ]}
-                                    onPress={() => setEditAvatar(uri)}
-                                >
-                                    <Avatar uri={uri} size="md" />
-                                    {editAvatar === uri && (
-                                        <View style={styles.checkBadge}>
-                                            <MaterialIcons name="check" size={12} color={colors.background} />
-                                        </View>
-                                    )}
-                                </TouchableOpacity>
-                            ))}
+                            <Text style={styles.editorHint}>Shown on your profile and to friends.</Text>
                         </View>
                     </ScrollView>
 
                     <View style={styles.modalFooter}>
-                        <Button
-                            title={saving ? "Saving..." : "Save Changes"}
-                            onPress={handleUpdateProfile}
-                            disabled={saving}
-                            fullWidth
-                        />
+                        {!!editError && <Text style={styles.editorError} accessibilityRole="alert" accessibilityLiveRegion="polite">{editError}</Text>}
+                        {confirmDiscard ? <>
+                            <Text style={styles.discardTitle} accessibilityRole="alert">Discard your changes?</Text>
+                            <Button title="Keep editing" variant="secondary" onPress={() => setConfirmDiscard(false)} fullWidth />
+                            <Button title="Discard changes" variant="danger" onPress={() => { setConfirmDiscard(false); setIsEditing(false); }} fullWidth style={{ marginTop: 10 }} />
+                        </> : <Button title="Save changes" onPress={handleUpdateProfile} loading={saving} disabled={saving || !profileChanged} fullWidth />}
                     </View>
+                    </KeyboardAvoidingView>
                 </SafeAreaView>
             </Modal>
 
@@ -583,6 +536,21 @@ export default function ProfileScreen() {
                     </Pressable>
                 </Pressable>
             </Modal>
+
+            <AIConsentModal
+                visible={aiModalVisible}
+                featureTitle="AI Data Sharing"
+                onAccept={() => {
+                    setAiConsentGranted(true);
+                    setAiModalVisible(false);
+                    toast.success('AI Features Enabled', 'Your AI preferences have been updated.');
+                }}
+                onDecline={() => {
+                    setAiConsentGranted(false);
+                    setAiModalVisible(false);
+                    toast.info('AI Features Disabled', 'AI features will remain off.');
+                }}
+            />
 
             <FoodEntrySheet
                 entry={openEntry}
@@ -914,6 +882,7 @@ const styles = StyleSheet.create({
         padding: spacing.lg,
         borderBottomWidth: 1,
         borderBottomColor: colors.glass.border,
+        width: '100%', maxWidth: 600, alignSelf: 'center',
     },
     modalTitle: {
         fontSize: typography.sizes.lg,
@@ -921,28 +890,28 @@ const styles = StyleSheet.create({
         color: colors.text.primary,
     },
     closeBtn: {
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
     },
     modalContent: {
         padding: spacing.xl,
+        width: '100%', maxWidth: 600, alignSelf: 'center',
     },
     inputGroup: {
         marginBottom: spacing.xl,
+        marginTop: spacing.xl,
     },
     inputLabel: {
         fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.bold,
+        fontFamily: typography.fontFamily.medium,
         color: colors.text.secondary,
         marginBottom: spacing.sm,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
     },
     input: {
-        backgroundColor: colors.glass.surface,
+        backgroundColor: colors.surfaceLight,
         borderWidth: 1,
         borderColor: colors.glass.border,
         borderRadius: borderRadius.lg,
@@ -950,103 +919,18 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.base,
         color: colors.text.primary,
         fontFamily: typography.fontFamily.medium,
+        minHeight: 56,
+        ...Platform.select({ web: { outlineWidth: 0 } }),
     },
-    avatarGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.md,
-        marginTop: spacing.md,
-    },
-    avatarOption: {
-        padding: 4,
-        borderRadius: 50,
-        borderWidth: 2,
-        borderColor: 'transparent',
-        position: 'relative',
-    },
-    avatarOptionSelected: {
-        borderColor: colors.primary,
-    },
-    checkBadge: {
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-        backgroundColor: colors.primary,
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: colors.background,
-    },
+    inputFocused: { borderColor: colors.text.secondary },
+    editorHint: { color: colors.text.secondary, fontFamily: typography.fontFamily.regular, fontSize: 13, lineHeight: 21, marginBottom: 16, marginTop: 8 },
+    editorError: { color: '#FCA5A5', fontFamily: typography.fontFamily.regular, fontSize: 13, lineHeight: 21, marginBottom: 14 },
+    discardTitle: { color: colors.text.primary, fontFamily: typography.fontFamily.medium, fontSize: 16, lineHeight: 24, marginBottom: 16 },
     modalFooter: {
         padding: spacing.xl,
         borderTopWidth: 1,
         borderTopColor: colors.glass.border,
+        width: '100%', maxWidth: 600, alignSelf: 'center',
     },
 
-    joinGymCard: {
-        marginHorizontal: spacing.xl,
-        marginTop: spacing.md,
-        marginBottom: spacing.sm,
-        padding: spacing.md,
-        borderRadius: borderRadius.xl,
-    },
-    joinGymHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    joinGymLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    joinGymTitle: {
-        fontSize: typography.sizes.base,
-        fontFamily: typography.fontFamily.bold,
-        color: colors.text.primary,
-    },
-    joinGymSub: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.regular,
-        color: colors.text.muted,
-        marginTop: 2,
-    },
-    joinForm: {
-        flexDirection: 'row',
-        gap: spacing.sm,
-        marginTop: spacing.md,
-        borderTopWidth: 1,
-        borderTopColor: colors.glass.border,
-        paddingTop: spacing.md,
-    },
-    codeInput: {
-        flex: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
-        borderWidth: 1,
-        borderColor: colors.glass.border,
-        borderRadius: borderRadius.md,
-        padding: spacing.sm,
-        fontSize: typography.sizes.sm,
-        color: colors.text.primary,
-        fontFamily: typography.fontFamily.medium,
-        textTransform: 'uppercase',
-    },
-    joinBtn: {
-        backgroundColor: colors.primary,
-        borderRadius: borderRadius.md,
-        paddingHorizontal: spacing.xl,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    joinBtnDisabled: {
-        opacity: 0.5,
-    },
-    joinBtnText: {
-        color: colors.text.dark,
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.bold,
-    },
 });

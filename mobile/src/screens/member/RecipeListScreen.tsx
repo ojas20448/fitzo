@@ -126,15 +126,15 @@ const RecipeListScreen = () => {
                         <Text style={styles.statLabel}>kcal</Text>
                     </View>
                     <View style={styles.statItem}>
-                        <Text style={styles.statValue}>{item.total_protein}g</Text>
+                        <Text style={[styles.statValue, { color: colors.macro.protein }]}>{item.total_protein}g</Text>
                         <Text style={styles.statLabel}>Prot</Text>
                     </View>
                     <View style={styles.statItem}>
-                        <Text style={styles.statValue}>{item.total_carbs}g</Text>
+                        <Text style={[styles.statValue, { color: colors.macro.carbs }]}>{item.total_carbs}g</Text>
                         <Text style={styles.statLabel}>Carbs</Text>
                     </View>
                     <View style={styles.statItem}>
-                        <Text style={styles.statValue}>{item.total_fat}g</Text>
+                        <Text style={[styles.statValue, { color: colors.macro.fat }]}>{item.total_fat}g</Text>
                         <Text style={styles.statLabel}>Fat</Text>
                     </View>
                 </View>

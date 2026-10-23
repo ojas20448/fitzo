@@ -8,6 +8,7 @@ const cache = require('../services/cache');
 const xpService = require('../services/xpService');
 const { IST_TODAY_SQL, isValidDateString } = require('../utils/dayBoundary');
 const { validateEntryPatch } = require('../utils/entryEdit');
+const { FREQUENT_FOODS_SQL } = require('../utils/frequentFoods');
 
 // All routes require authentication
 router.use(authenticate);
@@ -271,20 +272,10 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 // ============================================
 router.get('/frequent', asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 10));
 
     const result = await query(
-        `SELECT food_name as name, 
-                ROUND(AVG(calories)) as calories, 
-                ROUND(AVG(protein)) as protein, 
-                ROUND(AVG(carbs)) as carbs, 
-                ROUND(AVG(fat)) as fat,
-                COUNT(*) as usage_count
-         FROM calorie_logs 
-         WHERE user_id = $1 AND food_name IS NOT NULL
-         GROUP BY food_name
-         ORDER BY usage_count DESC
-         LIMIT $2`,
+        FREQUENT_FOODS_SQL,
         [userId, limit]
     );
 

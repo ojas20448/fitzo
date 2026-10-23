@@ -1,0 +1,93 @@
+{
+  "passed": true,
+  "layouts": [
+    {
+      "name": "empty-workout",
+      "width": 320
+    },
+    {
+      "name": "empty-workout",
+      "width": 390
+    },
+    {
+      "name": "choose-exercises",
+      "width": 320
+    },
+    {
+      "name": "choose-exercises",
+      "width": 390
+    },
+    {
+      "name": "choose-exercises",
+      "width": 430
+    },
+    {
+      "name": "choose-exercises",
+      "width": 844
+    },
+    {
+      "name": "bundled-photo",
+      "width": 320
+    },
+    {
+      "name": "bundled-photo",
+      "width": 390
+    },
+    {
+      "name": "animated-demo",
+      "width": 390
+    },
+    {
+      "name": "logging-set",
+      "width": 320
+    },
+    {
+      "name": "logging-set",
+      "width": 390
+    }
+  ],
+  "media": [
+    {
+      "name": "Machine Chest Press",
+      "src": "http://localhost:8081/assets/?unstable_path=.%2Fassets%2Fexercise-photos/chest_press_machine.jpg",
+      "width": 850
+    },
+    {
+      "name": "Push Up",
+      "src": "http://localhost:8081/assets/?unstable_path=.%2Fassets%2Fexercise-demos/push-up.gif",
+      "width": 640
+    },
+    {
+      "name": "Push Up",
+      "src": "http://localhost:8081/assets/?unstable_path=.%2Fassets%2Fexercise-demos/push-up.jpg",
+      "width": 640
+    },
+    {
+      "name": "Push Up",
+      "src": "http://localhost:8081/assets/?unstable_path=.%2Fassets%2Fexercise-demos/push-up.gif",
+      "width": 640
+    },
+    {
+      "name": "Machine Chest Press",
+      "src": "http://localhost:8081/assets/?unstable_path=.%2Fassets%2Fexercise-photos/chest_press_machine.jpg",
+      "width": 850
+    }
+  ],
+  "writes": [
+    {
+      "path": "/workouts",
+      "body": {
+        "workout_type": "chest",
+        "day_name": "Chest workout",
+        "exercises": "[{\"id\":\"chest_press_machine\",\"name\":\"Machine Chest Press\",\"gifUrl\":\"/assets/?unstable_path=.%2Fassets%2Fexercise-photos/chest_press_machine.jpg\",\"target\":\"pectorals\",\"sets\":[{\"id\":\"0.8405059066823019\",\"weight_kg\":40,\"reps\":8,\"rir\":\"\",\"completed\":true}]}]",
+        "notes": "Logged via Smart Log",
+        "visibility": "private",
+        "duration_minutes": 1
+      }
+    }
+  ],
+  "errors": [
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load.",
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load."
+  ]
+}

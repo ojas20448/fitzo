@@ -26,16 +26,21 @@ import * as Haptics from '../../utils/haptics';
 import { foodAPI, caloriesAPI, nutritionAPI, settingsAPI, aiAPI, CalorieEntry } from '../../services/api';
 import Input from '../../components/Input';
 import VoiceCaptureSheet from '../../components/VoiceCaptureSheet';
+import AIConsentModal from '../../components/AIConsentModal';
 import { hasSeenTip, markTipSeen, TIP_KEYS } from '../../utils/firstRun';
 import { useVoiceCapture } from '../../hooks/useVoiceCapture';
 import Celebration from '../../components/Celebration';
 import ThaliPresets from '../../components/ThaliPresets';
+import MealTypePicker from '../../components/MealTypePicker';
+import { groupDiaryEntries } from '../../utils/foodDiary';
 import FoodEntrySheet from '../../components/FoodEntrySheet';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius, shadows, shadow } from '../../styles/theme';
 import { defaultFoods } from '../../data/defaultFoods';
 import { useNutrition } from '../../context/NutritionContext';
 import { FoodCacheService } from '../../services/FoodCacheService';
+import { useAuth } from '../../context/AuthContext';
+import { MealType, isMealType, portionGrams, savedPortion, repeatServing } from '../../utils/foodPortion';
 
 const { width } = Dimensions.get('window');
 
@@ -69,6 +74,7 @@ interface Serving {
     fat: number;
     fiber: number;
     sugar: number;
+    isEstimate?: boolean;
 }
 
 interface FoodDetails {
@@ -113,7 +119,10 @@ const CustomSlider: React.FC<SliderProps> = ({ value, min, max, onChange }) => {
     );
 };
 
-const CalorieLogScreen: React.FC = () => {
+const AccountCalorieLogScreen: React.FC = () => {
+    const { user } = useAuth();
+    const mounted = useRef(true);
+    useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const [draftItems, setDraftItems] = React.useState<any[]>([]);
   const [showDraftSheet, setShowDraftSheet] = React.useState(false);
     const toast = useToast();
@@ -126,6 +135,7 @@ const CalorieLogScreen: React.FC = () => {
         carbs?: string;
         fat?: string;
         source?: string;
+        meal_type?: string;
     }>();
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -239,8 +249,7 @@ const CalorieLogScreen: React.FC = () => {
     });
 
     const openVoice = async () => {
-        setVoiceSheetOpen(true);
-        await voice.start();
+        if (await voice.start()) setVoiceSheetOpen(true);
     };
 
     const cancelVoice = async () => {
@@ -259,11 +268,17 @@ const CalorieLogScreen: React.FC = () => {
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [aiAnalyzing, setAiAnalyzing] = useState(false);
     const [logging, setLogging] = useState(false);
+    const saving = useRef(false);
+    const searchInput = useRef<TextInput>(null);
+    const [mealType, setMealType] = useState<MealType>(isMealType(params.meal_type) ? params.meal_type : 'snack');
+    useEffect(() => { if (isMealType(params.meal_type)) setMealType(params.meal_type); }, [params.meal_type]);
+    const [savedFood, setSavedFood] = useState<string | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);
     const [searchError, setSearchError] = useState<string | null>(null);
     const [pendingFoodName, setPendingFoodName] = useState('');
     const [aiProgressText, setAiProgressText] = useState('Reading your description...');
     const [frequentLoading, setFrequentLoading] = useState(true);
+    const frequentRequest = useRef(0);
 
     // Frequent foods
     const [frequentFoods, setFrequentFoods] = useState<any[]>([]);
@@ -281,12 +296,6 @@ const CalorieLogScreen: React.FC = () => {
     const [visibility, setVisibility] = useState<'friends' | 'private'>('friends');
     const [shareLogs, setShareLogs] = useState(true);
 
-    useEffect(() => {
-        loadFrequentFoods();
-        loadSharingPreference();
-        loadCustomQuickAdds();
-    }, []);
-
     // Cycle AI progress messages
     useEffect(() => {
         if (!aiAnalyzing) { setAiProgressText('Reading your description...'); return; }
@@ -296,20 +305,23 @@ const CalorieLogScreen: React.FC = () => {
         return () => clearInterval(interval);
     }, [aiAnalyzing]);
 
-    const loadCustomQuickAdds = async () => {
+    const loadCustomQuickAdds = useCallback(async () => {
         try {
-            const data = await AsyncStorage.getItem('custom_quick_adds');
+            if (!user?.id) return;
+            const data = await AsyncStorage.getItem(`custom_quick_adds_${user.id}`);
             if (data) {
-                setCustomQuickAdds(JSON.parse(data));
+                const list = JSON.parse(data);
+                if (Array.isArray(list)) setCustomQuickAdds(list);
             }
         } catch (error) {
             console.error('Failed to load custom quick adds', error);
         }
-    };
+    }, [user?.id]);
 
     const saveCustomQuickAdds = async (newList: any[]) => {
         try {
-            await AsyncStorage.setItem('custom_quick_adds', JSON.stringify(newList));
+            if (!user?.id) return;
+            await AsyncStorage.setItem(`custom_quick_adds_${user.id}`, JSON.stringify(newList));
             setCustomQuickAdds(newList);
         } catch (error) {
             console.error('Failed to save custom quick adds', error);
@@ -368,19 +380,22 @@ const CalorieLogScreen: React.FC = () => {
         );
     };
 
-    const loadFrequentFoods = async () => {
+    const loadFrequentFoods = useCallback(async () => {
+        const request = ++frequentRequest.current;
         setFrequentLoading(true);
         try {
             const data = await caloriesAPI.getFrequentFoods();
-            setFrequentFoods(data.frequent || []);
+            // Older backends return averages without an entry id. Do not label
+            // those as an actual previous portion during a rolling release.
+            if (mounted.current && request === frequentRequest.current) setFrequentFoods((data.frequent || []).filter((food: any) => food.entry_id));
         } catch (error: any) {
             // Non-critical - just won't show frequent foods
         } finally {
-            setFrequentLoading(false);
+            if (mounted.current && request === frequentRequest.current) setFrequentLoading(false);
         }
-    };
+    }, []);
 
-    const loadSharingPreference = async () => {
+    const loadSharingPreference = useCallback(async () => {
         try {
             const data = await settingsAPI.getSharingPreference();
             setShareLogs(data.share_logs_default);
@@ -390,43 +405,27 @@ const CalorieLogScreen: React.FC = () => {
             setShareLogs(true);
             setVisibility('friends');
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        loadFrequentFoods();
+        loadSharingPreference();
+        loadCustomQuickAdds();
+    }, [loadFrequentFoods, loadSharingPreference, loadCustomQuickAdds]);
 
 
     const handleQuickAdd = async (food: any) => {
-        // Prepare for quick logging or detailing
-        // For now, let's open details with pre-filled data if possible, 
-        // or just log it directly if we trust the historical averages.
-        // Let's open the detail modal with "Custom" data derived from history.
-
+        const serving = repeatServing(food.isCustom ? { ...food, serving_size: '1 portion' } : food);
         setSelectedFood({
             id: 'custom-' + Date.now(),
             name: food.name,
-            brand: 'Frequent',
-            servings: [{
-                id: 'default',
-                description: 'Average Entry',
-                measurementDescription: 'serving',
-                calories: food.calories,
-                protein: food.protein,
-                carbs: food.carbs,
-                fat: food.fat,
-                fiber: 0,
-                sugar: 0
-            }]
+            brand: food.isCustom ? 'Your shortcut' : `Last saved portion · ${serving.description}`,
+            servings: [serving]
         });
-        setSelectedServing({
-            id: 'default',
-            description: 'Average Entry',
-            measurementDescription: 'serving',
-            calories: food.calories,
-            protein: food.protein,
-            carbs: food.carbs,
-            fat: food.fat,
-            fiber: 0,
-            sugar: 0
-        });
+        setSelectedServing(serving);
         setServingCount(1);
+        setPortionMode('serving');
+        setGramAmount(String(portionGrams(serving.description) ?? 100));
         setShowDetail(true);
     };
 
@@ -530,6 +529,8 @@ const CalorieLogScreen: React.FC = () => {
     }, [searchQuery]);
 
     const handleFoodSelect = async (food: any) => {
+        setPortionMode('serving');
+        setGramAmount('100');
         // Handle AI Trigger
         if (food.isAiTrigger) {
             setPendingFoodName(searchQuery);
@@ -621,21 +622,21 @@ const CalorieLogScreen: React.FC = () => {
     };
 
     const handleLog = async () => {
-        if (!selectedFood || !selectedServing) return;
+        if (!selectedFood || !selectedServing || saving.current) return;
 
         const mult = getMultiplier();
+        if (!Number.isFinite(mult) || mult <= 0) {
+            toast.error('Check your portion', 'Enter a portion greater than zero.');
+            return;
+        }
         const totalCalories = Math.round(selectedServing.calories * mult);
         const totalProtein = Math.round(selectedServing.protein * mult);
         const totalCarbs = Math.round(selectedServing.carbs * mult);
         const totalFat = Math.round(selectedServing.fat * mult);
+        saving.current = true;
+        setLogging(true);
 
         try {
-            // Optimistic Log - Instant UI Update
-            // Fire API in background but await just for basic validation catch
-            // Actually, for true instant feel, we should close modal immediately or show celebration immediately depending on UX
-            // User requested: "Home ring animates within <300ms"
-
-            // 1. Kick off optimistic update with visibility
             const { isGoalHit } = await logFoodOptimistic({
                 calories: totalCalories,
                 protein: totalProtein,
@@ -644,36 +645,40 @@ const CalorieLogScreen: React.FC = () => {
                 food_name: selectedFood.name,
                 serving_size: portionMode === 'grams'
                     ? `${gramAmount}g`
-                    : `${servingCount} ${selectedServing.measurementDescription}`,
+                    : savedPortion(selectedServing.description || selectedServing.measurementDescription, servingCount),
                 cooking_medium: (selectedServing as any).cookingMedium ?? undefined,
-                meal_type: 'snack',
+                meal_type: mealType,
+                is_estimate: selectedServing.isEstimate ?? false,
                 visibility: visibility
             });
 
-            // 2. Success Feedback
+            if (!mounted.current) return;
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             loadTodayEntries();
+            loadFrequentFoods();
+            setShowDetail(false);
+            setSavedFood(selectedFood.name);
+            setSearchQuery('');
             if (isGoalHit) {
                 toast.success('GOAL REACHED!', `You've hit your daily targets!`);
-                goBack();
             } else {
                 toast.success('Logged!', `${totalCalories} kcal from ${selectedFood.name}`);
-                goBack();
             }
 
         } catch (error: any) {
-            toast.error('Error', error.message || 'Failed to log calories');
+            if (mounted.current) toast.error('Error', error.message || 'Failed to log calories');
+        } finally {
+            saving.current = false;
+            if (mounted.current) setLogging(false);
         }
     };
 
     // Calculate the effective multiplier based on portion mode
     const getMultiplier = () => {
         if (portionMode === 'grams' && selectedServing) {
-            // Extract base gram amount from serving description (e.g. "1 cup (150g)" -> 150, "100g" -> 100)
-            const match = selectedServing.description?.match(/(\d+(?:\.\d+)?)\s*g/i);
-            const baseGrams = match ? parseFloat(match[1]) : 100;
+            const baseGrams = portionGrams(selectedServing.description);
             const grams = parseFloat(gramAmount) || 0;
-            return grams / baseGrams;
+            return baseGrams ? grams / baseGrams : 0;
         }
         return servingCount;
     };
@@ -765,6 +770,7 @@ const CalorieLogScreen: React.FC = () => {
                 <View style={styles.searchBar}>
                     <MaterialIcons name="search" size={20} color={colors.text.muted} />
                     <TextInput
+                        ref={searchInput}
                         style={styles.searchInput}
                         placeholder="Search foods..."
                         placeholderTextColor={colors.text.subtle}
@@ -798,7 +804,7 @@ const CalorieLogScreen: React.FC = () => {
                     </Pressable>
                     <View style={styles.searchBarDivider} />
                     <Pressable
-                        onPress={() => router.push('/food-scanner')}
+                        onPress={() => router.push({ pathname: '/food-scanner', params: { meal_type: mealType } })}
                         style={styles.barcodeScanBtn}
                         accessibilityLabel="Scan food photo"
                     >
@@ -806,6 +812,25 @@ const CalorieLogScreen: React.FC = () => {
                     </Pressable>
                 </View>
             </View>
+
+            <View style={styles.mealContext}>
+                <Text style={styles.mealContextLabel}>ADDING TO</Text>
+                <MealTypePicker value={mealType} onChange={setMealType} />
+            </View>
+
+            {savedFood && (
+                <View style={styles.savedFoodBanner}>
+                    <Text accessibilityLiveRegion="polite" style={styles.todayName}>{savedFood} saved</Text>
+                    <View style={styles.savedFoodActions}>
+                        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Add another food" style={styles.savedFoodAction} onPress={() => { setSavedFood(null); searchInput.current?.focus(); }}>
+                            <Text style={styles.savedFoodActionText}>Add another food</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Done logging food" style={styles.savedFoodAction} onPress={goBack}>
+                            <Text style={styles.todayServing}>Done</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
 
             {!hasSearchQuery && (
             <ScrollView
@@ -815,6 +840,7 @@ const CalorieLogScreen: React.FC = () => {
                 showsVerticalScrollIndicator={false}
             >
             <ThaliPresets
+                mealType={mealType}
                 onLogged={(preset, kcal) => {
                     toast.success('Logged!', `${preset.name} · ${kcal} kcal`);
                     refreshToday();
@@ -822,27 +848,6 @@ const CalorieLogScreen: React.FC = () => {
                 }}
                 onError={(message) => toast.error('Could not log meal', message)}
             />
-            {/* Photo Log Banner as Primary Flow */}
-            {!searching && (
-                <Pressable
-                    style={styles.photoLogBanner}
-                    onPress={() => router.push('/food-scanner')}
-                    accessibilityLabel="Log food with photo"
-                    accessibilityRole="button"
-                >
-                    <View style={styles.photoLogLeft}>
-                        <View style={styles.photoLogIconWrap}>
-                            <MaterialIcons name="photo-camera" size={24} color={colors.primary} />
-                        </View>
-                        <View style={styles.photoLogTextWrap}>
-                            <Text style={styles.photoLogTitle}>Log with Camera</Text>
-                            <Text style={styles.photoLogSubtitle}>Snap a picture of your food to auto-log</Text>
-                        </View>
-                    </View>
-                    <MaterialIcons name="chevron-right" size={20} color={colors.text.muted} />
-                </Pressable>
-            )}
-
             {/* AI search results will show Smart Analysis option inline */}
 
 
@@ -978,7 +983,9 @@ const CalorieLogScreen: React.FC = () => {
                         <TouchableOpacity accessibilityRole="button" style={{ minHeight: 48, justifyContent: 'center' }} onPress={loadTodayEntries}><Text style={styles.todayName}>Try again</Text></TouchableOpacity>
                     </View>}
                     {!entriesLoading && !entriesError && !todayEntries.length && <Text style={styles.todayServing}>No meals logged today. Search for a food or use Quick Add above.</Text>}
-                    {todayEntries.map((e) => (
+                    {groupDiaryEntries(todayEntries).map(group => <View key={group.key}>
+                    <Text style={styles.mealGroupLabel}>{group.key === 'snack' ? 'Snacks' : group.title}</Text>
+                    {group.entries.map((e) => (
                         <Pressable
                             key={e.id}
                             onPress={() => setOpenEntry(e)}
@@ -993,6 +1000,7 @@ const CalorieLogScreen: React.FC = () => {
                             <Text style={styles.todayKcal}>{e.calories} kcal</Text>
                         </Pressable>
                     ))}
+                    </View>)}
                 </View>
             </ScrollView>
             )}
@@ -1034,7 +1042,7 @@ const CalorieLogScreen: React.FC = () => {
                 visible={showDetail}
                 animationType="slide"
                 presentationStyle="pageSheet"
-                onRequestClose={() => setShowDetail(false)}
+                onRequestClose={() => { if (!saving.current) setShowDetail(false); }}
             >
                 <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
                     {loadingDetail ? (
@@ -1069,7 +1077,11 @@ const CalorieLogScreen: React.FC = () => {
                             {/* Modal Header */}
                             <View style={styles.modalHeader}>
                                 <Pressable
-                                    onPress={() => setShowDetail(false)}
+                                    onPress={() => { if (!saving.current) setShowDetail(false); }}
+                                    disabled={logging}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Close food details"
+                                    hitSlop={10}
                                     style={styles.modalClose}
                                 >
                                     <MaterialIcons name="close" size={24} color={colors.text.primary} />
@@ -1096,21 +1108,21 @@ const CalorieLogScreen: React.FC = () => {
                                 {selectedServing && (
                                     <View style={styles.macrosRow}>
                                         <View style={styles.macroItem}>
-                                            <Text style={styles.macroValue}>
+                                            <Text style={[styles.macroValue, { color: colors.macro.protein }]}>
                                                 {Math.round(selectedServing.protein * effectiveMultiplier)}g
                                             </Text>
                                             <Text style={styles.macroLabel}>Protein</Text>
                                         </View>
                                         <View style={styles.macroDivider} />
                                         <View style={styles.macroItem}>
-                                            <Text style={styles.macroValue}>
+                                            <Text style={[styles.macroValue, { color: colors.macro.carbs }]}>
                                                 {Math.round(selectedServing.carbs * effectiveMultiplier)}g
                                             </Text>
                                             <Text style={styles.macroLabel}>Carbs</Text>
                                         </View>
                                         <View style={styles.macroDivider} />
                                         <View style={styles.macroItem}>
-                                            <Text style={styles.macroValue}>
+                                            <Text style={[styles.macroValue, { color: colors.macro.fat }]}>
                                                 {Math.round(selectedServing.fat * effectiveMultiplier)}g
                                             </Text>
                                             <Text style={styles.macroLabel}>Fat</Text>
@@ -1119,6 +1131,10 @@ const CalorieLogScreen: React.FC = () => {
                                 )}
 
                                 {/* Serving Size Selector */}
+                                <View style={styles.servingSection}>
+                                    <Text style={styles.servingSectionTitle}>MEAL</Text>
+                                    <MealTypePicker value={mealType} onChange={setMealType} labelPrefix="" />
+                                </View>
                                 <View style={styles.servingSection}>
                                     <Text style={styles.servingSectionTitle}>PORTION SIZE</Text>
 
@@ -1129,25 +1145,25 @@ const CalorieLogScreen: React.FC = () => {
                                                 styles.portionToggleBtn,
                                                 portionMode === 'serving' && styles.portionToggleBtnActive
                                             ]}
-                                            onPress={() => setPortionMode('serving')}
+                                            onPress={() => { if (portionMode === 'grams' && getMultiplier() > 0) setServingCount(getMultiplier()); setPortionMode('serving'); }}
                                         >
                                             <Text style={[
                                                 styles.portionToggleText,
                                                 portionMode === 'serving' && styles.portionToggleTextActive
                                             ]}>Serving</Text>
                                         </Pressable>
-                                        <Pressable
+                                        {selectedServing && portionGrams(selectedServing.description) !== null && <Pressable
                                             style={[
                                                 styles.portionToggleBtn,
                                                 portionMode === 'grams' && styles.portionToggleBtnActive
                                             ]}
-                                            onPress={() => setPortionMode('grams')}
+                                            onPress={() => { setGramAmount(String(portionGrams(selectedServing.description)! * servingCount)); setPortionMode('grams'); }}
                                         >
                                             <Text style={[
                                                 styles.portionToggleText,
                                                 portionMode === 'grams' && styles.portionToggleTextActive
                                             ]}>Grams</Text>
-                                        </Pressable>
+                                        </Pressable>}
                                     </View>
 
                                     {/* Serving Type Picker — the cooking medium determines the numbers
@@ -1155,7 +1171,7 @@ const CalorieLogScreen: React.FC = () => {
                                         so it renders outside the portion-mode ternary below. */}
                                     {selectedFood.servings.length > 1 && (
                                         <>
-                                            <Text style={styles.servingPickerLabel}>HOW WAS IT COOKED?</Text>
+                                            <Text style={styles.servingPickerLabel}>{selectedFood.servings.some(serving => (serving as any).cookingMedium) ? 'HOW WAS IT COOKED?' : 'SERVING TYPE'}</Text>
                                             <ScrollView
                                                 horizontal
                                                 showsHorizontalScrollIndicator={false}
@@ -1257,8 +1273,8 @@ const CalorieLogScreen: React.FC = () => {
                                     )}
                                 </View>
 
-                                {/* Nutrition Facts */}
-                                {selectedServing && (
+                                {/* Saved history does not contain fiber/sugar readings. */}
+                                {selectedServing && selectedServing.id !== 'previous' && (
                                     <View style={styles.nutritionSection}>
                                         <Text style={styles.nutritionTitle}>NUTRITION FACTS</Text>
                                         <View style={styles.nutritionGrid}>
@@ -1329,6 +1345,9 @@ const CalorieLogScreen: React.FC = () => {
                                     style={styles.addButton}
                                     onPress={handleLog}
                                     disabled={logging}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Save food"
+                                    accessibilityState={{ disabled: logging, busy: logging }}
                                 >
                                     {logging ? (
                                         <ActivityIndicator color={colors.text.dark} />
@@ -1444,8 +1463,9 @@ const CalorieLogScreen: React.FC = () => {
                     </ScrollView>
                 </SafeAreaView>
             </Modal>
+            <AIConsentModal {...voice.consentModalProps} featureTitle="Voice Food Logging" />
             <VoiceCaptureSheet
-                visible={voiceSheetOpen}
+                visible={voiceSheetOpen && voice.stage !== 'idle' && !voice.isAwaitingConsent}
                 stage={voice.stage}
                 durationLabel={voice.durationLabel}
                 durationProgress={voice.durationProgress}
@@ -1467,7 +1487,8 @@ const CalorieLogScreen: React.FC = () => {
                             carbs: Math.round((i.carbs || 0) * (i.quantity || 1)),
                             fat: Math.round((i.fat || 0) * (i.quantity || 1))
                         }));
-                        await nutritionAPI.logBulk(payload);
+                        await nutritionAPI.logBulk(payload, mealType);
+                        refreshToday();
                         toast.success('Logged!', `Successfully logged ${items.length} items`);
                         loadTodayEntries();
                         setShowDraftSheet(false);
@@ -1483,6 +1504,15 @@ const CalorieLogScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+    mealContext: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md, gap: spacing.sm },
+    mealContextLabel: { fontSize: 10, letterSpacing: 1.4, fontFamily: typography.fontFamily.medium, color: colors.text.secondary },
+    mealGroupLabel: { fontSize: 13, fontFamily: typography.fontFamily.medium, color: colors.text.secondary, marginTop: spacing.md, marginBottom: spacing.xs },
+    savedFoodBanner: { marginHorizontal: spacing.xl, marginBottom: spacing.md, padding: spacing.md, borderRadius: borderRadius.lg, backgroundColor: colors.glass.surface },
+    savedFoodActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+    savedFoodAction: { minWidth: 44, minHeight: 48, justifyContent: 'center' },
+    savedFoodActionText: { color: colors.primary, fontFamily: typography.fontFamily.bold, fontSize: 15 },
+    mealOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    mealOption: { minHeight: 44, paddingHorizontal: 10, justifyContent: 'center', borderRadius: borderRadius.md, backgroundColor: colors.glass.surface },
     photoLogBanner: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1599,6 +1629,7 @@ const styles = StyleSheet.create({
         padding: spacing.xs,
     },
     searchInput: {
+        minWidth: 0,
         flex: 1,
         fontSize: typography.sizes.base,
         fontFamily: typography.fontFamily.regular,
@@ -1755,10 +1786,10 @@ const styles = StyleSheet.create({
     },
     calorieHero: {
         alignItems: 'center',
-        paddingVertical: spacing['3xl'],
+        paddingVertical: spacing.xl,
     },
     calorieHeroValue: {
-        fontSize: 72,
+        fontSize: 56,
         fontFamily: typography.fontFamily.light,
         color: colors.text.primary,
         letterSpacing: -3,
@@ -1774,7 +1805,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: spacing.xl,
-        paddingBottom: spacing['2xl'],
+        paddingBottom: spacing.lg,
         gap: spacing.xl,
     },
     macroItem: {
@@ -2199,5 +2230,12 @@ const styles = StyleSheet.create({
         color: colors.text.primary,
     },
 });
+
+// A late history/shortcut response from a signed-out account must never become
+// another person's quick-add list or food draft.
+const CalorieLogScreen: React.FC = () => {
+    const { user } = useAuth();
+    return <AccountCalorieLogScreen key={user?.id ?? 'signed-out'} />;
+};
 
 export default CalorieLogScreen;

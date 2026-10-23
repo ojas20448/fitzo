@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
     Alert,
+    Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from '../../utils/haptics';
 import Animated, {
     useSharedValue,
@@ -18,7 +19,8 @@ import Animated, {
     withTiming,
     Easing
 } from 'react-native-reanimated';
-import { checkinAPI } from '../../services/api';
+import { checkinAPI, settingsAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/Button';
 import { colors, typography, spacing, borderRadius, shadows, shadow } from '../../styles/theme';
 
@@ -26,12 +28,29 @@ const FRAME_SIZE = 280;
 const CORNER_SIZE = 40;
 
 const QRCheckinScreen: React.FC = () => {
+    const { mode } = useLocalSearchParams<{ mode?: string }>();
+    const joining = mode === 'join';
+    const { user, refreshUser } = useAuth();
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
     const [processing, setProcessing] = useState(false);
     const [success, setSuccess] = useState(false);
     const [streak, setStreak] = useState<number | null>(null);
     const [torch, setTorch] = useState(false);
+    const [cameraError, setCameraError] = useState(false);
+    const [scanError, setScanError] = useState('');
+    const scanLocked = useRef(false);
+    const active = useRef(true);
+    const owner = useRef(user?.id); owner.current = user?.id;
+    const returnTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        active.current = true;
+        return () => {
+            active.current = false;
+            if (returnTimer.current) clearTimeout(returnTimer.current);
+        };
+    }, []);
 
     // Animation
     const translateY = useSharedValue(0);
@@ -42,85 +61,99 @@ const QRCheckinScreen: React.FC = () => {
             -1,
             false // no reverse, just restart
         );
-    }, []);
+    }, [translateY]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [{ translateY: translateY.value }]
     }));
 
-    // ... handleBarCodeScanned ... (keep existing)
+    const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
+        const account = user?.id;
+        if (scanLocked.current || !active.current || (joining && (!account || owner.current !== account))) return;
 
-    const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
-        if (scanned || processing) return;
-
+        scanLocked.current = true;
         setScanned(true);
         setProcessing(true);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         try {
-            // Decode QR - expecting gym_id directly or JSON with gym_id
-            let gymId = data;
-            try {
-                const parsed = JSON.parse(data);
-                gymId = parsed.gym_id || data;
-            } catch {
-                // Data is not JSON, use as-is (might be UUID directly)
+            if (joining) {
+                await settingsAPI.joinGymWithQR(data);
+                if (!active.current || owner.current !== account) return;
+                await refreshUser();
+            } else {
+                // Decode QR - expecting gym_id directly or JSON with gym_id
+                let gymId = data;
+                try {
+                    const parsed = JSON.parse(data);
+                    gymId = parsed.gym_id || data;
+                } catch {
+                    // Data is not JSON, use as-is (might be UUID directly)
+                }
+
+                const response = await checkinAPI.checkin(gymId);
+                if (!active.current || owner.current !== account) return;
+                setStreak(response.streak);
             }
 
-            const response = await checkinAPI.checkin(gymId);
-
+            if (!active.current || owner.current !== account) return;
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             setSuccess(true);
-            setStreak(response.streak);
 
             // Return to home after delay
-            setTimeout(() => {
-                router.back();
+            returnTimer.current = setTimeout(() => {
+                if (active.current && owner.current === account) router.back();
             }, 2500);
         } catch (error: any) {
+            if (!active.current || owner.current !== account) return;
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            Alert.alert(
+            if (joining) setScanError(error.message || 'Could not join your gym. Please try again.');
+            else Alert.alert(
                 'Check-in Failed',
                 error.message || 'Something went wrong. Please try again.',
                 [
-                    { text: 'OK', onPress: () => setScanned(false) }
+                    { text: 'Try again', onPress: () => { scanLocked.current = false; setScanned(false); } },
                 ]
             );
             setProcessing(false);
         }
     };
 
-    // ... permissions checks ... (keep existing)
-
     if (!permission) {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.centered}>
                     <Text style={styles.message}>Loading camera...</Text>
+                    <Button title={joining ? 'Enter code instead' : 'Go back'} variant="ghost" onPress={() => router.back()} />
                 </View>
             </SafeAreaView>
         );
     }
 
-    if (!permission.granted) {
+    if (!permission.granted || cameraError) {
         return (
             <SafeAreaView style={styles.container}>
-                <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+                <TouchableOpacity style={styles.closeButton} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Close scanner">
                     <MaterialIcons name="close" size={20} color={colors.text.muted} />
                 </TouchableOpacity>
                 <View style={styles.centered}>
                     <View style={styles.permissionIcon}>
                         <MaterialIcons name="camera-alt" size={48} color={colors.text.muted} />
                     </View>
-                    <Text style={styles.permissionTitle}>Camera Access</Text>
+                    <Text style={styles.permissionTitle}>{cameraError ? 'Camera unavailable' : 'Camera Access'}</Text>
                     <Text style={styles.permissionMessage}>
-                        We need camera access to scan the gym's QR code for check-in.
+                        {cameraError ? 'The camera could not start. Try again or go back.' : `Allow camera access to scan your gym’s QR code${joining ? ' and join your gym' : ' for check-in'}.`}
                     </Text>
                     <Button
-                        title="Continue"
-                        onPress={requestPermission}
+                        title={cameraError ? 'Try again' : permission.canAskAgain ? 'Continue' : 'Open settings'}
+                        onPress={() => {
+                            if (cameraError) setCameraError(false);
+                            else if (permission.canAskAgain) void requestPermission();
+                            else void Linking.openSettings();
+                        }}
                         style={{ marginTop: spacing['2xl'] }}
                     />
+                    <Button title={joining ? 'Enter code instead' : 'Go back'} variant="ghost" onPress={() => router.back()} />
                 </View>
             </SafeAreaView>
         );
@@ -134,8 +167,8 @@ const QRCheckinScreen: React.FC = () => {
                     <View style={styles.successIcon}>
                         <MaterialIcons name="check" size={56} color={colors.background} />
                     </View>
-                    <Text style={styles.successTitle}>Checked In</Text>
-                    <Text style={styles.successMessage}>Let's get to work.</Text>
+                    <Text style={styles.successTitle}>{joining ? 'Gym joined' : 'Checked In'}</Text>
+                    <Text style={styles.successMessage}>{joining ? 'Your gym is now connected.' : "Let's get to work."}</Text>
 
                     {streak !== null && (
                         <View style={styles.streakCard}>
@@ -155,7 +188,7 @@ const QRCheckinScreen: React.FC = () => {
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Close Button */}
-            <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Close scanner">
                 <MaterialIcons name="close" size={20} color={colors.text.muted} />
             </TouchableOpacity>
 
@@ -164,12 +197,14 @@ const QRCheckinScreen: React.FC = () => {
                 <View style={styles.headerLeft}>
                     <Text style={styles.headerTitle}>SCAN</Text>
                     <View style={styles.headerDot} />
-                    <Text style={styles.headerSubtitle}>CHECK IN</Text>
+                    <Text style={styles.headerSubtitle}>{joining ? 'JOIN GYM' : 'CHECK IN'}</Text>
                 </View>
 
                 <TouchableOpacity
                     style={[styles.torchButton, torch && styles.torchButtonActive]}
                     onPress={() => setTorch(!torch)}
+                    accessibilityRole="button"
+                    accessibilityLabel={torch ? 'Turn flashlight off' : 'Turn flashlight on'}
                 >
                     <MaterialIcons
                         name={torch ? "flash-on" : "flash-off"}
@@ -188,6 +223,7 @@ const QRCheckinScreen: React.FC = () => {
                         barcodeTypes: ['qr'],
                     }}
                     onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+                    onMountError={() => setCameraError(true)}
                 >
                     {/* QR Frame Overlay */}
                     <View style={styles.overlay}>
@@ -216,14 +252,19 @@ const QRCheckinScreen: React.FC = () => {
                 <View style={styles.instruction}>
                     <MaterialIcons name="info-outline" size={20} color={colors.text.secondary} />
                     <Text style={styles.instructionText}>
-                        Find the QR code at the gym's front desk
+                        Find the QR code at your gym’s front desk
                     </Text>
                 </View>
+                {!!scanError && <>
+                    <Text style={styles.scanError} accessibilityRole="alert" accessibilityLiveRegion="polite">{scanError}</Text>
+                    <Button title="Try again" variant="secondary" onPress={() => { setScanError(''); scanLocked.current = false; setScanned(false); }} />
+                </>}
+                {joining && <Button title="Enter code instead" variant="ghost" disabled={processing} onPress={() => router.back()} />}
             </View>
 
             {processing && (
                 <View style={styles.processingOverlay}>
-                    <Text style={styles.processingText}>Checking in...</Text>
+                    <Text style={styles.processingText}>{joining ? 'Joining gym...' : 'Checking in...'}</Text>
                 </View>
             )}
         </SafeAreaView>
@@ -426,9 +467,17 @@ const styles = StyleSheet.create({
         borderColor: colors.glass.border,
     },
     instructionText: {
+        flexShrink: 1,
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.medium,
         color: colors.text.secondary,
+    },
+    scanError: {
+        color: colors.error,
+        fontFamily: typography.fontFamily.regular,
+        fontSize: typography.sizes.sm,
+        textAlign: 'center',
+        marginVertical: spacing.md,
     },
     processingOverlay: {
         ...StyleSheet.absoluteFillObject,

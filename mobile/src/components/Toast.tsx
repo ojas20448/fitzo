@@ -5,14 +5,11 @@ import {
     StyleSheet,
     Animated,
     TouchableOpacity,
-    Dimensions,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from '../utils/haptics';
 import { colors, typography, spacing, borderRadius, shadow } from '../styles/theme';
-
-const { width } = Dimensions.get('window');
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -129,6 +126,8 @@ const ToastItem: React.FC<{
 
     return (
         <Animated.View
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
             style={[
                 styles.toast,
                 {
@@ -224,7 +223,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.lg,
     },
     toast: {
-        width: width - spacing.lg * 2,
+        width: '100%',
+        maxWidth: 480,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.surface,
@@ -247,6 +247,7 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
+        minWidth: 0,
     },
     title: {
         fontSize: typography.sizes.base,

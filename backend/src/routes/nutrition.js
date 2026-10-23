@@ -247,6 +247,7 @@ router.post('/log', authenticate, asyncHandler(async (req, res) => {
         fat,
         serving_size,
         cooking_medium,
+        is_estimate = false,
         meal_type = 'snack', // breakfast, lunch, dinner, snack
         visibility = 'friends'
     } = req.body;
@@ -255,6 +256,12 @@ router.post('/log', authenticate, asyncHandler(async (req, res) => {
         throw new ValidationError('Food name and calories are required');
     }
 
+    if (!['breakfast', 'lunch', 'dinner', 'snack'].includes(meal_type)) {
+        throw new ValidationError('Choose breakfast, lunch, dinner or snack');
+    }
+
+    if (typeof is_estimate !== 'boolean') throw new ValidationError('Invalid nutrition estimate flag');
+
     const validVisibility = ['public', 'friends', 'private'];
     if (!validVisibility.includes(visibility)) {
         throw new ValidationError('Invalid visibility option');
@@ -262,10 +269,10 @@ router.post('/log', authenticate, asyncHandler(async (req, res) => {
 
     const result = await query(
         `INSERT INTO calorie_logs (
-            user_id, food_name, calories, protein, carbs, fat, serving_size, meal_type, visibility, logged_date
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, ${IST_TODAY_SQL})
+            user_id, food_name, calories, protein, carbs, fat, serving_size, meal_type, visibility, is_estimate, logged_date
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, ${IST_TODAY_SQL})
         RETURNING *`,
-        [userId, food_name, calories, protein || 0, carbs || 0, fat || 0, serving_size, meal_type, visibility]
+        [userId, food_name, calories, protein || 0, carbs || 0, fat || 0, serving_size, meal_type, visibility, is_estimate]
     );
 
     // Invalidate context pack cache for fresh AI responses

@@ -37,6 +37,9 @@ The central hub for the member's daily gym life.
     - **Workout Recap** (`WorkoutRecapScreen`): Summary stats post-workout.
 - **Discovery**:
     - **Proven Splits** (`PublishedSplitsScreen`): PPL, Bro Split, Upper/Lower, Full Body.
+    - **Starter Workouts & Training Preferences**:
+        - Training-first setup (Goal → Routine → Plan) with starter routines matched to equipment and experience.
+        - Training preferences (`TrainingPreferencesScreen`) with keep/replace flexibility.
     - **Exercise Library** (`ExerciseLibraryScreen`): Searchable database with instructions.
     - **Video Guides** (`WorkoutVideosScreen`): YouTube integration for form checks.
 - **AI Coach** (`AICoachScreen`):
@@ -45,11 +48,18 @@ The central hub for the member's daily gym life.
 ### 3. Nutrition & Health
 - **Food Tracking**:
     - **Search**: Powered by FatSecret/USDA APIs.
+    - **Practical Meal Ideas & Meal Builder** (`MealBuilderSheet`):
+        - 8 Indian meal ideas (6 vegetarian options) referencing verified nutrition catalogue values.
+        - Gram and household/count portions with 0.5x portions and reversible item swaps.
+        - Category tagging, estimate flags, and offline draft retention.
     - **Barcode Scanner** (`FoodScannerScreen`): Quick logging.
     - **Recipe Builder** (`RecipeBuilderScreen`): Create custom meals/recipes.
-- **Analysis**:
+- **Analysis & Recovery**:
     - **Calorie Logs** (`CalorieLogScreen`): Daily history.
     - **Measurements** (`MeasurementsScreen`): Track body weight, body fat %, tape measurements.
+    - **Recovery & Health Sync**:
+        - Optional recovery check-in prompts (`RecoveryCheckIn`).
+        - Health sync status details (`HealthSyncStatusDetails`).
 
 ### 4. Social Ecosystem
 - **Gym Buddies** (`GymBuddiesScreen`):
@@ -109,6 +119,8 @@ The central hub for the member's daily gym life.
 ---
 
 ## Current Status
+
+- **22 October navigation implementation (local):** Workout/Food/Gym/Friends/Profile replaces the Home/Friends/+/Learn/Profile bar. Existing Lexend, Material Icons and theme are retained; glass is restrained and selected-tab emphasis stays inside the capsule. New diary/Gym/history destinations reuse current APIs and saved drafts. Native builds/device verification and release are separate; see `docs/reviews/navigation-2026-10-22/implementation.md`.
 - **Core Loop**: Functional (Check-in -> Train -> Track -> Learn).
 - **Data**: Migrated to comprehensive content for Learn module.
 - **UI**: Polished "Premium" aesthetic implemented on Home and Core screens.

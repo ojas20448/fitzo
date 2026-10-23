@@ -1,5 +1,10 @@
-import { EMPTY_ONBOARDING, restoreOnboarding, startingSplit, validateBody } from '../onboardingPlan';
+import { EMPTY_ONBOARDING, restoreOnboarding, startingSplit, validateBody, validateStep } from '../onboardingPlan';
 const form = { ...EMPTY_ONBOARDING, goal: 'maintenance' as const, days: 3, experience: 'new' as const, equipment: 'gym' as const, sessionMinutes: 35 as const, activity: 'light' as const, height: '175', weight: '70', age: '25', gender: 'male' as const, vegetarian: false };
+test('routine validation identifies the next unanswered choice', () => {
+    expect(validateStep(2, { ...form, experience: null, equipment: null })).toBe('Choose your training experience.');
+    expect(validateStep(2, { ...form, equipment: null })).toBe('Choose the equipment you can train with.');
+    expect(validateStep(2, { ...form, sessionMinutes: null })).toBe('Choose how much time you have for a session.');
+});
 test.each([1, 2, 3, 4, 5, 6])('%i-day schedules contain the requested number of sessions', days => {
     const split = startingSplit(days);
     expect(split.days).toHaveLength(days);

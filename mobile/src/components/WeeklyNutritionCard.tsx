@@ -47,7 +47,7 @@ const WeeklyNutritionCard: React.FC<WeeklyNutritionCardProps> = ({ summary, onPr
                                 {summary!.targetCalories !== null && <Text style={styles.sub}>target {summary!.targetCalories}</Text>}
                             </View>
                             <View style={styles.stat}>
-                                <Text style={styles.value}>{summary!.avgProtein}g</Text>
+                                <Text style={[styles.value, { color: colors.macro.protein }]}>{summary!.avgProtein}g</Text>
                                 <Text style={styles.label}>avg protein</Text>
                                 {summary!.targetProtein !== null && <Text style={styles.sub}>target {summary!.targetProtein}g</Text>}
                             </View>

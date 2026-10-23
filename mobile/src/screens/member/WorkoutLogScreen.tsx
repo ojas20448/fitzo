@@ -12,36 +12,33 @@ import {
     Modal,
     ActivityIndicator,
     Alert,
-    Animated,
     Dimensions,
     Platform,
     KeyboardAvoidingView,
     LayoutAnimation,
-    TextInput,
+    Keyboard,
+    AppState,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from '../../utils/haptics';
-import { workoutsAPI, settingsAPI, aiAPI } from '../../services/api';
+import { workoutsAPI, settingsAPI, aiAPI, exerciseAPI } from '../../services/api';
 import GlassCard from '../../components/GlassCard';
 import ExerciseList from '../../components/ExerciseList';
+import { isExerciseSelected } from '../../utils/exerciseSearch';
 import { WorkoutDraftSheet } from '../../components/WorkoutDraftSheet';
 import { useToast } from '../../components/Toast';
 import VoiceCaptureSheet from '../../components/VoiceCaptureSheet';
+import AIConsentModal from '../../components/AIConsentModal';
 import { hasSeenTip, markTipSeen, TIP_KEYS } from '../../utils/firstRun';
 import { useVoiceCapture } from '../../hooks/useVoiceCapture';
 import { colors, typography, spacing, borderRadius, shadows } from '../../styles/theme';
 import {
-    ScrollWheelPicker,
     RestTimerPill,
     ExerciseCard,
     WorkoutPrefsSheet,
     WarmUpCard,
-    PICKER_HEIGHT,
-    WEIGHT_VALUES,
-    REPS_VALUES,
-    RIR_VALUES,
     REST_PRESETS,
 } from '../../components/workout';
 import type { ExerciseSet, UserExercise, PickerConfig } from '../../components/workout';
@@ -50,7 +47,19 @@ import { normalizePrs } from '../../utils/normalizePr';
 import { buildShareExercises } from '../../utils/buildShareExercises';
 import { finalizeWorkout } from '../../utils/finalizeWorkout';
 import { useAuth } from '../../context/AuthContext';
+import { useWorkoutInputMode } from '../../hooks/useWorkoutInputMode';
 import { chooseWorkoutDraft, parseWorkoutIntent, previousWorkoutDraft } from '../../utils/workoutSetup';
+import { loadActiveWorkoutDraft, saveActiveWorkoutDraft, clearActiveWorkoutDraft } from '../../utils/activeWorkoutDraft';
+import type { ActiveWorkoutDraft } from '../../utils/activeWorkoutDraft';
+import { syncWorkoutActivity } from '../../services/workoutActivity';
+import WorkoutCategorySheet from '../../components/workout/WorkoutCategorySheet';
+import Button from '../../components/Button';
+import ConfirmationSheet, { type ConfirmationAction } from '../../components/ConfirmationSheet';
+import WorkoutExercisesSheet from '../../components/workout/WorkoutExercisesSheet';
+import WorkoutSetEditor from '../../components/workout/WorkoutSetEditor';
+import { invalidateExerciseHistory } from '../../hooks/useExerciseHistory';
+import { routineUpdate } from '../../utils/routineUpdate';
+import { workoutNumber } from '../../utils/workoutNumber';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -59,12 +68,26 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const WorkoutLogScreen: React.FC = () => {
     const toast = useToast();
     const params = useLocalSearchParams();
-    const { user } = useAuth();
+    const { user, token } = useAuth();
+    const { inputMode, selectMode } = useWorkoutInputMode(user?.id);
     const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(false);
+    const [confirmation, setConfirmation] = useState<ConfirmationAction | null>(null);
+    const discardPending = useRef(false);
+    const finishPending = useRef(false);
+    const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+    const [showExerciseEditor, setShowExerciseEditor] = useState(false);
+    const replacingExercise = useRef<number | null>(null);
 
     // Intent parsing
-    const initialIntent = useMemo(() => parseWorkoutIntent(params.intent), [params.intent]);
+    const routedIntent = useMemo(() => parseWorkoutIntent(params.intent), [params.intent]);
+    const [selectedIntent, setSelectedIntent] = useState<{ session_label: string; training_pattern?: string } | null>(null);
+    const initialIntent = selectedIntent || routedIntent;
+    const [savedSplit, setSavedSplit] = useState<{ split_id: string; days: string[]; scheduleOnly: boolean } | null>(null);
+    const [savedRoutine, setSavedRoutine] = useState<{ id: string; name: string; training_plan: unknown } | null>(null);
+    const [routinePrompt, setRoutinePrompt] = useState<{ focus?: string } | null>(null);
+    const savedDays = useMemo(() => Array.from(new Set(savedSplit?.days.filter(day => !/^(rest|rest day|off|recovery)$/i.test(day.trim())) || [])), [savedSplit]);
+    useEffect(() => { setSelectedIntent(null); }, [params.intent]);
 
     const mapIntentToType = (label: string) => {
         const lower = label?.toLowerCase() || '';
@@ -101,15 +124,15 @@ const WorkoutLogScreen: React.FC = () => {
     // push/pull concept, which is why the header used to read "Chest" on a push
     // day. Show the intent's own words when we have them.
     const sessionLabel = (initialIntent?.session_label || '').trim();
+    const isFreeform = sessionLabel === 'Workout' || (!sessionLabel && params.start === 'empty');
     const sessionTitle = sessionLabel
         ? sessionLabel.charAt(0).toUpperCase() + sessionLabel.slice(1)
-        : workoutType.charAt(0).toUpperCase() + workoutType.slice(1);
+        : 'Workout';
 
-    // Muscles this session trains, used both as the header subtitle and to filter
-    // the exercise picker.
+    // Describes the session in its recap; exercise browsing stays unrestricted.
     const sessionMuscles = useMemo(
-        () => getAllowedBodyParts(workoutType, sessionLabel) ?? [],
-        [workoutType, sessionLabel],
+        () => isFreeform ? [] : getAllowedBodyParts(workoutType, sessionLabel) ?? [],
+        [workoutType, sessionLabel, isFreeform],
     );
 
     // Core state
@@ -125,9 +148,23 @@ const WorkoutLogScreen: React.FC = () => {
         if (loadedAccount.current === user?.id) return;
         loadedAccount.current = user?.id;
         editedExercises.current = false;
+        setSelectedIntent(null); setSavedSplit(null);
+        setSavedRoutine(null); setRoutinePrompt(null);
         setUserExercises([]); setLastWorkoutPreview(null); setStarterLoaded(false); setSetupError('');
     }, [user?.id]);
-    const [startTime] = useState(new Date());
+    const loadedSession = useRef(`${sessionLabel}|${initialIntent?.training_pattern || ''}`);
+    useEffect(() => {
+        const key = `${sessionLabel}|${initialIntent?.training_pattern || ''}`;
+        if (loadedSession.current === key) return;
+        loadedSession.current = key;
+        editedExercises.current = false;
+        setUserExercises([]); setLastWorkoutPreview(null); setStarterLoaded(false); setSetupError('');
+    }, [sessionLabel, initialIntent?.training_pattern]);
+    const [startTime, setStartTime] = useState(new Date());
+    const [hydratedAccount, setHydratedAccount] = useState<string | null>(null);
+    const draftCompleted = useRef(false);
+    const draftSaveErrorShown = useRef(false);
+    const draftSnapshot = useRef<{ userId: string; draft: ActiveWorkoutDraft } | null>(null);
     const [showPicker, setShowPicker] = useState(false);
 
     // Repeat-last preview state
@@ -154,7 +191,6 @@ const WorkoutLogScreen: React.FC = () => {
         setIndex: 0,
         currentValue: 0,
     });
-    const pickerSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
     // Rest duration selector modal
     const [showRestConfig, setShowRestConfig] = useState(false);
@@ -163,9 +199,67 @@ const WorkoutLogScreen: React.FC = () => {
     const [visibility, setVisibility] = useState<'friends' | 'private'>('friends');
     const [shareLogs, setShareLogs] = useState(true);
 
+    // Restore local progress before a template or network response can fill the
+    // screen. Drafts have no inactivity timeout and belong to one account only.
+    useEffect(() => {
+        if (!user?.id || hydratedAccount === user.id) return;
+        let active = true;
+        draftCompleted.current = false;
+        draftSnapshot.current = null;
+        draftSaveErrorShown.current = false;
+        void loadActiveWorkoutDraft(user.id).then(draft => {
+            if (!active) return;
+            if (draft) {
+                editedExercises.current = true;
+                loadedSession.current = `${draft.intent.session_label}|${draft.intent.training_pattern || ''}`;
+                setSelectedIntent(draft.intent);
+                setUserExercises(draft.exercises);
+                setStartTime(new Date(draft.startedAt));
+                setVisibility(draft.visibility);
+                setRestDuration(draft.restDuration);
+                setStarterLoaded(false);
+            } else {
+                setStartTime(new Date());
+            }
+            setSetupError('');
+            setHydratedAccount(user.id);
+        }).catch(() => {
+            if (active) setSetupError('Could not restore your workout. Retry before continuing so saved progress stays safe.');
+        });
+        return () => { active = false; };
+    }, [user?.id, hydratedAccount, setupRetry]);
+
+    useEffect(() => {
+        if (!user?.id || hydratedAccount !== user.id || draftCompleted.current
+            || (!editedExercises.current && userExercises.length === 0)) return;
+        const draft: ActiveWorkoutDraft = {
+            version: 1,
+            intent: { session_label: sessionLabel || (isFreeform ? 'Workout' : workoutType), training_pattern: initialIntent?.training_pattern },
+            exercises: userExercises, startedAt: startTime.toISOString(), visibility, restDuration,
+        };
+        draftSnapshot.current = { userId: user.id, draft };
+        void saveActiveWorkoutDraft(user.id, draft).catch(() => {
+            if (!draftSaveErrorShown.current) {
+                draftSaveErrorShown.current = true;
+                toast.error('Workout backup unavailable', 'Keep this workout open. Progress could not be saved on this device.');
+            }
+        });
+    }, [user?.id, hydratedAccount, userExercises, sessionLabel, workoutType, isFreeform, initialIntent?.training_pattern, startTime, visibility, restDuration, toast]);
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', state => {
+            const snapshot = draftSnapshot.current;
+            if (state !== 'active' && snapshot && !draftCompleted.current) {
+                void saveActiveWorkoutDraft(snapshot.userId, snapshot.draft).catch(() => {});
+            }
+        });
+        return () => { subscription.remove(); };
+    }, []);
+
     // Optional RIR logging — opt-in via Settings
     const [showRir, setShowRir] = useState(false);
     const [showPrefsSheet, setShowPrefsSheet] = useState(false);
+    const [preferencesLoaded, setPreferencesLoaded] = useState(false);
 
     const [showDraftSheet, setShowDraftSheet] = useState(false);
     const [draftItems, setDraftItems] = useState<any[]>([]);
@@ -186,8 +280,7 @@ const WorkoutLogScreen: React.FC = () => {
 
     const startVoiceCapture = voice.start;
     const openVoice = useCallback(async () => {
-        setVoiceSheetOpen(true);
-        await startVoiceCapture();
+        if (await startVoiceCapture()) setVoiceSheetOpen(true);
     }, [startVoiceCapture]);
 
     const cancelVoice = async () => {
@@ -231,17 +324,17 @@ const WorkoutLogScreen: React.FC = () => {
                 setShowRir(false);
                 setRestTimerEnabled(false);
                 setShowWarmUp(true);
-            });
+            }).finally(() => setPreferencesLoaded(true));
     }, []);
 
     const loadSharingPreference = async () => {
         try {
             const data = await settingsAPI.getSharingPreference();
             setShareLogs(data.share_logs_default);
-            setVisibility(data.share_logs_default ? 'friends' : 'private');
+            if (!editedExercises.current) setVisibility(data.share_logs_default ? 'friends' : 'private');
         } catch (error) {
             setShareLogs(true);
-            setVisibility('friends');
+            if (!editedExercises.current) setVisibility('friends');
         }
     };
 
@@ -293,23 +386,35 @@ const WorkoutLogScreen: React.FC = () => {
 
     useEffect(() => {
         let active = true;
-        if (params.curatedExercises) return;
+        if (!user?.id || hydratedAccount !== user.id) return;
+        if (params.curatedExercises || params.start === 'empty' || isFreeform) return;
         setFetchingLastWorkout(true);
         setSetupError('');
         void (async () => {
             const [latest, saved] = await Promise.allSettled([
-                workoutsAPI.getLatest(workoutType, sessionLabel || undefined),
-                sessionLabel ? workoutsAPI.getMySplits() : Promise.resolve({ splits: [] }),
+                sessionLabel ? workoutsAPI.getLatest(workoutType, sessionLabel) : Promise.resolve({ found: false }),
+                workoutsAPI.getMySplits(),
             ]);
             if (!active) return;
             const previous = latest.status === 'fulfilled' && latest.value.found
                 ? previousWorkoutDraft(latest.value.workout?.exercises) : null;
             setLastWorkoutPreview(previous);
             const splits = saved.status === 'fulfilled' && Array.isArray(saved.value.splits) ? saved.value.splits : [];
+            const activeSplit = splits.find((split: any) => split.is_active);
+            const days = Array.isArray(activeSplit?.days) ? activeSplit.days.filter((day: unknown) => typeof day === 'string' && day.trim()) : [];
+            setSavedSplit(activeSplit ? { split_id: activeSplit.split_id, days, scheduleOnly: !activeSplit.training_plan } : null);
+            setSavedRoutine(activeSplit?.id && activeSplit.training_plan ? { id: activeSplit.id, name: activeSplit.name || 'Saved routine', training_plan: activeSplit.training_plan } : null);
+            if (!sessionLabel && days.length) {
+                const firstDay = days.find((day: string) => !/^(rest|rest day|off|recovery)$/i.test(day.trim()));
+                if (firstDay && !editedExercises.current) {
+                    setSelectedIntent({ session_label: firstDay, training_pattern: activeSplit.split_id });
+                    return;
+                }
+            }
             const chosen = chooseWorkoutDraft(previous, splits, sessionLabel, initialIntent?.training_pattern);
             if (chosen && !editedExercises.current && exercisesSnapshot.current.length === 0) {
                 setUserExercises(prev => prev.length === 0 ? chosen.exercises : prev);
-                setStarterLoaded(chosen.source === 'starter');
+                setStarterLoaded(chosen.source !== 'previous');
             }
             if (latest.status === 'rejected' || (saved.status === 'rejected' && !previous)) {
                 setSetupError('Some saved workout details could not load. Retry or add exercises yourself.');
@@ -317,7 +422,18 @@ const WorkoutLogScreen: React.FC = () => {
             setFetchingLastWorkout(false);
         })();
         return () => { active = false; };
-    }, [workoutType, sessionLabel, initialIntent?.training_pattern, user?.id, params.curatedExercises, setupRetry]);
+    }, [workoutType, sessionLabel, isFreeform, initialIntent?.training_pattern, user?.id, hydratedAccount, params.curatedExercises, params.start, setupRetry]);
+
+    const selectSavedDay = useCallback((day: string) => {
+        const load = () => {
+            editedExercises.current = false;
+            setUserExercises([]); setLastWorkoutPreview(null); setStarterLoaded(false);
+            setSelectedIntent({ session_label: day, training_pattern: savedSplit?.split_id });
+        };
+        if (editedExercises.current && exercisesSnapshot.current.length) {
+            setConfirmation({ title: 'Switch workout?', message: 'This will replace the exercises and sets you have entered for this session.', confirmLabel: 'Switch workout', onConfirm: () => { setConfirmation(null); load(); } });
+        } else load();
+    }, [savedSplit?.split_id]);
 
     const handleRepeatLast = useCallback(() => {
         if (!lastWorkoutPreview) return;
@@ -333,6 +449,7 @@ const WorkoutLogScreen: React.FC = () => {
     // -----------------------------------------------------------------------
 
     useEffect(() => {
+        if (!user?.id || hydratedAccount !== user.id || editedExercises.current) return;
         if (params.curatedExercises) {
             try {
                 const parsed = JSON.parse(params.curatedExercises as string) as UserExercise[];
@@ -346,29 +463,11 @@ const WorkoutLogScreen: React.FC = () => {
                 // silently ignore bad data
             }
         }
-    }, []); // only on mount
+    }, [hydratedAccount, user?.id]);
 
     // -----------------------------------------------------------------------
     // Exercise CRUD
     // -----------------------------------------------------------------------
-
-    // "60kg → Bar + 20 · 2.5 per side" — standard 20kg bar, standard plates
-    const plateBreakdown = (total: number): string => {
-        const BAR = 20;
-        if (!total || total <= BAR) return total === BAR ? 'Empty bar (20 kg)' : ' ';
-        const PLATES = [25, 20, 15, 10, 5, 2.5, 1.25];
-        let perSide = (total - BAR) / 2;
-        const used: string[] = [];
-        for (const p of PLATES) {
-            while (perSide >= p - 0.001) {
-                used.push(p % 1 === 0 ? String(p) : String(p));
-                perSide -= p;
-            }
-        }
-        if (used.length === 0) return ' ';
-        const rem = perSide > 0.001 ? ` (+${perSide.toFixed(2)})` : '';
-        return `Bar + ${used.join(' · ')} per side${rem}`;
-    };
 
     const handleAddExercise = useCallback(
         (exercise: any) => {
@@ -409,11 +508,43 @@ const WorkoutLogScreen: React.FC = () => {
                 instructions: exercise.instructions,
                 sets: ghostSets,
             };
-            setUserExercises((prev) => [...prev, newExercise]);
-            setShowPicker(false);
+            const replacement = replacingExercise.current;
+            replacingExercise.current = null;
+            const apply = () => setUserExercises(prev => replacement === null ? isExerciseSelected(newExercise, prev) ? prev : [...prev, newExercise] : prev.map((old, index) => index === replacement ? newExercise : old));
+            if (replacement !== null && exercisesSnapshot.current[replacement]?.sets.some(set => set.completed || set.weight_kg !== '' || set.reps !== '')) {
+                setConfirmation({ title: 'Replace exercise?', message: 'The new exercise starts with empty sets. Other exercises keep all their progress.', confirmLabel: 'Replace exercise', onConfirm: () => { setConfirmation(null); apply(); } });
+            } else apply();
+            if (replacement !== null) setShowPicker(false);
         },
         [lastWorkoutPreview],
     );
+
+    const addedFromLibrary = useRef<string | null>(null);
+    const editorRequested = useRef(false);
+    useEffect(() => {
+        if (params.editExercises !== '1' || !user?.id || hydratedAccount !== user.id || !preferencesLoaded || showPrefsSheet || editorRequested.current) return;
+        editorRequested.current = true;
+        setShowExerciseEditor(true);
+        router.setParams?.({ editExercises: undefined });
+    }, [params.editExercises, user?.id, hydratedAccount, preferencesLoaded, showPrefsSheet]);
+    useEffect(() => {
+        const id = params.addExerciseId;
+        if (!user?.id || hydratedAccount !== user.id || typeof id !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(id)) return;
+        const key = `${user.id}:${id}`;
+        if (addedFromLibrary.current === key) return;
+        let active = true;
+        void exerciseAPI.getById(encodeURIComponent(id)).then(response => {
+            const exercise = response.exercise;
+            if (!active || addedFromLibrary.current === key) return;
+            if (!exercise || String(exercise.id) !== id || typeof exercise.name !== 'string') throw new Error('Exercise unavailable');
+            addedFromLibrary.current = key;
+            handleAddExercise(exercise);
+            router.setParams?.({ addExerciseId: undefined });
+        }).catch(() => {
+            if (active) toast.error('Could not add exercise', 'Use Add Exercise to search again. Your current workout is kept.');
+        });
+        return () => { active = false; };
+    }, [params.addExerciseId, user?.id, hydratedAccount, handleAddExercise, toast]);
 
     const addSet = useCallback((exerciseIndex: number) => {
         editedExercises.current = true;
@@ -441,12 +572,9 @@ const WorkoutLogScreen: React.FC = () => {
     }, []);
 
     const removeSet = useCallback((exerciseIndex: number, setIndex: number) => {
-        Alert.alert('Remove Set', 'Delete this set?', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-                text: 'Remove',
-                style: 'destructive',
-                onPress: () => {
+        setConfirmation({ title: 'Remove set?', message: 'This set will be removed from this workout.', confirmLabel: 'Remove set', destructive: true,
+                onConfirm: () => {
+                    setConfirmation(null);
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     editedExercises.current = true;
@@ -458,8 +586,7 @@ const WorkoutLogScreen: React.FC = () => {
                         return updated;
                     });
                 },
-            },
-        ]);
+        });
     }, []);
 
     const updateSet = useCallback(
@@ -470,6 +597,11 @@ const WorkoutLogScreen: React.FC = () => {
                 const sets = [...updated[exerciseIndex].sets];
                 const wasCompleted = sets[setIndex].completed;
                 sets[setIndex] = { ...sets[setIndex], [field]: value };
+                const rir = sets[setIndex].rir;
+                const invalidRir = showRir && rir != null && String(rir).trim() !== '' && (!Number.isInteger(workoutNumber(rir)) || workoutNumber(rir) < 0 || workoutNumber(rir) > 5);
+                if (field !== 'completed' && (sets[setIndex].weight_kg == null || String(sets[setIndex].weight_kg).trim() === ''
+                    || !Number.isFinite(workoutNumber(sets[setIndex].weight_kg)) || workoutNumber(sets[setIndex].weight_kg) < 0
+                    || !Number.isInteger(workoutNumber(sets[setIndex].reps)) || workoutNumber(sets[setIndex].reps) <= 0 || invalidRir)) sets[setIndex].completed = false;
                 updated[exerciseIndex] = { ...updated[exerciseIndex], sets };
 
                 // Layered double-pulse haptics when a set becomes completed.
@@ -489,7 +621,7 @@ const WorkoutLogScreen: React.FC = () => {
                 return updated;
             });
         },
-        [startRestTimer, restTimerEnabled],
+        [startRestTimer, restTimerEnabled, showRir],
     );
 
     const handleToggleUnilateral = useCallback((eIdx: number) => {
@@ -500,12 +632,9 @@ const WorkoutLogScreen: React.FC = () => {
     }, []);
 
     const removeExercise = useCallback((index: number) => {
-        Alert.alert('Remove Exercise', 'Are you sure you want to remove this exercise?', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-                text: 'Remove',
-                style: 'destructive',
-                onPress: () => {
+        setConfirmation({ title: 'Remove exercise?', message: 'This exercise and its sets will be removed from this workout. Your saved routine stays the same.', confirmLabel: 'Remove exercise', destructive: true,
+                onConfirm: () => {
+                    setConfirmation(null);
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                     editedExercises.current = true;
@@ -515,8 +644,7 @@ const WorkoutLogScreen: React.FC = () => {
                         return updated;
                     });
                 },
-            },
-        ]);
+        });
     }, []);
 
     // -----------------------------------------------------------------------
@@ -525,84 +653,59 @@ const WorkoutLogScreen: React.FC = () => {
 
     const openPicker = useCallback(
         (exerciseIndex: number, setIndex: number, type: 'weight' | 'reps' | 'rir') => {
-            const set = userExercises[exerciseIndex]?.sets[setIndex];
-            if (!set) return;
-
-            const raw = type === 'weight' ? set.weight_kg : type === 'rir' ? set.rir : set.reps;
-            const numVal = parseFloat(String(raw || 0)) || 0;
-
-            setTypingValue(null); // always open on the wheel
-            setPickerConfig({
-                visible: true,
-                type,
-                exerciseIndex,
-                setIndex,
-                currentValue: numVal,
-            });
-
-            Animated.spring(pickerSlideAnim, {
-                toValue: 0,
-                useNativeDriver: true,
-                speed: 14,
-                bounciness: 4,
-            }).start();
+            if (!userExercises[exerciseIndex]?.sets[setIndex]) return;
+            setPickerConfig({ visible: true, type, exerciseIndex, setIndex, currentValue: 0 });
         },
-        [userExercises, pickerSlideAnim],
+        [userExercises],
     );
-
-    // Measured, not guessed: the footer's height changes with the safe-area inset
-    // and with whether the visibility bar is shown, so the list's bottom padding
-    // has to follow it or the last exercise hides underneath.
-    const [footerHeight, setFooterHeight] = useState(140);
-
-    // null = wheel mode; a string = keyboard mode holding the in-progress text.
-    // Kept as a string so a half-typed "9." doesn't get coerced to a number.
-    const [typingValue, setTypingValue] = useState<string | null>(null);
-
-    const toggleTyping = useCallback(() => {
-        setTypingValue((prev) => {
-            if (prev !== null) {
-                // Leaving keyboard mode: carry what was typed back to the wheel.
-                const parsed = parseFloat(prev);
-                if (Number.isFinite(parsed)) {
-                    setPickerConfig((cfg) => ({ ...cfg, currentValue: parsed }));
-                }
-                return null;
-            }
-            const v = pickerConfig.currentValue;
-            // Number.isFinite, not truthiness: 0 is a real value. For RIR it
-            // means "went to failure", so blanking it here would read back as
-            // "not recorded" — a different thing entirely.
-            return Number.isFinite(v) ? String(v % 1 === 0 ? v : Number(v.toFixed(2))) : '';
-        });
-    }, [pickerConfig.currentValue]);
-
-    const closePicker = useCallback(() => {
-        Animated.timing(pickerSlideAnim, {
-            toValue: SCREEN_HEIGHT,
-            duration: 200,
-            useNativeDriver: true,
-        }).start(() => {
-            setPickerConfig((prev) => ({ ...prev, visible: false }));
-            setTypingValue(null);
-        });
-    }, [pickerSlideAnim]);
-
-    const handlePickerConfirm = useCallback(
-        (value: number) => {
-            const field =
-                pickerConfig.type === 'weight' ? 'weight_kg' : pickerConfig.type === 'rir' ? 'rir' : 'reps';
-            updateSet(pickerConfig.exerciseIndex, pickerConfig.setIndex, field, value);
-            closePicker();
-        },
-        [pickerConfig, updateSet, closePicker],
-    );
+    const closePicker = useCallback(() => setPickerConfig(current => ({ ...current, visible: false })), []);
+    const saveEditedSet = (values: Pick<ExerciseSet, 'weight_kg' | 'reps' | 'rir'>, complete: boolean) => {
+        const exercise = userExercises[pickerConfig.exerciseIndex];
+        const set = exercise?.sets[pickerConfig.setIndex];
+        if (!set) return;
+        editedExercises.current = true;
+        setUserExercises(previous => previous.map(item => item.id !== exercise.id ? item : {
+            ...item,
+            sets: item.sets.map(row => row.id !== set.id ? row : { ...row, ...values, completed: row.completed || complete }),
+        }));
+        if (complete && !set.completed) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            if (restTimerEnabled) startRestTimer();
+        }
+        closePicker();
+    };
 
     // -----------------------------------------------------------------------
     // Finish Workout
     // -----------------------------------------------------------------------
 
-    const handleFinish = async () => {
+    const handleDiscard = () => {
+        setConfirmation({ title: 'Discard workout?', message: 'This removes your unfinished workout and stops its ongoing activity. Your saved routine stays the same.', confirmLabel: 'Discard workout', cancelLabel: 'Keep workout', destructive: true, onConfirm: async () => {
+                if (discardPending.current) return;
+                discardPending.current = true;
+                draftCompleted.current = true;
+                setLoading(true);
+                try {
+                    if (user?.id) await clearActiveWorkoutDraft(user.id);
+                    draftSnapshot.current = null;
+                    await syncWorkoutActivity('', null).catch(() => {});
+                    setConfirmation(null);
+                    dismissRestTimer();
+                    if (router.canGoBack()) router.back();
+                    else router.replace('/(tabs)');
+                } catch {
+                    draftCompleted.current = false;
+                    toast.error('Could not discard workout', 'Your progress is still saved. Please try again.');
+                } finally { discardPending.current = false; setLoading(false); }
+            },
+        });
+    };
+
+    const proposedRoutine = useMemo(() => routineUpdate(savedRoutine?.training_plan, sessionLabel, userExercises), [savedRoutine, sessionLabel, userExercises]);
+    const [routineError, setRoutineError] = useState('');
+    const handleFinish = async (focus?: string, routineChoice?: 'today' | 'update') => {
+        if (finishPending.current) return;
+        Keyboard.dismiss();
         if (userExercises.some(ex => ex.sets.some(set => set.completed && (set.weight_kg === '' || set.weight_kg == null)))) {
             toast.error('Enter a weight', 'Enter the weight for each checked set. Use 0 kg for bodyweight exercises.');
             return;
@@ -613,22 +716,51 @@ const WorkoutLogScreen: React.FC = () => {
             return;
         }
 
-        setLoading(true);
+        // The existing API stores six focus categories, not a generic workout type.
+        // Ask at completion rather than silently classifying an empty start as Chest.
+        if (!focus && (isFreeform || !sessionLabel)) { setShowCategoryPicker(true); return; }
+
+        if (savedRoutine && proposedRoutine.changed && !routineChoice) {
+            setRoutineError(''); setRoutinePrompt({ focus }); return;
+        }
+
+        finishPending.current = true; setLoading(true);
+        let routineWasUpdated = false;
         try {
+            if (routineChoice === 'update' && savedRoutine) {
+                if (!proposedRoutine.plan || !token) throw new Error(proposedRoutine.error || 'Please sign in again before updating your routine.');
+                const account = user?.id;
+                const result = await workoutsAPI.updateRoutine(savedRoutine.id, proposedRoutine.plan, savedRoutine.training_plan, token);
+                if (loadedAccount.current !== account) return;
+                if (!result?.split?.training_plan) throw new Error('Could not confirm the routine update. Your workout is still kept here.');
+                routineWasUpdated = true;
+                setSavedRoutine({ ...savedRoutine, training_plan: result.split.training_plan });
+            }
+            setRoutinePrompt(null);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             const durationMinutes = Math.round(
                 (new Date().getTime() - startTime.getTime()) / 60000,
             );
 
-            const sessionLabel = initialIntent?.session_label || workoutType;
+            const loggedType = focus || workoutType;
+            const loggedTitle = focus ? `${focus[0].toUpperCase() + focus.slice(1)} workout` : sessionTitle;
             const result = await workoutsAPI.log({
-                workout_type: workoutType,
-                day_name: sessionLabel,
+                workout_type: loggedType,
+                day_name: loggedTitle,
                 exercises: JSON.stringify(finishedExercises),
                 notes: 'Logged via Smart Log',
                 visibility: visibility,
                 duration_minutes: Math.max(durationMinutes, 1),
             });
+            invalidateExerciseHistory();
+
+            draftCompleted.current = true;
+            draftSnapshot.current = null;
+            if (user?.id) await clearActiveWorkoutDraft(user.id).catch(() => {
+                toast.error('Workout saved', 'The workout was saved, but its local backup could not be removed.');
+            });
+            // End the system card even if local backup cleanup failed after a successful server save.
+            await syncWorkoutActivity('', null).catch(() => {});
 
             const shareExercises = buildShareExercises(finishedExercises);
             const totalVolume = shareExercises.reduce((sum, ex) => sum + ex.volumeKg, 0);
@@ -645,7 +777,7 @@ const WorkoutLogScreen: React.FC = () => {
 
             useLastSessionStore.getState().setSession({
                 completedAt,
-                title: sessionTitle || workoutType || 'Workout',
+                title: loggedTitle,
                 durationMin: Math.max(durationMinutes, 1),
                 volumeKg: totalVolume,
                 setCount: totalSets,
@@ -659,15 +791,17 @@ const WorkoutLogScreen: React.FC = () => {
                     recap: JSON.stringify(recap),
                     session: JSON.stringify({
                         // Match the header: the recap should say "Push", not "Chest".
-                        name: sessionTitle,
-                        day_name: workoutType,
-                        emphasis: sessionMuscles.length ? sessionMuscles : [workoutType],
+                        name: loggedTitle,
+                        day_name: loggedType,
+                        emphasis: focus ? [focus] : sessionMuscles.length ? sessionMuscles : [workoutType],
                     }),
                 },
             });
         } catch (error: any) {
-            toast.error('Error', error.message || 'Failed to save workout');
+            if (routineChoice === 'update' && !routineWasUpdated) setRoutineError(error.status === 404 ? 'Routine updates are temporarily unavailable. You can still save today only.' : error.message || 'Could not save. Your workout is still here. Try again or save today only.');
+            else toast.error(routineWasUpdated ? 'Routine updated; workout not saved' : 'Error', error.message || 'Failed to save workout');
         } finally {
+            finishPending.current = false;
             setLoading(false);
         }
     };
@@ -699,7 +833,23 @@ const WorkoutLogScreen: React.FC = () => {
     const ListHeader = useMemo(
         () => (
             <View>
-                {starterLoaded && <Text style={styles.setupNote}>Starting workout loaded. Adjust reps and weights, then check off each set after doing it.</Text>}
+                {!params.curatedExercises && savedDays.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionLabel}>YOUR SAVED WORKOUTS</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            {savedDays.map(day => <TouchableOpacity key={day} onPress={() => selectSavedDay(day)}
+                                disabled={day === sessionLabel} accessibilityRole="button"
+                                accessibilityLabel={`Load ${day} workout`} accessibilityState={{ selected: day === sessionLabel }}
+                                style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.md,
+                                    borderBottomWidth: day === sessionLabel ? 2 : 0, borderBottomColor: colors.text.primary }}>
+                                <Text style={{ color: day === sessionLabel ? colors.text.primary : colors.text.muted }}>{day}</Text>
+                            </TouchableOpacity>)}
+                        </ScrollView>
+                    </View>
+                )}
+                {starterLoaded && <Text style={styles.setupNote}>Saved routine · edit as you train.</Text>}
+                {savedSplit?.scheduleOnly && !fetchingLastWorkout && !lastWorkoutPreview && userExercises.length === 0
+                    && <Text style={styles.setupNote}>This split saves your training days only. Add exercises or choose a workout template below.</Text>}
                 {!!setupError && <View><Text style={styles.setupNote}>{setupError}</Text><TouchableOpacity onPress={() => setSetupRetry(value => value + 1)} accessibilityRole="button" accessibilityLabel="Retry loading workout" style={{ minHeight: 44, justifyContent: 'center' }}><Text style={styles.setupNote}>Retry</Text></TouchableOpacity></View>}
                 {/* Warm-up sits above the exercises: read it, tick it off, or
                     skip it. It never blocks getting to the first set. */}
@@ -715,28 +865,13 @@ const WorkoutLogScreen: React.FC = () => {
                         }}
                     />
                 )}
-                {/* The manual WORKOUT TYPE pill row lived here. It was removed:
-                    the session is already declared as an intent (e.g. "Push"),
-                    and the row could only express single muscles, so a push day
-                    had to be mislabelled as "Chest". The session now takes its
-                    name from the intent, and the exercise picker filters to the
-                    muscles that session actually trains via getAllowedBodyParts. */}
-                {sessionMuscles.length > 0 && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionLabel}>TRAINING TODAY</Text>
-                        <Text style={styles.sessionMuscles}>
-                            {sessionMuscles.map((m) => m.toUpperCase()).join(' · ')}
-                        </Text>
-                    </View>
-                )}
-
                 {/* Repeat Last Banner - Loading */}
                 {fetchingLastWorkout && !lastWorkoutPreview && userExercises.length === 0 && (
                     <View style={[styles.repeatBanner, { opacity: 0.5 }]}>
                         <View style={styles.repeatBannerLeft}>
                             <ActivityIndicator size="small" color={colors.text.muted} />
                             <View>
-                                <Text style={styles.repeatSubtitle}>Loading previous workout...</Text>
+                                <Text style={styles.repeatSubtitle}>Loading saved workout...</Text>
                             </View>
                         </View>
                     </View>
@@ -763,50 +898,32 @@ const WorkoutLogScreen: React.FC = () => {
                 )}
 
                 {/* Exercises section label */}
-                {userExercises.length > 0 && (
-                    <Text style={[styles.sectionLabel, { marginTop: spacing.lg, marginBottom: spacing.sm }]}>
-                        EXERCISES
-                    </Text>
-                )}
+                <View style={styles.exerciseSectionHeader}>
+                    <Text style={[styles.sectionLabel, { marginBottom: 0 }]}>EXERCISES · {userExercises.length}</Text>
+                    {userExercises.length > 0 && <TouchableOpacity accessibilityRole="button" accessibilityLabel="Edit exercises" onPress={() => setShowExerciseEditor(true)} style={styles.editExercisesButton}><Ionicons name="options-outline" size={18} color={colors.text.primary} /><Text style={styles.editExercisesText}>Edit exercises</Text></TouchableOpacity>}
+                </View>
+                <Text style={styles.editHint}>{userExercises.length ? 'Type weight and reps below. Tap the set number for more options.' : 'Add your exercises first. Then enter weight and reps for each set.'}</Text>
             </View>
         ),
         // showWarmUp must be here — without it the memo holds the old header and
         // dismissing the warm-up card does nothing on screen.
-        [workoutType, sessionLabel, sessionMuscles, lastWorkoutPreview, userExercises.length, showWarmUp, starterLoaded, setupError, fetchingLastWorkout],
+        [workoutType, sessionLabel, lastWorkoutPreview, userExercises.length, showWarmUp, starterLoaded, setupError, fetchingLastWorkout, savedDays, savedSplit?.scheduleOnly, selectSavedDay, params.curatedExercises],
     );
 
     // Footer component for FlatList
     const ListFooter = useMemo(
         () => (
-            <View style={{ paddingBottom: footerHeight + spacing.lg }}>
-                {/* Browse Templates Button */}
-                <TouchableOpacity
-                    style={styles.browseTemplatesBtn}
-                    accessibilityRole="button"
-                    accessibilityLabel="Browse workout templates"
-                    onPress={() =>
-                        router.push({
-                            pathname: '/member/curated-workouts',
-                            params: { workoutType },
-                        })
-                    }
-                    activeOpacity={0.7}
-                >
-                    <MaterialIcons name="library-books" size={18} color={colors.text.secondary} />
-                    <Text style={styles.browseTemplatesText}>Browse Templates</Text>
-                    <MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
-                </TouchableOpacity>
-
+            <View style={{ paddingBottom: spacing.lg }}>
                 <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
                     <TouchableOpacity
-                        style={[styles.addExerciseBtn, { flex: 1, marginTop: 0 }]}
+                        style={[styles.addExerciseBtn, { flex: 1, marginTop: 0 }, !userExercises.length && { backgroundColor: colors.primary, borderStyle: 'solid', borderColor: colors.primary }]}
                         onPress={() => setShowPicker(true)}
                         activeOpacity={0.7}
                         accessibilityRole="button"
                         accessibilityLabel="Add exercise"
                     >
-                        <MaterialIcons name="add" size={20} color={colors.text.muted} />
-                        <Text style={styles.addExerciseText}>Add Exercise</Text>
+                        <MaterialIcons name="add" size={20} color={userExercises.length ? colors.text.primary : colors.text.dark} />
+                        <Text style={[styles.addExerciseText, { color: userExercises.length ? colors.text.primary : colors.text.dark }]}>Add exercises</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -825,27 +942,47 @@ const WorkoutLogScreen: React.FC = () => {
                         )}
                     </TouchableOpacity>
                 </View>
+                {!userExercises.length && <TouchableOpacity style={styles.browseTemplatesBtn} accessibilityRole="button" accessibilityLabel="Browse workout templates" onPress={() => router.push('/member/curated-workouts')}>
+                    <MaterialIcons name="library-books" size={18} color={colors.text.secondary} /><Text style={styles.browseTemplatesText}>Or use a workout template</Text><MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
+                </TouchableOpacity>}
             </View>
         ),
-        // footerHeight must be here: it is measured after first layout, and
-        // without it the memo keeps the initial 140 forever and the last
-        // exercise stays hidden behind the footer.
-        [workoutType, footerHeight, openVoice, voice.isBusy],
+        [openVoice, voice.isBusy, userExercises.length],
     );
 
     // -----------------------------------------------------------------------
     // Render
     // -----------------------------------------------------------------------
 
+    if (user?.id && hydratedAccount !== user.id) {
+        return <SafeAreaView style={styles.container} edges={['top']}>
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg, gap: spacing.md }}>
+                {setupError ? <>
+                    <Text style={{ color: colors.text.primary }}>{setupError}</Text>
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Retry restoring workout" onPress={() => setSetupRetry(value => value + 1)}>
+                        <Text style={{ color: colors.primary }}>Retry</Text>
+                    </TouchableOpacity>
+                </> : <><ActivityIndicator color={colors.primary} /><Text style={{ color: colors.text.secondary }}>Restoring workout…</Text></>}
+            </View>
+        </SafeAreaView>;
+    }
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <ScreenBackdrop />
+            <ConfirmationSheet action={confirmation} busy={loading} onCancel={() => setConfirmation(null)} />
+            <WorkoutExercisesSheet visible={showExerciseEditor} exercises={userExercises} onClose={() => setShowExerciseEditor(false)}
+                onAdd={() => { replacingExercise.current = null; setShowExerciseEditor(false); setShowPicker(true); }}
+                onReplace={index => { replacingExercise.current = index; setShowExerciseEditor(false); setShowPicker(true); }}
+                onRemove={index => { setShowExerciseEditor(false); removeExercise(index); }}
+                onMove={(index, direction) => { editedExercises.current = true; setUserExercises(prev => { const next = index + direction; if (next < 0 || next >= prev.length) return prev; const updated = [...prev]; [updated[index], updated[next]] = [updated[next], updated[index]]; return updated; }); }} />
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
+            <AIConsentModal {...voice.consentModalProps} featureTitle="Voice Workout Logging" />
             <VoiceCaptureSheet
-                visible={voiceSheetOpen}
+                visible={voiceSheetOpen && voice.stage !== 'idle' && !voice.isAwaitingConsent}
                 stage={voice.stage}
                 durationLabel={voice.durationLabel}
                 durationProgress={voice.durationProgress}
@@ -885,6 +1022,7 @@ const WorkoutLogScreen: React.FC = () => {
 
             {/* Exercise List */}
             <FlatList
+                style={{ flex: 1, minHeight: 0 }}
                 data={userExercises}
                 keyExtractor={keyExtractor}
                 renderItem={renderExercise}
@@ -892,35 +1030,52 @@ const WorkoutLogScreen: React.FC = () => {
                 ListFooterComponent={ListFooter}
                 contentContainerStyle={styles.listContainer}
                 showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
                 removeClippedSubviews={Platform.OS === 'android'}
             />
 
-            {/* Floating Rest Timer */}
-            {restActive && restSeconds > 0 && (
-                <RestTimerPill
-                    seconds={restSeconds}
-                    onDismiss={dismissRestTimer}
-                    onAddSeconds={(secs) => setRestSeconds((prev) => prev + secs)}
-                />
-            )}
+            <Modal visible={!!routinePrompt} transparent animationType="slide" onRequestClose={() => { if (!loading) setRoutinePrompt(null); }}>
+                <View style={styles.routineBackdrop}>
+                    <View style={[styles.routineSheet, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+                        <ScrollView contentContainerStyle={{ gap: spacing.md }}>
+                            <Text style={styles.routineTitle} accessibilityRole="header">Keep these routine changes?</Text>
+                            <Text style={styles.routineBody}>You changed exercises, their order or the number of sets in {sessionLabel}. Save them just for today, or use this version next time too.</Text>
+                            {proposedRoutine.changes.map((change, index) => <Text key={index} style={[styles.routineBody, { color: colors.text.primary }]}>• {change}</Text>)}
+                            <Text style={styles.routineBody}>Other training days and existing rep targets stay the same. New exercises use the reps you entered. Lifted weights are saved in your workout history.</Text>
+                            {!!(routineError || proposedRoutine.error) && <Text style={[styles.routineBody, { color: colors.error }]} accessibilityRole="alert">{routineError || proposedRoutine.error}</Text>}
+                        </ScrollView>
+                        <Button title="Save today only" disabled={loading} onPress={() => { void handleFinish(routinePrompt?.focus, 'today'); }} fullWidth />
+                        <Button title="Update routine & save workout" variant="secondary" disabled={loading || !proposedRoutine.plan} onPress={() => { void handleFinish(routinePrompt?.focus, 'update'); }} fullWidth />
+                        <Button title={loading ? 'Saving…' : 'Back to workout'} variant="ghost" disabled={loading} onPress={() => setRoutinePrompt(null)} fullWidth />
+                    </View>
+                </View>
+            </Modal>
 
-            {/* Fixed footer: visibility + finish.
-                These used to be two separately-positioned absolute bars, with the
-                visibility bar pinned at a hardcoded `bottom: 72` that guessed the
-                finish bar's height. The real height is
-                paddingTop + button + insets.bottom + paddingBottom, so on any
-                device with a home indicator (insets.bottom = 34) the finish bar
-                grew to ~110 and covered the visibility options. Stacking them in
-                one container removes the guess entirely. */}
+            <WorkoutCategorySheet visible={showCategoryPicker} onClose={() => setShowCategoryPicker(false)} onChoose={type => {
+                const label = `${type[0].toUpperCase() + type.slice(1)} workout`;
+                // This labels the current work, rather than switching to a different session.
+                loadedSession.current = `${label}|`;
+                setSelectedIntent({ session_label: label });
+                setShowCategoryPicker(false);
+                void handleFinish(type);
+            }} />
+
+            {/* Keep controls in the layout so focused rows can scroll above them. */}
             <View
                 style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}
-                onLayout={(e) => setFooterHeight(e.nativeEvent.layout.height)}
             >
+            {restActive && restSeconds > 0 && <RestTimerPill seconds={restSeconds} onDismiss={dismissRestTimer} onAddSeconds={secs => {
+                if (restTargetTimeRef.current === null) return;
+                restTargetTimeRef.current += secs * 1000;
+                setRestSeconds(Math.max(0, Math.ceil((restTargetTimeRef.current - Date.now()) / 1000)));
+            }} />}
             {shareLogs && (
                 <View style={styles.visibilityBar}>
                     <Text style={styles.visibilityLabel}>Who sees this workout?</Text>
-                    <View style={styles.visibilityOptions}>
+                    <View style={styles.visibilityOptions} accessibilityRole="radiogroup" accessibilityLabel="Workout visibility">
                         <TouchableOpacity
+                            accessibilityRole="radio" accessibilityLabel="Friends" accessibilityState={{ checked: visibility === 'friends' }} aria-checked={visibility === 'friends'}
                             style={[
                                 styles.visibilityOption,
                                 visibility === 'friends' && styles.visibilityOptionActive
@@ -939,6 +1094,7 @@ const WorkoutLogScreen: React.FC = () => {
                         </TouchableOpacity>
 
                         <TouchableOpacity
+                            accessibilityRole="radio" accessibilityLabel="Only me" accessibilityState={{ checked: visibility === 'private' }} aria-checked={visibility === 'private'}
                             style={[
                                 styles.visibilityOption,
                                 visibility === 'private' && styles.visibilityOptionActive
@@ -962,7 +1118,7 @@ const WorkoutLogScreen: React.FC = () => {
             <View style={styles.bottomBar}>
                 <TouchableOpacity
                     style={[styles.finishBtn, loading && { opacity: 0.5 }]}
-                    onPress={handleFinish}
+                    onPress={() => { void handleFinish(); }}
                     disabled={loading}
                     activeOpacity={0.85}
                     accessibilityRole="button"
@@ -974,6 +1130,9 @@ const WorkoutLogScreen: React.FC = () => {
                         <Text style={styles.finishBtnText}>Finish Workout</Text>
                     )}
                 </TouchableOpacity>
+                <TouchableOpacity onPress={handleDiscard} disabled={loading} accessibilityRole="button" accessibilityLabel="Discard workout" style={{ paddingVertical: spacing.sm, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: colors.text.secondary, fontFamily: typography.fontFamily.regular, fontSize: 13 }}>Discard workout</Text>
+                </TouchableOpacity>
             </View>
             </View>
 
@@ -984,22 +1143,23 @@ const WorkoutLogScreen: React.FC = () => {
                 visible={showPicker}
                 animationType="slide"
                 presentationStyle="pageSheet"
-                onRequestClose={() => setShowPicker(false)}
+                onRequestClose={() => { replacingExercise.current = null; setShowPicker(false); }}
             >
-                <View style={styles.modalContainer}>
+                <SafeAreaView style={styles.modalContainer}>
                     <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Select Exercise</Text>
-                        <TouchableOpacity onPress={() => setShowPicker(false)} hitSlop={12}>
+                        <Text style={styles.modalTitle} accessibilityRole="header">{replacingExercise.current === null ? 'Add exercises' : 'Replace exercise'}</Text>
+                        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close exercise picker" style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }} onPress={() => { replacingExercise.current = null; setShowPicker(false); }}>
                             <MaterialIcons name="close" size={24} color={colors.text.primary} />
                         </TouchableOpacity>
                     </View>
                     <ExerciseList
                         mode="select"
                         onSelect={handleAddExercise}
-                        initialFilter={sessionLabel.toLowerCase().includes('full') ? undefined : workoutType}
-                        allowedBodyParts={getAllowedBodyParts(workoutType, initialIntent?.session_label)}
+                        selectedExercises={userExercises}
+                        selectionAction={replacingExercise.current === null ? 'Add' : 'Replace'}
                     />
-                </View>
+                    {replacingExercise.current === null && <View style={styles.exercisePickerFooter}><Button title={userExercises.length ? `Done · ${userExercises.length} ${userExercises.length === 1 ? 'exercise' : 'exercises'}` : 'Back to workout'} onPress={() => setShowPicker(false)} fullWidth /></View>}
+                </SafeAreaView>
             </Modal>
 
             {/* Repeat Last Preview Modal */}
@@ -1134,113 +1294,21 @@ const WorkoutLogScreen: React.FC = () => {
                 </Pressable>
             </Modal>
 
-            {/* Number Picker Bottom Sheet */}
-            {pickerConfig.visible && (
-                <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-                    {/* Backdrop */}
-                    <Pressable style={styles.pickerBackdrop} onPress={closePicker} />
-
-                    <Animated.View
-                        style={[
-                            styles.pickerSheet,
-                            {
-                                transform: [{ translateY: pickerSlideAnim }],
-                                paddingBottom: insets.bottom + spacing.md,
-                            },
-                        ]}
-                    >
-                        {/* Picker header */}
-                        <View style={styles.pickerHeader}>
-                            <TouchableOpacity onPress={closePicker} hitSlop={12}>
-                                <Text style={styles.pickerCancelText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <Text style={styles.pickerTitle}>
-                                {pickerConfig.type === 'weight'
-                                    ? 'Weight (kg)'
-                                    : pickerConfig.type === 'rir'
-                                        ? 'RIR'
-                                        : 'Reps'}
-                            </Text>
-                            <TouchableOpacity
-                                onPress={() => handlePickerConfirm(typingValue !== null
-                                    ? (parseFloat(typingValue) || 0)
-                                    : pickerConfig.currentValue)}
-                                hitSlop={12}
-                            >
-                                <Text style={styles.pickerDoneText}>Done</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Type / wheel toggle. Scrolling is fine for nudging a
-                            weight, but hopeless for jumping to an exact number. */}
-                        <TouchableOpacity
-                            style={styles.pickerModeToggle}
-                            onPress={toggleTyping}
-                            hitSlop={8}
-                            accessibilityRole="button"
-                            accessibilityLabel={typingValue !== null ? 'Use scroll wheel' : 'Type a value'}
-                        >
-                            <MaterialIcons
-                                name={typingValue !== null ? 'toll' : 'keyboard'}
-                                size={16}
-                                color={colors.text.secondary}
-                            />
-                            <Text style={styles.pickerModeToggleText}>
-                                {typingValue !== null ? 'USE WHEEL' : 'TYPE A NUMBER'}
-                            </Text>
-                        </TouchableOpacity>
-
-                        {typingValue !== null ? (
-                            <View style={styles.pickerTypeWrap}>
-                                <TextInput
-                                    style={styles.pickerTypeInput}
-                                    value={typingValue}
-                                    onChangeText={setTypingValue}
-                                    keyboardType="decimal-pad"
-                                    autoFocus
-                                    selectTextOnFocus
-                                    placeholder="0"
-                                    placeholderTextColor={colors.text.subtle}
-                                    returnKeyType="done"
-                                    onSubmitEditing={() =>
-                                        handlePickerConfirm(parseFloat(typingValue) || 0)
-                                    }
-                                />
-                                <Text style={styles.pickerTypeUnit}>
-                                    {pickerConfig.type === 'weight'
-                                        ? 'kg'
-                                        : pickerConfig.type === 'rir'
-                                            ? 'rir'
-                                            : 'reps'}
-                                </Text>
-                            </View>
-                        ) : (
-                            <ScrollWheelPicker
-                                values={
-                                    pickerConfig.type === 'weight'
-                                        ? WEIGHT_VALUES
-                                        : pickerConfig.type === 'rir'
-                                            ? RIR_VALUES
-                                            : REPS_VALUES
-                                }
-                                selectedValue={pickerConfig.currentValue}
-                                onValueChange={(v) =>
-                                    setPickerConfig((prev) => ({ ...prev, currentValue: v }))
-                                }
-                                formatLabel={
-                                    pickerConfig.type === 'weight'
-                                        ? (v) => (v % 1 === 0 ? v.toString() : v.toFixed(1))
-                                        : undefined
-                                }
-                            />
-                        )}
-
-                        {/* Live plate calculator (barbell math: 20kg bar, per side) */}
-                        {pickerConfig.type === 'weight' && (
-                            <Text style={styles.plateHint}>{plateBreakdown(pickerConfig.currentValue)}</Text>
-                        )}
-                    </Animated.View>
-                </View>
+            {pickerConfig.visible && userExercises[pickerConfig.exerciseIndex]?.sets[pickerConfig.setIndex] && (
+                <WorkoutSetEditor
+                    key={[user?.id, userExercises[pickerConfig.exerciseIndex].id, userExercises[pickerConfig.exerciseIndex].sets[pickerConfig.setIndex].id].join(':')}
+                    exerciseName={userExercises[pickerConfig.exerciseIndex].name}
+                    setIndex={pickerConfig.setIndex}
+                    set={userExercises[pickerConfig.exerciseIndex].sets[pickerConfig.setIndex]}
+                    previousSet={userExercises[pickerConfig.exerciseIndex].sets[pickerConfig.setIndex - 1]}
+                    initialField={pickerConfig.type}
+                    showRir={showRir}
+                    isUnilateral={userExercises[pickerConfig.exerciseIndex].is_unilateral}
+                    inputMode={inputMode}
+                    onSelectMode={selectMode}
+                    onSave={saveEditedSet}
+                    onClose={closePicker}
+                />
             )}
 
             <WorkoutPrefsSheet
@@ -1265,6 +1333,10 @@ const WorkoutLogScreen: React.FC = () => {
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
+    routineBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.65)' },
+    routineSheet: { maxHeight: '90%', padding: spacing.xl, gap: spacing.md, backgroundColor: colors.surface, borderTopLeftRadius: borderRadius.xl, borderTopRightRadius: borderRadius.xl, borderWidth: 1, borderColor: colors.glass.border },
+    routineTitle: { color: colors.text.primary, fontFamily: typography.fontFamily.semiBold, fontSize: 21, lineHeight: 28 },
+    routineBody: { color: colors.text.secondary, fontFamily: typography.fontFamily.regular, fontSize: 13, lineHeight: 21 },
     setupNote: { color: colors.text.secondary, fontFamily: typography.fontFamily.regular, fontSize: 13, lineHeight: 20, marginVertical: 12 },
     // Layout
     container: {
@@ -1277,6 +1349,10 @@ const styles = StyleSheet.create({
     },
 
     // Header
+    exerciseSectionHeader: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginTop: spacing.lg },
+    editExercisesButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44, paddingHorizontal: spacing.sm },
+    editExercisesText: { fontFamily: typography.fontFamily.medium, fontSize: typography.sizes.sm, color: colors.text.primary },
+    editHint: { fontFamily: typography.fontFamily.regular, fontSize: typography.sizes.sm, lineHeight: 19, color: colors.text.muted, marginBottom: spacing.lg },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1405,10 +1481,7 @@ const styles = StyleSheet.create({
     // finish button can never overlap the visibility options regardless of
     // safe-area inset or whether the visibility bar is shown at all.
     footer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
+        flexShrink: 0,
         backgroundColor: colors.background,
         borderTopWidth: 1,
         borderTopColor: colors.glass.border,
@@ -1436,6 +1509,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
+    exercisePickerFooter: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.glass.border },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -1635,98 +1709,6 @@ const styles = StyleSheet.create({
         color: colors.background,
     },
 
-    // Number picker bottom sheet
-    pickerBackdrop: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    pickerSheet: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: colors.surface,
-        borderTopLeftRadius: borderRadius.xl,
-        borderTopRightRadius: borderRadius.xl,
-        borderWidth: 1,
-        borderBottomWidth: 0,
-        borderColor: colors.glass.borderLight,
-        paddingHorizontal: spacing.xl,
-        paddingTop: spacing.md,
-    },
-    pickerHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: spacing.md,
-    },
-    pickerCancelText: {
-        fontSize: typography.sizes.md,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
-    },
-    pickerTitle: {
-        fontSize: typography.sizes.md,
-        fontFamily: typography.fontFamily.bold,
-        color: colors.text.primary,
-    },
-    pickerModeToggle: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        alignSelf: 'center',
-        gap: spacing.sm,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        marginBottom: spacing.sm,
-        borderRadius: borderRadius.full,
-        borderWidth: 1,
-        borderColor: colors.glass.border,
-        backgroundColor: colors.glass.surface,
-    },
-    pickerModeToggleText: {
-        fontSize: typography.sizes.xs,
-        fontFamily: typography.fontFamily.bold,
-        color: colors.text.secondary,
-        letterSpacing: 1,
-    },
-    pickerTypeWrap: {
-        flexDirection: 'row',
-        alignItems: 'baseline',
-        justifyContent: 'center',
-        gap: spacing.sm,
-        // Matches ScrollWheelPicker's height (48 * 5) so swapping modes does not
-        // make the sheet jump.
-        height: 240,
-        paddingTop: spacing['3xl'],
-    },
-    pickerTypeInput: {
-        minWidth: 140,
-        textAlign: 'center',
-        fontSize: 52,
-        fontFamily: typography.fontFamily.bold,
-        color: colors.text.primary,
-        paddingVertical: spacing.sm,
-        borderBottomWidth: 2,
-        borderBottomColor: colors.glass.borderLight,
-    },
-    pickerTypeUnit: {
-        fontSize: typography.sizes.lg,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
-    },
-    plateHint: {
-        textAlign: 'center',
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
-        paddingVertical: spacing.sm,
-        minHeight: 34,
-    },
-    pickerDoneText: {
-        fontSize: typography.sizes.md,
-        fontFamily: typography.fontFamily.bold,
-        color: colors.primary,
-    },
     visibilityBar: {
         paddingHorizontal: spacing.lg,
         paddingTop: spacing.md,

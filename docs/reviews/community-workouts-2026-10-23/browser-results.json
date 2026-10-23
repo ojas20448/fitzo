@@ -1,0 +1,301 @@
+{
+  "passed": true,
+  "layouts": [
+    {
+      "name": "my-plan",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "change-plan",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "name": "community-library",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "name": "community-library",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "community-library",
+      "width": 430,
+      "height": 844
+    },
+    {
+      "name": "combined-filters",
+      "width": 320,
+      "height": 600
+    },
+    {
+      "name": "combined-filters",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "filtered-library",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "name": "empty-filter",
+      "width": 320,
+      "height": 600
+    },
+    {
+      "name": "routine-preview",
+      "width": 320,
+      "height": 600
+    },
+    {
+      "name": "routine-preview",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "fitzo-library",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "publish-details",
+      "width": 320,
+      "height": 600
+    },
+    {
+      "name": "publish-details",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "published-community",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "requests": [
+    {
+      "path": "/workouts/splits",
+      "method": "GET",
+      "filters": {}
+    },
+    {
+      "path": "/intent/suggest",
+      "method": "GET",
+      "filters": {}
+    },
+    {
+      "path": "/auth/me",
+      "method": "GET",
+      "filters": {}
+    },
+    {
+      "path": "/workouts/splits",
+      "method": "GET",
+      "filters": {}
+    },
+    {
+      "path": "/intent/suggest",
+      "method": "GET",
+      "filters": {}
+    },
+    {
+      "path": "/nutrition/today",
+      "method": "GET",
+      "filters": {}
+    },
+    {
+      "path": "/workouts/splits",
+      "method": "GET",
+      "filters": {}
+    },
+    {
+      "path": "/workouts/published",
+      "method": "GET",
+      "filters": {
+        "official": "false",
+        "sort": "most_liked",
+        "page": "0"
+      }
+    },
+    {
+      "path": "/workouts/published",
+      "method": "GET",
+      "filters": {
+        "official": "false",
+        "days": "3",
+        "sort": "most_liked",
+        "page": "0"
+      }
+    },
+    {
+      "path": "/workouts/published",
+      "method": "GET",
+      "filters": {
+        "official": "false",
+        "days": "3",
+        "difficulty": "beginner",
+        "sort": "most_liked",
+        "page": "0"
+      }
+    },
+    {
+      "path": "/workouts/published",
+      "method": "GET",
+      "filters": {
+        "official": "false",
+        "days": "3",
+        "difficulty": "beginner",
+        "sort": "most_liked",
+        "search": "strength",
+        "page": "0"
+      }
+    },
+    {
+      "path": "/workouts/published",
+      "method": "GET",
+      "filters": {
+        "official": "false",
+        "days": "7",
+        "difficulty": "beginner",
+        "sort": "most_liked",
+        "search": "strength",
+        "page": "0"
+      }
+    },
+    {
+      "path": "/workouts/published",
+      "method": "GET",
+      "filters": {
+        "official": "false",
+        "sort": "most_liked",
+        "page": "0"
+      }
+    },
+    {
+      "path": "/workouts/published/top/heart",
+      "method": "PUT",
+      "filters": {}
+    },
+    {
+      "path": "/workouts/published/top/heart",
+      "method": "PUT",
+      "filters": {}
+    },
+    {
+      "path": "/workouts/published/top/heart",
+      "method": "PUT",
+      "filters": {}
+    },
+    {
+      "path": "/workouts/published/top",
+      "method": "GET",
+      "filters": {}
+    },
+    {
+      "path": "/workouts/published/top",
+      "method": "GET",
+      "filters": {}
+    },
+    {
+      "path": "/workouts/published",
+      "method": "GET",
+      "filters": {
+        "official": "true",
+        "sort": "most_liked",
+        "page": "0"
+      }
+    },
+    {
+      "path": "/workouts/splits",
+      "method": "GET",
+      "filters": {}
+    },
+    {
+      "path": "/workouts/published",
+      "method": "POST",
+      "filters": {}
+    },
+    {
+      "path": "/workouts/published",
+      "method": "POST",
+      "filters": {}
+    },
+    {
+      "path": "/workouts/published",
+      "method": "GET",
+      "filters": {
+        "official": "false",
+        "sort": "newest",
+        "page": "0"
+      }
+    },
+    {
+      "path": "/workouts/published/published",
+      "method": "GET",
+      "filters": {}
+    },
+    {
+      "path": "/workouts/published/published/adopt",
+      "method": "POST",
+      "filters": {}
+    }
+  ],
+  "writes": [
+    {
+      "path": "/workouts/published/top/heart",
+      "body": {
+        "liked": true
+      }
+    },
+    {
+      "path": "/workouts/published/top/heart",
+      "body": {
+        "liked": true
+      }
+    },
+    {
+      "path": "/workouts/published/top/heart",
+      "body": {
+        "liked": false
+      }
+    },
+    {
+      "path": "/workouts/published",
+      "body": {
+        "source_split_id": "33333333-3333-4333-8333-333333333333",
+        "name": "My upper split",
+        "description": "A simple upper-body split to build strength.",
+        "difficulty_level": "intermediate",
+        "tags": [
+          "strength",
+          "dumbbells"
+        ]
+      }
+    },
+    {
+      "path": "/workouts/published",
+      "body": {
+        "source_split_id": "33333333-3333-4333-8333-333333333333",
+        "name": "My upper split",
+        "description": "A simple upper-body split to build strength.",
+        "difficulty_level": "intermediate",
+        "tags": [
+          "strength",
+          "dumbbells"
+        ]
+      }
+    },
+    {
+      "path": "/workouts/published/published/adopt",
+      "body": {}
+    }
+  ],
+  "errors": [
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load."
+  ]
+}

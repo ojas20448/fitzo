@@ -1,10 +1,8 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import Animated from 'react-native-reanimated';
+import { Image, View, StyleSheet } from 'react-native';
 import type { ShareBackground } from './SharePayload';
 import { CARD_W, CARD_H } from './SharePayload';
 import { resolveBackgroundTransform } from '../../utils/backgroundTransform';
-import { useBackgroundTransform } from './BackgroundTransformContext';
 
 interface CardBackgroundProps {
     background: ShareBackground | null | undefined;
@@ -22,51 +20,24 @@ interface CardBackgroundProps {
     onError?: () => void;
 }
 
-/**
- * Camera photo behind a theme's own content — Task 10.
- *
- * One implementation, reused by every theme that opts in: <Image
- * resizeMode="cover"> under a scrim View, both StyleSheet.absoluteFill.
- * Renders nothing when `background` is absent/null, so every theme's
- * existing look is untouched by default (binding constraint) — there is no
- * conditional branch a theme needs to add beyond placing this component.
- *
- * Positioning math is entirely resolveBackgroundTransform's job
- * (utils/backgroundTransform.ts, R29) — this component resolves the
- * NORMALIZED `background` to pixels for the box it renders in and nothing
- * more. It hardcodes CARD_W/CARD_H rather than accepting a size prop
- * because every call site places it inside a theme's own `frame`, which
- * every theme declares at a literal `width: CARD_W, height: CARD_H`
- * (verified against Scoreboard.tsx/Chalk.tsx/Spec.tsx/Receipt.tsx) — true
- * in BOTH the composer's hero preview and its hidden capture target,
- * because the hero achieves its visual shrink with an outer
- * `transform: [{ scale: heroScale }]` wrapper (ShareComposerScreen.tsx's
- * heroInner, itself fixed at `width: CARD_W, height: CARD_H`) rather than
- * by laying the theme tree out at a smaller size. So `frame`, and every
- * child inside it including this component, always measures itself against
- * true CARD_W x CARD_H — resolveBackgroundTransform never needs to know
- * which of the two trees it is resolving for.
- */
+/** Fixed photo layer, shared by preview and export. Gestures belong to ShareCard. */
 export default function CardBackground({ background, scrimOpacity, onLoad, onError }: CardBackgroundProps) {
-    const transformCtx = useBackgroundTransform();
     if (!background) return null;
 
     const t = resolveBackgroundTransform(background, CARD_W, CARD_H);
 
-    const imageStyle = transformCtx?.animatedStyle
-        ? transformCtx.animatedStyle
-        : {
-              transform: [
-                  { translateX: t.translateX },
-                  { translateY: t.translateY },
-                  { scale: t.scale },
-                  { rotate: `${t.rotateDeg}deg` },
-              ],
-          };
+    const imageStyle = {
+        transform: [
+            { translateX: t.translateX },
+            { translateY: t.translateY },
+            { scale: t.scale },
+            { rotate: `${t.rotateDeg}deg` },
+        ],
+    };
 
     return (
         <>
-            <Animated.Image
+            <Image
                 source={{ uri: background.uri }}
                 resizeMode="cover"
                 onLoad={onLoad}

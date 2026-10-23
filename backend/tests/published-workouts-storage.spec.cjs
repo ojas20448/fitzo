@@ -1,0 +1,101 @@
+const { PGlite } = require('@electric-sql/pglite');
+const { before, after, test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const express = require('express');
+const request = require('supertest');
+let db;
+const owner = '11111111-1111-4111-8111-111111111111', other = '22222222-2222-4222-8222-222222222222';
+const source = '33333333-3333-4333-8333-333333333333';
+const community = '44444444-4444-4444-8444-444444444444';
+const routine = { version: 2, type: 'custom', sessions: [{ day_name: 'Upper 1', exercises: [{ name: 'Chest Press', set_count: 3, reps_min: 8, reps_max: 12 }] }] };
+require.cache[require.resolve('../src/config/database')] = { exports: { query: (sql, values) => db.query(sql, values), getClient: async () => ({ query: (sql, values) => db.query(sql, values), release() {} }) } };
+require.cache[require.resolve('../src/services/contextPack')] = { exports: { invalidateContextPack: async () => {} } };
+require.cache[require.resolve('../src/services/xpService')] = { exports: { awardXP: async () => {} } };
+require.cache[require.resolve('../src/middleware/auth')] = { exports: { authenticate: (req, res, next) => { req.user = { id: req.headers['x-test-user'] || owner }; next(); } } };
+const app = express(); app.use(express.json()); app.use(require('../src/routes/workouts-published')); app.use(require('../src/utils/errors').errorHandler);
+before(async () => {
+    db = new PGlite();
+    await db.exec(`CREATE TABLE users (id uuid PRIMARY KEY, name text);
+        CREATE TABLE user_splits (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid REFERENCES users(id), split_id text, name text, days text[], days_per_week integer, training_plan jsonb, is_active boolean);
+        INSERT INTO users VALUES ('${owner}', 'Alex'), ('${other}', 'Sam');`);
+    await db.exec(fs.readFileSync(path.join(__dirname, '../src/db/migrate_published_splits.sql'), 'utf8'));
+    const migration = fs.readFileSync(path.join(__dirname, '../data/migrations/023_community_workouts.sql'), 'utf8');
+    await db.exec(migration); await db.exec(migration);
+    await db.query('INSERT INTO user_splits (id, user_id, name, days, days_per_week, training_plan, is_active) VALUES ($1, $2, $3, $4, 1, $5, true)', [source, owner, 'My split', ['Upper 1'], routine]);
+    await db.query(`INSERT INTO published_splits (id, name, description, days_per_week, difficulty_level, program_structure, tags, author_name, is_official, download_count, created_at)
+        VALUES ($1, 'Community strength', 'Barbell training', 3, 'beginner', '{"Day 1":"Full Body"}', ARRAY['strength'], 'Sam', false, 10, '2026-10-01')`, [community]);
+});
+after(async () => { await db.close(); });
+let published;
+test('publishing snapshots the owner’s actual routine without exposing private data or allowing forged official plans', async () => {
+    const body = { source_split_id: source, name: '  Alex upper  ', description: ' An upper-body day. ', difficulty_level: 'beginner', tags: ['Strength', 'strength'] };
+    assert.equal((await request(app).post('/').set('x-test-user', other).send(body)).status, 404);
+    assert.equal((await request(app).post('/').send({ ...body, is_official: true })).status, 400);
+    assert.equal((await request(app).post('/').send({ ...body, description: ' ' })).status, 400);
+    const result = await request(app).post('/').send(body); assert.equal(result.status, 201); published = result.body.split.id;
+    assert.equal((await request(app).post('/').send(body)).status, 409);
+    const detail = await request(app).get(`/${published}`);
+    assert.equal(detail.body.split.name, 'Alex upper'); assert.deepEqual(detail.body.split.tags, ['strength']);
+    assert.deepEqual(detail.body.split.training_plan, routine); assert.equal(detail.body.split.has_exercises, true);
+    assert.equal(detail.body.split.author_id, undefined); assert.equal(detail.body.split.source_split_id, undefined);
+    await db.query('UPDATE user_splits SET name = $1, training_plan = NULL WHERE id = $2', ['Changed privately', source]);
+    assert.deepEqual((await request(app).get(`/${published}`)).body.split.training_plan, routine);
+});
+test('hearts are idempotent per account and removing a heart does not remove another member’s heart', async () => {
+    const set = (user, liked) => request(app).put(`/${community}/heart`).set('x-test-user', user).send({ liked });
+    assert.equal((await set(owner, true)).body.heart_count, 1);
+    assert.equal((await set(owner, true)).body.heart_count, 1);
+    assert.equal((await set(other, true)).body.heart_count, 2);
+    assert.equal((await set(owner, false)).body.heart_count, 1);
+    assert.equal((await set(owner, false)).body.heart_count, 1);
+    assert.equal((await request(app).get(`/${community}`)).body.split.liked, false);
+    assert.equal((await request(app).get(`/${community}`).set('x-test-user', other)).body.split.liked, true);
+    assert.equal((await set(owner, 'true')).status, 400);
+    assert.equal((await request(app).put('/55555555-5555-4555-8555-555555555555/heart').send({ liked: true })).status, 404);
+});
+test('official/community, days, level, literal search and all sort modes use real SQL together', async () => {
+    const combined = await request(app).get('/?official=false&days=3&difficulty=beginner&search=strength&sort=most_liked');
+    assert.equal(combined.status, 200); assert.deepEqual(combined.body.splits.map(s => s.id), [community]);
+    const communityList = (await request(app).get('/?official=false')).body.splits;
+    assert.equal(communityList[0].id, community); assert.ok(communityList.every(s => !s.is_official));
+    assert.equal((await request(app).get('/?official=false&sort=newest')).body.splits[0].id, published);
+    assert.equal((await request(app).get('/?official=false&sort=most_used')).body.splits[0].id, community);
+    const official = (await request(app).get('/?official=true')).body.splits;
+    assert.equal(official.length, 5); assert.ok(official.every(s => s.is_official));
+    assert.equal((await request(app).get('/?official=false&search=%25')).body.splits.length, 0);
+    assert.equal((await request(app).get('/?days=3abc')).status, 400);
+    assert.equal((await request(app).get('/?official=no')).status, 400);
+    assert.equal((await request(app).get('/?difficulty=elite')).status, 400);
+    assert.equal((await request(app).get('/?sort=DROP')).status, 400);
+    assert.equal((await request(app).get('/?page=-1')).status, 400);
+    assert.equal((await request(app).get('/?official=false&days=7')).body.splits.length, 0);
+});
+test('pagination is deterministic and returns no duplicate plans across pages', async () => {
+    await db.exec(`INSERT INTO published_splits (name, days_per_week, difficulty_level, is_official, created_at)
+        SELECT 'Paging ' || n, 2, 'beginner', false, '2026-10-01' FROM generate_series(1, 27) n`);
+    const first = (await request(app).get('/?official=false&search=Paging')).body;
+    const second = (await request(app).get('/?official=false&search=Paging&page=1')).body;
+    assert.equal(first.splits.length, 24); assert.equal(first.has_more, true);
+    assert.equal(second.splits.length, 3); assert.equal(second.has_more, false);
+    assert.equal(new Set([...first.splits, ...second.splits].map(s => s.id)).size, 27);
+});
+test('adoption preserves exercises and rep targets while keeping the previous plan saved', async () => {
+    const result = await request(app).post(`/${published}/adopt`);
+    assert.equal(result.status, 200); assert.deepEqual(result.body.user_split.training_plan, routine);
+    assert.equal(result.body.user_split.is_active, true);
+    const old = (await db.query('SELECT * FROM user_splits WHERE id = $1', [source])).rows[0]; assert.equal(old.is_active, false);
+    assert.equal((await db.query('SELECT COUNT(*)::int AS n FROM user_splits WHERE user_id = $1 AND is_active = true', [owner])).rows[0].n, 1);
+    const schedule = await request(app).post(`/${community}/adopt`);
+    assert.equal(schedule.status, 200); assert.equal(schedule.body.user_split.training_plan, null);
+});
+test('schedule-only publication counts training days, preserves rest days and never claims exercise targets', async () => {
+    const id = '66666666-6666-4666-8666-666666666666';
+    await db.query('INSERT INTO user_splits (id, user_id, name, days, days_per_week) VALUES ($1, $2, $3, $4, 7)', [id, owner, 'Recovery split', ['Upper', 'Rest', 'Lower', 'Off']]);
+    const result = await request(app).post('/').send({ source_split_id: id, name: 'Recovery split', description: 'Two training days', difficulty_level: 'beginner', tags: [] });
+    assert.equal(result.status, 201);
+    const detail = (await request(app).get(`/${result.body.split.id}`)).body.split;
+    assert.equal(detail.days_per_week, 2); assert.equal(detail.has_exercises, false); assert.equal(detail.training_plan, null);
+    assert.deepEqual(Object.values(detail.program_structure), ['Upper', 'Rest', 'Lower', 'Off']);
+});

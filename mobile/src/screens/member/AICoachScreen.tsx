@@ -18,7 +18,8 @@ import {
 import AIConsentModal, { getAIConsent } from '../../components/AIConsentModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { coachEntryPrompt } from '../../utils/coachEntry';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { aiAPI } from '../../services/api';
 import {
@@ -39,6 +40,7 @@ type Message = {
 };
 
 export default function AICoachScreen() {
+    const entry = useLocalSearchParams();
     const [messages, setMessages] = useState<Message[]>([
         {
             id: '1',
@@ -47,7 +49,7 @@ export default function AICoachScreen() {
             timestamp: new Date(),
         },
     ]);
-    const [inputText, setInputText] = useState('');
+    const [inputText, setInputText] = useState(() => coachEntryPrompt(entry.source, entry.prompt));
     const [loading, setLoading] = useState(false);
     const [historyLoading, setHistoryLoading] = useState(true);
     const [historyError, setHistoryError] = useState(false);

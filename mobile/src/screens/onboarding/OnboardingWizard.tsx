@@ -17,8 +17,8 @@ import { buildStarterPlan, EQUIPMENT_CHOICES, starterSessionDraft } from '../../
 
 const STAGES = ['Goal', 'Routine', 'Basics', 'Plan'];
 const GOALS = [
-    { id: 'fat_loss', title: 'Lose fat', detail: 'A modest calorie reduction, with training to support strength.' },
-    { id: 'muscle_gain', title: 'Build muscle', detail: 'Regular strength training and a small calorie increase.' },
+    { id: 'fat_loss', title: 'Lose fat', detail: 'Build a consistent training routine around your goal.' },
+    { id: 'muscle_gain', title: 'Build muscle', detail: 'Make strength training part of your week.' },
     { id: 'maintenance', title: 'Maintain', detail: 'Keep your weight steady and build a consistent routine.' },
 ] as const;
 const ACTIVITY = [
@@ -78,6 +78,7 @@ export default function OnboardingWizard() {
         setReady(false);
         loadedAccount.current = undefined;
         setStep(1); setForm({ ...EMPTY_ONBOARDING });
+        setHeightUnit('cm'); setFeet(''); setInches(''); setError('');
         finished.current = false; savedSplit.current = ''; savedSplitId.current = null;
         const load = async () => {
             try {
@@ -118,7 +119,7 @@ export default function OnboardingWizard() {
     };
     const next = () => {
         if (submitting.current) return;
-        const problem = validateStep(step, form);
+        const problem = step === 3 && form.nutritionEnabled ? heightError() || validateStep(step, form) : validateStep(step, form);
         if (problem) { setError(problem); return; }
         Keyboard.dismiss(); setError(''); setStep(step === 2 && !form.nutritionEnabled ? 4 : step + 1);
         scroll.current?.scrollTo({ y: 0, animated: false });
@@ -199,15 +200,29 @@ export default function OnboardingWizard() {
     };
 
     const toggleHeight = () => {
+        if (submitting.current) return;
+        setError('');
         if (heightUnit === 'cm') {
-            const total = form.height ? Math.round(Number(form.height) / 2.54) : 0;
-            setFeet(total ? String(Math.floor(total / 12)) : ''); setInches(total ? String(total % 12) : '');
+            const cm = Number(form.height);
+            const total = form.height.trim() && Number.isFinite(cm) && cm > 0 ? Math.round(cm / 2.54 * 10) / 10 : 0;
+            setFeet(total ? String(Math.floor(total / 12)) : '');
+            setInches(total ? String(Math.round((total % 12) * 10) / 10) : '');
             setHeightUnit('ft');
         } else setHeightUnit('cm');
     };
+    const heightError = () => {
+        if (heightUnit !== 'ft') return null;
+        const ft = Number(feet), inch = Number(inches || 0);
+        if (!feet.trim() || !Number.isInteger(ft) || ft < 0) return 'Enter your height in whole feet and inches.';
+        if (!Number.isFinite(inch) || inch < 0 || inch >= 12) return 'Inches must be between 0 and 11.';
+        if (!form.height || Number(form.height) < 100 || Number(form.height) > 250) return 'Check your height in feet and inches (about 3 ft 3 in to 8 ft 2 in).';
+        return null;
+    };
     const changeImperial = (ft: string, inch: string) => {
+        if (submitting.current) return;
         setFeet(ft); setInches(inch);
-        change('height', ft || inch ? String(Math.round((Number(ft || 0) * 12 + Number(inch || 0)) * 2.54)) : '');
+        const total = (Number(ft || 0) * 12 + Number(inch || 0)) * 2.54;
+        change('height', (ft || inch) && Number.isFinite(total) ? String(Math.round(total * 100) / 100) : '');
     };
 
     return <SafeAreaView style={s.screen} edges={['top', 'bottom']}>
@@ -254,7 +269,7 @@ export default function OnboardingWizard() {
                             </TouchableOpacity>
                         </View>
                         {heightUnit === 'cm' ? <Field hideLabel label="Height in centimetres" unit="cm" value={form.height} onChange={v => change('height', v)} placeholder="175" /> :
-                            <View style={s.fieldRow}><Field label="Feet" unit="ft" value={feet} onChange={v => changeImperial(v, inches)} placeholder="5" integer half /><Field label="Inches" unit="in" value={inches} onChange={v => changeImperial(feet, v)} placeholder="9" integer half /></View>}
+                            <View style={s.fieldRow}><Field label="Feet" unit="ft" value={feet} onChange={v => changeImperial(v, inches)} placeholder="5" integer half /><Field label="Inches" unit="in" value={inches} onChange={v => changeImperial(feet, v)} placeholder="9" half /></View>}
                         <View style={s.fieldRow}><Field label="Weight" unit="kg" value={form.weight} onChange={v => change('weight', v)} placeholder="70" half /><Field label="Age" unit="years" value={form.age} onChange={v => change('age', v)} placeholder="25" integer half /></View>
                         <Text style={s.sectionTitle}>Sex used for the estimate</Text><Text style={s.hint}>The calorie formula uses biological sex.</Text>
                         <View style={s.choiceRow}>{(['male', 'female'] as const).map(gender => <Choice compact key={gender} title={gender === 'male' ? 'Male' : 'Female'} selected={form.gender === gender} onPress={() => change('gender', gender)} />)}</View>
@@ -264,6 +279,9 @@ export default function OnboardingWizard() {
                     {step === 4 && split && <>
                         <Text style={s.title} accessibilityRole="header">Your starting plan.</Text>
                         <Text style={s.subtitle}>{form.nutritionEnabled ? 'Your week and daily food targets. Adjust them as you go.' : 'A first workout to start with. Everything stays editable.'}</Text>
+                        <View style={s.focusSummary}><View style={s.choiceText}><Text style={s.label}>Your focus</Text><Text style={s.choiceTitle}>{GOALS.find(goal => goal.id === form.goal)?.title}</Text></View>
+                            <TouchableOpacity disabled={saving} onPress={() => { setStep(1); setError(''); scroll.current?.scrollTo({ y: 0, animated: false }); }} style={s.edit} accessibilityRole="button" accessibilityLabel="Edit your goal"><Text style={s.link}>Edit</Text></TouchableOpacity>
+                        </View>
                         <View style={s.planCard}>
                             <View style={s.cardHeading}><Text style={s.sectionTitle}>Your training week</Text><TouchableOpacity disabled={saving} onPress={() => { setStep(2); setError(''); scroll.current?.scrollTo({ y: 0, animated: false }); }} style={s.edit} accessibilityRole="button" accessibilityLabel="Edit training routine"><Text style={s.link}>Edit</Text></TouchableOpacity></View>
                             <Text style={s.planName}>{split.name}</Text>
@@ -282,7 +300,7 @@ export default function OnboardingWizard() {
                             <View style={s.cardHeading}><Text style={s.sectionTitle}>Your daily food targets</Text><TouchableOpacity disabled={saving} onPress={() => { setStep(3); setError(''); scroll.current?.scrollTo({ y: 0, animated: false }); }} style={s.edit} accessibilityRole="button" accessibilityLabel="Edit food basics"><Text style={s.link}>Edit</Text></TouchableOpacity></View>
                             <Text style={s.calories}>{previewCalories.toLocaleString()} <Text style={s.calorieUnit}>kcal</Text></Text>
                             {!calorieValid && <Text style={s.hint}>Custom target is incomplete. This preview shows the starting estimate.</Text>}
-                            <View style={s.macroRow}>{(['protein', 'carbs', 'fat'] as const).map(macro => <View key={macro} style={s.macro}><Text style={s.macroValue}>{macros[macro]} g</Text><Text style={s.macroLabel}>{macro === 'protein' ? 'Protein' : macro === 'carbs' ? 'Carbs' : 'Fat'}</Text></View>)}</View>
+                            <View style={s.macroRow}>{(['protein', 'carbs', 'fat'] as const).map(macro => <View key={macro} style={s.macro}><Text style={[s.macroValue, { color: colors.macro[macro] }]}>{macros[macro]} g</Text><Text style={s.macroLabel}>{macro === 'protein' ? 'Protein' : macro === 'carbs' ? 'Carbs' : 'Fat'}</Text></View>)}</View>
                             <Text style={s.hint}>Starting estimates, not exact needs. Review them alongside your progress.</Text>
                         </View> : <TouchableOpacity style={s.activitySelect} accessibilityRole="button" accessibilityLabel="Add food targets (optional)" onPress={() => { change('nutritionEnabled', true); setStep(3); scroll.current?.scrollTo({ y: 0, animated: false }); }}><View style={s.choiceText}><Text style={s.choiceTitle}>Add food targets (optional)</Text><Text style={s.choiceDetail}>Or start training and set these up later.</Text></View><MaterialIcons name="add" size={22} color={colors.text.secondary} /></TouchableOpacity>}
                         <Text style={s.optionalNote}>Health connections are optional. You can add one later from your health report.</Text>
@@ -309,7 +327,7 @@ export default function OnboardingWizard() {
                     {step === 3 && <TouchableOpacity disabled={saving} accessibilityRole="button" accessibilityLabel="Set up food later" style={s.finishLink} onPress={() => { change('nutritionEnabled', false); setStep(4); scroll.current?.scrollTo({ y: 0, animated: false }); }}><Text style={s.link}>Set up food later</Text></TouchableOpacity>}
                     {step === 4 && <View style={s.finishLinks}>
                         {form.nutritionEnabled && <TouchableOpacity disabled={saving} onPress={() => { void finish('food'); }} style={s.finishLink} accessibilityRole="button"><Text style={s.link}>Log a meal first</Text></TouchableOpacity>}
-                        <TouchableOpacity disabled={saving} onPress={() => { void finish('home'); }} style={s.finishLink} accessibilityRole="button"><Text style={s.link}>Go to Home</Text></TouchableOpacity>
+                        <TouchableOpacity disabled={saving} onPress={() => { void finish('home'); }} style={s.finishLink} accessibilityRole="button"><Text style={s.link}>Explore Fitzo first</Text></TouchableOpacity>
                     </View>}
                 </View>
             </>}
@@ -342,6 +360,7 @@ const s = StyleSheet.create({
     inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#101010', borderRadius: 12, borderWidth: 1, borderColor: '#333', paddingHorizontal: 14 }, input: { flex: 1, minWidth: 0, minHeight: 56, paddingVertical: 12, color: colors.text.primary, fontFamily: typography.fontFamily.medium, fontSize: 20 }, unit: { fontFamily: typography.fontFamily.regular, fontSize: 13, color: colors.text.secondary },
     heightLabel: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, unitToggle: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
     planCard: { padding: 20, marginBottom: 16, borderRadius: 18, backgroundColor: '#101010', borderWidth: 1, borderColor: '#252525' }, cardHeading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+    focusSummary: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingBottom: 20, marginBottom: 20, borderBottomWidth: 1, borderBottomColor: '#252525' },
     edit: { padding: 10, minHeight: 44, justifyContent: 'center' }, planName: { fontFamily: typography.fontFamily.regular, color: colors.text.secondary, fontSize: 13, lineHeight: 20, marginBottom: 12 },
     schedule: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 9 }, scheduleIndex: { fontFamily: typography.fontFamily.regular, color: colors.text.secondary, width: 20, fontSize: 13 }, scheduleDay: { flex: 1, fontFamily: typography.fontFamily.medium, color: colors.text.primary, fontSize: 15 },
     firstSession: { fontFamily: typography.fontFamily.medium, color: colors.text.primary, fontSize: 15, lineHeight: 22 }, sessionsToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44, marginVertical: 4 },

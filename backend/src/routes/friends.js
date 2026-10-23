@@ -263,11 +263,16 @@ router.post('/request', authenticate, asyncHandler(async (req, res) => {
         try {
             await client.query('BEGIN');
 
-            await client.query(
+            const acceptedRequest = await client.query(
                 `UPDATE friendships SET status = 'accepted', updated_at = NOW()
-                 WHERE user_id = $1 AND friend_id = $2`,
+                 WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'
+                 RETURNING id`,
                 [friend_id, userId]
             );
+
+            if (acceptedRequest.rows.length === 0) {
+                throw new NotFoundError('No pending request found');
+            }
 
             await client.query(
                 `INSERT INTO friendships (user_id, friend_id, status)
@@ -326,23 +331,17 @@ router.post('/accept', authenticate, asyncHandler(async (req, res) => {
         throw new ValidationError('Invalid request');
     }
 
-    // Check if there's a pending request
+    // Claim the pending request atomically so a cancelled request cannot be accepted.
     const requestResult = await query(
-        `SELECT id FROM friendships 
-     WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'`,
+        `UPDATE friendships SET status = 'accepted', updated_at = NOW()
+     WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'
+     RETURNING id`,
         [friend_id, userId]
     );
 
     if (requestResult.rows.length === 0) {
         throw new NotFoundError("No pending request found");
     }
-
-    // Update to accepted
-    await query(
-        `UPDATE friendships SET status = 'accepted', updated_at = NOW() 
-     WHERE user_id = $1 AND friend_id = $2`,
-        [friend_id, userId]
-    );
 
     // Create reverse friendship
     await query(
@@ -388,6 +387,31 @@ router.post('/reject', authenticate, asyncHandler(async (req, res) => {
     res.json({
         message: 'Request declined'
     });
+}));
+
+/**
+ * POST /api/friends/cancel
+ * Cancel an outgoing pending friend request
+ */
+router.post('/cancel', authenticate, asyncHandler(async (req, res) => {
+    const { friend_id } = req.body;
+
+    if (typeof friend_id !== 'string' || !friend_id.trim()) {
+        throw new ValidationError('Invalid request');
+    }
+
+    const result = await query(
+        `DELETE FROM friendships
+         WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'
+         RETURNING id`,
+        [req.user.id, friend_id]
+    );
+
+    if (result.rows.length === 0) {
+        throw new NotFoundError('No outgoing pending request found');
+    }
+
+    res.json({ message: 'Friend request cancelled' });
 }));
 
 /**

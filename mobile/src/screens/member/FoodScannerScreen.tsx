@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Ale
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import GlassCard from '../../components/GlassCard';
@@ -11,8 +11,10 @@ import Button from '../../components/Button';
 import { foodPhotoAPI } from '../../services/api';
 import AIConsentModal, { getAIConsent } from '../../components/AIConsentModal';
 import { foodJobsEnabled, loadPendingScan, clearPendingScan, submitScan, scanStatus, PendingScan } from '../../services/foodJobs';
+import { isMealType } from '../../utils/foodPortion';
 
 export default function FoodScannerScreen() {
+    const params = useLocalSearchParams<{ meal_type?: string }>();
     const [permission, requestPermission] = useCameraPermissions();
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [analyzing, setAnalyzing] = useState(false);
@@ -201,7 +203,8 @@ export default function FoodScannerScreen() {
                     protein: detectedFood.protein_g,
                     carbs: detectedFood.carbs_g,
                     fat: detectedFood.fat_g,
-                    source: 'camera_scan'
+                    source: 'camera_scan',
+                    ...(isMealType(params.meal_type) ? { meal_type: params.meal_type } : {}),
                 }
             });
         } catch (error: any) {
@@ -275,15 +278,15 @@ export default function FoodScannerScreen() {
                                 <Text style={styles.macroLabel}>Calories</Text>
                             </View>
                             <View style={styles.macroItem}>
-                                <Text style={styles.macroValue}>{detectedFood.protein_g}g</Text>
+                                <Text style={[styles.macroValue, { color: colors.macro.protein }]}>{detectedFood.protein_g}g</Text>
                                 <Text style={styles.macroLabel}>Protein</Text>
                             </View>
                             <View style={styles.macroItem}>
-                                <Text style={styles.macroValue}>{detectedFood.carbs_g}g</Text>
+                                <Text style={[styles.macroValue, { color: colors.macro.carbs }]}>{detectedFood.carbs_g}g</Text>
                                 <Text style={styles.macroLabel}>Carbs</Text>
                             </View>
                             <View style={styles.macroItem}>
-                                <Text style={styles.macroValue}>{detectedFood.fat_g}g</Text>
+                                <Text style={[styles.macroValue, { color: colors.macro.fat }]}>{detectedFood.fat_g}g</Text>
                                 <Text style={styles.macroLabel}>Fat</Text>
                             </View>
                         </View>

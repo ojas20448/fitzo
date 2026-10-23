@@ -19,6 +19,17 @@ try {
     if (Platform.OS === 'android') android = require('react-native-health-connect');
 } catch { /* Custom native build required. */ }
 const READ_TYPES = ['Steps', 'ActiveCaloriesBurned', 'RestingHeartRate', 'SleepSession'] as const;
+const APPLE_READ_TYPES = [
+    'HKQuantityTypeIdentifierStepCount', 'HKQuantityTypeIdentifierActiveEnergyBurned',
+    'HKQuantityTypeIdentifierRestingHeartRate', 'HKCategoryTypeIdentifierSleepAnalysis',
+] as const;
+
+async function initializeHealthConnect(hc: HealthConnectModule): Promise<void> {
+    const status = await hc.getSdkStatus();
+    if (status === hc.SdkAvailabilityStatus.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED) throw new Error('Install or update Health Connect, then try connecting again.');
+    if (status !== hc.SdkAvailabilityStatus.SDK_AVAILABLE) throw new Error('Health Connect is currently unavailable on this device.');
+    if (!await hc.initialize()) throw new Error('Health Connect could not start. Please try again.');
+}
 
 export function isHealthAvailable(): boolean {
     if (apple) return apple.isHealthDataAvailable();
@@ -29,18 +40,14 @@ export async function requestPermissions(): Promise<boolean> {
     if (apple) {
         if (!apple.isHealthDataAvailable()) return false;
         try {
-            return await apple.requestAuthorization({ toRead: [
-                'HKQuantityTypeIdentifierStepCount', 'HKQuantityTypeIdentifierActiveEnergyBurned',
-                'HKQuantityTypeIdentifierRestingHeartRate', 'HKCategoryTypeIdentifierSleepAnalysis',
-            ] });
+            return await apple.requestAuthorization({ toRead: [...APPLE_READ_TYPES] });
         } catch {
             return false;
         }
     }
     if (android) {
+        await initializeHealthConnect(android);
         try {
-            if (await android.getSdkStatus() !== android.SdkAvailabilityStatus.SDK_AVAILABLE) return false;
-            if (!await android.initialize()) return false;
             const granted = await android.requestPermission(READ_TYPES.map(recordType => ({ accessType: 'read', recordType })));
             return granted.some(p => p.accessType === 'read' && READ_TYPES.some(t => t === p.recordType));
         } catch {
@@ -48,6 +55,22 @@ export async function requestPermissions(): Promise<boolean> {
         }
     }
     return false;
+}
+
+// HealthKit notifies us after its store changes. Android is refreshed by the
+// foreground lifecycle timer because Health Connect has no observer API here.
+export function subscribeToHealthChanges(onChange: () => void): () => void {
+    const subscriptions: { remove: () => void }[] = [];
+    if (apple) {
+        for (const identifier of APPLE_READ_TYPES) {
+            try {
+                subscriptions.push(apple.subscribeToChanges(identifier, event => {
+                    if (!event.errorMessage) onChange();
+                }));
+            } catch { /* Polling still refreshes older or locked native builds. */ }
+        }
+    }
+    return () => subscriptions.forEach(subscription => subscription.remove());
 }
 const rounded = (value: number | undefined): number | null =>
     typeof value === 'number' && Number.isFinite(value) && value >= 0 ? Math.round(value) : null;
@@ -98,9 +121,10 @@ export async function getSummaryForDate(date: string, now = new Date()): Promise
         ]);
     } else if (android) {
         const hc = android;
-        if (await hc.getSdkStatus() !== hc.SdkAvailabilityStatus.SDK_AVAILABLE || !await hc.initialize()) throw new Error('Health Connect is currently unavailable.');
+        await initializeHealthConnect(hc);
         const permissions = await hc.getGrantedPermissions();
         const allowed = (type: string) => permissions.some(p => p.accessType === 'read' && p.recordType === type);
+        if (!READ_TYPES.some(allowed)) throw new Error('Health Connect read permission is off. Reconnect Health Connect to import readings.');
         const timeRangeFilter = { operator: 'between' as const, startTime: start.toISOString(), endTime: end.toISOString() };
         await Promise.all([
             allowed('Steps') ? hc.aggregateRecord({ recordType: 'Steps', timeRangeFilter })

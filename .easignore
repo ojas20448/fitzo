@@ -79,3 +79,5 @@ mobile/.dtest/
 mobile/.icon-backup/
 mobile/_w13.mjs
 **/coverage/
+
+mobile/modules/**/android/build/

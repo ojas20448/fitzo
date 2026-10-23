@@ -37,6 +37,7 @@ interface AIConsentModalProps {
     visible: boolean;
     onAccept: () => void;
     onDecline: () => void;
+    onDismiss?: () => void;
     featureTitle?: string;
 }
 
@@ -44,6 +45,7 @@ export default function AIConsentModal({
     visible,
     onAccept,
     onDecline,
+    onDismiss,
     featureTitle,
 }: AIConsentModalProps) {
     const handleAccept = async () => {
@@ -63,6 +65,7 @@ export default function AIConsentModal({
             transparent={false}
             presentationStyle="pageSheet"
             onRequestClose={handleDecline}
+            onDismiss={onDismiss}
         >
             <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
                 <ScrollView
@@ -137,7 +140,8 @@ export default function AIConsentModal({
                         <MaterialIcons name="open-in-new" size={16} color={colors.text.muted} />
                     </TouchableOpacity>
 
-                    {/* Action Buttons */}
+                </ScrollView>
+                    {/* Keep consent actions visible without scrolling through the policy. */}
                     <View style={styles.actions}>
                         <TouchableOpacity
                             style={styles.acceptButton}
@@ -155,7 +159,6 @@ export default function AIConsentModal({
                             <Text style={styles.declineButtonText}>Not Now (Keep AI Disabled)</Text>
                         </TouchableOpacity>
                     </View>
-                </ScrollView>
             </SafeAreaView>
         </Modal>
     );
@@ -277,7 +280,10 @@ const styles = StyleSheet.create({
     },
     actions: {
         gap: spacing.sm,
-        marginTop: spacing.xs,
+        padding: spacing.lg,
+        borderTopWidth: 1,
+        borderTopColor: colors.glass.border,
+        backgroundColor: colors.background,
     },
     acceptButton: {
         backgroundColor: colors.primary,

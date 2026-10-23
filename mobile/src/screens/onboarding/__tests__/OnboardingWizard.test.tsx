@@ -53,12 +53,24 @@ it('starts with the goal and requires a choice before continuing', async () => {
     expect(text()).toContain('How many days can you train?');
 });
 
+it('lets a member revise their goal from the plan without losing their routine or food answers', async () => {
+    await mount({ step: 4, form: validForm });
+    await press('Edit your goal');
+    await press('Build muscle'); await continueStep();
+    expect(button('3 training days per week').props.accessibilityState.checked).toBe(true);
+    expect(button('About 35 minutes').props.accessibilityState.checked).toBe(true);
+    await continueStep();
+    expect(screen.root.findByProps({ accessibilityLabel: 'Height in centimetres' }).props.value).toBe('175');
+    await continueStep(); await finish();
+    expect(nutritionAPI.updateProfile).toHaveBeenCalledWith(expect.objectContaining({ goal_type: 'muscle_gain', height_cm: 175 }), 'session-a');
+});
+
 it('keeps the vegetarian choice accessible and preserves answers when going back', async () => {
     await mount(); await press('Maintain'); await continueStep();
     await press('3 training days per week');
     await press('Choose training experience'); await press('Just starting');
     await press('Choose training equipment'); await press('Gym equipment');
-    await press('Choose session length'); await press('About 35 minutes'); await continueStep();
+    await press('About 35 minutes'); await continueStep();
     await press('Add food targets (optional)');
     await press('Choose everyday activity'); await press('Mostly sitting');
     await input('Height in centimetres', '175'); await input('Weight', '70'); await input('Age', '25');
@@ -84,6 +96,29 @@ it('restores an account draft and saves the same schedule shown in the preview',
     expect(clearOnboardingDraft).toHaveBeenCalledWith('account-a');
     expect(router.replace).toHaveBeenCalledWith('/(tabs)');
     expect(router.push).toHaveBeenCalledWith({ pathname: '/log/workout', params: { intent: JSON.stringify({ session_label: 'Upper A', emphasis: ['Upper A'], training_pattern: 'upper_lower' }) } });
+});
+
+it('preserves a centimetre height through unit switches and submits centimetres', async () => {
+    await mount({ step: 3, form: { ...validForm, height: '182.5' } });
+    await press('Height in centimetres. Switch to feet and inches');
+    expect(screen.root.findByProps({ accessibilityLabel: 'Feet' }).props.value).toBe('5');
+    await press('Height in feet and inches. Switch to centimetres');
+    expect(screen.root.findByProps({ accessibilityLabel: 'Height in centimetres' }).props.value).toBe('182.5');
+    await continueStep(); await finish();
+    expect(nutritionAPI.updateProfile).toHaveBeenCalledWith(expect.objectContaining({ height_cm: 182.5 }), 'session-a');
+});
+
+it('clears the previous height error when units change and explains imperial input errors', async () => {
+    await mount({ step: 3, form: { ...validForm, height: '' } });
+    await continueStep();
+    expect(text()).toContain('Enter a height between 100 and 250 cm.');
+    await press('Height in centimetres. Switch to feet and inches');
+    expect(text()).not.toContain('Enter a height between 100 and 250 cm.');
+    await input('Feet', '5'); await input('Inches', '15'); await continueStep();
+    expect(text()).toContain('Inches must be between 0 and 11.');
+    expect(text()).not.toContain('Your starting plan.');
+    await input('Inches', '9'); await continueStep(); await finish();
+    expect(nutritionAPI.updateProfile).toHaveBeenCalledWith(expect.objectContaining({ height_cm: 175.26 }), 'session-a');
 });
 
 it('does not mark onboarding complete or save a profile when the schedule fails', async () => {

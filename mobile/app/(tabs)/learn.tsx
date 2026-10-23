@@ -1,3 +1,2 @@
-import LearnScreen from '../../src/screens/member/LearnScreen';
-
-export default LearnScreen;
+import { Redirect } from 'expo-router';
+export default function LegacyLearnRoute() { return <Redirect href="/member/learn" />; }

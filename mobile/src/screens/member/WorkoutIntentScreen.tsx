@@ -1,8 +1,8 @@
 import ScreenBackdrop from '../../components/ScreenBackdrop';
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable, TextInput, ActivityIndicator, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { intentAPI, workoutsAPI } from '../../services/api';
 import { useToast } from '../../components/Toast';
@@ -129,6 +129,8 @@ export default function WorkoutIntentScreen() {
     const [customName, setCustomName] = useState('My Split');
     const [isAddingCustomDay, setIsAddingCustomDay] = useState(false);
     const [customDayInput, setCustomDayInput] = useState('');
+    const [customError, setCustomError] = useState('');
+    const savingCustom = useRef(false);
 
     // Load user's saved/adopted split on mount
     useEffect(() => {
@@ -147,6 +149,7 @@ export default function WorkoutIntentScreen() {
                         daysPerWeek: adopted.daysPerWeek || days.length,
                     };
                     setSelectedSplit(split);
+                    setSavedSplit(split);
                     setStep('day');
                     setInitialLoading(false);
                     return;
@@ -226,7 +229,7 @@ export default function WorkoutIntentScreen() {
         setSelectedDayIndex(dayIndex);
     };
 
-    const handleSave = async () => {
+    const handleSave = async (editExercises = false) => {
         if (!selectedSplit || selectedDayIndex === null) return;
 
         setLoading(true);
@@ -241,7 +244,7 @@ export default function WorkoutIntentScreen() {
                 visibility,
             });
 
-            toast.success('Intent Set', `Let's crush ${dayName}! 💪`);
+            toast.success('Session ready', `${dayName} is ready to log.`);
 
             // Navigate directly to workout log with intent data
             setTimeout(() => {
@@ -253,6 +256,7 @@ export default function WorkoutIntentScreen() {
                             emphasis: [dayName],
                             training_pattern: selectedSplit.pattern || 'custom',
                         }),
+                        ...(editExercises ? { editExercises: '1' } : {}),
                     },
                 });
             }, 400);
@@ -278,7 +282,7 @@ export default function WorkoutIntentScreen() {
                     session_label: 'Rest Day',
                     visibility,
                 });
-                toast.success('Rest Day Set', 'Recovery is key! 💤');
+                toast.success('Rest day set', 'Today is marked for recovery.');
                 setTimeout(() => router.back(), 300);
                 return;
             }
@@ -308,12 +312,16 @@ export default function WorkoutIntentScreen() {
     };
 
     const addCustomDay = (part: string) => {
+        if (savingCustom.current) return;
+        setCustomError('');
         if (customDays.length < 7) {
             setCustomDays([...customDays, part]);
         }
     };
 
     const handleAddCustomDay = () => {
+        if (savingCustom.current) return;
+        setCustomError('');
         if (customDayInput.trim() && customDays.length < 7) {
             setCustomDays([...customDays, customDayInput.trim()]);
             setCustomDayInput('');
@@ -322,34 +330,43 @@ export default function WorkoutIntentScreen() {
     };
 
     const removeCustomDay = (index: number) => {
+        if (savingCustom.current) return;
+        setCustomError('');
         setCustomDays(customDays.filter((_, i) => i !== index));
     };
 
     const saveCustomSplit = async () => {
+        if (savingCustom.current) return;
+        const name = customName.trim();
+        if (!name || name.length > 100) { setCustomError('Give your split a name between 1 and 100 characters.'); return; }
+        if (!customDays.length || customDays.length > 7) { setCustomError('Add between 1 and 7 days to your split.'); return; }
+        if (isAddingCustomDay && customDayInput.trim()) { setCustomError('Tap the checkmark to add your custom day before saving.'); return; }
         const custom: typeof PRESET_SPLITS[0] = {
             id: 'custom',
-            name: customName,
+            name,
             pattern: 'custom',
             description: `${customDays.length} days per week`,
             days: customDays,
             daysPerWeek: customDays.length,
         };
-        setSelectedSplit(custom);
-        setStep('day');
-
-        // Save to DB
+        Keyboard.dismiss(); savingCustom.current = true; setLoading(true); setCustomError('');
         try {
             await workoutsAPI.saveSplit({
                 split_id: 'custom',
-                name: customName,
+                name,
                 days: customDays,
                 days_per_week: customDays.length,
             });
             setSavedSplit(custom);
-        } catch {}
+            setSelectedSplit(custom);
+            setStep('day');
+        } catch (error: any) {
+            setCustomError(error?.message || 'Couldn’t save your split. Your days are still here. Try again.');
+        } finally { savingCustom.current = false; setLoading(false); }
     };
 
     const handleBack = () => {
+        if (loading || savingCustom.current) return;
         if (step === 'day' && !savedSplit) {
             // Only go back to split selection if user hasn't saved a split yet
             setStep('split');
@@ -376,19 +393,29 @@ export default function WorkoutIntentScreen() {
         );
     }
 
+    const workoutCollections = <View style={styles.section}>
+        <Text style={styles.sectionLabel}>FIND YOUR NEXT PLAN</Text>
+        {(['fitzo', 'community'] as const).map(collection => <Pressable key={collection} style={[styles.discoverCard, { marginBottom: spacing.sm }]} accessibilityRole="button" accessibilityLabel={`${collection === 'fitzo' ? 'Fitzo' : 'Community'} Workouts`} onPress={() => router.push({ pathname: '/member/published-splits', params: { collection } } as any)}>
+            <View style={styles.discoverContent}>
+                <View style={styles.discoverIconBg}><Ionicons name={collection === 'fitzo' ? 'barbell-outline' : 'people-outline'} size={23} color={colors.text.primary} /></View>
+                <View style={{ flex: 1 }}><Text style={styles.discoverTitle}>{collection === 'fitzo' ? 'Fitzo Workouts' : 'Community Workouts'}</Text><Text style={styles.discoverDesc}>{collection === 'fitzo' ? 'Plans curated by Fitzo' : 'Explore, heart and share your own splits'}</Text></View>
+            </View><Ionicons name="chevron-forward" size={20} color={colors.text.muted} />
+        </Pressable>)}
+    </View>;
+
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <ScreenBackdrop />
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={handleBack} style={styles.closeButton}>
+                <TouchableOpacity onPress={handleBack} style={styles.closeButton} disabled={loading} accessibilityRole="button" accessibilityLabel="Go back">
                     <MaterialIcons
                         name={step === 'split' || (step === 'day' && savedSplit) ? 'close' : 'arrow-back'}
                         size={28}
                         color={colors.text.primary}
                     />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => router.back()}>
+                <TouchableOpacity onPress={() => { if (!savingCustom.current) router.back(); }} style={styles.skipButton} disabled={loading} accessibilityRole="button" accessibilityLabel="Skip session setup">
                     <Text style={styles.skipText}>SKIP</Text>
                 </TouchableOpacity>
             </View>
@@ -397,6 +424,9 @@ export default function WorkoutIntentScreen() {
                 style={styles.content}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
+                pointerEvents={loading ? 'none' : 'auto'}
             >
                 {/* Title */}
                 <View style={styles.titleSection}>
@@ -410,24 +440,7 @@ export default function WorkoutIntentScreen() {
 
                 {step === 'split' && (
                     <>
-                        {/* Discover Published Splits */}
-                        <View style={styles.section}>
-                            <Pressable
-                                style={styles.discoverCard}
-                                onPress={() => router.push('/member/published-splits' as any)}
-                            >
-                                <View style={styles.discoverContent}>
-                                    <View style={styles.discoverIconBg}>
-                                        <MaterialIcons name="explore" size={24} color={colors.primary} />
-                                    </View>
-                                    <View>
-                                        <Text style={styles.discoverTitle}>Discover Workouts</Text>
-                                        <Text style={styles.discoverDesc}>Find plans created by Fitzo & Community</Text>
-                                    </View>
-                                </View>
-                                <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
-                            </Pressable>
-                        </View>
+                        {workoutCollections}
 
                         {/* Preset Splits */}
                         <View style={styles.section}>
@@ -462,6 +475,8 @@ export default function WorkoutIntentScreen() {
                             <Pressable
                                 style={styles.customButton}
                                 onPress={() => setStep('custom')}
+                                accessibilityRole="button"
+                                accessibilityLabel="Create custom split"
                             >
                                 <MaterialIcons name="add" size={24} color={colors.primary} />
                                 <Text style={styles.customButtonText}>Create Custom Split</Text>
@@ -499,9 +514,13 @@ export default function WorkoutIntentScreen() {
                             <TextInput
                                 style={styles.input}
                                 value={customName}
-                                onChangeText={setCustomName}
+                                onChangeText={value => { setCustomName(value); setCustomError(''); }}
                                 placeholder="My Split"
                                 placeholderTextColor={colors.text.subtle}
+                                accessibilityLabel="Custom split name"
+                                editable={!loading}
+                                maxLength={100}
+                                autoCapitalize="words"
                             />
                         </View>
 
@@ -516,7 +535,7 @@ export default function WorkoutIntentScreen() {
                                         <View key={index} style={styles.addedDayRow}>
                                             <Text style={styles.addedDayNum}>Day {index + 1}</Text>
                                             <Text style={styles.addedDayName}>{day}</Text>
-                                            <Pressable onPress={() => removeCustomDay(index)}>
+                                            <Pressable onPress={() => removeCustomDay(index)} disabled={loading} style={styles.removeDay} accessibilityRole="button" accessibilityLabel={`Remove ${day} from day ${index + 1}`}>
                                                 <MaterialIcons name="close" size={20} color={colors.text.muted} />
                                             </Pressable>
                                         </View>
@@ -534,8 +553,12 @@ export default function WorkoutIntentScreen() {
                                 {BODY_PARTS.map((part) => (
                                     <Pressable
                                         key={part}
-                                        style={styles.bodyPartChip}
+                                        style={[styles.bodyPartChip, customDays.length >= 7 && styles.unavailable]}
                                         onPress={() => addCustomDay(part)}
+                                        disabled={loading || customDays.length >= 7}
+                                        accessibilityRole="button"
+                                        accessibilityLabel={`Add ${part} day`}
+                                        accessibilityState={{ disabled: loading || customDays.length >= 7 }}
                                     >
                                         <MaterialIcons name="add" size={16} color={colors.primary} />
                                         <Text style={styles.bodyPartText}>{part}</Text>
@@ -548,16 +571,19 @@ export default function WorkoutIntentScreen() {
                                         <TextInput
                                             style={styles.customDayInput}
                                             value={customDayInput}
-                                            onChangeText={setCustomDayInput}
-                                            placeholder="Limitless..."
+                                            onChangeText={value => { setCustomDayInput(value); setCustomError(''); }}
+                                            placeholder="e.g. Core & mobility"
                                             placeholderTextColor={colors.text.muted}
+                                            accessibilityLabel="Custom day name"
+                                            editable={!loading}
+                                            maxLength={100}
                                             autoFocus
                                             onSubmitEditing={handleAddCustomDay}
                                             onBlur={() => {
                                                 if (!customDayInput.trim()) setIsAddingCustomDay(false);
                                             }}
                                         />
-                                        <TouchableOpacity onPress={handleAddCustomDay}>
+                                        <TouchableOpacity onPress={handleAddCustomDay} disabled={loading} style={styles.removeDay} accessibilityRole="button" accessibilityLabel="Add custom day">
                                             <MaterialIcons name="check" size={16} color={colors.primary} />
                                         </TouchableOpacity>
                                     </View>
@@ -565,6 +591,9 @@ export default function WorkoutIntentScreen() {
                                     <Pressable
                                         style={[styles.bodyPartChip, { borderColor: colors.primary }]}
                                         onPress={() => setIsAddingCustomDay(true)}
+                                        disabled={loading || customDays.length >= 7}
+                                        accessibilityRole="button"
+                                        accessibilityLabel="Write a custom day"
                                     >
                                         <MaterialIcons name="edit" size={14} color={colors.primary} />
                                         <Text style={[styles.bodyPartText, { color: colors.primary }]}>Custom</Text>
@@ -581,14 +610,17 @@ export default function WorkoutIntentScreen() {
                         <View style={styles.section}>
                             <View style={styles.selectedSplitCard}>
                                 <View style={styles.selectedSplitHeader}>
-                                    <View>
+                                    <View style={styles.selectedSplitCopy}>
                                         <Text style={styles.selectedSplitName}>{selectedSplit.name}</Text>
                                         <Text style={styles.selectedSplitDesc}>{selectedSplit.daysPerWeek} days/week</Text>
                                     </View>
-                                    <TouchableOpacity onPress={handleChangeSplit} style={styles.changeSplitBtn}>
-                                        <MaterialIcons name="swap-horiz" size={16} color={colors.text.dark} />
-                                        <Text style={styles.changeSplitText}>Change</Text>
+                                    <View style={styles.selectedSplitActions}>
+                                    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Change training plan" onPress={handleChangeSplit} style={styles.changeSplitBtn}>
+                                        <Ionicons name="swap-horizontal-outline" size={18} color={colors.text.dark} />
+                                        <Text style={styles.changeSplitText}>Change plan</Text>
                                     </TouchableOpacity>
+                                    {selectedDayIndex !== null && !/^(rest|rest day|off|recovery)$/i.test(selectedSplit.days[selectedDayIndex]?.trim() || '') && <TouchableOpacity accessibilityRole="button" accessibilityLabel="Customize session exercises" onPress={() => handleSave(true)} disabled={loading} style={styles.changeSplitBtn}><Ionicons name="options-outline" size={18} color={colors.text.dark} /><Text style={styles.changeSplitText}>Edit exercises</Text></TouchableOpacity>}
+                                    </View>
                                 </View>
                             </View>
                         </View>
@@ -633,6 +665,7 @@ export default function WorkoutIntentScreen() {
                             </View>
                         </View>
 
+                        {workoutCollections}
                         {/* Quick options when user has a split */}
                         <View style={styles.section}>
                             <Text style={styles.sectionLabel}>NOT TRAINING TODAY?</Text>
@@ -663,6 +696,11 @@ export default function WorkoutIntentScreen() {
                                 visibility === v && styles.privacyOptionActive
                             ]}
                             onPress={() => setVisibility(v)}
+                            disabled={loading}
+                            accessibilityRole="radio"
+                            accessibilityLabel={v.charAt(0).toUpperCase() + v.slice(1)}
+                            accessibilityState={{ selected: visibility === v, checked: visibility === v, disabled: loading }}
+                            aria-checked={visibility === v}
                         >
                             <Text style={[
                                 styles.privacyText,
@@ -675,13 +713,19 @@ export default function WorkoutIntentScreen() {
                 </View>
 
                 {/* Save Custom Button */}
+                {step === 'custom' && !!customError && <Text style={styles.customError} accessibilityRole="alert" accessibilityLiveRegion="polite">{customError}</Text>}
                 {step === 'custom' && customDays.length > 0 && (
                     <TouchableOpacity
                         style={styles.confirmButton}
                         onPress={saveCustomSplit}
+                        disabled={loading}
+                        accessibilityRole="button"
+                        accessibilityLabel="Use this split"
+                        accessibilityState={{ busy: loading, disabled: loading }}
                     >
+                        {loading && <ActivityIndicator color={colors.text.dark} />}
                         <Text style={styles.confirmButtonText}>
-                            Use This Split
+                            {loading ? 'Saving split...' : 'Use this split'}
                         </Text>
                     </TouchableOpacity>
                 )}
@@ -690,7 +734,7 @@ export default function WorkoutIntentScreen() {
                 {step === 'day' && selectedDayIndex !== null && (
                     <TouchableOpacity
                         style={styles.confirmButton}
-                        onPress={handleSave}
+                        onPress={() => handleSave()}
                         disabled={loading}
                     >
                         <Text style={styles.confirmButtonText}>
@@ -704,6 +748,10 @@ export default function WorkoutIntentScreen() {
 }
 
 const styles = StyleSheet.create({
+    customError: { color: '#FCA5A5', fontFamily: typography.fontFamily.regular, fontSize: 13, lineHeight: 21, marginBottom: 12 },
+    removeDay: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+    skipButton: { minWidth: 64, minHeight: 44, alignItems: 'flex-end', justifyContent: 'center' },
+    unavailable: { opacity: 0.4 },
     container: {
         flex: 1,
         backgroundColor: colors.background,
@@ -716,8 +764,8 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.md,
     },
     closeButton: {
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -732,7 +780,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: spacing.xl,
-        paddingBottom: 180,
+        paddingBottom: spacing.xl,
     },
     titleSection: {
         paddingTop: spacing.lg,
@@ -897,6 +945,7 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
     },
     bodyPartChip: {
+        minHeight: 44,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.glass.surface,
@@ -914,18 +963,20 @@ const styles = StyleSheet.create({
     },
 
     // Selected Split Card
+    selectedSplitActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     selectedSplitCard: {
         backgroundColor: colors.primary,
         borderRadius: borderRadius.lg,
-        padding: spacing.lg,
+        padding: spacing.xl,
     },
     selectedSplitHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        gap: spacing.lg,
+        alignItems: 'flex-start',
     },
+    selectedSplitCopy: { width: '100%', gap: spacing.sm },
     selectedSplitName: {
         fontSize: typography.sizes.lg,
+        lineHeight: 23,
         fontFamily: typography.fontFamily.bold,
         color: colors.text.dark,
     },
@@ -936,6 +987,7 @@ const styles = StyleSheet.create({
         opacity: 0.8,
     },
     changeSplitBtn: {
+        minHeight: 44,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(0,0,0,0.15)',
@@ -1002,6 +1054,7 @@ const styles = StyleSheet.create({
     // Discover Styles
     discoverCard: {
         flexDirection: 'row',
+        gap: spacing.sm,
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: spacing.lg,
@@ -1012,11 +1065,14 @@ const styles = StyleSheet.create({
         marginBottom: spacing.lg,
     },
     discoverContent: {
+        flex: 1,
+        minWidth: 0,
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.md,
     },
     discoverIconBg: {
+        flexShrink: 0,
         width: 40,
         height: 40,
         borderRadius: 20,
@@ -1038,19 +1094,12 @@ const styles = StyleSheet.create({
 
     // Footer
     footer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
         backgroundColor: colors.background,
         borderTopWidth: 1,
         borderTopColor: colors.glass.border,
         paddingTop: spacing.xl,
         paddingBottom: spacing['3xl'],
         paddingHorizontal: spacing.xl,
-        // zIndex replaces the stacking side-effect that elevation: 10 provided
-        // on Android for this absolutely-positioned bottom bar.
-        zIndex: 10,
         ...shadow({ y: -4, blur: 8, color: '#000000', opacity: 0.1 }),
     },
     privacyToggle: {
@@ -1065,6 +1114,8 @@ const styles = StyleSheet.create({
     },
     privacyOption: {
         flex: 1,
+        minHeight: 44,
+        justifyContent: 'center',
         alignItems: 'center',
         paddingVertical: spacing.sm,
         borderRadius: borderRadius.full,
@@ -1084,7 +1135,9 @@ const styles = StyleSheet.create({
     },
     confirmButton: {
         backgroundColor: colors.primary,
-        height: 56,
+        minHeight: 56,
+        padding: 14,
+        gap: 4,
         borderRadius: borderRadius.full,
         justifyContent: 'center',
         alignItems: 'center',

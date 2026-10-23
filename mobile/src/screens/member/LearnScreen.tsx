@@ -95,16 +95,16 @@ const LearnScreen: React.FC = () => {
         settingsAPI.updateLearnPreferences({ start_here_dismissed: true }).catch(() => {});
     }, []);
 
+    const heading = <View style={styles.headerLeft}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Back to profile" style={{ minHeight: 44, minWidth: 44, justifyContent: 'center' }} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/profile')}><MaterialIcons name="arrow-back" size={22} color={colors.text.primary} /></Pressable>
+        <Text style={styles.headerTitle}>LEARN</Text><View style={styles.headerDot} /><Text style={styles.headerSubtitle}>PATH</Text>
+    </View>;
     if (loading) {
         return (
             <SafeAreaView style={styles.container} edges={['top']}>
             <ScreenBackdrop />
                 <View style={styles.header}>
-                    <View style={styles.headerLeft}>
-                        <Text style={styles.headerTitle}>LEARN</Text>
-                        <View style={styles.headerDot} />
-                        <Text style={styles.headerSubtitle}>PATH</Text>
-                    </View>
+                    {heading}
                     <Skeleton width={80} height={28} borderRadius={14} />
                 </View>
                 <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
@@ -130,11 +130,7 @@ const LearnScreen: React.FC = () => {
             <SafeAreaView style={styles.container} edges={['top']}>
             <ScreenBackdrop />
                 <View style={styles.header}>
-                    <View style={styles.headerLeft}>
-                        <Text style={styles.headerTitle}>LEARN</Text>
-                        <View style={styles.headerDot} />
-                        <Text style={styles.headerSubtitle}>PATH</Text>
-                    </View>
+                    {heading}
                 </View>
                 <EmptyState variant={error} onAction={retry} />
             </SafeAreaView>
@@ -147,11 +143,7 @@ const LearnScreen: React.FC = () => {
             <SafeAreaView style={styles.container} edges={['top']}>
             <ScreenBackdrop />
                 <View style={styles.header}>
-                    <View style={styles.headerLeft}>
-                        <Text style={styles.headerTitle}>LEARN</Text>
-                        <View style={styles.headerDot} />
-                        <Text style={styles.headerSubtitle}>PATH</Text>
-                    </View>
+                    {heading}
                 </View>
                 <EmptyState
                     icon="school"
@@ -169,11 +161,7 @@ const LearnScreen: React.FC = () => {
             <ScreenBackdrop />
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.headerLeft}>
-                    <Text style={styles.headerTitle}>LEARN</Text>
-                    <View style={styles.headerDot} />
-                    <Text style={styles.headerSubtitle}>PATH</Text>
-                </View>
+                {heading}
                 <View style={styles.xpBadge}>
                     <MaterialIcons name="diamond" size={14} color={colors.primary} />
                     <Text style={styles.xpText}>{progress.total_xp ?? 0}</Text>

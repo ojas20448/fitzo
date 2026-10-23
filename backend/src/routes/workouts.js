@@ -268,8 +268,9 @@ router.get('/history', asyncHandler(async (req, res) => {
                     'id', id,
                     'workout_type', workout_type,
                     'exercises', exercises,
-                    'completed', completed
-                )) as workouts
+                    'completed', completed,
+                    'created_at', created_at
+                ) ORDER BY created_at DESC) as workouts
          FROM workout_logs
          WHERE user_id = $1
          GROUP BY logged_date

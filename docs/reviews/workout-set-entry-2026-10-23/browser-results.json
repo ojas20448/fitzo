@@ -1,0 +1,76 @@
+{
+  "passed": true,
+  "layouts": [
+    {
+      "name": "combined-editor",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "name": "combined-editor",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "combined-editor",
+      "width": 430,
+      "height": 844
+    },
+    {
+      "name": "combined-editor",
+      "width": 844,
+      "height": 430
+    },
+    {
+      "name": "combined-editor",
+      "width": 320,
+      "height": 460
+    },
+    {
+      "name": "copy-previous-set",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "name": "copy-previous-set",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "wheel-editor",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "name": "wheel-editor",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "visible-set-removal",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "name": "visible-set-removal",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "writes": [
+    {
+      "path": "/workouts",
+      "body": {
+        "workout_type": "chest",
+        "day_name": "Chest workout",
+        "exercises": "[{\"id\":\"chest_press_machine\",\"name\":\"Machine Chest Press\",\"gifUrl\":\"/assets/?unstable_path=.%2Fassets%2Fexercise-photos/chest_press_machine.jpg\",\"target\":\"pectorals\",\"sets\":[{\"id\":\"0.5751314035608686\",\"weight_kg\":42.5,\"reps\":8,\"rir\":0,\"completed\":true}]}]",
+        "notes": "Logged via Smart Log",
+        "visibility": "private",
+        "duration_minutes": 1
+      }
+    }
+  ],
+  "errors": [
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load."
+  ]
+}

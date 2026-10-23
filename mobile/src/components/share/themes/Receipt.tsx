@@ -12,7 +12,7 @@ import type { ShareThemeProps } from './index';
 const MONO = 'VT323_400Regular';
 const MAX_CONTENT_ROWS = 4;
 
-export default function Receipt({ payload, onBackgroundLoad, onBackgroundError, onArtworkLoad, onArtworkError }: ShareThemeProps) {
+export default function Receipt({ payload, photoMode, onBackgroundLoad, onBackgroundError, onArtworkLoad, onArtworkError }: ShareThemeProps) {
     const allRows = pickSummaryRows(payload, Number.MAX_SAFE_INTEGER);
     const detailRows = payload.prs.length || payload.exercises.length ? allRows : [];
     const rows = detailRows.slice(0, MAX_CONTENT_ROWS);
@@ -23,7 +23,7 @@ export default function Receipt({ payload, onBackgroundLoad, onBackgroundError, 
     const headlineSize = fitFontSize(payload.headline, 810, 110, 54);
     const totalValue = payload.prs.length > 1 && !payload.exercises.length ? String(payload.prs.length) : payload.headline;
     return (
-        <View style={styles.frame}>
+        <View style={[styles.frame, photoMode && styles.photoFrame]}>
             <CardBackground background={payload.background} scrimOpacity={0.35} onLoad={onBackgroundLoad} onError={onBackgroundError} />
             <View style={styles.paper}>
                 <View style={styles.headerRow}>
@@ -71,6 +71,7 @@ export default function Receipt({ payload, onBackgroundLoad, onBackgroundError, 
 
 const styles = StyleSheet.create({
     frame: { width: CARD_W, height: CARD_H, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+    photoFrame: { backgroundColor: 'transparent' },
     paper: { width: 936, height: 1740, padding: 54, borderRadius: 28, backgroundColor: '#F1EEE6', transform: [{ rotate: '-0.6deg' }], ...shadow({ y: 24, blur: 54, color: '#000', opacity: 0.55 }) },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
     timestamp: { fontFamily: MONO, fontSize: 36, lineHeight: 42, color: '#36342e' },

@@ -3,7 +3,7 @@
     "name": "Fitzo",
     "slug": "fitzo",
     "owner": "fiskerr",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "sdkVersion": "54.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -34,7 +34,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "usesAppleSignIn": true,
-      "buildNumber": "24"
+      "buildNumber": "25"
     },
     "android": {
       "adaptiveIcon": {
@@ -43,7 +43,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.fitzo.app",
-      "versionCode": 27,
+      "versionCode": 28,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
@@ -93,6 +93,7 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/withWorkoutActivity",
       "expo-secure-store",
       [
         "expo-camera",
@@ -117,7 +118,7 @@
           "NSHealthUpdateUsageDescription": "Fitzo currently reads health data only and does not write to Apple Health"
         }
       ],
-      "react-native-health-connect",
+      "./plugins/withHealthConnect",
       [
         "expo-build-properties",
         {

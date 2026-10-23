@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
-import { colors, borderRadius, typography } from '../styles/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../styles/theme';
 
 interface AvatarProps {
     uri?: string | null;
@@ -70,28 +71,6 @@ const Avatar: React.FC<AvatarProps> = ({
         }
     };
 
-    const getInitialsFontSize = (): number => {
-        switch (size) {
-            case 'sm':
-                return 12;
-            case 'lg':
-                return 20;
-            case 'xl':
-                return 28;
-            default:
-                return 16;
-        }
-    };
-
-    const getInitials = (): string => {
-        if (!name) return '?';
-        const parts = name.trim().split(' ');
-        if (parts.length >= 2) {
-            return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-        }
-        return parts[0].substring(0, 2).toUpperCase();
-    };
-
     const dimension = getSize();
     const onlineIndicatorSize = Math.max(dimension / 5, 10);
     
@@ -106,9 +85,9 @@ const Avatar: React.FC<AvatarProps> = ({
             ]}
             accessibilityLabel={name ? `${name}'s avatar` : 'User avatar'}
         >
-            {/* Initials fallback / loading background */}
+            {/* Default profile silhouette also sits beneath loading photos. */}
             <View style={[
-                styles.initialsContainer,
+                styles.placeholder,
                 {
                     width: dimension,
                     height: dimension,
@@ -116,9 +95,7 @@ const Avatar: React.FC<AvatarProps> = ({
                 },
                 grayscale && styles.grayscale,
             ]}>
-                <Text style={[styles.initials, { fontSize: getInitialsFontSize() }]}>
-                    {getInitials()}
-                </Text>
+                <Ionicons name="person" size={dimension * 0.64} color={colors.text.muted} accessible={false} />
             </View>
 
             {/* Image overlay - using expo-image for automatic caching */}
@@ -164,17 +141,13 @@ const styles = StyleSheet.create({
     container: {
         position: 'relative',
     },
-    initialsContainer: {
+    placeholder: {
         position: 'absolute',
-        backgroundColor: colors.glass.surface,
+        backgroundColor: colors.surfaceLighter,
         borderWidth: 2,
         borderColor: colors.glass.border,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    initials: {
-        fontFamily: typography.fontFamily.bold,
-        color: colors.text.secondary,
     },
     image: {
         position: 'absolute',

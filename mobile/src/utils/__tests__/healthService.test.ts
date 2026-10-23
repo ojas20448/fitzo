@@ -10,9 +10,10 @@ const mockHK = {
         { value: 3, startDate: new Date(2026, 8, 10, 1), endDate: new Date(2026, 8, 10, 3) },
         { value: 2, startDate: new Date(2026, 8, 10, 6), endDate: new Date('2026-09-10T06:00Z') },
     ]),
+    subscribeToChanges: jest.fn((_id: string, _callback: (event: { errorMessage?: string }) => void) => ({ remove: jest.fn() })),
 };
 const mockHC = {
-    SdkAvailabilityStatus: { SDK_AVAILABLE: 3 },
+    SdkAvailabilityStatus: { SDK_AVAILABLE: 3, SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED: 2 },
     getSdkStatus: jest.fn(async () => 3),
     initialize: jest.fn(async () => true),
     requestPermission: jest.fn(async () => [{ accessType: 'read', recordType: 'Steps' }]),
@@ -50,6 +51,30 @@ it('exposes native query failures without converting missing readings to zeros',
 it('reports an unavailable Android health service rather than a completed empty check', async () => {
     mockHC.getSdkStatus.mockResolvedValueOnce(1);
     await expect(service('android').getSummaryForDate('2026-09-10')).rejects.toThrow('unavailable');
+});
+
+it('explains when Android needs Health Connect installed or updated', async () => {
+    mockHC.getSdkStatus.mockResolvedValueOnce(2);
+    await expect(service('android').requestPermissions()).rejects.toThrow('Install or update Health Connect');
+    expect(mockHC.requestPermission).not.toHaveBeenCalled();
+});
+
+it('does not report a completed empty check after Android read access is revoked', async () => {
+    mockHC.getGrantedPermissions.mockResolvedValueOnce([]);
+    await expect(service('android').getTodaysSummary()).rejects.toThrow('permission');
+    expect(mockHC.aggregateRecord).not.toHaveBeenCalled();
+});
+
+it('observes Apple Health changes and releases all native observers', () => {
+    const changed = jest.fn();
+    const stop = service('ios').subscribeToHealthChanges(changed);
+    expect(mockHK.subscribeToChanges).toHaveBeenCalledTimes(4);
+    mockHK.subscribeToChanges.mock.calls[0][1]({});
+    expect(changed).toHaveBeenCalledTimes(1);
+    mockHK.subscribeToChanges.mock.calls[0][1]({ errorMessage: 'Device locked' });
+    expect(changed).toHaveBeenCalledTimes(1);
+    stop();
+    mockHK.subscribeToChanges.mock.results.forEach(r => expect(r.value.remove).toHaveBeenCalledTimes(1));
 });
 
 it('requests read-only Apple Health access using the installed API', async () => {

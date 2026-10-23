@@ -1,0 +1,138 @@
+{
+  "passed": true,
+  "layouts": [
+    {
+      "name": "profile-editor",
+      "width": 320
+    },
+    {
+      "name": "profile-editor",
+      "width": 390
+    },
+    {
+      "name": "profile-editor",
+      "width": 430
+    },
+    {
+      "name": "profile-editor",
+      "width": 844
+    },
+    {
+      "name": "profile-save-error",
+      "width": 320
+    },
+    {
+      "name": "profile-save-error",
+      "width": 390
+    },
+    {
+      "name": "profile-discard",
+      "width": 320
+    },
+    {
+      "name": "profile-discard",
+      "width": 390
+    },
+    {
+      "name": "custom-split",
+      "width": 320
+    },
+    {
+      "name": "custom-split",
+      "width": 390
+    },
+    {
+      "name": "custom-split",
+      "width": 430
+    },
+    {
+      "name": "custom-split-error",
+      "width": 320
+    },
+    {
+      "name": "custom-split-error",
+      "width": 390
+    },
+    {
+      "name": "custom-split-error",
+      "width": 430
+    },
+    {
+      "name": "custom-split-saved",
+      "width": 320
+    },
+    {
+      "name": "custom-split-saved",
+      "width": 390
+    }
+  ],
+  "writes": [
+    {
+      "path": "/",
+      "body": null
+    },
+    {
+      "path": "/",
+      "body": null
+    },
+    {
+      "path": "/member/profile",
+      "body": {
+        "name": "Ojas Review",
+        "avatar_url": "avatar_lion"
+      }
+    },
+    {
+      "path": "/member/profile",
+      "body": {
+        "name": "Ojas Review",
+        "avatar_url": "avatar_lion"
+      }
+    },
+    {
+      "path": "/member/profile",
+      "body": {
+        "name": "Ojas Review",
+        "avatar_url": null
+      }
+    },
+    {
+      "path": "/",
+      "body": null
+    },
+    {
+      "path": "/",
+      "body": null
+    },
+    {
+      "path": "/workout-sessions/splits",
+      "body": {
+        "split_id": "custom",
+        "name": "My review split",
+        "days": [
+          "Push",
+          "Pull"
+        ],
+        "days_per_week": 2
+      }
+    },
+    {
+      "path": "/workout-sessions/splits",
+      "body": {
+        "split_id": "custom",
+        "name": "My review split",
+        "days": [
+          "Push",
+          "Pull"
+        ],
+        "days_per_week": 2
+      }
+    }
+  ],
+  "errors": [
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load.",
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load."
+  ],
+  "profileAttempts": 3,
+  "splitAttempts": 2
+}

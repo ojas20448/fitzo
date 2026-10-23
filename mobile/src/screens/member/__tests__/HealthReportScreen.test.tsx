@@ -4,6 +4,7 @@ import HealthReportScreen from '../HealthReportScreen';
 import { healthAPI } from '../../../services/api';
 import { requestPermissions } from '../../../services/healthService';
 import { enableHealthImport } from '../../../utils/healthImportPreference';
+import { recordHealthSyncStatus } from '../../../utils/healthSyncStatus';
 const { create, act } = jest.requireActual('react-test-renderer');
 jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('react-native-reanimated', () => jest.requireActual('react-native-reanimated/mock'));
@@ -49,4 +50,30 @@ it('does not export a report when saved data could not load', async () => {
     await act(async () => { screen = create(<HealthReportScreen />); });
     expect(texts()).toContain('load your report');
     expect(screen.root.findAllByProps({ accessibilityLabel: 'Share health report' })).toHaveLength(0);
+});
+
+it('shows the exact step total instead of rounding thousands', async () => {
+    (healthAPI.getToday as jest.Mock).mockResolvedValueOnce({ health: { steps: 13457 } });
+    await act(async () => { screen = create(<HealthReportScreen />); });
+    expect(texts()).toContain('13,457');
+    expect(texts()).not.toContain('13.5k');
+});
+
+it('refreshes the visible report when a foreground import completes', async () => {
+    await act(async () => { screen = create(<HealthReportScreen />); });
+    (healthAPI.getToday as jest.Mock).mockResolvedValueOnce({ health: { steps: 13458 } });
+    await act(async () => {
+        await recordHealthSyncStatus('a', { lastCheckedAt: new Date().toISOString(), outcome: 'imported', imported: 1 });
+    });
+    expect(texts()).toContain('13,458');
+});
+
+it('keeps the report visible when an automatic refresh fails', async () => {
+    await act(async () => { screen = create(<HealthReportScreen />); });
+    (healthAPI.getToday as jest.Mock).mockRejectedValueOnce(new Error('Offline'));
+    await act(async () => {
+        await recordHealthSyncStatus('a', { lastCheckedAt: new Date().toISOString(), outcome: 'failed' });
+    });
+    expect(screen.root.findAllByProps({ testID: 'report-capture' }).length).toBeGreaterThan(0);
+    expect(texts()).toContain('Saved readings are still shown');
 });

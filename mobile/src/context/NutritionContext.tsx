@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { nutritionAPI, workoutsAPI } from '../services/api';
+import { nutritionAPI, workoutsAPI, getAuthToken } from '../services/api';
 import { useAuth } from './AuthContext';
 
 interface Macros {
@@ -25,7 +25,7 @@ interface NutritionContextType {
     lastUpdatedAt: number;
     isLoading: boolean;
     refreshToday: () => Promise<void>;
-    logFoodOptimistic: (food: { calories: number; protein: number; carbs: number; fat: number; serving_size: string; food_name: string; cooking_medium?: string; meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'; visibility?: string }) => Promise<{ isGoalHit: boolean }>;
+    logFoodOptimistic: (food: { calories: number; protein: number; carbs: number; fat: number; serving_size: string; food_name: string; cooking_medium?: string; meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'; is_estimate?: boolean; visibility?: string }) => Promise<{ isGoalHit: boolean }>;
 }
 
 const NutritionContext = createContext<NutritionContextType | undefined>(undefined);
@@ -132,9 +132,12 @@ const AccountNutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         serving_size: string;
         food_name: string;
         cooking_medium?: string;
+        is_estimate?: boolean;
         meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
         visibility?: string;
     }) => {
+        const token = await getAuthToken();
+        if (!userId || !token || !mounted.current) throw new Error('Your session changed. Please sign in again.');
         const previousMacros = { ...todayMacros };
         const previousUpdate = lastUpdatedAt;
         requestVersion.current++;
@@ -154,7 +157,7 @@ const AccountNutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const isGoalHit = calorieGoal !== null && previousMacros.calories < threshold && newMacros.calories >= threshold;
 
         try {
-            await nutritionAPI.logFood(food);
+            await nutritionAPI.logFood(food, token);
             refreshToday();
             return { isGoalHit };
         } catch (error) {

@@ -1,0 +1,295 @@
+{
+  "passed": true,
+  "layouts": [
+    {
+      "name": "inline-logging",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "name": "inline-logging",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "inline-logging",
+      "width": 430,
+      "height": 844
+    },
+    {
+      "name": "exercise-history",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "name": "exercise-history",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "exercise-history",
+      "width": 430,
+      "height": 844
+    },
+    {
+      "name": "exercise-guide",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "routine-choice",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "name": "routine-choice",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "routine-choice",
+      "width": 320,
+      "height": 500
+    },
+    {
+      "name": "routine-update-error",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "name": "history-error",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "name": "inline-with-rir",
+      "width": 320,
+      "height": 844
+    },
+    {
+      "name": "inline-with-rir",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "scenarios": [
+    {
+      "kind": "today-only",
+      "passed": true,
+      "writes": [
+        {
+          "path": "/workouts",
+          "body": {
+            "workout_type": "chest",
+            "day_name": "Upper 1",
+            "exercises": "[{\"id\":\"chest_press_machine\",\"name\":\"Machine Chest Press\",\"is_unilateral\":false,\"instructions\":\"2 working sets × 8–12 reps.\",\"sets\":[{\"id\":\"chest_press_machine-0\",\"weight_kg\":42.5,\"reps\":9,\"completed\":true}]}]",
+            "notes": "Logged via Smart Log",
+            "visibility": "private",
+            "duration_minutes": 1
+          }
+        }
+      ],
+      "errors": [
+        "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load."
+      ]
+    },
+    {
+      "kind": "update-retry",
+      "passed": true,
+      "writes": [
+        {
+          "path": "/workout-sessions/splits/11111111-1111-4111-8111-111111111111/plan",
+          "body": {
+            "training_plan": {
+              "version": 2,
+              "type": "custom",
+              "sessions": [
+                {
+                  "day_name": "Upper 1",
+                  "exercises": [
+                    {
+                      "id": "chest_press_machine",
+                      "name": "Machine Chest Press",
+                      "set_count": 3,
+                      "reps_min": 8,
+                      "reps_max": 12,
+                      "is_unilateral": false
+                    },
+                    {
+                      "id": "lat_pulldown",
+                      "name": "Lat Pulldown",
+                      "set_count": 2,
+                      "reps_min": 8,
+                      "reps_max": 12,
+                      "is_unilateral": false
+                    }
+                  ]
+                },
+                {
+                  "day_name": "Lower 1",
+                  "exercises": [
+                    {
+                      "id": "leg_press",
+                      "name": "Leg Press",
+                      "set_count": 2,
+                      "reps_min": 8,
+                      "reps_max": 12
+                    }
+                  ]
+                }
+              ]
+            },
+            "expected_plan": {
+              "version": 2,
+              "type": "custom",
+              "sessions": [
+                {
+                  "day_name": "Upper 1",
+                  "exercises": [
+                    {
+                      "id": "chest_press_machine",
+                      "name": "Machine Chest Press",
+                      "set_count": 2,
+                      "reps_min": 8,
+                      "reps_max": 12
+                    },
+                    {
+                      "id": "lat_pulldown",
+                      "name": "Lat Pulldown",
+                      "set_count": 2,
+                      "reps_min": 8,
+                      "reps_max": 12
+                    }
+                  ]
+                },
+                {
+                  "day_name": "Lower 1",
+                  "exercises": [
+                    {
+                      "id": "leg_press",
+                      "name": "Leg Press",
+                      "set_count": 2,
+                      "reps_min": 8,
+                      "reps_max": 12
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "path": "/workout-sessions/splits/11111111-1111-4111-8111-111111111111/plan",
+          "body": {
+            "training_plan": {
+              "version": 2,
+              "type": "custom",
+              "sessions": [
+                {
+                  "day_name": "Upper 1",
+                  "exercises": [
+                    {
+                      "id": "chest_press_machine",
+                      "name": "Machine Chest Press",
+                      "set_count": 3,
+                      "reps_min": 8,
+                      "reps_max": 12,
+                      "is_unilateral": false
+                    },
+                    {
+                      "id": "lat_pulldown",
+                      "name": "Lat Pulldown",
+                      "set_count": 2,
+                      "reps_min": 8,
+                      "reps_max": 12,
+                      "is_unilateral": false
+                    }
+                  ]
+                },
+                {
+                  "day_name": "Lower 1",
+                  "exercises": [
+                    {
+                      "id": "leg_press",
+                      "name": "Leg Press",
+                      "set_count": 2,
+                      "reps_min": 8,
+                      "reps_max": 12
+                    }
+                  ]
+                }
+              ]
+            },
+            "expected_plan": {
+              "version": 2,
+              "type": "custom",
+              "sessions": [
+                {
+                  "day_name": "Upper 1",
+                  "exercises": [
+                    {
+                      "id": "chest_press_machine",
+                      "name": "Machine Chest Press",
+                      "set_count": 2,
+                      "reps_min": 8,
+                      "reps_max": 12
+                    },
+                    {
+                      "id": "lat_pulldown",
+                      "name": "Lat Pulldown",
+                      "set_count": 2,
+                      "reps_min": 8,
+                      "reps_max": 12
+                    }
+                  ]
+                },
+                {
+                  "day_name": "Lower 1",
+                  "exercises": [
+                    {
+                      "id": "leg_press",
+                      "name": "Leg Press",
+                      "set_count": 2,
+                      "reps_min": 8,
+                      "reps_max": 12
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "path": "/workouts",
+          "body": {
+            "workout_type": "chest",
+            "day_name": "Upper 1",
+            "exercises": "[{\"id\":\"chest_press_machine\",\"name\":\"Machine Chest Press\",\"is_unilateral\":false,\"instructions\":\"2 working sets × 8–12 reps.\",\"sets\":[{\"id\":\"chest_press_machine-0\",\"weight_kg\":42.5,\"reps\":9,\"completed\":true}]}]",
+            "notes": "Logged via Smart Log",
+            "visibility": "private",
+            "duration_minutes": 1
+          }
+        }
+      ],
+      "errors": [
+        "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load."
+      ]
+    },
+    {
+      "kind": "history-retry",
+      "passed": true,
+      "writes": [],
+      "errors": [
+        "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load."
+      ]
+    },
+    {
+      "kind": "rir-layout",
+      "passed": true,
+      "writes": [],
+      "errors": [
+        "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load."
+      ]
+    }
+  ]
+}

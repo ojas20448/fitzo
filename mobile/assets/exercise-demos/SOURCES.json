@@ -1,0 +1,82 @@
+{
+  "retrieved": "2026-10-22",
+  "records": [
+    {
+      "slug": "push-up",
+      "names": [
+        "Push Up",
+        "Push-ups"
+      ],
+      "author": "Wensceslao",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Pushups.gif",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Pushups.gif",
+      "changes": "Original GIF unchanged. A still poster was extracted for reduced motion and paused playback."
+    },
+    {
+      "slug": "bodyweight-squat",
+      "names": [
+        "Bodyweight Squat"
+      ],
+      "author": "Zimmermanns",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/52/Squats_01.gif",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Squats_01.gif",
+      "changes": "Original GIF unchanged. A still poster was extracted for reduced motion and paused playback."
+    },
+    {
+      "slug": "sit-up",
+      "names": [
+        "Sit Up",
+        "Sit-ups"
+      ],
+      "author": "Wensceslao",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a0/Situps.gif",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Situps.gif",
+      "changes": "Original GIF unchanged. A still poster was extracted for reduced motion and paused playback."
+    },
+    {
+      "slug": "lying-leg-raise",
+      "names": [
+        "Lying Leg Raises",
+        "Lying Leg Raise"
+      ],
+      "author": "Wensceslao",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/50/Legraises.gif",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Legraises.gif",
+      "changes": "Original GIF unchanged. A still poster was extracted for reduced motion and paused playback."
+    },
+    {
+      "slug": "jump-rope",
+      "names": [
+        "Jump Rope",
+        "Rope Jumping"
+      ],
+      "author": "Wensceslao",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6c/Jumpingrope.gif",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Jumpingrope.gif",
+      "changes": "Original GIF unchanged. A still poster was extracted for reduced motion and paused playback."
+    },
+    {
+      "slug": "pull-up",
+      "names": [
+        "Pull Up",
+        "Pull-ups"
+      ],
+      "author": "Extremistpullup at English Wikipedia",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/4/40/Pullup.gif",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File:Pullup.gif",
+      "changes": "Original GIF unchanged. A still poster was extracted for reduced motion and paused playback."
+    }
+  ]
+}

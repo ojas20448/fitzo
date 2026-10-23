@@ -24,6 +24,7 @@ import { syncHealthDays } from '../../services/healthSync';
 import { healthReportData, healthReportDetails } from '../../utils/healthReportData';
 import { useShareCapture } from '../../hooks/useShareCapture';
 import HealthSyncStatusDetails from '../../components/HealthSyncStatusDetails';
+import { subscribeHealthSyncStatus } from '../../utils/healthSyncStatus';
 
 const CARD_GAP = 10;
 const healthSource = Platform.OS === 'ios' ? 'Apple Health' : Platform.OS === 'android' ? 'Health Connect' : 'Device health data';
@@ -63,8 +64,7 @@ interface HealthHistory {
 
 function formatNumber(n: number | null | undefined): string {
     if (n == null) return '—';
-    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-    return Math.round(n).toString();
+    return Math.round(n).toLocaleString('en-IN');
 }
 
 // ─────────────────────────────────────────────
@@ -91,9 +91,9 @@ export default function HealthReportScreen() {
     const [connectionMessage, setConnectionMessage] = useState('');
     const loadRequest = useRef(0);
 
-    const loadData = useCallback(async (syncDevice = true) => {
+    const loadData = useCallback(async (syncDevice = true, showLoading = true) => {
         const request = ++loadRequest.current;
-        setLoading(true);
+        if (showLoading) setLoading(true);
         setLoadError(false);
         try {
             const importEnabled = isHealthAvailable() && await isHealthImportEnabled(user?.id);
@@ -128,7 +128,10 @@ export default function HealthReportScreen() {
             setMeasurements(details.measurements);
         } catch {
             // A failed request is not an empty report. Keep it out of exports too.
-            if (request === loadRequest.current) setLoadError(true);
+            if (request === loadRequest.current) {
+                if (showLoading) setLoadError(true);
+                else setConnectionMessage('Latest readings could not be refreshed. Saved readings are still shown; try Sync now again.');
+            }
         } finally {
             if (request === loadRequest.current) setLoading(false);
         }
@@ -140,6 +143,16 @@ export default function HealthReportScreen() {
         loadData();
         return () => { generation.current++; };
     }, [loadData]);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        let lastCheck: string | undefined;
+        return subscribeHealthSyncStatus(user.id, status => {
+            if (!status.lastCheckedAt || status.lastCheckedAt === lastCheck) return;
+            lastCheck = status.lastCheckedAt;
+            void loadData(false, false);
+        });
+    }, [user?.id, loadData]);
 
     const handleConnectHealth = async () => {
         if (!user?.id || connectingHealth) return;
@@ -154,8 +167,8 @@ export default function HealthReportScreen() {
             } else {
                 setConnectionMessage(`${healthSource} connection was not completed. You can continue using Fitzo.`);
             }
-        } catch {
-            setConnectionMessage('Health connection could not finish. Please try again.');
+        } catch (error) {
+            setConnectionMessage(error instanceof Error ? error.message : 'Health connection could not finish. Please try again.');
         } finally {
             setConnectingHealth(false);
         }
@@ -519,7 +532,7 @@ function MacroStat({ label, value, unit, color }: {
     return (
         <View style={styles.macroItem}>
             <View style={[styles.macroDot, { backgroundColor: color }]} />
-            <Text style={styles.macroValue}>
+            <Text style={[styles.macroValue, { color: value == null ? colors.text.muted : color }]}>
                 {value == null ? '—' : Math.round(value)}{value != null && <Text style={styles.macroUnit}> {unit}</Text>}
             </Text>
             <Text style={styles.macroLabel}>{label}</Text>

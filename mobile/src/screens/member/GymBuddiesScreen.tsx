@@ -28,6 +28,8 @@ import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { useAuth } from '../../context/AuthContext';
 import Celebration from '../../components/Celebration';
 import { displayName } from '../../utils/displayName';
+import { useMemberContentInset } from '../../components/navigation/MemberChromeContext';
+import { useMemberTabScroll } from '../../hooks/useMemberTabScroll';
 
 interface Friend {
     id: string;
@@ -45,11 +47,14 @@ interface Friend {
 }
 
 const GymBuddiesScreen: React.FC = () => {
+    const contentInset = useMemberContentInset();
+    const onScroll = useMemberTabScroll();
     const { user } = useAuth();
     const toast = useToast();
     const [friends, setFriends] = useState<Friend[]>([]);
     const [pendingRequests, setPendingRequests] = useState<any[]>([]);
     const [sentRequests, setSentRequests] = useState<any[]>([]);
+    const [cancellingId, setCancellingId] = useState<string | null>(null);
     const [loadFailed, setLoadFailed] = useState(false);
     const [suggested, setSuggested] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -243,6 +248,20 @@ const GymBuddiesScreen: React.FC = () => {
                 },
             ],
         );
+    };
+
+    const handleCancelRequest = async (friendId: string) => {
+        setCancellingId(friendId);
+        try {
+            await friendsAPI.cancelRequest(friendId);
+            setSentRequests(prev => prev.filter(request => request.id !== friendId));
+            setSearchResults(prev => prev.map(user => user.id === friendId ? { ...user, friendship_status: 'none' } : user));
+            toast.success('Request cancelled', 'You can send another request anytime.');
+        } catch (error: any) {
+            toast.error('Could not cancel request', error.message);
+        } finally {
+            setCancellingId(null);
+        }
     };
 
     const handleSearch = async (query: string) => {
@@ -480,7 +499,9 @@ const GymBuddiesScreen: React.FC = () => {
 
             <ScrollView
                 style={styles.content}
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: contentInset }]}
+                onScroll={onScroll}
+                scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
@@ -543,64 +564,6 @@ const GymBuddiesScreen: React.FC = () => {
                                         </GlassCard>
                                     ))}
                                 </ScrollView>
-                            </View>
-                        )}
-
-                        {/* Pending Requests */}
-                        {pendingRequests.length > 0 && (
-                            <View style={styles.section}>
-                                <Text style={styles.sectionTitle}>Friend Requests</Text>
-                                {pendingRequests.map((request) => (
-                                    <GlassCard key={request.id} style={styles.requestCard}>
-                                        <View style={styles.requestInfo}>
-                                            <Avatar uri={request.avatar_url} name={displayName(request)} size="md" />
-                                            <View style={styles.requestText}>
-                                                <Text style={styles.requestName} numberOfLines={1}>{displayName(request)}</Text>
-                                                {request.username ? <Text style={styles.friendHandle} numberOfLines={1}>@{request.username}</Text> : null}
-                                                <Text style={styles.requestTime}>Wants to be your gym buddy</Text>
-                                            </View>
-                                        </View>
-                                        <View style={styles.requestActions}>
-                                            <TouchableOpacity
-                                                style={styles.declineBtn}
-                                                onPress={() => handleRejectRequest(request.id, displayName(request))}
-                                                accessibilityRole="button"
-                                                accessibilityLabel={`Decline request from ${displayName(request)}`}
-                                            >
-                                                <MaterialIcons name="close" size={20} color={colors.text.secondary} />
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                                style={styles.acceptBtn}
-                                                onPress={() => handleAcceptRequest(request.id)}
-                                                accessibilityRole="button"
-                                                accessibilityLabel={`Accept request from ${displayName(request)}`}
-                                            >
-                                                <MaterialIcons name="check" size={20} color={colors.background} />
-                                            </TouchableOpacity>
-                                        </View>
-                                    </GlassCard>
-                                ))}
-                            </View>
-                        )}
-
-                        {sentRequests.length > 0 && (
-                            <View style={styles.section}>
-                                <Text style={styles.sectionTitle}>Sent</Text>
-                                {sentRequests.map((request) => (
-                                    <GlassCard key={request.id} style={styles.requestCard}>
-                                        <View style={styles.requestInfo}>
-                                            <Avatar uri={request.avatar_url} name={displayName(request)} size="md" />
-                                            <View style={styles.requestText}>
-                                                <Text style={styles.requestName} numberOfLines={1}>{displayName(request)}</Text>
-                                                {request.username ? <Text style={styles.friendHandle} numberOfLines={1}>@{request.username}</Text> : null}
-                                                <Text style={styles.requestTime}>Waiting for them to accept</Text>
-                                            </View>
-                                        </View>
-                                        <View style={styles.sentTag}>
-                                            <Text style={styles.sentTagText}>PENDING</Text>
-                                        </View>
-                                    </GlassCard>
-                                ))}
                             </View>
                         )}
 
@@ -682,6 +645,81 @@ const GymBuddiesScreen: React.FC = () => {
                                 );
                             })
                         )}
+
+                        {/* Pending Requests */}
+                        {pendingRequests.length > 0 && (
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Friend Requests</Text>
+                                {pendingRequests.map((request) => (
+                                    <GlassCard key={request.id} style={styles.requestCard}>
+                                        <View style={styles.requestInfo}>
+                                            <Avatar uri={request.avatar_url} name={displayName(request)} size="md" />
+                                            <View style={styles.requestText}>
+                                                <Text style={styles.requestName} numberOfLines={1}>{displayName(request)}</Text>
+                                                {request.username ? <Text style={styles.friendHandle} numberOfLines={1}>@{request.username}</Text> : null}
+                                                <Text style={styles.requestTime}>Wants to be your gym buddy</Text>
+                                            </View>
+                                        </View>
+                                        <View style={styles.requestActions}>
+                                            <TouchableOpacity
+                                                style={styles.declineBtn}
+                                                onPress={() => handleRejectRequest(request.id, displayName(request))}
+                                                accessibilityRole="button"
+                                                accessibilityLabel={`Decline request from ${displayName(request)}`}
+                                            >
+                                                <MaterialIcons name="close" size={20} color={colors.text.secondary} />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={styles.acceptBtn}
+                                                onPress={() => handleAcceptRequest(request.id)}
+                                                accessibilityRole="button"
+                                                accessibilityLabel={`Accept request from ${displayName(request)}`}
+                                            >
+                                                <MaterialIcons name="check" size={20} color={colors.background} />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </GlassCard>
+                                ))}
+                            </View>
+                        )}
+
+                        {sentRequests.length > 0 && (
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Sent</Text>
+                                {sentRequests.map((request) => (
+                                    <GlassCard key={request.id} style={styles.requestCard}>
+                                        <View style={styles.requestInfo}>
+                                            <Avatar uri={request.avatar_url} name={displayName(request)} size="md" />
+                                            <View style={styles.requestText}>
+                                                <Text style={styles.requestName} numberOfLines={1}>{displayName(request)}</Text>
+                                                {request.username ? <Text style={styles.friendHandle} numberOfLines={1}>@{request.username}</Text> : null}
+                                                <Text style={styles.requestTime}>Waiting for them to accept</Text>
+                                            </View>
+                                        </View>
+                                        <View style={styles.sentActions}>
+                                            <View style={styles.sentTag}>
+                                                <Text style={styles.sentTagText}>PENDING</Text>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={styles.cancelRequestBtn}
+                                                onPress={() => handleCancelRequest(request.id)}
+                                                disabled={cancellingId !== null}
+                                                accessibilityRole="button"
+                                                accessibilityLabel={`Cancel request to ${displayName(request)}`}
+                                                accessibilityState={{ disabled: cancellingId !== null, busy: cancellingId === request.id }}
+                                            >
+                                                {cancellingId === request.id ? (
+                                                    <ActivityIndicator size="small" color={colors.text.secondary} />
+                                                ) : (
+                                                    <MaterialIcons name="close" size={20} color={colors.text.secondary} />
+                                                )}
+                                            </TouchableOpacity>
+                                        </View>
+                                    </GlassCard>
+                                ))}
+                            </View>
+                        )}
+
                     </>
                 ) : (
                     <View style={styles.leaderboardSection}>
@@ -1187,6 +1225,17 @@ const styles = StyleSheet.create({
         flexShrink: 1,
         maxWidth: '40%',
         textAlign: 'right',
+    },
+    sentActions: {
+        flexShrink: 0,
+        alignItems: 'center',
+    },
+    cancelRequestBtn: {
+        minHeight: 44,
+        minWidth: 44,
+        paddingHorizontal: spacing.sm,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     sentTag: {
         flexShrink: 0,

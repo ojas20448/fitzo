@@ -8,6 +8,7 @@
     "dev": "nodemon src/index.js",
     "test": "jest --coverage",
     "test:worker": "node --test tests/ai-worker.spec.cjs",
+    "metrics:logging": "node scripts/logging_metrics.js",
     "db:setup": "psql -f src/db/schema.sql",
     "db:seed": "psql -f src/db/seed.sql"
   },

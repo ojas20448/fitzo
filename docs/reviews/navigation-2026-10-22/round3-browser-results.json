@@ -1,0 +1,49 @@
+{
+  "measurements": [
+    {
+      "screen": "library",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "screen": "library",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "screen": "library",
+      "width": 430,
+      "overflow": false
+    },
+    {
+      "screen": "library",
+      "width": 844,
+      "overflow": false
+    },
+    {
+      "screen": "editor",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "screen": "editor",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "screen": "editor",
+      "width": 430,
+      "overflow": false
+    }
+  ],
+  "localSearchAndMuscleFilters": true,
+  "staleSearchIgnored": true,
+  "previewDoesNotAdd": true,
+  "reorderPreservesSets": true,
+  "explicitAddOnce": true,
+  "errors": [
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load.",
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load."
+  ],
+  "interceptedWrites": 0
+}

@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from '../../utils/haptics';
 
@@ -41,6 +41,10 @@ import { gymAPI, BusyTimes } from '../../services/api';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { firstName as getFirstName, displayName } from '../../utils/displayName';
 import AIConsentModal, { getAIConsent } from '../../components/AIConsentModal';
+import { loadActiveWorkoutDraft } from '../../utils/activeWorkoutDraft';
+import type { ActiveWorkoutDraft } from '../../utils/activeWorkoutDraft';
+import { useMemberContentInset } from '../../components/navigation/MemberChromeContext';
+import { useMemberTabScroll } from '../../hooks/useMemberTabScroll';
 
 interface HomeData {
     user: {
@@ -102,7 +106,9 @@ interface TodayWorkout {
     completed: boolean;
 }
 
-const HomeScreen: React.FC = () => {
+const HomeScreen: React.FC<{ trainingOnly?: boolean }> = ({ trainingOnly = false }) => {
+    const contentInset = useMemberContentInset();
+    const onScroll = useMemberTabScroll();
     const { user } = useAuth();
     const { todayMacros, calorieGoal, macroTargets, refreshToday } = useNutrition();
     const toast = useToast();
@@ -133,6 +139,15 @@ const HomeScreen: React.FC = () => {
     const [isStale, setIsStale] = useState(false);
     const [busyTimes, setBusyTimes] = useState<BusyTimes | null>(null);
     const [checkingOut, setCheckingOut] = useState(false);
+    const [activeWorkout, setActiveWorkout] = useState<{ userId: string; draft: ActiveWorkoutDraft } | null>(null);
+    useFocusEffect(React.useCallback(() => {
+        let active = true;
+        setActiveWorkout(null);
+        if (user?.id) void loadActiveWorkoutDraft(user.id).then(draft => {
+            if (active && draft?.exercises.length) setActiveWorkout({ userId: user.id, draft });
+        }).catch(() => {});
+        return () => { active = false; };
+    }, [user?.id]));
     /** Readable from inside the mount effect's timers, which `loading` is not. */
     const stillLoading = useRef(true);
 
@@ -158,6 +173,7 @@ const HomeScreen: React.FC = () => {
 
     useEffect(() => {
         const fetchActive = async () => {
+            if (trainingOnly) return;
             try {
                 const feed = await workoutsAPI.getFeed();
                 if (feed?.feed) {
@@ -174,14 +190,14 @@ const HomeScreen: React.FC = () => {
             }
         };
         fetchActive();
-    }, []);
+    }, [trainingOnly]);
 
     useEffect(() => {
-        if (!user?.gym_id) return;
+        if (trainingOnly || !user?.gym_id) return;
         gymAPI.getBusyTimes(user.gym_id)
             .then((r) => setBusyTimes(r.busy_times))
             .catch(() => setBusyTimes(null));
-    }, [user?.gym_id]);
+    }, [user?.gym_id, trainingOnly]);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -217,14 +233,14 @@ const HomeScreen: React.FC = () => {
             const [homeRes, workoutsRes, friendsRes, suggestRes] = await Promise.all([
                 memberAPI.getHome(),
                 workoutsAPI.getToday().catch(() => ({ workouts: [], summary: { count: 0, types: [] } })),
-                friendsAPI.getFriends().catch(() => ({ friends: [] })),
+                trainingOnly ? Promise.resolve({ friends: [] }) : friendsAPI.getFriends().catch(() => ({ friends: [] })),
                 intentAPI.getSuggestion().catch(() => ({ suggestion: null, reason: null })),
             ]);
 
             // Only query Google Gemini for daily insights if user explicitly granted AI consent (Apple 5.1.1(i) / 5.1.2(i))
             const consented = await getAIConsent();
             setAiConsented(consented);
-            if (consented) {
+            if (consented && !trainingOnly) {
                 aiAPI.getDailyInsight()
                     .then((r) => { if (r?.success && r?.insight) setDailyInsight(r.insight); })
                     .catch(() => {});
@@ -327,7 +343,7 @@ const HomeScreen: React.FC = () => {
     };
 
     // Time-based greeting
-    const greeting = 'Today';
+    const greeting = trainingOnly ? 'Workout' : 'Today';
 
     if (loading) {
         return (
@@ -359,6 +375,7 @@ const HomeScreen: React.FC = () => {
     const greetingName = getFirstName(data?.user || user);
     const hasLoggedWorkoutToday = todayWorkouts.length > 0;
     const currentIntent = data?.intent;
+    const hasActiveWorkout = !!activeWorkout && activeWorkout.userId === user?.id;
     const activeFriendsCount = activeCount;
 
     // `learn.progress` is a 0-100 integer from the API (Math.round(done/total*100)),
@@ -390,7 +407,9 @@ const HomeScreen: React.FC = () => {
                 keyboardShouldPersistTaps="handled"
                 automaticallyAdjustKeyboardInsets
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[styles.scrollContent, trainingOnly && { paddingBottom: contentInset }]}
+                onScroll={onScroll}
+                scrollEventThrottle={16}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
@@ -403,6 +422,19 @@ const HomeScreen: React.FC = () => {
             >
                 <CustomRefreshHeader refreshing={refreshing} />
 
+                {!trainingOnly && activeWorkout?.userId === user?.id && activeWorkout && <TouchableOpacity
+                    accessibilityRole="button" accessibilityLabel="Resume workout"
+                    onPress={() => router.push('/log/workout')}
+                    style={styles.resumeWorkout}
+                >
+                    <MaterialIcons name="play-circle-outline" size={28} color={colors.accent.sky} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={styles.resumeTitle}>Resume workout</Text>
+                        <Text style={styles.resumeDetail} numberOfLines={1}>{activeWorkout.draft.intent.session_label} · {activeWorkout.draft.exercises.length} exercises saved</Text>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={24} color={colors.text.secondary} />
+                </TouchableOpacity>}
+
                 {/* Header - Refined with blur effect */}
                 <Animated.View entering={FadeInDown.duration(600).springify()} style={styles.header}>
                     <Pressable
@@ -414,6 +446,7 @@ const HomeScreen: React.FC = () => {
                         <View style={styles.avatarWrapper}>
                             <Avatar
                                 uri={data?.user.avatar_url}
+                                name={data?.user.name || user?.name}
                                 size="md"
                             />
                             <View style={styles.verifiedBadge}>
@@ -430,15 +463,18 @@ const HomeScreen: React.FC = () => {
                     <View style={styles.headerRight}>
                         {/* AI Coach Button */}
                         <TouchableOpacity
-                            style={styles.checkinBadge}
-                            onPress={() => router.push('/ai-coach' as any)}
-                            accessibilityLabel="AI Coach"
+                            style={[styles.checkinBadge, styles.spotterBadge]}
+                            onPress={() => router.push({ pathname: '/ai-coach', params: { source: 'workout', prompt: 'Help me review my recent training.' } })}
+                            accessibilityLabel="Open Spotter"
+                            accessibilityRole="button"
+                            accessibilityHint="Open Spotter for help with training, food and recovery"
                         >
-                            <MaterialIcons name="auto-awesome" size={20} color={colors.text.primary} />
+                            <Ionicons name="bulb-outline" size={20} color={colors.text.primary} />
+                            <Text style={styles.spotterLabel}>Spotter</Text>
                         </TouchableOpacity>
 
                         {/* QR Check-in / Check-out */}
-                        {data?.checkin.status === 'checked_in' ? (
+                        {!trainingOnly && (data?.checkin.status === 'checked_in' ? (
                             <TouchableOpacity
                                 style={styles.checkinBadge}
                                 onPress={handleCheckout}
@@ -461,11 +497,11 @@ const HomeScreen: React.FC = () => {
                             >
                                 <MaterialIcons name="qr-code-2" size={20} color={colors.text.primary} />
                             </TouchableOpacity>
-                        )}
+                        ))}
 
                         {/* Streak Badge */}
                         <View style={styles.streakBadge}>
-                            <AnimatedFire size={24} color="#FF6B35" />
+                            <Ionicons name="flame-outline" size={21} color={colors.text.secondary} />
                             <Text style={styles.streakText}>{data?.streak.current || 0}</Text>
                         </View>
                     </View>
@@ -561,14 +597,14 @@ const HomeScreen: React.FC = () => {
                 <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} style={styles.actionButtons}>
                     <TouchableOpacity
                         style={styles.primaryActionBtn}
-                        onPress={() => currentIntent ? router.push({ pathname: '/log/workout', params: { intent: JSON.stringify({
+                        onPress={() => hasActiveWorkout && trainingOnly ? router.push('/log/workout') : currentIntent ? router.push({ pathname: '/log/workout', params: { intent: JSON.stringify({
                             session_label: currentIntent.session_label || currentIntent.display,
                             training_pattern: currentIntent.training_pattern || undefined,
                             emphasis: currentIntent.emphasis,
-                        }) } }) : suggestion ? void handleQuickConfirm() : handleIntentPress()}
+                        }) } }) : suggestion ? void handleQuickConfirm() : trainingOnly ? router.push({ pathname: '/log/workout', params: { start: 'empty' } }) : handleIntentPress()}
                         disabled={settingIntent}
                         accessibilityState={{ disabled: settingIntent, busy: settingIntent }}
-                        accessibilityLabel={currentIntent ? 'Log workout' : 'Start training'}
+                        accessibilityLabel={hasActiveWorkout && trainingOnly ? 'Resume workout' : currentIntent ? 'Log workout' : 'Start training'}
                         accessibilityRole="button"
                     >
                         <MaterialIcons
@@ -577,11 +613,11 @@ const HomeScreen: React.FC = () => {
                             color={colors.text.dark}
                         />
                         <Text style={styles.primaryActionText}>
-                            {settingIntent ? 'Starting…' : currentIntent ? 'Log workout' : 'Start workout'}
+                            {settingIntent ? 'Starting…' : hasActiveWorkout && trainingOnly ? 'Resume workout' : currentIntent ? 'Log workout' : 'Start workout'}
                         </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity
+                    {!trainingOnly && <TouchableOpacity
                         style={styles.secondaryActionBtn}
                         onPress={() => router.push('/log/calories' as any)}
                         accessibilityLabel="Log food"
@@ -589,11 +625,23 @@ const HomeScreen: React.FC = () => {
                     >
                         <MaterialIcons name="add" size={20} color={colors.text.primary} />
                         <Text style={styles.secondaryActionText}>Log food</Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity>}
                 </Animated.View>
 
+                {trainingOnly && <>
+                    <View style={styles.trainingActions}>
+                        <TouchableOpacity style={styles.trainingAction} accessibilityRole="button" accessibilityLabel="My plan" onPress={() => router.push('/workout-intent')}><Ionicons name="calendar-outline" size={21} color={colors.text.secondary} /><Text style={styles.trainingActionText}>My plan</Text></TouchableOpacity>
+                        <TouchableOpacity style={styles.trainingAction} accessibilityRole="button" accessibilityLabel="Explore exercises" onPress={() => router.push('/exercise-library')}><Ionicons name="barbell-outline" size={21} color={colors.text.secondary} /><Text style={styles.trainingActionText}>Exercises</Text></TouchableOpacity>
+                    </View>
+                    <View style={[styles.trainingActions, { marginBottom: spacing['2xl'] }]}>
+                        <TouchableOpacity style={styles.trainingAction} accessibilityRole="button" accessibilityLabel="Explore workouts" onPress={() => router.push('/member/curated-workouts')}><Ionicons name="compass-outline" size={21} color={colors.text.secondary} /><Text style={styles.trainingActionText}>Workouts</Text></TouchableOpacity>
+                        <TouchableOpacity style={styles.trainingAction} accessibilityRole="button" accessibilityLabel="Workout history" onPress={() => router.push('/member/workout-history')}><Ionicons name="time-outline" size={21} color={colors.text.secondary} /><Text style={styles.trainingActionText}>History</Text></TouchableOpacity>
+                    </View>
+                    <View style={styles.section}><Text style={[styles.sectionTitle, { marginBottom: spacing.md }]}>This week</Text><WeeklyProgress history={data?.streak.history || []} /></View>
+                </>}
+
                 {/* Today — nutrition + weekly activity in one block (simplified) */}
-                <Animated.View entering={FadeInDown.delay(300).duration(600).springify()} style={styles.section}>
+                {!trainingOnly && <Animated.View entering={FadeInDown.delay(300).duration(600).springify()} style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>Food logged today</Text>
                         <TouchableOpacity onPress={() => router.push('/log/calories' as any)}>
@@ -610,7 +658,7 @@ const HomeScreen: React.FC = () => {
                         <View style={styles.foodMacros}>
                             {(['protein', 'carbs', 'fat'] as const).map(macro => <View key={macro} style={styles.foodMacro}>
                                 <Text style={styles.foodMacroName}>{macro === 'protein' ? 'Protein' : macro === 'carbs' ? 'Carbs' : 'Fat'}</Text>
-                                <Text style={styles.foodMacroValue}>{Math.round(todayMacros[macro] || 0)}{macroTargets ? ` / ${macroTargets[macro]}` : ''} g</Text>
+                                <Text style={[styles.foodMacroValue, { color: colors.macro[macro] }]}>{Math.round(todayMacros[macro] || 0)}{macroTargets ? ` / ${macroTargets[macro]}` : ''} g</Text>
                             </View>)}
                         </View>
                     </View>
@@ -625,9 +673,11 @@ const HomeScreen: React.FC = () => {
                         <Text style={styles.insightsButtonText}>Nutrition details</Text>
                         <MaterialIcons name="chevron-right" size={18} color={colors.text.muted} />
                     </TouchableOpacity>
-                </Animated.View>
+                </Animated.View>}
 
                 <RecoveryCheckIn key={user?.id} userId={user?.id} />
+
+                {!trainingOnly && <>
 
                 {/* Daily AI Note — taps through to the coach chat */}
                 {dailyInsight ? (
@@ -750,7 +800,7 @@ const HomeScreen: React.FC = () => {
                                 {learnStarted ? 'Continue Learning' : 'Start Learning'}
                             </Text>
                             <TouchableOpacity
-                                onPress={() => router.push('/(tabs)/learn' as any)}
+                                onPress={() => router.push('/member/learn' as any)}
                                 hitSlop={12}
                                 accessibilityRole="button"
                                 accessibilityLabel="View all lessons"
@@ -879,6 +929,7 @@ const HomeScreen: React.FC = () => {
                 </View>
 
                 <View style={{ height: 120 }} />
+                </>}
             </ScrollView>
 
             <AIConsentModal
@@ -906,7 +957,10 @@ const styles = StyleSheet.create({
     foodHint: { fontFamily: typography.fontFamily.regular, fontSize: 12, lineHeight: 19, color: colors.text.secondary },
     foodMacros: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 }, foodMacro: { flexGrow: 1 },
     foodMacroName: { fontFamily: typography.fontFamily.regular, fontSize: 12, color: colors.text.secondary },
-    foodMacroValue: { fontFamily: typography.fontFamily.medium, fontSize: 13, marginTop: 6, color: colors.text.primary },
+    foodMacroValue: { fontFamily: typography.fontFamily.semiBold, fontSize: 15, marginTop: 6, color: colors.text.primary },
+    resumeWorkout: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginHorizontal: spacing.xl, marginTop: spacing.md, padding: spacing.lg, backgroundColor: colors.surfaceLight, borderWidth: 1, borderColor: colors.glass.border, borderRadius: borderRadius.lg },
+    resumeTitle: { color: colors.text.primary, fontFamily: typography.fontFamily.semiBold, fontSize: 15 },
+    resumeDetail: { color: colors.text.secondary, fontFamily: typography.fontFamily.regular, fontSize: 12, marginTop: 4 },
     container: {
         flex: 1,
         backgroundColor: colors.background,
@@ -974,6 +1028,8 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
         flexShrink: 0,
     },
+    spotterBadge: { width: 'auto', minHeight: 44, height: 'auto', paddingHorizontal: 12, paddingVertical: 10, flexDirection: 'row', gap: 6 },
+    spotterLabel: { fontFamily: typography.fontFamily.medium, color: colors.text.primary, fontSize: 11 },
     gymBadge: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1190,6 +1246,9 @@ const styles = StyleSheet.create({
     },
 
     // Action Buttons
+    trainingActions: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
+    trainingAction: { flex: 1, minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: borderRadius.lg, backgroundColor: colors.glass.surface, borderWidth: 1, borderColor: colors.glass.border },
+    trainingActionText: { flexShrink: 1, fontFamily: typography.fontFamily.medium, fontSize: typography.sizes.sm, color: colors.text.primary },
     actionButtons: {
         flexDirection: 'row',
         flexWrap: 'wrap',

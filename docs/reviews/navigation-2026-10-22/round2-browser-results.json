@@ -1,0 +1,73 @@
+{
+  "results": [
+    {
+      "name": "food-diary",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "name": "food-diary",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "name": "food-diary",
+      "width": 430,
+      "overflow": false
+    },
+    {
+      "name": "food-diary",
+      "width": 844,
+      "overflow": false
+    },
+    {
+      "name": "gym-home",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "name": "gym-home",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "name": "gym-home",
+      "width": 430,
+      "overflow": false
+    },
+    {
+      "name": "gym-home",
+      "width": 844,
+      "overflow": false
+    },
+    {
+      "name": "workout-history",
+      "width": 320,
+      "overflow": false
+    },
+    {
+      "name": "workout-history",
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "name": "workout-history",
+      "width": 430,
+      "overflow": false
+    },
+    {
+      "name": "workout-history",
+      "width": 844,
+      "overflow": false
+    }
+  ],
+  "errors": [
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load.",
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load.",
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load.",
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load.",
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load.",
+    "Failed to execute 'importScripts' on 'WorkerGlobalScope': The script at 'https://cdn.jsdelivr.net/npm/jsqr@1.2.0/dist/jsQR.min.js' failed to load."
+  ],
+  "writesIntercepted": 1
+}

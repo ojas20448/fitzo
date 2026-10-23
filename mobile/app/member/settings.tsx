@@ -14,7 +14,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Haptics from '../../src/utils/haptics';
 import { isHapticsEnabled, setHapticsEnabled } from '../../src/utils/haptics';
-import AIConsentModal, { getAIConsent } from '../../src/components/AIConsentModal';
 
 const UNITS_STORAGE_KEY = 'fitzo_units';
 const version = Constants.expoConfig?.version || '1.3.0';
@@ -190,11 +189,6 @@ export default function SettingsScreen() {
             ]
         );
     };
-
-    // AI Data Privacy
-    const [aiConsentGranted, setAiConsentGranted] = useState(false);
-    const [aiModalVisible, setAiModalVisible] = useState(false);
-    useEffect(() => { getAIConsent().then(setAiConsentGranted); }, []);
 
     const handleSignOut = () => {
         Alert.alert(
@@ -449,36 +443,6 @@ export default function SettingsScreen() {
                 </GlassCard>
                 <HealthImportSettings key={user?.id} userId={user?.id} />
 
-                {/* AI Features & Privacy */}
-                <Text style={styles.sectionTitle}>AI Features & Privacy</Text>
-                <GlassCard style={styles.card}>
-                    <TouchableOpacity
-                        style={styles.row}
-                        onPress={() => setAiModalVisible(true)}
-                        activeOpacity={0.7}
-                    >
-                        <View style={styles.rowLeft}>
-                            <MaterialIcons
-                                name="auto-awesome"
-                                size={24}
-                                color={aiConsentGranted ? colors.primary : colors.text.secondary}
-                            />
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.rowLabel}>AI Data Sharing & Privacy</Text>
-                                <Text style={styles.rowSub}>
-                                    {aiConsentGranted
-                                        ? 'Enabled • Google Gemini API (Private & Encrypted)'
-                                        : 'Disabled • Tap to review AI privacy & data sharing'}
-                                </Text>
-                            </View>
-                        </View>
-                        <MaterialIcons name="chevron-right" size={24} color={colors.text.muted} />
-                    </TouchableOpacity>
-                </GlassCard>
-                <Text style={styles.healthExplanationText}>
-                    Fitzo uses Google Cloud (Google Gemini AI API) for personalized coaching, photo meal scanning, and voice logging. Data is encrypted, never sold, and never used to train models.
-                </Text>
-
                 {/* System Section */}
                 <Text style={styles.sectionTitle}>System</Text>
                 <GlassCard style={styles.card}>
@@ -526,20 +490,6 @@ export default function SettingsScreen() {
                 <View style={{ height: 40 }} />
             </ScrollView>
 
-            <AIConsentModal
-                visible={aiModalVisible}
-                featureTitle="AI Data Sharing"
-                onAccept={() => {
-                    setAiConsentGranted(true);
-                    setAiModalVisible(false);
-                    toast.success('AI Features Enabled', 'Your AI preferences have been updated.');
-                }}
-                onDecline={() => {
-                    setAiConsentGranted(false);
-                    setAiModalVisible(false);
-                    toast.info('AI Features Disabled', 'AI features will remain off.');
-                }}
-            />
         </SafeAreaView>
     );
 }

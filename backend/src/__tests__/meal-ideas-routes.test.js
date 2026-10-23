@@ -47,3 +47,15 @@ test('invalid meal types or malformed portions cannot create any rows', async ()
     ]) expect((await request(app).post('/nutrition/log-bulk').send(payload)).status).toBe(400);
     expect(query).not.toHaveBeenCalled();
 });
+
+test('single-food logging persists the chosen meal category and rejects invalid categories', async () => {
+    query.mockResolvedValue({ rows: [{ id: 'saved' }] });
+    for (const meal_type of ['breakfast', 'lunch', 'dinner', 'snack']) {
+        const res = await request(app).post('/nutrition/log').send({ food_name: 'Dal', calories: 200, serving_size: '1 bowl', meal_type });
+        expect(res.status).toBe(200);
+        expect(query).toHaveBeenLastCalledWith(expect.stringContaining('INSERT INTO calorie_logs'), expect.arrayContaining(['1 bowl', meal_type]));
+    }
+    query.mockClear();
+    expect((await request(app).post('/nutrition/log').send({ food_name: 'Dal', calories: 200, meal_type: 'bad' })).status).toBe(400);
+    expect(query).not.toHaveBeenCalled();
+});

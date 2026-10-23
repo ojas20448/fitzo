@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const { query, getClient } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
-const { ValidationError, asyncHandler } = require('../utils/errors');
+const { ValidationError, ConflictError, asyncHandler } = require('../utils/errors');
 const pushNotifications = require('../services/pushNotifications');
 const xpService = require('../services/xpService');
 const { resolveMuscleGroup } = require('../utils/muscleGroup');
@@ -596,6 +596,23 @@ router.post('/splits', authenticate, asyncHandler(async (req, res) => {
     } finally {
         client.release();
     }
+}));
+
+// Updating a routine must not create or activate another split.
+router.patch('/splits/:id/plan', authenticate, asyncHandler(async (req, res) => {
+    const { training_plan, expected_plan } = req.body;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(req.params.id)
+        || !expected_plan || !Array.isArray(expected_plan.sessions)) throw new ValidationError('Choose a saved routine to update.');
+    const days = expected_plan.sessions.map(session => session?.day_name);
+    const expected = validateStarterPlan(expected_plan, days);
+    const plan = validateStarterPlan(training_plan, days);
+    if (!expected || !plan) throw new ValidationError('The complete routine is required.');
+    const result = await query(`UPDATE user_splits SET training_plan = $3::jsonb, updated_at = NOW()
+        WHERE user_id = $1 AND id = $2 AND is_active = true AND training_plan = $4::jsonb AND days = $5::text[]
+        RETURNING *`, [req.user.id, req.params.id, JSON.stringify(plan), JSON.stringify(expected), days]);
+    if (!result.rows.length) throw new ConflictError('Your saved routine changed. Reload it before updating. Your workout has not been saved yet.');
+    await invalidateContextPack(req.user.id).catch(() => {});
+    res.json({ split: result.rows[0] });
 }));
 
 module.exports = router;

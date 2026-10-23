@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -14,12 +14,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenBackdrop from '../src/components/ScreenBackdrop';
 import { router } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
 import Button from '../src/components/Button';
-import GlassCard from '../src/components/GlassCard';
 import { useToast } from '../src/components/Toast';
-import { colors, typography, spacing, borderRadius, shadows } from '../src/styles/theme';
+import { colors, typography, spacing, borderRadius, shadow } from '../src/styles/theme';
 import {
     GoogleSignin,
     isSuccessResponse,
@@ -44,6 +43,8 @@ export default function LoginScreen() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [appleAvailable, setAppleAvailable] = useState(false);
+    const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
+    const passwordInput = useRef<TextInput>(null);
 
     // Availability is asked at runtime rather than assumed from Platform.OS.
     // Sign in with Apple needs iOS 13+, so an older device reports false and
@@ -153,6 +154,8 @@ export default function LoginScreen() {
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode="on-drag"
+                    showsVerticalScrollIndicator={false}
                 >
                     {/* Logo/Brand */}
                     <View style={styles.brandSection}>
@@ -164,67 +167,92 @@ export default function LoginScreen() {
                             />
                         </View>
                         <Text style={styles.brandName}>FITZO</Text>
-                        <Text style={styles.tagline}>Your Gym Companion</Text>
+                    </View>
+
+                    <View style={styles.welcome}>
+                        <Text accessibilityRole="header" style={styles.heading}>Welcome back</Text>
+                        <Text style={styles.description}>Log in to continue your training.</Text>
                     </View>
 
                     {/* Login Form */}
-                    <GlassCard style={styles.formSection}>
-                        <Text style={styles.formLabel}>WELCOME BACK</Text>
-
-                        <GlassCard variant="light" style={styles.inputContainer}>
-                            <MaterialIcons name="email" size={20} color={colors.text.muted} />
+                    <View style={styles.formSection}>
+                        <Text style={styles.fieldLabel}>Email address</Text>
+                        <View style={[styles.inputContainer, focusedField === 'email' && styles.inputFocused]}>
+                            <Ionicons name="mail-outline" size={20} color={colors.text.secondary} />
                             <TextInput
                                 style={styles.input}
-                                placeholder="Email"
+                                accessibilityLabel="Email address"
+                                placeholder="you@example.com"
                                 placeholderTextColor={colors.text.muted}
                                 value={email}
                                 onChangeText={setEmail}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
                                 autoCorrect={false}
+                                autoComplete="email"
+                                textContentType="emailAddress"
+                                returnKeyType="next"
+                                onSubmitEditing={() => passwordInput.current?.focus()}
+                                onFocus={() => setFocusedField('email')}
+                                onBlur={() => setFocusedField(null)}
+                                editable={!loading}
                             />
-                        </GlassCard>
+                        </View>
 
-                        <GlassCard variant="light" style={styles.inputContainer}>
-                            <MaterialIcons name="lock" size={20} color={colors.text.muted} />
+                        <View style={styles.passwordLabelRow}>
+                            <Text style={styles.passwordLabel}>Password</Text>
+                            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Forgot password" style={styles.forgotPassword} onPress={() => router.push('/forgot-password')}>
+                                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={[styles.inputContainer, focusedField === 'password' && styles.inputFocused]}>
+                            <Ionicons name="lock-closed-outline" size={20} color={colors.text.secondary} />
                             <TextInput
+                                ref={passwordInput}
                                 style={styles.input}
-                                placeholder="Password"
+                                accessibilityLabel="Password"
+                                placeholder="Enter your password"
                                 placeholderTextColor={colors.text.muted}
                                 value={password}
                                 onChangeText={setPassword}
                                 secureTextEntry={!showPassword}
+                                autoComplete="current-password"
+                                textContentType="password"
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                returnKeyType="go"
+                                onSubmitEditing={() => { if (!loading) void handleLogin(); }}
+                                onFocus={() => setFocusedField('password')}
+                                onBlur={() => setFocusedField(null)}
+                                editable={!loading}
                             />
                             <TouchableOpacity
                                 onPress={() => setShowPassword(!showPassword)}
-                                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                                style={styles.visibilityButton}
+                                accessibilityRole="button"
+                                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                                accessibilityState={{ selected: showPassword }}
+                                aria-pressed={showPassword}
                             >
-                                <MaterialIcons
-                                    name={showPassword ? 'visibility' : 'visibility-off'}
+                                <Ionicons
+                                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                                     size={20}
                                     color={colors.text.muted}
                                 />
                             </TouchableOpacity>
-                        </GlassCard>
+                        </View>
 
                         <Button
                             title="Log In"
                             onPress={handleLogin}
                             loading={loading}
                             fullWidth
-                            style={{ marginTop: spacing.lg }}
+                            style={styles.loginButton}
                         />
-
-                        <TouchableOpacity
-                            style={styles.forgotPassword}
-                            onPress={() => router.push('/forgot-password')}
-                        >
-                            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                        </TouchableOpacity>
 
                         <View style={styles.dividerContainer}>
                             <View style={styles.dividerLine} />
-                            <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
+                            <Text style={styles.dividerText}>or</Text>
                             <View style={styles.dividerLine} />
                         </View>
 
@@ -233,10 +261,11 @@ export default function LoginScreen() {
                                 style={styles.googleBtn}
                                 onPress={handleGooglePress}
                                 disabled={loading}
+                                accessibilityRole="button"
+                                accessibilityLabel="Continue with Google"
                             >
-                                <MaterialIcons name="g-translate" size={24} color={colors.text.primary} />
-                                <Text style={styles.googleBtnText}>Google</Text>
-                                <View style={{ width: 24 }} />
+                                <FontAwesome name="google" size={19} color={colors.text.primary} />
+                                <Text style={styles.googleBtnText}>Continue with Google</Text>
                             </TouchableOpacity>
 
                             {/*
@@ -254,20 +283,20 @@ export default function LoginScreen() {
                                     accessibilityRole="button"
                                     accessibilityLabel="Sign in with Apple"
                                 >
-                                    <MaterialIcons name="apple" size={24} color={colors.text.dark} />
-                                    <Text style={styles.appleBtnText}>Apple</Text>
-                                    <View style={{ width: 24 }} />
+                                    <Ionicons name="logo-apple" size={22} color={colors.text.primary} />
+                                    <Text style={styles.appleBtnText}>Continue with Apple</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
 
-                    </GlassCard>
+                    </View>
 
                     {/* Sign Up Link */}
                     <View style={styles.signupSection}>
-                        <Text style={styles.signupText}>Don't have an account?</Text>
-                        <TouchableOpacity onPress={() => router.push('/register' as any)}>
-                            <Text style={styles.signupLink}>Sign Up</Text>
+                        <Text style={styles.signupText}>New to Fitzo?</Text>
+                        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Create account" style={styles.signupButton} onPress={() => router.push('/register' as any)}>
+                            <Text style={styles.signupLink}>Create account</Text>
+                            <Ionicons name="arrow-forward-outline" size={16} color={colors.text.primary} />
                         </TouchableOpacity>
                     </View>
 
@@ -289,98 +318,101 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
         justifyContent: 'center',
-        padding: spacing.xl,
+        alignSelf: 'center',
+        width: '100%',
+        maxWidth: 456,
+        paddingHorizontal: spacing['2xl'],
+        paddingVertical: spacing['3xl'],
     },
     brandSection: {
+        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: spacing['3xl'],
+        gap: spacing.md,
+        marginBottom: spacing['4xl'],
     },
     logoContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 20,
+        width: 40,
+        height: 40,
+        borderRadius: borderRadius.md,
         overflow: 'hidden',
-        marginBottom: spacing.xl,
-        ...shadows.glow,
+        borderWidth: 1,
+        borderColor: colors.glass.borderLight,
     },
     logoImage: {
         width: '100%',
         height: '100%',
     },
     brandName: {
-        fontSize: 40,
-        fontFamily: typography.fontFamily.light,
-        color: colors.text.primary,
-        letterSpacing: 8,
-    },
-    tagline: {
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.regular,
-        color: colors.text.muted,
-        marginTop: spacing.sm,
-        letterSpacing: 1,
-    },
-    formSection: {
-        padding: spacing.xl,
-        // Removed explicit borders/bg as GlassCard handles it
-    },
-    formLabel: {
-        fontSize: typography.sizes.xs,
+        fontSize: typography.sizes.xl,
         fontFamily: typography.fontFamily.medium,
-        color: colors.text.subtle,
-        textAlign: 'center',
-        marginBottom: spacing.xl,
-        letterSpacing: 3,
+        color: colors.text.primary,
+        letterSpacing: 4,
     },
+    welcome: { gap: spacing.sm, marginBottom: spacing['3xl'] },
+    heading: { fontFamily: typography.fontFamily.semiBold, fontSize: 32, lineHeight: 42, letterSpacing: -0.8, color: colors.text.primary },
+    description: { fontFamily: typography.fontFamily.regular, fontSize: typography.sizes.md, lineHeight: 22, color: colors.text.secondary },
+    formSection: {
+        width: '100%',
+    },
+    fieldLabel: { fontFamily: typography.fontFamily.medium, fontSize: typography.sizes.sm, color: colors.text.secondary, marginBottom: spacing.md },
+    passwordLabelRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, marginTop: spacing.sm },
+    passwordLabel: { fontFamily: typography.fontFamily.medium, fontSize: typography.sizes.sm, color: colors.text.secondary },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: spacing.lg,
-        marginBottom: spacing.md,
-        height: 52,
-        // Removed explicit borders/bg
+        paddingLeft: spacing.lg,
+        paddingRight: spacing.sm,
+        minHeight: 56,
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.surfaceLight,
+        borderWidth: 1,
+        borderColor: colors.glass.borderLight,
     },
+    inputFocused: { borderColor: colors.text.secondary, backgroundColor: colors.surfaceLighter },
+    visibilityButton: { minWidth: 44, minHeight: 52, alignItems: 'center', justifyContent: 'center' },
+    loginButton: { marginTop: spacing['2xl'], minHeight: 56, borderRadius: borderRadius.lg, ...shadow({ blur: 0, color: '#000000', opacity: 0 }) },
     input: {
         flex: 1,
+        minWidth: 0,
         marginLeft: spacing.md,
-        fontSize: typography.sizes.base,
+        minHeight: 54,
+        paddingVertical: spacing.md,
+        fontSize: typography.sizes.lg,
         fontFamily: typography.fontFamily.regular,
         color: colors.text.primary,
-        letterSpacing: 0.5,
     },
     forgotPassword: {
-        alignItems: 'center',
-        marginTop: spacing.lg,
+        minHeight: 44,
+        justifyContent: 'center',
     },
     forgotPasswordText: {
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.medium,
-        color: colors.text.muted,
-        letterSpacing: 0.5,
+        color: colors.text.secondary,
     },
     signupSection: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: spacing['2xl'],
+        marginTop: spacing.lg,
         gap: spacing.sm,
     },
     signupText: {
-        fontSize: typography.sizes.sm,
+        fontSize: typography.sizes.md,
         fontFamily: typography.fontFamily.regular,
         color: colors.text.muted,
-        letterSpacing: 0.3,
     },
     signupLink: {
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.semiBold,
+        fontSize: typography.sizes.md,
+        fontFamily: typography.fontFamily.medium,
         color: colors.primary,
-        letterSpacing: 0.5,
     },
+    signupButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44, paddingHorizontal: spacing.xs },
     dividerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: spacing.xl,
+        marginVertical: spacing['2xl'],
     },
     dividerLine: {
         flex: 1,
@@ -389,59 +421,48 @@ const styles = StyleSheet.create({
     },
     dividerText: {
         color: colors.text.muted,
-        fontSize: 10,
-        fontFamily: typography.fontFamily.bold,
+        fontSize: typography.sizes.sm,
+        fontFamily: typography.fontFamily.regular,
         marginHorizontal: spacing.lg,
-        letterSpacing: 1,
     },
-    // Both buttons flex equally so neither reads as the preferred option.
-    // Apple requires its button be no less prominent than the alternatives.
+    // Provider actions share the same dimensions and visual prominence.
     socialRow: {
-        flexDirection: 'row',
         gap: spacing.md,
     },
     googleBtn: {
-        flex: 1,
+        minHeight: 56,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.glass.surfaceLight,
+        backgroundColor: colors.glass.surface,
         borderRadius: borderRadius.lg,
         padding: spacing.md,
         borderWidth: 1,
-        borderColor: colors.glass.border,
+        borderColor: colors.glass.borderLight,
         gap: spacing.md,
     },
     // White-on-black is one of the three treatments Apple's Human Interface
     // Guidelines permit; arbitrary brand colours are not allowed.
     appleBtn: {
-        flex: 1,
+        minHeight: 56,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.text.primary,
+        backgroundColor: colors.glass.surface,
         borderRadius: borderRadius.lg,
         padding: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.glass.borderLight,
         gap: spacing.md,
     },
     appleBtnText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: colors.text.dark,
-    },
-    googleBtnText: {
-        fontSize: 16,
-        fontWeight: 'bold',
+        fontSize: typography.sizes.md,
+        fontFamily: typography.fontFamily.medium,
         color: colors.text.primary,
     },
-    skipButton: {
-        marginTop: spacing.xl,
-        padding: spacing.md,
-        alignItems: 'center',
-    },
-    skipText: {
-        color: colors.text.muted,
-        fontSize: typography.sizes.sm,
+    googleBtnText: {
+        fontSize: typography.sizes.md,
         fontFamily: typography.fontFamily.medium,
+        color: colors.text.primary,
     },
 });

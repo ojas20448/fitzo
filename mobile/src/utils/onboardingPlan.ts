@@ -50,7 +50,9 @@ export function startingSplit(days: number, equipment?: TrainingEquipment | null
 export function validateStep(step: number, form: OnboardingForm): string | null {
     if (step === 1 && !form.goal) return 'Choose what you would like to work on.';
     if (step === 2 && form.days === null) return 'Choose your training days.';
-    if (step === 2 && (!form.experience || !form.equipment || !form.sessionMinutes)) return 'Choose your training experience, equipment and session length.';
+    if (step === 2 && !form.experience) return 'Choose your training experience.';
+    if (step === 2 && !form.equipment) return 'Choose the equipment you can train with.';
+    if (step === 2 && !form.sessionMinutes) return 'Choose how much time you have for a session.';
     if (step >= 3 && form.nutritionEnabled && !form.activity) return 'Choose your everyday activity for the calorie estimate.';
     if (step >= 3 && form.nutritionEnabled) return validateBody(form);
     return null;

@@ -9,7 +9,7 @@ import {
 import { File } from 'expo-file-system';
 import * as Haptics from '../utils/haptics';
 import { aiAPI } from '../services/api';
-import { getAIConsent } from '../components/AIConsentModal';
+import { useAIConsent } from './useAIConsent';
 
 /**
  * useVoiceCapture — one voice pipeline for the whole app.
@@ -44,23 +44,25 @@ export function useVoiceCapture({ mode, onResult, onError }: UseVoiceCaptureOpti
     const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
     const recorderState = useAudioRecorderState(recorder, 250);
     const [stage, setStage] = useState<VoiceStage>('idle');
+    const [isStarting, setIsStarting] = useState(false);
+    const startingRef = useRef(false);
+    const { requestConsent, isPending: isAwaitingConsent, modalProps: consentModalProps } = useAIConsent();
 
     // Set when the user cancels, so the in-flight stop() knows to discard.
     const cancelledRef = useRef(false);
     const durationMs = recorderState.durationMillis ?? 0;
 
     const start = useCallback(async () => {
+        if (startingRef.current || stage !== 'idle') return false;
+        startingRef.current = true;
+        setIsStarting(true);
         try {
-            const consented = await getAIConsent();
-            if (!consented) {
-                onError('AI Consent Needed', 'Please review and accept our AI data privacy terms before using voice logging.');
-                return;
-            }
+            if (!(await requestConsent())) return false;
 
             const perm = await requestRecordingPermissionsAsync();
             if (!perm.granted) {
                 onError('Microphone needed', 'Microphone permission was not granted to record audio.');
-                return;
+                return false;
             }
 
             await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
@@ -70,11 +72,16 @@ export function useVoiceCapture({ mode, onResult, onError }: UseVoiceCaptureOpti
             cancelledRef.current = false;
             setStage('recording');
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            return true;
         } catch {
             setStage('idle');
             onError('Could not start', 'Something went wrong with the microphone.');
+            return false;
+        } finally {
+            startingRef.current = false;
+            setIsStarting(false);
         }
-    }, [recorder, onError]);
+    }, [recorder, onError, requestConsent, stage]);
 
     /** Discard the take — no transcription, no quota burned. */
     const cancel = useCallback(async () => {
@@ -111,10 +118,8 @@ export function useVoiceCapture({ mode, onResult, onError }: UseVoiceCaptureOpti
             }
             if (!uri) throw new Error('no-uri');
 
-            const consented = await getAIConsent();
-            if (!consented) {
+            if (!(await requestConsent())) {
                 setStage('idle');
-                onError('AI Consent Needed', 'Please review and accept our AI data privacy terms before using voice logging.');
                 return;
             }
 
@@ -162,7 +167,7 @@ export function useVoiceCapture({ mode, onResult, onError }: UseVoiceCaptureOpti
                 onError('Voice logging failed', serverMsg || 'Check your connection and try again.');
             }
         }
-    }, [stage, durationMs, recorder, mode, onResult, onError, cancel]);
+    }, [stage, durationMs, recorder, mode, onResult, onError, cancel, requestConsent]);
 
     // Hard stop at the max length so a pocket-recording can't run forever
     // (and can't exceed the backend's payload cap).
@@ -175,7 +180,9 @@ export function useVoiceCapture({ mode, onResult, onError }: UseVoiceCaptureOpti
     return {
         stage,
         isRecording: stage === 'recording',
-        isBusy: stage === 'transcribing' || stage === 'thinking',
+        isBusy: isStarting || stage === 'transcribing' || stage === 'thinking',
+        isAwaitingConsent,
+        consentModalProps,
         durationMs,
         /** mm:ss for the live counter */
         durationLabel: formatDuration(durationMs),
