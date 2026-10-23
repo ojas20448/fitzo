@@ -19,6 +19,9 @@ function configureXcodeProject(project, config) {
         project.addToPbxGroup({ fileRef: group.uuid, basename: TARGET }, project.getFirstProject().firstProject.mainGroup);
         entry = [target.uuid, target.pbxNativeTarget];
     }
+    // Source references already include the widget folder, so resolve from the project root.
+    const group = project.pbxGroupByName(TARGET);
+    if (group) group.path = '.';
     const target = entry[1];
     const list = objects.XCConfigurationList[target.buildConfigurationList];
     for (const ref of list.buildConfigurations) {

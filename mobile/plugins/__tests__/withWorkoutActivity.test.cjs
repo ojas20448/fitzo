@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const xcode = require('xcode');
+const path = require('node:path');
 const withWorkoutActivity = require('../withWorkoutActivity');
 const { configureXcodeProject, TARGET } = withWorkoutActivity;
 
@@ -46,6 +47,20 @@ test('repeated generation keeps one extension and refreshes its version for the 
     const objects = project.hash.project.objects;
     const target = targets(project)[0][1];
     assert.ok(objects.XCConfigurationList[target.buildConfigurationList].buildConfigurations.every(ref => objects.XCBuildConfiguration[ref.value].buildSettings.CURRENT_PROJECT_VERSION === '26'));
+});
+
+test('widget sources resolve to their generated folder without an undefined parent path', () => {
+    const project = configureXcodeProject(fixture(), config);
+    const objects = project.hash.project.objects;
+    const widgetGroup = project.pbxGroupByName(TARGET);
+    const target = targets(project)[0][1];
+    const phase = target.buildPhases.map(ref => objects.PBXSourcesBuildPhase[ref.value]).find(Boolean);
+    const resolvedPaths = phase.files.map(ref => {
+        const file = objects.PBXFileReference[objects.PBXBuildFile[ref.value].fileRef];
+        return path.posix.join(String(widgetGroup.path).replaceAll('"', ''), String(file.path).replaceAll('"', ''));
+    });
+    assert.deepEqual(resolvedPaths.sort(), [`${TARGET}/FitzoWorkoutAttributes.swift`, `${TARGET}/FitzoWorkoutWidget.swift`]);
+    assert.doesNotMatch(project.writeSync(), /path = undefined/);
 });
 
 test('declares extension signing for EAS while retaining other extension configurations', () => {
