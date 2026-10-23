@@ -51,7 +51,8 @@
         "android.permission.health.READ_RESTING_HEART_RATE",
         "android.permission.health.READ_SLEEP",
         "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
-        "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"
+        "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
       "intentFilters": [
         {
@@ -143,8 +144,27 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "30c3c5e6-e055-4640-9daa-ae04f9c32ac8"
+        "projectId": "30c3c5e6-e055-4640-9daa-ae04f9c32ac8",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "FitzoWorkoutWidget",
+                  "bundleIdentifier": "in.fitzoapp.fitzo.workout",
+                  "entitlements": {}
+                }
+              ]
+            }
+          }
+        }
       }
+    },
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/30c3c5e6-e055-4640-9daa-ae04f9c32ac8"
     }
   }
 }
