@@ -7,8 +7,6 @@ node_modules/
 # Ignore native build folders
 mobile/android/
 mobile/ios/
-**/android/
-**/ios/
 
 # Ignore Expo and Metro caching
 mobile/.expo/
