@@ -1,4 +1,4 @@
-const { IST_TODAY_SQL } = require('./dayBoundary');
+const { MEMBER_TODAY_SQL, MEMBER_TIMEZONE_SQL } = require('./dayBoundary');
 
 // A completed workout closes an actual visit. Synthetic streak records must
 // never claim a gym visit or prevent a later QR check-in.
@@ -9,8 +9,8 @@ async function completeWorkoutAttendance(userId, runQuery) {
         [userId]
     );
     const result = await runQuery(
-        `INSERT INTO attendances (user_id, gym_id, check_date, checked_out_at)
-         VALUES ($1, NULL, ${IST_TODAY_SQL}, NOW())
+        `INSERT INTO attendances (user_id, gym_id, check_date, checked_out_at, checked_timezone)
+         VALUES ($1, NULL, ${MEMBER_TODAY_SQL}, NOW(), ${MEMBER_TIMEZONE_SQL})
          ON CONFLICT (user_id, check_date) DO NOTHING
          RETURNING id`,
         [userId]

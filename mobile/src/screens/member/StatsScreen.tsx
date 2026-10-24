@@ -14,6 +14,8 @@ import { useShareComposerStore } from '../../stores/shareComposerStore';
 import type { SharePayload } from '../../components/share/SharePayload';
 import { getAIConsent } from '../../components/AIConsentModal';
 import { useMemberContentInset } from '../../components/navigation/MemberChromeContext';
+import { localDateString } from '../../utils/healthDate';
+import { useLocalDay } from '../../hooks/useLocalDay';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -27,6 +29,7 @@ const SUB_MUSCLES: Record<string, string[]> = {
 };
 
 const StatsScreen = () => {
+    const localDay = useLocalDay();
     const contentInset = useMemberContentInset();
     const [activeTab, setActiveTab] = useState<'training' | 'nutrition'>('training');
     const [history, setHistory] = useState<any[]>([]);
@@ -201,7 +204,7 @@ const StatsScreen = () => {
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
+            const dateStr = localDateString(d);
             const found = data.find((item: any) =>
                 item.date === dateStr || item.date?.split('T')[0] === dateStr
             );
@@ -221,7 +224,7 @@ const StatsScreen = () => {
     useFocusEffect(
         useCallback(() => {
             loadData();
-        }, [])
+        }, [localDay])
     );
 
     const handleRefresh = () => {

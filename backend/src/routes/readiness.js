@@ -11,7 +11,7 @@ const { authenticate } = require('../middleware/auth');
 const { asyncHandler } = require('../utils/errors');
 const { validate } = require('../middleware/validate');
 const { z } = require('zod');
-const { isValidDateString, istDateString } = require('../utils/dayBoundary');
+const { isValidDateString, memberDateString } = require('../utils/dayBoundary');
 const { invalidateContextPack } = require('../services/contextPack');
 
 const dateSchema = z.string().refine(isValidDateString, 'Use a valid YYYY-MM-DD date');
@@ -103,7 +103,7 @@ router.post('/checkin', validate({ body: checkinSchema }), asyncHandler(async (r
            created_at = NOW()
          RETURNING *`,
         [userId, energy_level, sleep_quality, soreness, sleep_hours ?? null,
-         readiness_score, recommendation, recommendation_message, notes || null, date || istDateString(), notes !== undefined]
+         readiness_score, recommendation, recommendation_message, notes || null, date || memberDateString(new Date(), req.user.timezone), notes !== undefined]
     );
 
     await invalidateContextPack(userId);
@@ -124,7 +124,7 @@ router.get('/today', validate({ query: z.object({ date: dateSchema.optional() })
     const result = await query(
         `SELECT * FROM readiness_logs
          WHERE user_id = $1 AND log_date = $2::date`,
-        [userId, req.query.date || istDateString()]
+        [userId, req.query.date || memberDateString(new Date(), req.user.timezone)]
     );
 
     if (result.rows.length === 0) {
@@ -152,7 +152,7 @@ router.get('/history', validate({ query: z.object({
          WHERE user_id = $1
            AND log_date BETWEEN $3::date - ($2::int - 1) AND $3::date
          ORDER BY log_date DESC`,
-        [userId, days, req.query.date || istDateString()]
+        [userId, days, req.query.date || memberDateString(new Date(), req.user.timezone)]
     );
 
     const avgScore = result.rows.length > 0

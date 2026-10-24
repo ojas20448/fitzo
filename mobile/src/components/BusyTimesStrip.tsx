@@ -8,6 +8,7 @@ interface BusyTimesStripProps {
     confidence: 'none' | 'low' | 'good';
     /** 0 = Sunday, matching Postgres EXTRACT(DOW) */
     today?: number;
+    timezone?: string;
 }
 
 // Gyms are dead overnight; showing 12 empty bars wastes the strip.
@@ -24,7 +25,8 @@ const BusyTimesStrip: React.FC<BusyTimesStripProps> = ({
     grid,
     quietest,
     confidence,
-    today = new Date().getDay(),
+    timezone = 'Asia/Kolkata',
+    today = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(new Intl.DateTimeFormat('en', { weekday: 'short', timeZone: timezone }).format(new Date())),
 }) => {
     if (confidence === 'none' || !grid) {
         return (

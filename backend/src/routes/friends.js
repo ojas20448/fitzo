@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { IST_TODAY_SQL } = require('../utils/dayBoundary');
+const { sessionDaySql, attendanceDaySql } = require('../utils/dayBoundary');
 const { nutritionDaySql } = require('../utils/nutritionDay');
 const { query, getClient } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
@@ -28,6 +28,7 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
        wi.session_label,
        wi.muscle_group,
        a.checked_in_at as last_checkin,
+       (${attendanceDaySql('a')} = (NOW() AT TIME ZONE u.timezone)::date AND a.gym_id IS NOT NULL) as checked_in_today,
        (a.checked_in_at IS NOT NULL
         AND a.gym_id IS NOT NULL
         AND a.checked_out_at IS NULL
@@ -35,18 +36,13 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
         AND a.checked_in_at > NOW() - INTERVAL '90 minutes') as at_gym_now,
        get_user_streak(u.id) as streak,
        lw.last_workout_date,
+       ((NOW() AT TIME ZONE u.timezone)::date - lw.last_workout_date) AS last_workout_days_ago,
        lw.last_workout_type,
-       -- IST_TODAY_SQL, not CURRENT_DATE. The database runs UTC, so between
-       -- 00:00 and 05:30 IST a bare CURRENT_DATE is still yesterday. The second
-       -- branch was the worst of it: it converted the timestamp to IST and then
-       -- compared that against a UTC date, so a session finished at 01:00 IST
-       -- had date 08-10 tested against CURRENT_DATE 08-09 and simply vanished
-       -- from "worked out today". Verified on the live DB — 19:00-23:59 UTC
-       -- disagree, exactly the 00:00-05:30 IST window.
+       -- Each badge follows its owner's day, independent of the viewer.
        (EXISTS(
          SELECT 1 FROM workout_logs wl
          WHERE wl.user_id = u.id
-           AND wl.logged_date = ${IST_TODAY_SQL}
+           AND wl.logged_date = (NOW() AT TIME ZONE u.timezone)::date
            AND (
              wl.visibility = 'public'
              OR (wl.visibility = 'friends' AND u.share_logs_default IS TRUE)
@@ -54,7 +50,7 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
        ) OR EXISTS(
          SELECT 1 FROM workout_sessions ws
          WHERE ws.user_id = u.id AND ws.completed_at IS NOT NULL
-         AND DATE(ws.completed_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
+         AND ${sessionDaySql('ws')} = (NOW() AT TIME ZONE u.timezone)::date
          AND (ws.visibility = 'public'
               OR (ws.visibility = 'friends' AND u.share_logs_default IS TRUE))
        )) as worked_out_today,
@@ -76,10 +72,9 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
        AND wi.visibility IN ('public', 'friends')
      )
      LEFT JOIN LATERAL (
-       SELECT checked_in_at, checked_out_at, gym_id
+       SELECT checked_in_at, checked_out_at, gym_id, checked_timezone
        FROM attendances
        WHERE user_id = u.id
-         AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
        ORDER BY checked_in_at DESC
        LIMIT 1
      ) a ON true
@@ -174,10 +169,11 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
                 avatar_url: f.avatar_url,
                 xp_points: f.xp_points || 0,
                 today_intent,
-                checked_in_today: !!f.last_checkin,
+                checked_in_today: !!f.checked_in_today,
                 shares_logs: f.share_logs_default,
                 streak: parseInt(f.streak) || 0,
                 last_workout_date: f.last_workout_date || null,
+                last_workout_days_ago: f.last_workout_days_ago ?? null,
                 last_workout_type: f.last_workout_type || null,
                 worked_out_today: f.worked_out_today || false,
                 logged_food_today: f.logged_food_today || false,
@@ -619,7 +615,6 @@ router.get('/suggested', authenticate, asyncHandler(async (req, res) => {
              FROM attendances
              WHERE user_id = u.id
                AND gym_id IS NOT NULL
-               AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
              ORDER BY checked_in_at DESC
              LIMIT 1
          ) a ON true

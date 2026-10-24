@@ -9,6 +9,7 @@
 
 const express = require('express');
 const router = express.Router();
+const { sessionDaySql } = require('../utils/dayBoundary');
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler } = require('../utils/errors');
@@ -110,7 +111,7 @@ router.get('/volume', asyncHandler(async (req, res) => {
     // string throws "malformed array literal"
     let sql = `
         SELECT
-            date_trunc('week', ws.completed_at)::date as week_start,
+            date_trunc('week', ${sessionDaySql('ws')})::date as week_start,
             COALESCE(e.muscle_groups[1], el.muscle_group, 'other') as muscle_group,
             SUM(${VOLUME_SQL}) as total_volume,
             COUNT(DISTINCT ws.id) as sessions,
@@ -150,7 +151,7 @@ router.get('/volume', asyncHandler(async (req, res) => {
     // This also picks up sessions with no working sets (all warm-ups, or
     // logged but not filled in), which the volume join drops entirely.
     const sessionCounts = await query(
-        `SELECT date_trunc('week', completed_at)::date AS week_start,
+        `SELECT date_trunc('week', ${sessionDaySql()})::date AS week_start,
                 COUNT(*)::int AS sessions
            FROM workout_sessions
           WHERE user_id = $1
@@ -225,7 +226,7 @@ router.get('/strength/:exerciseId', asyncHandler(async (req, res) => {
 
     const result = await query(
         `SELECT
-            ws.completed_at as date,
+            ${sessionDaySql('ws')}::text as date,
             sl.weight_kg,
             sl.reps,
             sl.rpe
@@ -258,7 +259,7 @@ router.get('/strength/:exerciseId', asyncHandler(async (req, res) => {
     // Group by date and take best e1RM per session
     const byDate = {};
     for (const pt of dataPoints) {
-        const dateKey = new Date(pt.date).toISOString().split('T')[0];
+        const dateKey = pt.date;
         if (!byDate[dateKey] || pt.estimated_1rm > byDate[dateKey].estimated_1rm) {
             byDate[dateKey] = pt;
         }

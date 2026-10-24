@@ -3,7 +3,7 @@ const { before, after, beforeEach, test } = require('node:test');
 const assert = require('node:assert/strict');
 let queryImpl; const query = (...args) => queryImpl(...args);
 require.cache[require.resolve('../src/config/database')] = { exports: { query } };
-const deleted = []; const cache = { getOrSet: (_key, build) => build(), del: async key => deleted.push(key) };
+const deleted = []; const cache = { getOrSet: (_key, build) => build(), del: async key => deleted.push(key), invalidatePattern: async key => deleted.push(key) };
 require.cache[require.resolve('../src/services/cache')] = { exports: cache };
 
 const { getContextPack, invalidateContextPack } = require('../src/services/contextPack');

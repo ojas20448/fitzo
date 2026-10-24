@@ -27,6 +27,7 @@ interface ClassSession {
         avatar_url: string | null;
     };
     scheduled_at: string;
+    timezone?: string;
     duration_mins: number;
     slots_available: number;
     max_capacity: number;
@@ -88,12 +89,13 @@ const ClassBookingScreen: React.FC = () => {
         }
     };
 
-    const formatTime = (dateString: string): string => {
+    const formatTime = (dateString: string, timezone = 'Asia/Kolkata'): string => {
         const date = new Date(dateString);
         return date.toLocaleTimeString('en-US', {
             hour: 'numeric',
             minute: '2-digit',
             hour12: true,
+            timeZone: timezone,
         });
     };
 
@@ -246,10 +248,10 @@ const ClassCard: React.FC<{
     onBook: () => void;
     onCancel: () => void;
     isBooking: boolean;
-    formatTime: (date: string) => string;
+    formatTime: (date: string, timezone?: string) => string;
 }> = ({ session, onBook, onCancel, isBooking, formatTime }) => {
     const isFull = session.slots_available === 0;
-    const timeParts = formatTime(session.scheduled_at).split(' ');
+    const timeParts = formatTime(session.scheduled_at, session.timezone).split(' ');
 
     return (
         <GlassCard style={styles.classCard}>

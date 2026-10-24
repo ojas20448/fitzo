@@ -203,13 +203,20 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
             FROM exercise_logs el
             JOIN set_logs sl ON el.id = sl.exercise_log_id
             WHERE el.session_id = $1
+        ), completion AS MATERIALIZED (
+            SELECT id, completed_at FROM workout_sessions WHERE id = $1 AND user_id = $2 FOR UPDATE
         )
-        UPDATE workout_sessions 
-        SET completed_at = NOW(), 
-            duration_minutes = EXTRACT(EPOCH FROM (NOW() - started_at)) / 60,
+        UPDATE workout_sessions ws
+        SET completed_at = COALESCE(ws.completed_at, NOW()),
+            completed_timezone = CASE WHEN completion.completed_at IS NULL
+                THEN COALESCE((SELECT timezone FROM users WHERE id = $2), 'Asia/Kolkata')
+                ELSE ws.completed_timezone END,
+            duration_minutes = CASE WHEN completion.completed_at IS NULL
+                THEN EXTRACT(EPOCH FROM (NOW() - ws.started_at)) / 60 ELSE ws.duration_minutes END,
             notes = $3
-        WHERE id = $1 AND user_id = $2
-        RETURNING *, (SELECT total_volume FROM session_volume) as volume, (SELECT total_sets FROM session_volume) as sets`,
+        FROM completion WHERE ws.id = completion.id
+        RETURNING ws.*, (completion.completed_at IS NULL) AS newly_completed,
+            (SELECT total_volume FROM session_volume) as volume, (SELECT total_sets FROM session_volume) as sets`,
         [id, userId, notes]
     );
 
@@ -220,7 +227,7 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
     const session = statsResult.rows[0];
 
     // Award XP for workout completion
-    await xpService.awardXP(userId, 15, 'workout', id);
+    if (session.newly_completed !== false) await xpService.awardXP(userId, 15, 'workout', id);
 
     // 2. Check for PRs (Personal Records)
     // Find max weight for each exercise in this session vs all time previous
@@ -259,7 +266,7 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
     const achievements = [];
     if (session.volume > 10000) achievements.push({ icon: 'fitness-center', title: 'Volume Monster', desc: '> 10,000kg moved' });
     if (session.duration_minutes > 90) achievements.push({ icon: 'timer', title: 'Marathon', desc: 'Long session!' });
-    const hour = new Date().getHours();
+    const hour = Number(new Intl.DateTimeFormat('en', { timeZone: session.completed_timezone || 'Asia/Kolkata', hour: 'numeric', hourCycle: 'h23' }).format(new Date(session.completed_at || Date.now())));
     if (hour < 8) achievements.push({ icon: 'wb-sunny', title: 'Early Bird', desc: 'Morning workout' });
     if (hour > 20) achievements.push({ icon: 'nights-stay', title: 'Night Owl', desc: 'Late night pump' });
     if (prs.length > 0) achievements.push({ icon: 'emoji-events', title: 'PR Breaker', desc: `${prs.length} new records!` });
@@ -306,6 +313,7 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
     // Notify friends about workout completion (fire-and-forget)
     (async () => {
         try {
+            if (session.newly_completed === false) return;
             const owner = (await query(`SELECT name, share_logs_default FROM users WHERE id = $1`, [userId])).rows[0];
             if (session.visibility !== 'public' && !(session.visibility === 'friends' && owner?.share_logs_default === true)) return;
             const userName = owner?.name || 'Someone';
@@ -333,7 +341,7 @@ router.put('/sessions/:id/complete', authenticate, asyncHandler(async (req, res)
 
     // Close an actual visit and record training without fabricating a gym visit.
     try {
-        if (await completeWorkoutAttendance(userId, query)) {
+        if (session.newly_completed !== false && await completeWorkoutAttendance(userId, query)) {
             // A new attendance check-in was successfully logged. Award the 5 XP!
             await xpService.awardXP(userId, 5, 'checkin');
         }

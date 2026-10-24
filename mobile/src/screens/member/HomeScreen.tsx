@@ -45,6 +45,8 @@ import { loadActiveWorkoutDraft } from '../../utils/activeWorkoutDraft';
 import type { ActiveWorkoutDraft } from '../../utils/activeWorkoutDraft';
 import { useMemberContentInset } from '../../components/navigation/MemberChromeContext';
 import { useMemberTabScroll } from '../../hooks/useMemberTabScroll';
+import { useLocalDay } from '../../hooks/useLocalDay';
+import { localDiaryDate } from '../../utils/foodDiary';
 
 interface HomeData {
     user: {
@@ -107,6 +109,8 @@ interface TodayWorkout {
 }
 
 const HomeScreen: React.FC<{ trainingOnly?: boolean }> = ({ trainingOnly = false }) => {
+    const localDay = useLocalDay();
+    const homeRequest = useRef(0);
     const contentInset = useMemberContentInset();
     const onScroll = useMemberTabScroll();
     const { user } = useAuth();
@@ -152,6 +156,11 @@ const HomeScreen: React.FC<{ trainingOnly?: boolean }> = ({ trainingOnly = false
     const stillLoading = useRef(true);
 
     useEffect(() => {
+        setData(null);
+        setTodayWorkouts([]);
+        setFriends([]);
+        setActiveCount(0);
+        setDailyInsight(null);
         // These used to read `if (loading)`, but `loading` is captured from the first
         // render inside a `[]` effect — a stale closure that is `true` forever, so the
         // guard never did anything. A ref actually tracks it.
@@ -168,29 +177,8 @@ const HomeScreen: React.FC<{ trainingOnly?: boolean }> = ({ trainingOnly = false
             if (stillLoading.current) setLoadingMessage('Slow connection — hang tight…');
         }, 12000);
         loadHomeData();
-        return () => { clearTimeout(timer1); clearTimeout(timer2); };
-    }, []);
-
-    useEffect(() => {
-        const fetchActive = async () => {
-            if (trainingOnly) return;
-            try {
-                const feed = await workoutsAPI.getFeed();
-                if (feed?.feed) {
-                    const today = new Date().toISOString().split('T')[0];
-                    const uniqueActive = new Set(
-                        feed.feed
-                            .filter((item: any) => item.logged_date.startsWith(today))
-                            .map((item: any) => item.user_id)
-                    );
-                    setActiveCount(uniqueActive.size);
-                }
-            } catch {
-                // Non-critical - silently fail
-            }
-        };
-        fetchActive();
-    }, [trainingOnly]);
+        return () => { homeRequest.current++; clearTimeout(timer1); clearTimeout(timer2); };
+    }, [localDay]);
 
     useEffect(() => {
         if (trainingOnly || !user?.gym_id) return;
@@ -227,6 +215,8 @@ const HomeScreen: React.FC<{ trainingOnly?: boolean }> = ({ trainingOnly = false
     };
 
     const loadHomeData = async (showLoader = true) => {
+        const revision = ++homeRequest.current;
+        const requestDay = localDiaryDate();
         if (showLoader) setLoading(true);
         try {
             // Updated Promise.all to exclude caloriesAPI fetch since it's now handled by context
@@ -236,13 +226,15 @@ const HomeScreen: React.FC<{ trainingOnly?: boolean }> = ({ trainingOnly = false
                 trainingOnly ? Promise.resolve({ friends: [] }) : friendsAPI.getFriends().catch(() => ({ friends: [] })),
                 intentAPI.getSuggestion().catch(() => ({ suggestion: null, reason: null })),
             ]);
+            if (revision !== homeRequest.current || requestDay !== localDiaryDate()) return;
 
             // Only query Google Gemini for daily insights if user explicitly granted AI consent (Apple 5.1.1(i) / 5.1.2(i))
             const consented = await getAIConsent();
+            if (revision !== homeRequest.current || requestDay !== localDiaryDate()) return;
             setAiConsented(consented);
             if (consented && !trainingOnly) {
                 aiAPI.getDailyInsight()
-                    .then((r) => { if (r?.success && r?.insight) setDailyInsight(r.insight); })
+                    .then((r) => { if (revision === homeRequest.current && requestDay === localDiaryDate() && r?.success && r?.insight) setDailyInsight(r.insight); })
                     .catch(() => {});
             } else {
                 setDailyInsight(null);
@@ -257,6 +249,7 @@ const HomeScreen: React.FC<{ trainingOnly?: boolean }> = ({ trainingOnly = false
 
             const fetchedFriends = friendsRes?.friends || [];
             setFriends(fetchedFriends);
+            setActiveCount(fetchedFriends.filter((friend: { worked_out_today?: boolean }) => friend.worked_out_today).length);
 
             // Cache home data in offline store for staleness checking
             useOfflineStore.getState().cacheHomeData(homeRes);
@@ -264,6 +257,7 @@ const HomeScreen: React.FC<{ trainingOnly?: boolean }> = ({ trainingOnly = false
             setError(null);
             syncWearableData().catch(() => {});
         } catch (e: any) {
+            if (revision !== homeRequest.current || requestDay !== localDiaryDate()) return;
             const offline = e?.code === 'NETWORK_ERROR' || e?.code === 'TIMEOUT' || e?.status === 0;
             const cached = useOfflineStore.getState().getHomeData();
             if (cached) {
@@ -276,8 +270,10 @@ const HomeScreen: React.FC<{ trainingOnly?: boolean }> = ({ trainingOnly = false
                 setError(offline ? 'offline' : 'error');
             }
         } finally {
-            stillLoading.current = false;
-            if (showLoader) setLoading(false);
+            if (revision === homeRequest.current) {
+                stillLoading.current = false;
+                if (showLoader) setLoading(false);
+            }
         }
     };
 
@@ -777,6 +773,7 @@ const HomeScreen: React.FC<{ trainingOnly?: boolean }> = ({ trainingOnly = false
                             grid={busyTimes.grid}
                             quietest={busyTimes.quietest}
                             confidence={busyTimes.confidence}
+                            timezone={busyTimes.timezone}
                         />
                     </View>
                 )}

@@ -98,6 +98,7 @@ describe('Weekly Recap Service', () => {
         const MondayDate = getStartOfWeek();
 
         query.mockImplementation((sql, params) => {
+            if (sql.includes('AS week_start')) return { rows: [{ week_start: MondayDate }] };
             if (sql.includes('SELECT id, recap_data, summary_text')) {
                 return {
                     rows: [{

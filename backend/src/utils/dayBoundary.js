@@ -1,15 +1,4 @@
-/**
- * The Member's Day
- *
- * ONE definition of when a day starts and ends, because several places need
- * it and they currently disagree. The database runs in UTC, so a bare
- * CURRENT_DATE is wrong for 5.5 hours every night: a meal logged at 01:00 IST
- * would be filed under the previous day. Meanwhile checkin.js already uses
- * IST, so today the food log and the check-in streak disagree about the date.
- *
- * India does not observe DST, so a fixed +05:30 offset is correct and avoids
- * pulling in an Intl/tz dependency for the JS side.
- */
+// Named timezones handle travel and DST. India remains the legacy fallback.
 
 const APP_TIMEZONE = 'Asia/Kolkata';
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
@@ -19,6 +8,42 @@ const IST_TODAY_SQL = `(NOW() AT TIME ZONE '${APP_TIMEZONE}')::date`;
 
 /** The day a row belongs to. Requires `created_at` to be in scope. */
 const IST_DAY_OF_SQL = `(created_at AT TIME ZONE '${APP_TIMEZONE}')::date`;
+// Personal queries bind the subject's id as $1, including trainer/buddy views.
+const MEMBER_TIMEZONE_SQL = `COALESCE((SELECT timezone FROM users WHERE id = $1), '${APP_TIMEZONE}')`;
+const MEMBER_TODAY_SQL = `(NOW() AT TIME ZONE ${MEMBER_TIMEZONE_SQL})::date`;
+// A gym's calendar belongs to its physical location, independent of the viewer.
+const GYM_TIMEZONE_SQL = `COALESCE((SELECT timezone FROM gyms WHERE id = $1), '${APP_TIMEZONE}')`;
+const GYM_TODAY_SQL = `(NOW() AT TIME ZONE ${GYM_TIMEZONE_SQL})::date`;
+
+function sessionDaySql(alias = '') {
+    const prefix = alias ? `${alias}.` : '';
+    // Legacy sessions were assigned India days; their original timezone is unknown.
+    return `(${prefix}completed_at AT TIME ZONE COALESCE(${prefix}completed_timezone, '${APP_TIMEZONE}'))::date`;
+}
+
+function attendanceDaySql(alias = '') {
+    const prefix = alias ? `${alias}.` : '';
+    return `(${prefix}checked_in_at AT TIME ZONE COALESCE(${prefix}checked_timezone, '${APP_TIMEZONE}'))::date`;
+}
+
+function measurementDaySql(alias = '') {
+    const prefix = alias ? `${alias}.` : '';
+    return `(${prefix}recorded_at AT TIME ZONE COALESCE(${prefix}recorded_timezone, ${MEMBER_TIMEZONE_SQL}))::date`;
+}
+
+function memberDateString(at = new Date(), timezone = APP_TIMEZONE) {
+    const d = at instanceof Date ? at : new Date(at);
+    if (Number.isNaN(d.getTime())) return null;
+    const parts = new Intl.DateTimeFormat('en', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d);
+    const part = type => parts.find(p => p.type === type).value;
+    return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+function startOfWeek(date = new Date(), timezone = APP_TIMEZONE) {
+    const day = new Date(`${memberDateString(date, timezone)}T00:00:00Z`);
+    day.setUTCDate(day.getUTCDate() - (day.getUTCDay() + 6) % 7);
+    return day.toISOString().slice(0, 10);
+}
 
 /**
  * @param {Date|string} [at] defaults to now
@@ -44,6 +69,15 @@ function isValidDateString(s) {
 
 module.exports = {
     APP_TIMEZONE,
+    MEMBER_TIMEZONE_SQL,
+    MEMBER_TODAY_SQL,
+    GYM_TIMEZONE_SQL,
+    GYM_TODAY_SQL,
+    sessionDaySql,
+    attendanceDaySql,
+    measurementDaySql,
+    memberDateString,
+    startOfWeek,
     IST_TODAY_SQL,
     IST_DAY_OF_SQL,
     istDateString,

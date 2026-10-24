@@ -13,7 +13,7 @@ const { asyncHandler, ValidationError } = require('../utils/errors');
 const { validate } = require('../middleware/validate');
 const { invalidateContextPack } = require('../services/contextPack');
 const { z } = require('zod');
-const { isValidDateString, istDateString } = require('../utils/dayBoundary');
+const { isValidDateString, memberDateString } = require('../utils/dayBoundary');
 
 const syncHealthSchema = z.object({
     steps: z.number().int().min(0).max(999999).nullable().optional(),
@@ -39,7 +39,7 @@ router.post('/sync', validate({ body: syncHealthSchema }), asyncHandler(async (r
         date,
     } = req.body;
 
-    const targetDate = date || istDateString();
+    const targetDate = date || memberDateString(new Date(), req.user.timezone);
 
     const result = await query(
         `INSERT INTO health_data (user_id, date, steps, active_calories, resting_heart_rate, sleep_hours, source, synced_at)
@@ -67,7 +67,7 @@ router.post('/sync', validate({ body: syncHealthSchema }), asyncHandler(async (r
 // ===========================================
 router.get('/today', asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const date = req.query.date || istDateString();
+    const date = req.query.date || memberDateString(new Date(), req.user.timezone);
     if (!isValidDateString(date)) throw new ValidationError('Invalid date');
 
     const result = await query(
@@ -92,7 +92,7 @@ router.get('/today', asyncHandler(async (req, res) => {
 router.get('/history', asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const days = Math.max(1, Math.min(365, parseInt(req.query.days) || 30));
-    const date = req.query.date || istDateString();
+    const date = req.query.date || memberDateString(new Date(), req.user.timezone);
     if (!isValidDateString(date)) throw new ValidationError('Invalid date');
 
     const result = await query(

@@ -5,6 +5,7 @@ const { authenticate, invalidateUserCache } = require('../middleware/auth');
 const { ValidationError, NotFoundError, asyncHandler } = require('../utils/errors');
 const cache = require('../services/cache');
 const { computeCrowd } = require('../utils/crowd');
+const { attendanceDaySql, MEMBER_TODAY_SQL, sessionDaySql, memberDateString } = require('../utils/dayBoundary');
 
 // Helper functions for intent display formatting
 const formatPattern = (p) => {
@@ -56,6 +57,7 @@ const buildDisplay = (pattern, emphasis, label) => {
 router.get('/home', authenticate, asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const gymId = req.user.gym_id;
+    const localDay = memberDateString(new Date(), req.user.timezone);
 
     // Run ALL queries in parallel for speed (was sequential — 8 round trips → 1)
     const [
@@ -71,7 +73,9 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
         // 1. Check-in status
         query(
             `SELECT id, checked_in_at FROM attendances
-             WHERE user_id = $1 AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE`,
+             WHERE user_id = $1 AND gym_id IS NOT NULL AND checked_out_at IS NULL
+               AND checked_in_at <= NOW() AND checked_in_at > NOW() - INTERVAL '90 minutes'
+             ORDER BY checked_in_at DESC LIMIT 1`,
             [userId]
         ).catch(err => { console.error('❌ checkin:', err.message); return { rows: [] }; }),
 
@@ -111,15 +115,9 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
             : query(`SELECT name, capacity FROM gyms WHERE id = $1`, [gymId])
                 .catch(() => ({ rows: [] })),
 
-        // 5. Streak (cached)
-        cache.getOrSet(
-            cache.keys.userStreak(userId),
-            async () => {
-                const r = await query(`SELECT get_user_streak($1) as streak`, [userId]);
-                return parseInt(r.rows[0].streak) || 0;
-            },
-            cache.TTL.USER_STREAK
-        ).catch(() => 0),
+        // Recalculate across local midnight instead of serving a cached prior day.
+        query(`SELECT get_user_streak($1) as streak`, [userId])
+            .then(r => parseInt(r.rows[0].streak) || 0).catch(() => 0),
 
         // 6. Training-day history — gym check-ins UNION logged workouts.
         //
@@ -140,18 +138,18 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
             // Weekly Progress ring read 0 for everyone, check-ins or not.
             // Emitting a plain string keeps the contract unambiguous.
             `SELECT DISTINCT TO_CHAR(training_date, 'YYYY-MM-DD') AS training_date FROM (
-                 SELECT DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') AS training_date
+                 SELECT ${attendanceDaySql()} AS training_date
                    FROM attendances
                   WHERE user_id = $1
-                    AND checked_in_at >= DATE_TRUNC('month', CURRENT_DATE)
-                    AND checked_in_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
+                    AND ${attendanceDaySql()} >= DATE_TRUNC('month', ${MEMBER_TODAY_SQL})
+                    AND ${attendanceDaySql()} < DATE_TRUNC('month', ${MEMBER_TODAY_SQL}) + INTERVAL '1 month'
                  UNION
-                 SELECT DATE(completed_at AT TIME ZONE 'Asia/Kolkata') AS training_date
+                 SELECT ${sessionDaySql()} AS training_date
                    FROM workout_sessions
                   WHERE user_id = $1
                     AND completed_at IS NOT NULL
-                    AND completed_at >= DATE_TRUNC('month', CURRENT_DATE)
-                    AND completed_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
+                    AND ${sessionDaySql()} >= DATE_TRUNC('month', ${MEMBER_TODAY_SQL})
+                    AND ${sessionDaySql()} < DATE_TRUNC('month', ${MEMBER_TODAY_SQL}) + INTERVAL '1 month'
              ) t`,
             [userId]
         ).catch(() => ({ rows: [] })),
@@ -235,7 +233,9 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
     // Verbose response logging removed for production
 
     res.json({
+        local_date: localDay,
         user: {
+            id: userId,
             name: user.name,
             avatar_url: user.avatar_url,
             xp_points: user.xp_points || 0

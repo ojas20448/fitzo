@@ -1,6 +1,6 @@
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(async () => 'token-a'), setItemAsync: jest.fn(), deleteItemAsync: jest.fn() }));
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
-import api, { caloriesAPI, memberAPI, setAuthToken, healthAPI } from '../../services/api';
+import api, { caloriesAPI, memberAPI, setAuthToken, healthAPI, trainerAPI } from '../../services/api';
 import { useOfflineStore } from '../../stores/offlineStore';
 
 it('sends the current device timezone on each request, including after travel', async () => {
@@ -34,6 +34,31 @@ it('does not return a previous account home cache', async () => {
     store.cacheHomeData({ user: { id: 'previous' } });
     api.defaults.adapter = async (config: any) => { throw { code: 'ERR_NETWORK', config }; };
     await expect(memberAPI.getHome()).rejects.toMatchObject({ code: 'NETWORK_ERROR' });
+});
+
+it('expires home cache at local midnight even when it is less than an hour old', () => {
+    jest.useFakeTimers();
+    try {
+        jest.setSystemTime(new Date(2026, 9, 24, 23, 59));
+        const store = useOfflineStore.getState();
+        store.setAccount('a');
+        store.cacheHomeData({ user: { id: 'a' } });
+        expect(store.getHomeData()).not.toBeNull();
+        expect(store.isHomeStale()).toBe(false);
+        jest.setSystemTime(new Date(2026, 9, 25, 0, 1));
+        expect(store.getHomeData()).toBeNull();
+        expect(store.isHomeStale()).toBe(true);
+    } finally { jest.useRealTimers(); }
+});
+
+it('keeps trainer attendance dates in the member calendar and excludes absent days', async () => {
+    api.defaults.adapter = async config => ({ data: {
+        member: { id: 'member', local_date: '2026-10-25' },
+        attendance_history: [{ date: '2026-10-25', checked_in: true }, { date: '2026-10-24', checked_in: false }],
+    }, status: 200, statusText: 'OK', headers: {}, config });
+    const member = await trainerAPI.getMemberDetail('member');
+    expect(member.local_date).toBe('2026-10-25');
+    expect(member.attendance_history).toEqual(['2026-10-25']);
 });
 
 it('rejects a late response from the previous session', async () => {

@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { query, getClient } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
-const { ConflictError, NotFoundError, asyncHandler } = require('../utils/errors');
+const { ConflictError, NotFoundError, ValidationError, asyncHandler } = require('../utils/errors');
+const { GYM_TIMEZONE_SQL, isValidDateString } = require('../utils/dayBoundary');
 
 /**
  * GET /api/classes
@@ -17,7 +18,8 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
     // Build date filter
     let dateFilter;
     if (dateParam) {
-        dateFilter = `DATE(cs.scheduled_at AT TIME ZONE 'Asia/Kolkata') = $2`;
+        if (!isValidDateString(dateParam)) throw new ValidationError('Invalid date');
+        dateFilter = `(cs.scheduled_at AT TIME ZONE ${GYM_TIMEZONE_SQL})::date = $2`;
     } else {
         dateFilter = `cs.scheduled_at > NOW()`;
     }
@@ -29,6 +31,8 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
        cs.id,
        cs.name,
        cs.scheduled_at,
+       ${GYM_TIMEZONE_SQL} AS timezone,
+       EXTRACT(HOUR FROM cs.scheduled_at AT TIME ZONE ${GYM_TIMEZONE_SQL})::int AS local_hour,
        cs.duration_mins,
        cs.max_capacity,
        u.name as trainer_name,
@@ -47,8 +51,7 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
 
     // Group by time of day
     const sessions = result.rows.map(row => {
-        const scheduledAt = new Date(row.scheduled_at);
-        const hour = scheduledAt.getHours();
+        const hour = row.local_hour;
 
         return {
             id: row.id,
@@ -58,6 +61,7 @@ router.get('/', authenticate, asyncHandler(async (req, res) => {
                 avatar_url: row.trainer_avatar
             },
             scheduled_at: row.scheduled_at,
+            timezone: row.timezone,
             duration_mins: row.duration_mins,
             slots_available: row.max_capacity - parseInt(row.bookings_count),
             max_capacity: row.max_capacity,

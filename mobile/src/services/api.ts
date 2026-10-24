@@ -209,11 +209,13 @@ export const authAPI = {
 
 export const memberAPI = {
     getHome: async () => {
+        const requestDay = localDateString();
         try {
             const response = await api.get('/member/home');
+            const data = { ...response.data, local_date: response.data.local_date || requestDay };
             // Cache for offline use
-            useOfflineStore.getState().cacheHomeData(response.data);
-            return response.data;
+            if (requestDay === localDateString()) useOfflineStore.getState().cacheHomeData(data);
+            return data;
         } catch (error: any) {
             // On network error, return cached data if available
             if (error.code === 'NETWORK_ERROR') {
@@ -235,6 +237,7 @@ export const memberAPI = {
 // ===========================================
 
 export interface BusyTimes {
+    timezone?: string;
     grid: number[][] | null;
     peak: { dow: number; hour: number; score: number } | null;
     quietest: { dow: number; hour: number; score: number } | null;
@@ -591,7 +594,14 @@ export const trainerAPI = {
 
     getMemberDetail: async (memberId: string) => {
         const response = await api.get(`/trainer/members/${memberId}`);
-        return response.data;
+        const data = response.data;
+        return {
+            ...data,
+            ...data.member,
+            attendance_history: (data.attendance_history || [])
+                .filter((day: { checked_in: boolean }) => day.checked_in)
+                .map((day: { date: string }) => day.date.slice(0, 10)),
+        };
     },
 
     getSchedule: async () => {

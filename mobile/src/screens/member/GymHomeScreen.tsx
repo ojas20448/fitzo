@@ -89,7 +89,7 @@ export default function GymHomeScreen() {
                 {data.count === null ? <Text style={s.detail}>Attendance is unavailable. Pull to refresh.</Text> : <View style={styles.attendance}><Text style={styles.count}>{data.count}</Text><Text style={s.detail}>app check-ins</Text></View>}
                 <Text style={styles.footnote}>Based on app check-ins. This may not include everyone at the gym.</Text>
             </GlassCard></View>
-            {data.busy && <GlassCard style={s.card}><Text style={s.title}>Popular times</Text><BusyTimesStrip grid={data.busy.grid} quietest={data.busy.quietest} confidence={data.busy.confidence} /><Text style={styles.footnote}>Based on recorded app attendance.</Text></GlassCard>}
+            {data.busy && <GlassCard style={s.card}><Text style={s.title}>Popular times</Text><BusyTimesStrip grid={data.busy.grid} quietest={data.busy.quietest} confidence={data.busy.confidence} timezone={data.busy.timezone} /><Text style={styles.footnote}>Based on recorded app attendance.</Text></GlassCard>}
             <GlassCard><MemberAction icon="calendar-outline" title="Classes & bookings" detail="See scheduled classes at your gym" onPress={() => router.push('/classes')} /><MemberAction icon="people-outline" title="Friends" detail="Find people you train with" onPress={() => router.navigate('/(tabs)/buddies')} /></GlassCard>
             <Button title="Leave gym" variant="ghost" disabled={busy} onPress={() => { setLeaveError(''); setLeaveOpen(true); }} />
         </>}

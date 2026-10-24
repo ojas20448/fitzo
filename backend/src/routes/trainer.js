@@ -1,3 +1,4 @@
+const { attendanceDaySql } = require('../utils/dayBoundary');
 const express = require('express');
 const router = express.Router();
 const { MEMBER_TODAY_SQL, nutritionDaySql } = require('../utils/nutritionDay');
@@ -30,7 +31,8 @@ router.get('/members', asyncHandler(async (req, res) => {
      FROM users u
      LEFT JOIN attendances a ON (
        u.id = a.user_id 
-       AND DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+       AND ${attendanceDaySql('a')} = (NOW() AT TIME ZONE u.timezone)::date
+       AND a.gym_id IS NOT NULL
      )
      LEFT JOIN workout_intents wi ON (
        u.id = wi.user_id 
@@ -68,7 +70,8 @@ router.get('/members/:id', trainerMemberGuard, asyncHandler(async (req, res) => 
     // Get member info
     const memberResult = await query(
         `SELECT 
-       u.id, u.name, u.email, u.avatar_url, u.xp_points, u.created_at as joined_at
+       u.id, u.name, u.email, u.avatar_url, u.xp_points, u.created_at as joined_at,
+       ${MEMBER_TODAY_SQL}::text AS local_date
      FROM users u
      WHERE u.id = $1`,
         [memberId]
@@ -105,17 +108,17 @@ router.get('/members/:id', trainerMemberGuard, asyncHandler(async (req, res) => 
     const attendanceResult = await query(
         `WITH dates AS (
        SELECT generate_series(
-         CURRENT_DATE - INTERVAL '29 days', 
-         CURRENT_DATE, 
+         ${MEMBER_TODAY_SQL} - INTERVAL '29 days',
+         ${MEMBER_TODAY_SQL},
          INTERVAL '1 day'
        )::DATE as date
      )
      SELECT 
-       d.date,
+       d.date::text,
        CASE WHEN a.id IS NOT NULL THEN true ELSE false END as checked_in
      FROM dates d
      LEFT JOIN attendances a ON (
-       DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = d.date
+       ${attendanceDaySql('a')} = d.date AND a.gym_id IS NOT NULL
        AND a.user_id = $1
      )
      ORDER BY d.date DESC`,
@@ -136,6 +139,7 @@ router.get('/members/:id', trainerMemberGuard, asyncHandler(async (req, res) => 
             avatar_url: member.avatar_url,
             xp_points: member.xp_points || 0,
             joined_at: member.joined_at,
+            local_date: member.local_date,
             streak: parseInt(streakResult.rows[0]?.streak) || 0
         },
         workout_plan: workoutPlanResult.rows[0]?.plan_data || null,

@@ -7,7 +7,7 @@ const pushNotifications = require('../services/pushNotifications');
 const xpService = require('../services/xpService');
 const { invalidateContextPack } = require('../services/contextPack');
 const cache = require('../services/cache');
-const { IST_TODAY_SQL } = require('../utils/dayBoundary');
+const { attendanceDaySql, MEMBER_TODAY_SQL, MEMBER_TIMEZONE_SQL } = require('../utils/dayBoundary');
 
 /**
  * POST /api/checkin
@@ -42,7 +42,7 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
         `SELECT id FROM attendances 
      WHERE user_id = $1 
        AND gym_id IS NOT NULL
-       AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}`,
+       AND ${attendanceDaySql()} = ${MEMBER_TODAY_SQL}`,
         [userId]
     );
 
@@ -52,10 +52,11 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
 
     // Create check-in (or upgrade a dummy streak attendance where gym_id is NULL)
     const checkinResult = await query(
-        `INSERT INTO attendances (user_id, gym_id, check_date)
-         VALUES ($1, $2, ${IST_TODAY_SQL})
+        `INSERT INTO attendances (user_id, gym_id, check_date, checked_timezone)
+         VALUES ($1, $2, ${MEMBER_TODAY_SQL}, ${MEMBER_TIMEZONE_SQL})
          ON CONFLICT (user_id, check_date)
-         DO UPDATE SET gym_id = EXCLUDED.gym_id, checked_in_at = NOW(), checked_out_at = NULL
+         DO UPDATE SET gym_id = EXCLUDED.gym_id, checked_in_at = NOW(), checked_out_at = NULL,
+                       checked_timezone = EXCLUDED.checked_timezone
          WHERE attendances.gym_id IS NULL
          RETURNING (xmax = 0) AS inserted`,
         [userId, gym_id]
@@ -112,7 +113,8 @@ router.get('/status', authenticate, asyncHandler(async (req, res) => {
      FROM attendances 
      WHERE user_id = $1 
        AND gym_id IS NOT NULL
-       AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
+       AND checked_in_at <= NOW()
+       AND checked_in_at > NOW() - INTERVAL '90 minutes'
      ORDER BY checked_in_at DESC
      LIMIT 1`,
         [userId]
@@ -146,7 +148,7 @@ router.get('/history', authenticate, asyncHandler(async (req, res) => {
     const days = parseInt(req.query.days) || 30;
 
     const result = await query(
-        `SELECT DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') as date
+        `SELECT ${attendanceDaySql()}::text as date
      FROM attendances 
      WHERE user_id = $1 
      AND checked_in_at > NOW() - INTERVAL '1 day' * $2
@@ -180,7 +182,7 @@ router.post('/checkout', authenticate, asyncHandler(async (req, res) => {
             SET checked_out_at = NOW()
           WHERE user_id = $1
             AND checked_out_at IS NULL
-            AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
+            AND gym_id IS NOT NULL
       RETURNING checked_out_at, gym_id`,
         [userId]
     );
@@ -189,7 +191,7 @@ router.post('/checkout', authenticate, asyncHandler(async (req, res) => {
         const existing = await query(
             `SELECT checked_out_at FROM attendances
               WHERE user_id = $1
-                AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
+                AND gym_id IS NOT NULL
               ORDER BY checked_in_at DESC
               LIMIT 1`,
             [userId]

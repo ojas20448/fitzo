@@ -70,6 +70,8 @@ const authenticate = async (req, res, next) => {
                 user.timezone = timezone;
                 await require('../services/contextPack').invalidateContextPack(user.id);
                 await cache.del(cache.keys.nutritionToday(user.id));
+                await cache.del(cache.keys.userStreak(user.id));
+                await cache.del(cache.keys.homeData(user.id));
             }
         }
         req.user = user;

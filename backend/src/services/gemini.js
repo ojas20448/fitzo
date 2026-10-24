@@ -332,7 +332,7 @@ async function chatWithCoach(question, contextPack = {}, messageHistory = []) {
                 contextStr += `\n- Personal Records (PRs): ${JSON.stringify(training.prs)}`;
             }
             if (training.sessions && training.sessions.length > 0) {
-                contextStr += `\n- Recent Workouts Logged: ${training.sessions.slice(0, 3).map(s => `${s.day_name || 'Workout'} completed on ${new Date(s.completed_at).toLocaleDateString()} (${s.duration_minutes || 'N/A'} mins)`).join('; ')}`;
+                contextStr += `\n- Recent Workouts Logged: ${training.sessions.slice(0, 3).map(s => `${s.day_name || 'Workout'} completed on ${s.local_date || s.completed_at} (${s.duration_minutes || 'N/A'} mins)`).join('; ')}`;
             }
         }
         

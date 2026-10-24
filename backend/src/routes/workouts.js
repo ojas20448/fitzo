@@ -7,7 +7,7 @@ const xpService = require('../services/xpService');
 const { invalidateContextPack } = require('../services/contextPack');
 const { parseRir } = require('../utils/rir');
 const { finalizeWorkoutJson } = require('../utils/workoutSets');
-const { IST_TODAY_SQL } = require('../utils/dayBoundary');
+const { MEMBER_TODAY_SQL, MEMBER_TIMEZONE_SQL } = require('../utils/dayBoundary');
 const { completeWorkoutAttendance } = require('../utils/workoutAttendance');
 
 // All routes require authentication
@@ -55,8 +55,8 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
     const sessionDayName = dayName || workoutType;
 
     const sessionResult = await runQuery(
-        `INSERT INTO workout_sessions (user_id, day_name, visibility, notes, completed_at, duration_minutes, source_workout_log_id)
-         VALUES ($1, $2, $3, 'smart-log', NOW(), $4, $5)
+        `INSERT INTO workout_sessions (user_id, day_name, visibility, notes, completed_at, duration_minutes, source_workout_log_id, completed_timezone)
+         VALUES ($1, $2, $3, 'smart-log', NOW(), $4, $5, ${MEMBER_TIMEZONE_SQL})
          RETURNING id`,
         [userId, sessionDayName, visibility, durationMinutes || null, sourceLogId]
     );
@@ -176,7 +176,7 @@ router.post('/', asyncHandler(async (req, res) => {
         // Check if already logged today for this type
         const existingLog = await query(
             `SELECT id FROM workout_logs
-             WHERE user_id = $1 AND logged_date = ${IST_TODAY_SQL} AND workout_type = $2`,
+             WHERE user_id = $1 AND logged_date = ${MEMBER_TODAY_SQL} AND workout_type = $2`,
             [userId, workout_type]
         );
 
@@ -192,8 +192,8 @@ router.post('/', asyncHandler(async (req, res) => {
         } else {
             // Create new log
             result = await query(
-                `INSERT INTO workout_logs (user_id, workout_type, exercises, notes, visibility, logged_date)
-                 VALUES ($1, $2, $3, $4, $5, ${IST_TODAY_SQL})
+                `INSERT INTO workout_logs (user_id, workout_type, exercises, notes, visibility, logged_date, logged_timezone)
+                 VALUES ($1, $2, $3, $4, $5, ${MEMBER_TODAY_SQL}, ${MEMBER_TIMEZONE_SQL})
                  RETURNING *`,
                 [userId, workout_type, exercises || null, notes || null, visibility]
             );
@@ -232,7 +232,7 @@ router.get('/today', asyncHandler(async (req, res) => {
 
     const result = await query(
         `SELECT * FROM workout_logs
-         WHERE user_id = $1 AND logged_date = ${IST_TODAY_SQL}
+         WHERE user_id = $1 AND logged_date = ${MEMBER_TODAY_SQL}
          ORDER BY created_at DESC`,
         [userId]
     );
@@ -242,7 +242,7 @@ router.get('/today', asyncHandler(async (req, res) => {
         `SELECT COUNT(*) as workout_count,
                 array_agg(DISTINCT workout_type) as types
          FROM workout_logs
-         WHERE user_id = $1 AND logged_date = ${IST_TODAY_SQL}`,
+         WHERE user_id = $1 AND logged_date = ${MEMBER_TODAY_SQL}`,
         [userId]
     );
 
@@ -330,10 +330,11 @@ router.get('/feed', asyncHandler(async (req, res) => {
     const result = await query(
         `SELECT w.id, w.workout_type, w.exercises, w.notes, w.completed,
                 w.logged_date, w.created_at,
+                (w.logged_date = (NOW() AT TIME ZONE u.timezone)::date) AS is_today,
                 u.id as user_id, u.name, u.avatar_url
          FROM workout_logs w
          JOIN users u ON w.user_id = u.id
-         WHERE w.logged_date >= CURRENT_DATE - INTERVAL '7 days'
+         WHERE w.logged_date >= (NOW() AT TIME ZONE u.timezone)::date - INTERVAL '7 days'
          AND (
              -- Public workouts
              w.visibility = 'public'

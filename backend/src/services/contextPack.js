@@ -1,4 +1,5 @@
 const { query } = require('../config/database');
+const { attendanceDaySql, measurementDaySql, sessionDaySql, MEMBER_TIMEZONE_SQL } = require('../utils/dayBoundary');
 const cache = require('./cache');
 const { MEMBER_TODAY_SQL, nutritionDaySql } = require('../utils/nutritionDay');
 
@@ -38,9 +39,9 @@ async function buildContextPack(userId) {
 
     // 3. Fetch Last 14 Days Check-ins
     const attendanceResult = await query(
-        `SELECT check_date, checked_in_at
+        `SELECT ${attendanceDaySql()}::text AS check_date, checked_in_at
          FROM attendances
-         WHERE user_id = $1 AND check_date >= CURRENT_DATE - INTERVAL '14 days'
+         WHERE user_id = $1 AND ${attendanceDaySql()} >= ${MEMBER_TODAY_SQL} - INTERVAL '14 days'
          ORDER BY check_date DESC`,
         [userId]
     );
@@ -48,7 +49,7 @@ async function buildContextPack(userId) {
 
     // 4. Fetch Last 14 Days Workout History
     const sessionsResult = await query(
-        `SELECT s.id, s.day_name, s.completed_at, s.duration_minutes, s.notes,
+        `SELECT s.id, s.day_name, s.completed_at, ${sessionDaySql('s')}::text AS local_date, s.duration_minutes, s.notes,
                 el.id as log_id, COALESCE(e.name, el.custom_exercise_name) as exercise_name,
                 COALESCE(e.category, el.muscle_group) as exercise_category,
                 sl.set_number, sl.reps, sl.weight_kg, sl.rpe
@@ -73,6 +74,7 @@ async function buildContextPack(userId) {
                 id: row.id,
                 day_name: row.day_name,
                 completed_at: row.completed_at,
+                local_date: row.local_date,
                 duration_minutes: row.duration_minutes,
                 notes: row.notes,
                 exercises: {}
@@ -135,7 +137,7 @@ async function buildContextPack(userId) {
     const readinessResult = await query(
         `SELECT log_date, energy_level, sleep_quality, soreness, sleep_hours, readiness_score, recommendation
          FROM readiness_logs
-         WHERE user_id = $1 AND log_date >= CURRENT_DATE - INTERVAL '14 days'
+         WHERE user_id = $1 AND log_date >= ${MEMBER_TODAY_SQL} - INTERVAL '14 days'
          ORDER BY log_date DESC`,
         [userId]
     );
@@ -146,7 +148,7 @@ async function buildContextPack(userId) {
         wearableResult = await query(
             `SELECT date, steps, active_calories, resting_heart_rate, sleep_hours
              FROM health_data
-             WHERE user_id = $1 AND date >= CURRENT_DATE - INTERVAL '7 days'
+             WHERE user_id = $1 AND date >= ${MEMBER_TODAY_SQL} - INTERVAL '7 days'
              ORDER BY date DESC`,
             [userId]
         );
@@ -156,7 +158,7 @@ async function buildContextPack(userId) {
 
     // 7. Fetch Last 14 Days Weight History
     const weightResult = await query(
-        `SELECT recorded_at::date as log_date, weight, body_fat
+        `SELECT ${measurementDaySql()}::text as log_date, weight, body_fat
          FROM body_measurements
          WHERE user_id = $1 AND weight IS NOT NULL AND recorded_at >= NOW() - INTERVAL '14 days'
          ORDER BY recorded_at DESC`,
@@ -212,8 +214,10 @@ async function buildContextPack(userId) {
  * @returns {Promise<Object>} Context pack JSON object
  */
 async function getContextPack(userId) {
-    const cacheKey = `user:${userId}:context_pack`;
-    return cache.getOrSet(cacheKey, () => buildContextPack(userId), 900);
+    const day = await query(`SELECT ${MEMBER_TODAY_SQL}::text AS day, ${MEMBER_TIMEZONE_SQL} AS timezone`, [userId]);
+    const { day: localDay, timezone } = day.rows[0] || {};
+    const cacheKey = `user:${userId}:context_pack:${timezone}:${localDay}`;
+    return cache.getOrSet(cacheKey, async () => ({ ...await buildContextPack(userId), localDay, timezone }), 900);
 }
 
 /**
@@ -224,6 +228,7 @@ async function getContextPack(userId) {
 async function invalidateContextPack(userId) {
     const cacheKey = `user:${userId}:context_pack`;
     await cache.del(cacheKey);
+    await cache.invalidatePattern(`${cacheKey}:*`);
 }
 
 module.exports = {

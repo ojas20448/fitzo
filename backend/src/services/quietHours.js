@@ -13,6 +13,7 @@ const { query } = require('../config/database');
 const { computeBusyTimes } = require('../utils/busyTimes');
 const { getArrivalBuckets } = require('./arrivalBuckets');
 const pushNotifications = require('./pushNotifications');
+const { APP_TIMEZONE, attendanceDaySql } = require('../utils/dayBoundary');
 
 const QUIET_SCORE_THRESHOLD = 35;   // <=35% of peak counts as quiet
 const ALERT_COOLDOWN_HOURS = 24;
@@ -20,7 +21,7 @@ const ALERT_COOLDOWN_HOURS = 24;
 /**
  * Pure decision — unit tested.
  * @param {Object} params
- * @param {number} params.currentScore - Busyness score (0-100) for the current IST hour.
+ * @param {number} params.currentScore - Busyness score (0-100) for the gym's current local hour.
  * @param {'none'|'low'|'good'} params.confidence - Confidence level from computeBusyTimes.
  * @param {boolean} params.alreadyCheckedIn - Whether the member has already checked in today.
  * @param {number|null|undefined} params.lastAlertHoursAgo - Hours since the last alert was
@@ -36,10 +37,11 @@ function shouldAlertQuiet({ currentScore, confidence, alreadyCheckedIn, lastAler
     return true;
 }
 
-/** Current IST day-of-week (0=Sun) and hour. */
-function istNowParts(now = new Date()) {
-    const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
-    return { dow: ist.getUTCDay(), hour: ist.getUTCHours() };
+function gymNowParts(timezone = APP_TIMEZONE, now = new Date()) {
+    const parts = new Intl.DateTimeFormat('en', { timeZone: timezone, weekday: 'short', hour: 'numeric', hourCycle: 'h23' }).formatToParts(now);
+    const weekday = parts.find(p => p.type === 'weekday').value;
+    return { dow: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(weekday),
+        hour: Number(parts.find(p => p.type === 'hour').value) };
 }
 
 /**
@@ -49,15 +51,14 @@ function istNowParts(now = new Date()) {
 async function runQuietAlerts() {
     let sent = 0;
     let skipped = 0;
-    const { dow, hour } = istNowParts();
-
-    const gyms = await query(`SELECT id FROM gyms`);
+    const gyms = await query(`SELECT id, timezone FROM gyms`);
 
     for (const gym of gyms.rows) {
         // One gym's history/members query failing must not take down every
         // other gym's alerts for the day — log it and move on to the next
         // gym. (The inner try/catch below still guards each individual send.)
         try {
+            const { dow, hour } = gymNowParts(gym.timezone);
             const history = await getArrivalBuckets(gym.id);
 
             const busy = computeBusyTimes(history);
@@ -71,7 +72,7 @@ async function runQuietAlerts() {
                         EXISTS (
                           SELECT 1 FROM attendances a
                            WHERE a.user_id = u.id
-                             AND DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+                             AND ${attendanceDaySql('a')} = (NOW() AT TIME ZONE u.timezone)::date
                         ) AS checked_in_today
                    FROM users u
                   WHERE u.gym_id = $1 AND u.role = 'member'`,

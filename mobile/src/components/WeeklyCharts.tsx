@@ -5,6 +5,8 @@ import { Svg, Rect, Line, Text as SvgText, G } from 'react-native-svg';
 import { colors, typography, spacing, borderRadius, shadows } from '../styles/theme';
 import GlassCard from './GlassCard';
 import { caloriesAPI, nutritionAPI } from '../services/api';
+import { localDateString } from '../utils/healthDate';
+import { useLocalDay } from '../hooks/useLocalDay';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_HEIGHT = 180;
@@ -21,6 +23,7 @@ interface DailyLog {
 }
 
 export default function WeeklyCharts() {
+    const localDay = useLocalDay();
     const [history, setHistory] = useState<DailyLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [targetCalories, setTargetCalories] = useState(0);
@@ -28,7 +31,7 @@ export default function WeeklyCharts() {
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [localDay]);
 
     const loadData = async () => {
         try {
@@ -60,7 +63,7 @@ export default function WeeklyCharts() {
     const fillWeekGap = (data: any[]): DailyLog[] => {
         const result = [];
         const today = new Date();
-        const dataMap = new Map(data.map(d => [new Date(d.logged_date).toDateString(), d]));
+        const dataMap = new Map(data.map(d => [d.logged_date.slice(0, 10), d]));
 
         // Generate last 7 days (Monday to Sunday order? Or just last 7 days?)
         // Lose It shows M T W Th F Sa Su (Fixed week) or rolling?
@@ -70,11 +73,11 @@ export default function WeeklyCharts() {
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(today.getDate() - i);
-            const key = d.toDateString();
+            const key = localDateString(d);
             const log = dataMap.get(key);
 
             result.push({
-                logged_date: d.toISOString(), // Keep standard date string
+                logged_date: key,
                 dayLabel: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][d.getDay()],
                 isToday: i === 0,
                 total_calories: parseInt(log?.total_calories || '0'),

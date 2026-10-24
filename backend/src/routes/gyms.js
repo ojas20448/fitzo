@@ -12,6 +12,7 @@ const { asyncHandler, ForbiddenError, ValidationError } = require('../utils/erro
 const { computeBusyTimes } = require('../utils/busyTimes');
 const { getArrivalBuckets } = require('../services/arrivalBuckets');
 const cache = require('../services/cache');
+const { query } = require('../config/database');
 
 // UUID v4 shape — reject junk before it reaches Postgres
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -20,8 +21,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * GET /api/gyms/:id/busy-times
  * 7x24 hour-of-week busyness grid from the last 8 weeks of check-ins.
  *
- * Bucketing is done in Asia/Kolkata — check-in dedupe already uses IST, and
- * bucketing in UTC would shift every bar by 5.5 hours.
+ * Buckets follow the physical gym's timezone, including DST changes.
  */
 router.get('/:id/busy-times', authenticate, asyncHandler(async (req, res) => {
     const gymId = req.params.id;
@@ -39,8 +39,10 @@ router.get('/:id/busy-times', authenticate, asyncHandler(async (req, res) => {
     const busyTimes = await cache.getOrSet(
         cache.keys.busyTimes(gymId),
         async () => {
-            const rows = await getArrivalBuckets(gymId);
-            return computeBusyTimes(rows);
+            const [rows, gym] = await Promise.all([
+                getArrivalBuckets(gymId), query('SELECT timezone FROM gyms WHERE id = $1', [gymId]),
+            ]);
+            return { ...computeBusyTimes(rows), timezone: gym.rows[0]?.timezone || 'Asia/Kolkata' };
         },
         cache.TTL.BUSY_TIMES
     ).catch((err) => {

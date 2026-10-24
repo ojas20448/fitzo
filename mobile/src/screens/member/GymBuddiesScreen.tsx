@@ -30,6 +30,8 @@ import Celebration from '../../components/Celebration';
 import { displayName } from '../../utils/displayName';
 import { useMemberContentInset } from '../../components/navigation/MemberChromeContext';
 import { useMemberTabScroll } from '../../hooks/useMemberTabScroll';
+import { localDateString } from '../../utils/healthDate';
+import { useLocalDay } from '../../hooks/useLocalDay';
 
 interface Friend {
     id: string;
@@ -39,6 +41,7 @@ interface Friend {
     xp_points: number;
     streak: number;
     last_workout_date: string | null;
+    last_workout_days_ago?: number | null;
     last_workout_type: string | null;
     worked_out_today: boolean;
     logged_food_today: boolean;
@@ -47,6 +50,7 @@ interface Friend {
 }
 
 const GymBuddiesScreen: React.FC = () => {
+    const localDay = useLocalDay();
     const contentInset = useMemberContentInset();
     const onScroll = useMemberTabScroll();
     const { user } = useAuth();
@@ -109,7 +113,7 @@ const GymBuddiesScreen: React.FC = () => {
     useFocusEffect(
         useCallback(() => {
             loadData();
-        }, [])
+        }, [localDay])
     );
 
     const loadData = async () => {
@@ -325,13 +329,14 @@ const GymBuddiesScreen: React.FC = () => {
         }
     };
 
-    const getDaysAgo = (dateStr: string | null) => {
-        if (!dateStr) return null;
-        const now = new Date();
-        const date = new Date(dateStr);
-        const diffMs = now.getTime() - date.getTime();
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-        if (diffDays === 0) return 'Today';
+    const workoutDaysAgo = (friend: Friend) => friend.last_workout_days_ago ?? Math.round(
+        (Date.parse(`${localDateString()}T00:00:00Z`) - Date.parse(`${friend.last_workout_date?.slice(0, 10)}T00:00:00Z`)) / 86400000
+    );
+
+    const getDaysAgo = (friend: Friend) => {
+        if (!friend.last_workout_date) return null;
+        const diffDays = workoutDaysAgo(friend);
+        if (diffDays <= 0) return 'Today';
         if (diffDays === 1) return 'Yesterday';
         return `${diffDays}d ago`;
     };
@@ -351,9 +356,7 @@ const GymBuddiesScreen: React.FC = () => {
     const shouldShowNudge = (friend: Friend): boolean => {
         if (friend.at_gym_now || friend.worked_out_today || friend.logged_food_today) return false;
         if (!friend.last_workout_date) return true;
-        const daysSince = Math.floor(
-            (Date.now() - new Date(friend.last_workout_date).getTime()) / (1000 * 60 * 60 * 24)
-        );
+        const daysSince = workoutDaysAgo(friend);
         return daysSince >= 3;
     };
 
@@ -627,7 +630,7 @@ const GymBuddiesScreen: React.FC = () => {
                                                 </View>
                                                 {friend.last_workout_date && (
                                                     <Text style={styles.lastWorkout}>
-                                                        Last: {formatWorkoutType(friend.last_workout_type)} {getDaysAgo(friend.last_workout_date)}
+                                                        Last: {formatWorkoutType(friend.last_workout_type)} {getDaysAgo(friend)}
                                                     </Text>
                                                 )}
                                             </View>

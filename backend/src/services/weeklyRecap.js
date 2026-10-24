@@ -2,6 +2,7 @@ const aiProvider = require('./aiProvider');
 const { DEFAULT_MODEL } = require('./geminiCostControls');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { query } = require('../config/database');
+const { attendanceDaySql, MEMBER_TODAY_SQL, sessionDaySql, measurementDaySql, startOfWeek } = require('../utils/dayBoundary');
 const { nutritionDaySql } = require('../utils/nutritionDay');
 
 if (!process.env.GEMINI_API_KEY) {
@@ -15,13 +16,14 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
  * @param {Date} date
  * @returns {string} Monday ISO date string (YYYY-MM-DD)
  */
-function getStartOfWeek(date = new Date()) {
-    const d = new Date(date);
-    const day = d.getDay();
-    // Monday is 1, Sunday is 0. If Sunday, adjust back by 6 days. Otherwise, adjust to Monday.
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(d.setDate(diff));
-    return monday.toISOString().split('T')[0];
+const getStartOfWeek = startOfWeek;
+
+async function memberWeek(userId, weeksAgo = 0) {
+    const result = await query(
+        `SELECT TO_CHAR(DATE_TRUNC('week', ${MEMBER_TODAY_SQL}) - ($2::int * INTERVAL '1 week'), 'YYYY-MM-DD') AS week_start`,
+        [userId, weeksAgo]
+    );
+    return result.rows[0].week_start;
 }
 
 /**
@@ -32,7 +34,7 @@ function getStartOfWeek(date = new Date()) {
  * @returns {Promise<Object>} The persisted recap object
  */
 async function generateWeeklyRecap(userId, weekStartDate) {
-    const startOfRecapWeek = weekStartDate || getStartOfWeek();
+    const startOfRecapWeek = weekStartDate || await memberWeek(userId);
 
     // 1. Fetch user targets
     const profileResult = await query(
@@ -45,7 +47,7 @@ async function generateWeeklyRecap(userId, weekStartDate) {
     // 2. Fetch workout session count for the week
     const workoutsResult = await query(
         `SELECT COUNT(id)::int as count FROM workout_sessions
-         WHERE user_id = $1 AND completed_at::date >= $2 AND completed_at::date <= $2::date + INTERVAL '6 days'`,
+         WHERE user_id = $1 AND ${sessionDaySql()} >= $2 AND ${sessionDaySql()} <= $2::date + INTERVAL '6 days'`,
         [userId, startOfRecapWeek]
     );
     const workoutsCount = workoutsResult.rows[0]?.count || 0;
@@ -53,7 +55,7 @@ async function generateWeeklyRecap(userId, weekStartDate) {
     // 3. Fetch gym attendance count for the week
     const checkinResult = await query(
         `SELECT COUNT(id)::int as count FROM attendances
-         WHERE user_id = $1 AND check_date >= $2 AND check_date <= $2::date + INTERVAL '6 days'`,
+         WHERE user_id = $1 AND ${attendanceDaySql()} >= $2 AND ${attendanceDaySql()} <= $2::date + INTERVAL '6 days'`,
         [userId, startOfRecapWeek]
     );
     const checkinCount = checkinResult.rows[0]?.count || 0;
@@ -77,7 +79,7 @@ async function generateWeeklyRecap(userId, weekStartDate) {
     const weightResult = await query(
         `SELECT weight FROM body_measurements
          WHERE user_id = $1 AND weight IS NOT NULL 
-           AND recorded_at::date >= $2 AND recorded_at::date <= $2::date + INTERVAL '6 days'
+           AND ${measurementDaySql()} >= $2 AND ${measurementDaySql()} <= $2::date + INTERVAL '6 days'
          ORDER BY recorded_at DESC`,
         [userId, startOfRecapWeek]
     );
@@ -163,9 +165,7 @@ Provide the weekly summary report:`;
  */
 async function getLatestWeeklyRecap(userId) {
     // Monday of LAST week — the most recent completed Mon–Sun window
-    const lastWeekDate = new Date();
-    lastWeekDate.setDate(lastWeekDate.getDate() - 7);
-    const startOfLastWeek = getStartOfWeek(lastWeekDate);
+    const startOfLastWeek = await memberWeek(userId, 1);
 
     const result = await query(
         `SELECT id, recap_data, summary_text, week_start_date
@@ -192,22 +192,19 @@ async function getLatestWeeklyRecap(userId) {
  */
 async function generateAllWeeklyRecaps() {
     console.log('Starting batch weekly recap generation...');
-    const lastWeekDate = new Date();
-    lastWeekDate.setDate(lastWeekDate.getDate() - 7);
-    const startOfLastWeek = getStartOfWeek(lastWeekDate);
 
     const activeUsers = await query(
-        `SELECT DISTINCT u.id FROM users u
+        `SELECT DISTINCT u.id, TO_CHAR(DATE_TRUNC('week', (NOW() AT TIME ZONE u.timezone)::date) - INTERVAL '1 week', 'YYYY-MM-DD') AS week_start FROM users u
          LEFT JOIN workout_sessions s ON s.user_id = u.id AND s.completed_at >= NOW() - INTERVAL '14 days'
-         LEFT JOIN calorie_logs c ON c.user_id = u.id AND c.logged_date >= CURRENT_DATE - INTERVAL '14 days'
-         LEFT JOIN attendances a ON a.user_id = u.id AND a.check_date >= CURRENT_DATE - INTERVAL '14 days'
+         LEFT JOIN calorie_logs c ON c.user_id = u.id AND ${nutritionDaySql('c', 'u.timezone')} >= (NOW() AT TIME ZONE u.timezone)::date - INTERVAL '14 days'
+         LEFT JOIN attendances a ON a.user_id = u.id AND ${attendanceDaySql('a')} >= (NOW() AT TIME ZONE u.timezone)::date - INTERVAL '14 days'
          WHERE s.id IS NOT NULL OR c.id IS NOT NULL OR a.id IS NOT NULL`
     );
 
     console.log(`Found ${activeUsers.rows.length} active users for weekly recaps.`);
     for (const user of activeUsers.rows) {
         try {
-            await generateWeeklyRecap(user.id, startOfLastWeek);
+            await generateWeeklyRecap(user.id, user.week_start);
         } catch (err) {
             console.error(`Failed weekly recap for user ${user.id}:`, err.message);
         }

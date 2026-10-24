@@ -3,7 +3,7 @@ import { Text, View, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import HomeScreen from '../HomeScreen';
 import GlassCard from '../../../components/GlassCard';
-import { intentAPI } from '../../../services/api';
+import { intentAPI, memberAPI, friendsAPI, workoutsAPI } from '../../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { saveActiveWorkoutDraft } from '../../../utils/activeWorkoutDraft';
 let mockCalorieGoal: number | null = 2000;
@@ -35,6 +35,27 @@ jest.mock('../../../services/api', () => ({
     readinessAPI: { getToday: async () => ({ checked_in: false, readiness: null }) },
 }));
 beforeEach(async () => { await AsyncStorage.clear(); });
+
+it('refreshes an open home at local midnight and uses owner activity badges', async () => {
+    jest.useFakeTimers();
+    const home = jest.spyOn(memberAPI, 'getHome');
+    const friends = jest.spyOn(friendsAPI, 'getFriends').mockResolvedValue({ friends: [
+        { id: 'uk', name: 'Buddy', worked_out_today: true },
+    ] } as any);
+    const feed = jest.spyOn(workoutsAPI, 'getFeed');
+    let screen: any;
+    try {
+        jest.setSystemTime(new Date(2026, 9, 24, 23, 59, 59));
+        await act(async () => { screen = create(<HomeScreen />); });
+        const before = home.mock.calls.length;
+        await act(async () => { jest.advanceTimersByTime(2000); });
+        expect(home.mock.calls.length).toBeGreaterThan(before);
+        expect(feed).not.toHaveBeenCalled();
+    } finally {
+        await act(async () => screen?.unmount());
+        home.mockRestore(); friends.mockRestore(); feed.mockRestore(); jest.useRealTimers();
+    }
+});
 
 it('offers the unfinished workout on Home after an app restart', async () => {
     await saveActiveWorkoutDraft('me', {

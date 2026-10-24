@@ -4,6 +4,7 @@ const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler } = require('../utils/errors');
 const { invalidateContextPack } = require('../services/contextPack');
+const { MEMBER_TIMEZONE_SQL } = require('../utils/dayBoundary');
 
 /**
  * GET /api/measurements/latest
@@ -51,8 +52,8 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
             user_id, weight, body_fat, chest, waist, hips, 
             neck, shoulders, left_arm, right_arm, 
             left_thigh, right_thigh, left_calf, right_calf, 
-            notes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            notes, recorded_timezone
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, ${MEMBER_TIMEZONE_SQL})
         RETURNING *`,
         [
             userId, weight, body_fat, chest, waist, hips,

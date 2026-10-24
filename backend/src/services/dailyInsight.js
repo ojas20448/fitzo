@@ -2,6 +2,8 @@ const aiProvider = require('./aiProvider');
 const { DEFAULT_MODEL } = require('./geminiCostControls');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { query } = require('../config/database');
+const { MEMBER_TODAY_SQL, attendanceDaySql } = require('../utils/dayBoundary');
+const { nutritionDaySql } = require('../utils/nutritionDay');
 const contextPackService = require('./contextPack');
 const pushNotifications = require('./pushNotifications');
 
@@ -133,11 +135,11 @@ Write the morning insight:`;
     // 3. Persist to database (ON CONFLICT log_date update note)
     const result = await query(
         `INSERT INTO daily_insights (user_id, note, log_date)
-         VALUES ($1, $2, CURRENT_DATE)
+         VALUES ($1, $2, COALESCE($3::date, ${MEMBER_TODAY_SQL}))
          ON CONFLICT (user_id, log_date)
          DO UPDATE SET note = EXCLUDED.note
          RETURNING note`,
-        [userId, generatedNote]
+        [userId, generatedNote, contextPack?.localDay || null]
     );
 
     const savedNote = result.rows[0]?.note || generatedNote;
@@ -169,7 +171,7 @@ Write the morning insight:`;
 async function getTodayDailyInsight(userId) {
     const result = await query(
         `SELECT note FROM daily_insights
-         WHERE user_id = $1 AND log_date = CURRENT_DATE`,
+         WHERE user_id = $1 AND log_date = ${MEMBER_TODAY_SQL}`,
         [userId]
     );
 
@@ -206,8 +208,8 @@ async function generateAllDailyInsights() {
     const activeUsers = await query(
         `SELECT DISTINCT u.id FROM users u
          LEFT JOIN workout_sessions s ON s.user_id = u.id AND s.completed_at >= NOW() - INTERVAL '7 days'
-         LEFT JOIN calorie_logs c ON c.user_id = u.id AND c.logged_date >= CURRENT_DATE - INTERVAL '7 days'
-         LEFT JOIN attendances a ON a.user_id = u.id AND a.check_date >= CURRENT_DATE - INTERVAL '7 days'
+         LEFT JOIN calorie_logs c ON c.user_id = u.id AND ${nutritionDaySql('c', 'u.timezone')} >= (NOW() AT TIME ZONE u.timezone)::date - INTERVAL '7 days'
+         LEFT JOIN attendances a ON a.user_id = u.id AND ${attendanceDaySql('a')} >= (NOW() AT TIME ZONE u.timezone)::date - INTERVAL '7 days'
          WHERE s.id IS NOT NULL OR c.id IS NOT NULL OR a.id IS NOT NULL
             OR u.created_at >= NOW() - INTERVAL '7 days'`
     );

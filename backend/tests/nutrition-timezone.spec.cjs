@@ -10,7 +10,7 @@ let db;
 let clock = '2026-10-23T22:30:00Z';
 process.env.JWT_SECRET = 'isolated-timezone-test-secret';
 require.cache[require.resolve('../src/config/database')] = { exports: { query: (sql, values) => db.query(sql.replace(/\bNOW\(\)/gi, `'${clock}'::timestamptz`), values) } };
-require.cache[require.resolve('../src/services/cache')] = { exports: { del: async () => {}, keys: { nutritionToday: id => `nutrition:${id}` } } };
+require.cache[require.resolve('../src/services/cache')] = { exports: { del: async () => {}, keys: { nutritionToday: id => `nutrition:${id}`, userStreak: id => id, homeData: id => id } } };
 require.cache[require.resolve('../src/services/contextPack')] = { exports: { invalidateContextPack: async () => {} } };
 require.cache[require.resolve('../src/services/xpService')] = { exports: { awardXP: async () => {} } };
 const app = express();

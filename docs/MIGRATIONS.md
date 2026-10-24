@@ -78,6 +78,28 @@ previous India-only grouping without rewriting food records. Explicitly backdate
 entries keep their chosen dates. A legacy meal's original
 timezone during past travel cannot be inferred from its timestamp alone.
 
+## Activity and gym timezones (025)
+
+Apply `data/migrations/025_activity_timezones.sql` before the corresponding
+backend deployment. It adds origin timezones to workouts, completed sessions,
+attendance and measurements, a timezone for each physical gym, and replaces the
+streak function. It does not rewrite historical activity.
+
+```sh
+node apply_migrations.js --only data/migrations/025_activity_timezones.sql --dry-run
+node apply_migrations.js --only data/migrations/025_activity_timezones.sql
+```
+
+New activity keeps its original local day after travel. Historical session and
+attendance timestamps without an origin timezone retain the previous India
+calendar; confirmed travel mistakes require a scoped correction. Nutrition keeps
+the legacy read correction described above. A confirmed meal can be pinned to its
+original day by setting both `logged_date` and `logged_timezone`.
+
+Gym calendars use `gyms.timezone`, initially `Asia/Kolkata` for existing gyms.
+Managers can update it through the existing `PATCH /api/manager/gym` endpoint
+with a validated named timezone. Gym calendars do not follow a travelling viewer.
+
 ## Connection configuration
 
 The backend and this runner use the same connection options. `DATABASE_URL` is

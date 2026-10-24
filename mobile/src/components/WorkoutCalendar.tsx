@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Pressable, LayoutAnimation, Platform, UIManager
 import { MaterialIcons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../styles/theme';
 import GlassCard from './GlassCard';
+import { localDateString } from '../utils/healthDate';
+import { useLocalDay } from '../hooks/useLocalDay';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -20,6 +22,7 @@ interface WorkoutCalendarProps {
 }
 
 const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history = [], foodHistory = [], onDayPress }) => {
+    useLocalDay();
     const [expanded, setExpanded] = useState(false);
     const today = new Date();
     const currentMonth = today.getMonth();
@@ -85,7 +88,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history = [], foodHis
                             ? 'both'
                             : (d.isWorkoutDone || d.isFoodDone ? 'partial' : 'none');
 
-                        const isPast = new Date(d.dateStr) < new Date(today.toDateString());
+                        const isPast = d.dateStr < localDateString(today);
 
                         return (
                             // A child Pressable receives the touch before the

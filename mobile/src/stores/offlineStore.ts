@@ -12,6 +12,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Lesson } from '../services/api';
+import { localDateString } from '../utils/healthDate';
 
 interface CachedHomeData {
     user: any;
@@ -21,6 +22,7 @@ interface CachedHomeData {
     gym: any;
     todaysLog: any;
     timestamp: number;
+    localDay: string;
 }
 
 interface CachedLesson {
@@ -208,6 +210,7 @@ export const useOfflineStore = create<OfflineStore>()(
                 homeData: {
                     ...data,
                     timestamp: Date.now(),
+                    localDay: data.local_date || localDateString(),
                 },
                 lastHomeUpdate: Date.now(),
             }),
@@ -242,7 +245,7 @@ export const useOfflineStore = create<OfflineStore>()(
             }),
 
             // Getters
-            getHomeData: () => get().accountId && get().homeData?.user?.id === get().accountId ? get().homeData : null,
+            getHomeData: () => get().accountId && get().homeData?.user?.id === get().accountId && get().homeData?.localDay === localDateString() ? get().homeData : null,
             getLesson: (id) => get().lessons[id],
             getUnits: () => get().units,
             getLessons: () => get().lessonLibrary,
@@ -252,7 +255,7 @@ export const useOfflineStore = create<OfflineStore>()(
             // Staleness checks
             isHomeStale: () => {
                 const lastUpdate = get().lastHomeUpdate;
-                return Date.now() - lastUpdate > ONE_HOUR;
+                return !get().getHomeData() || Date.now() - lastUpdate > ONE_HOUR;
             },
 
             isLessonsStale: () => {

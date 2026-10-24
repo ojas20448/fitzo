@@ -16,6 +16,7 @@ import Avatar from '../../components/Avatar';
 import Badge from '../../components/Badge';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
+import { localDateString } from '../../utils/healthDate';
 
 interface MemberDetail {
     id: string;
@@ -32,6 +33,7 @@ interface MemberDetail {
         created_at: string;
     } | null;
     attendance_history: string[]; // ISO date strings
+    local_date?: string;
     workout_plan: {
         name: string;
         description: string;
@@ -250,11 +252,11 @@ const TrainerMemberDetailScreen: React.FC = () => {
                     <GlassCard style={styles.attendanceCard}>
                         <View style={styles.attendanceRow}>
                             {[...Array(7)].map((_, i) => {
-                                const date = new Date();
-                                date.setDate(date.getDate() - (6 - i));
-                                const dateStr = date.toISOString().split('T')[0];
+                                const date = new Date(`${member.local_date || localDateString()}T12:00:00Z`);
+                                date.setUTCDate(date.getUTCDate() - (6 - i));
+                                const dateStr = date.toISOString().slice(0, 10);
                                 const isPresent = member.attendance_history.some(d => d.startsWith(dateStr));
-                                const dayName = date.toLocaleDateString('en-US', { weekday: 'narrow' });
+                                const dayName = date.toLocaleDateString('en-US', { weekday: 'narrow', timeZone: 'UTC' });
 
                                 return (
                                     <View key={i} style={styles.attendanceDay}>

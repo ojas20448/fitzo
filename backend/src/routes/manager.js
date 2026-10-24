@@ -7,6 +7,8 @@ const { authenticate } = require('../middleware/auth');
 const { roleGuard } = require('../middleware/roleGuard');
 const { ValidationError, asyncHandler } = require('../utils/errors');
 const cache = require('../services/cache');
+const { GYM_TIMEZONE_SQL, GYM_TODAY_SQL } = require('../utils/dayBoundary');
+const { normalizeTimezone } = require('../utils/nutritionDay');
 const { computeCrowd } = require('../utils/crowd');
 const { Resend } = require('resend');
 
@@ -27,7 +29,7 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
         `SELECT COUNT(*) as count
      FROM attendances
      WHERE gym_id = $1 
-     AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE`,
+     AND (checked_in_at AT TIME ZONE ${GYM_TIMEZONE_SQL})::date = ${GYM_TODAY_SQL}`,
         [gymId]
     );
 
@@ -97,7 +99,8 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
      FROM users u
      LEFT JOIN attendances a ON (
        u.id = a.user_id 
-       AND DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+       AND a.gym_id = $1
+       AND (a.checked_in_at AT TIME ZONE ${GYM_TIMEZONE_SQL})::date = ${GYM_TODAY_SQL}
      )
      WHERE u.gym_id = $1 AND u.role = 'trainer'`,
         [gymId]
@@ -236,7 +239,8 @@ router.get('/members', asyncHandler(async (req, res) => {
      LEFT JOIN users t ON u.trainer_id = t.id
      LEFT JOIN attendances a ON (
        u.id = a.user_id 
-       AND DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+       AND a.gym_id = $1
+       AND (a.checked_in_at AT TIME ZONE ${GYM_TIMEZONE_SQL})::date = ${GYM_TODAY_SQL}
      )
      WHERE u.gym_id = $1 AND u.role = 'member'
      ORDER BY u.name`,
@@ -254,15 +258,18 @@ router.get('/members', asyncHandler(async (req, res) => {
  */
 router.patch('/gym', asyncHandler(async (req, res) => {
     const gymId = req.user.gym_id;
-    const capacity = parseInt(req.body.capacity, 10);
+    const capacity = req.body.capacity === undefined ? null : parseInt(req.body.capacity, 10);
+    const timezone = req.body.timezone === undefined ? null : normalizeTimezone(req.body.timezone);
+    if (capacity === null && timezone === null) throw new ValidationError('Provide capacity or timezone');
 
-    if (!Number.isFinite(capacity) || capacity < 1 || capacity > 5000) {
+    if (capacity !== null && (!Number.isFinite(capacity) || capacity < 1 || capacity > 5000)) {
         throw new ValidationError('Capacity must be a number between 1 and 5000');
     }
 
     const result = await query(
-        `UPDATE gyms SET capacity = $1 WHERE id = $2 RETURNING id, name, qr_code, capacity`,
-        [capacity, gymId]
+        `UPDATE gyms SET capacity = COALESCE($1, capacity), timezone = COALESCE($3, timezone)
+         WHERE id = $2 RETURNING id, name, qr_code, capacity, timezone`,
+        [capacity, gymId, timezone]
     );
 
     if (result.rows.length === 0) {
@@ -271,12 +278,13 @@ router.patch('/gym', asyncHandler(async (req, res) => {
 
     // Crowd level is cached for 5 min — bust it so the new capacity applies immediately
     await cache.del(cache.keys.crowdLevel(gymId));
+    if (timezone) await cache.del(cache.keys.busyTimes(gymId));
 
     const gym = result.rows[0];
     res.json({
         success: true,
         message: `Capacity updated to ${gym.capacity} members`,
-        gym: { id: gym.id, name: gym.name, access_code: gym.qr_code, capacity: gym.capacity },
+        gym: { id: gym.id, name: gym.name, access_code: gym.qr_code, capacity: gym.capacity, timezone: gym.timezone },
     });
 }));
 
@@ -439,7 +447,8 @@ router.get('/trainers', asyncHandler(async (req, res) => {
      LEFT JOIN users m ON m.trainer_id = u.id AND m.role = 'member'
      LEFT JOIN attendances a ON (
        u.id = a.user_id 
-       AND DATE(a.checked_in_at AT TIME ZONE 'Asia/Kolkata') = CURRENT_DATE
+       AND a.gym_id = $1
+       AND (a.checked_in_at AT TIME ZONE ${GYM_TIMEZONE_SQL})::date = ${GYM_TODAY_SQL}
      )
      WHERE u.gym_id = $1 AND u.role = 'trainer'
      GROUP BY u.id, a.id

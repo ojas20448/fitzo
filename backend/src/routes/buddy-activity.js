@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { IST_TODAY_SQL } = require('../utils/dayBoundary');
+const { MEMBER_TODAY_SQL } = require('../utils/dayBoundary');
+const { nutritionDaySql } = require('../utils/nutritionDay');
 const { query } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { NotFoundError, asyncHandler } = require('../utils/errors');
@@ -75,7 +76,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
         `SELECT id, workout_type, exercises, notes, visibility, created_at
          FROM workout_logs
          WHERE user_id = $1
-           AND logged_date = ${IST_TODAY_SQL}
+           AND logged_date = ${MEMBER_TODAY_SQL}
            AND (
              visibility = 'public'
              OR (visibility = 'friends' AND ($2 = true))
@@ -90,7 +91,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
         `SELECT id, food_name, calories, protein, carbs, fat, visibility, created_at
          FROM calorie_logs
          WHERE user_id = $1
-           AND logged_date = ${IST_TODAY_SQL}
+           AND ${nutritionDaySql()} = ${MEMBER_TODAY_SQL}
            AND (
              visibility = 'public'
              OR (visibility = 'friends' AND ($2 = true))
@@ -110,7 +111,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
            COUNT(*) as meal_count
          FROM calorie_logs
          WHERE user_id = $1
-           AND logged_date = ${IST_TODAY_SQL}
+           AND ${nutritionDaySql()} = ${MEMBER_TODAY_SQL}
            AND (
              visibility = 'public'
              OR (visibility = 'friends' AND ($2 = true))
@@ -125,7 +126,6 @@ router.get('/:id', asyncHandler(async (req, res) => {
          FROM attendances
          WHERE user_id = $1
            AND gym_id IS NOT NULL
-           AND DATE(checked_in_at AT TIME ZONE 'Asia/Kolkata') = ${IST_TODAY_SQL}
            AND checked_in_at <= NOW()
            AND checked_out_at IS NULL
            AND checked_in_at > NOW() - INTERVAL '90 minutes'

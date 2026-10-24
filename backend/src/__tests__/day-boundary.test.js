@@ -13,7 +13,23 @@ const {
     IST_TODAY_SQL,
     IST_DAY_OF_SQL,
     APP_TIMEZONE,
+    memberDateString,
+    startOfWeek,
 } = require('../utils/dayBoundary');
+
+test('member days and Monday weeks follow named zones across DST', () => {
+    for (const [instant, zone, day, monday] of [
+        ['2026-03-29T22:59:59Z', 'Europe/London', '2026-03-29', '2026-03-23'],
+        ['2026-03-29T23:00:00Z', 'Europe/London', '2026-03-30', '2026-03-30'],
+        ['2026-10-25T00:30:00Z', 'Europe/London', '2026-10-25', '2026-10-19'],
+        ['2026-10-25T01:30:00Z', 'Europe/London', '2026-10-25', '2026-10-19'],
+        ['2026-10-26T00:30:00Z', 'America/New_York', '2026-10-25', '2026-10-19'],
+        ['2026-10-25T18:15:00Z', 'Asia/Kathmandu', '2026-10-26', '2026-10-26'],
+    ]) {
+        expect(memberDateString(instant, zone)).toBe(day);
+        expect(startOfWeek(instant, zone)).toBe(monday);
+    }
+});
 
 describe('istDateString', () => {
     it('rolls to the next day at exactly 18:30 UTC', () => {
