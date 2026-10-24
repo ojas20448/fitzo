@@ -10,6 +10,12 @@ test.each([1, 2, 3, 4, 5, 6])('%i-day schedules contain the requested number of 
     expect(split.days).toHaveLength(days);
     expect(split.days_per_week).toBe(days);
 });
+test.each(['gym', 'dumbbells', 'bodyweight'] as const)('%s schedules have distinct session names accepted by the server', equipment => {
+    for (const days of [1, 2, 3, 4, 5, 6]) {
+        const split = startingSplit(days, equipment);
+        expect(new Set(split.days.map(day => day.trim().toLowerCase())).size).toBe(days);
+    }
+});
 test('an old draft preserves basics but returns to unanswered training preferences', () => {
     const { experience, equipment, sessionMinutes, ...old } = form;
     expect(restoreOnboarding(JSON.stringify({ version: 1, step: 4, form: old })))

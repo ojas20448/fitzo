@@ -56,7 +56,7 @@ export default function FoodHomeScreen() {
     const groups = day ? groupDiaryEntries(day.entries) : [];
     const meals = [...MEAL_TYPES.map(key => ({ key, title: key === 'snack' ? 'Snacks' : key[0].toUpperCase() + key.slice(1), entries: groups.find(group => group.key === key)?.entries || [] })), ...groups.filter(group => group.key === 'other')];
     const mealIcons = { breakfast: 'cafe-outline', lunch: 'sunny-outline', dinner: 'moon-outline', snack: 'nutrition-outline', other: 'restaurant-outline' } as const;
-    return <MemberScreen title="Food" subtitle="YOUR DIARY" onRefresh={() => void load()} refreshing={loading && !!day}
+    return <MemberScreen title="Food" subtitle="YOUR DIARY" headerStyle={styles.header} onRefresh={() => void load()} refreshing={loading && !!day}
         headerRight={date !== today ? <Pressable accessibilityRole="button" accessibilityLabel="Go to today" style={styles.todayButton} onPress={() => setDate(localDiaryDate())}><Text style={styles.link}>Today</Text></Pressable> : undefined}>
         <View style={styles.dateRow}>
             <Pressable style={s.iconButton} accessibilityRole="button" accessibilityLabel="Previous day" onPress={() => setDate(value => shiftDiaryDate(value, -1))}><Ionicons name="chevron-back" size={22} color={colors.primary} /></Pressable>
@@ -102,6 +102,7 @@ export default function FoodHomeScreen() {
     </MemberScreen>;
 }
 const styles = StyleSheet.create({
+    header: { paddingTop: spacing.xs, paddingBottom: spacing.sm },
     todayButton: { minHeight: 44, minWidth: 64, paddingHorizontal: spacing.md, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.glass.border, borderRadius: borderRadius.full },
     link: { color: colors.text.primary, fontFamily: typography.fontFamily.medium, fontSize: 12 },
     dateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

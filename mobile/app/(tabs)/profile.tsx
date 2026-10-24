@@ -326,16 +326,17 @@ export default function ProfileScreen() {
                 {/* Monthly Progress */}
                 <View style={styles.section}>
                     <Text style={styles.sectionLabel}>Activity History</Text>
-                    <WeeklyNutritionCard
-                        summary={weekSummary}
-                        onPress={() => router.push('/member/nutrition-insights' as any)}
-                    />
-
-                    <WorkoutCalendar
-                        history={stats.history}
-                        foodHistory={stats.foodHistory}
-                        onDayPress={openDay}
-                    />
+                    <View style={styles.activityCards}>
+                        <WeeklyNutritionCard
+                            summary={weekSummary}
+                            onPress={() => router.push('/member/nutrition-insights' as any)}
+                        />
+                        <WorkoutCalendar
+                            history={stats.history}
+                            foodHistory={stats.foodHistory}
+                            onDayPress={openDay}
+                        />
+                    </View>
                 </View>
 
                 {/* Biometrics & Health Section */}
@@ -800,6 +801,9 @@ const styles = StyleSheet.create({
     },
     section: {
         marginBottom: spacing.xl,
+    },
+    activityCards: {
+        gap: spacing.lg,
     },
     sectionLabel: {
         fontSize: typography.sizes.xs,

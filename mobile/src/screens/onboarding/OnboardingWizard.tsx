@@ -195,7 +195,8 @@ export default function OnboardingWizard() {
             }) } });
             if (destination === 'food') router.push('/log/calories');
         } catch (err: unknown) {
-            if (active()) setError(err instanceof Error ? err.message : 'Could not save your plan. Your answers are kept here; please try again.');
+            const message = err && typeof err === 'object' && 'message' in err ? err.message : null;
+            if (active()) setError(typeof message === 'string' && message.trim() ? message : 'Could not save your plan. Your answers are kept here; please try again.');
         } finally { submitting.current = false; setSaving(false); }
     };
 

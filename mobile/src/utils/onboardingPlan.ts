@@ -42,7 +42,7 @@ export function startingSplit(days: number, equipment?: TrainingEquipment | null
         case 3: return { split_id: 'full_body', name: 'Full Body · 3 days', days: ['Full Body A', 'Full Body B', 'Full Body C'], days_per_week: 3 };
         case 4: return { split_id: 'upper_lower', name: 'Upper / Lower · 4 days', days: ['Upper A', 'Lower A', 'Upper B', 'Lower B'], days_per_week: 4 };
         case 5: return { split_id: 'custom', name: 'Upper / Lower / Full Body · 5 days', days: ['Upper A', 'Lower A', 'Upper B', 'Lower B', 'Full Body'], days_per_week: 5 };
-        case 6: return { split_id: 'ppl', name: 'Push / Pull / Legs · 6 days', days: ['Push', 'Pull', 'Legs', 'Push', 'Pull', 'Legs'], days_per_week: 6 };
+        case 6: return { split_id: 'ppl', name: 'Push / Pull / Legs · 6 days', days: ['Push A', 'Pull A', 'Legs A', 'Push B', 'Pull B', 'Legs B'], days_per_week: 6 };
         default: throw new Error('Choose between 1 and 6 training days.');
     }
 }

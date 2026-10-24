@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, RefreshControl, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenBackdrop from '../ScreenBackdrop';
@@ -7,15 +7,15 @@ import { borderRadius, colors, spacing, typography } from '../../styles/theme';
 import { useMemberContentInset } from './MemberChromeContext';
 import { useMemberTabScroll } from '../../hooks/useMemberTabScroll';
 
-export function MemberScreen({ title, subtitle, children, refreshing = false, onRefresh, headerRight }: {
+export function MemberScreen({ title, subtitle, children, refreshing = false, onRefresh, headerRight, headerStyle }: {
     title: string; subtitle: string; children: React.ReactNode; refreshing?: boolean;
-    onRefresh?: () => void; headerRight?: React.ReactNode;
+    onRefresh?: () => void; headerRight?: React.ReactNode; headerStyle?: StyleProp<ViewStyle>;
 }) {
     const bottom = useMemberContentInset();
     const onScroll = useMemberTabScroll();
     return <SafeAreaView style={memberStyles.screen} edges={['top']}>
         <ScreenBackdrop />
-        <View style={memberStyles.header}>
+        <View style={[memberStyles.header, headerStyle]}>
             <View style={memberStyles.headerInner}>
             <View style={memberStyles.headerCopy}><Text style={memberStyles.subtitle}>{subtitle}</Text><Text accessibilityRole="header" style={memberStyles.headerTitle}>{title}</Text></View>
             {headerRight}

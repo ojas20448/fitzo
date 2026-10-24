@@ -121,8 +121,8 @@ it('clears the previous height error when units change and explains imperial inp
     expect(nutritionAPI.updateProfile).toHaveBeenCalledWith(expect.objectContaining({ height_cm: 175.26 }), 'session-a');
 });
 
-it('does not mark onboarding complete or save a profile when the schedule fails', async () => {
-    (workoutsAPI.saveSplit as jest.Mock).mockRejectedValueOnce(new Error('Connection lost. Try again.'));
+it.each([new Error('Connection lost. Try again.'), { message: 'Connection lost. Try again.', code: 'NETWORK_ERROR', status: 0 }])('shows the save error and keeps setup retryable (%#)', async error => {
+    (workoutsAPI.saveSplit as jest.Mock).mockRejectedValueOnce(error);
     await mount({ step: 4, form: validForm }); await finish();
     expect(nutritionAPI.updateProfile).not.toHaveBeenCalled();
     expect(mockComplete).not.toHaveBeenCalled();
@@ -131,6 +131,14 @@ it('does not mark onboarding complete or save a profile when the schedule fails'
     await finish('Log a meal first');
     expect(mockComplete).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith('/log/calories');
+});
+
+it.each([null, {}, { message: 400 }])('keeps a fallback message for an unexpected save failure (%#)', async error => {
+    (workoutsAPI.saveSplit as jest.Mock).mockRejectedValueOnce(error);
+    await mount({ step: 4, form: validForm }); await finish();
+    expect(text()).toContain('Could not save your plan. Your answers are kept here; please try again.');
+    expect(mockComplete).not.toHaveBeenCalled();
+    expect(clearOnboardingDraft).not.toHaveBeenCalled();
 });
 
 it('retries a profile failure without saving the same split twice', async () => {
