@@ -44,7 +44,7 @@ Migration 025 is recorded in `fitzo_schema_migrations`; all five added columns
 were verified in production. Both internal and public deployment checks passed
 for the exact revision, database health and authentication enforcement. All 14
 authenticated reads passed using the designated App Review identity, including
-Home, nutrition-related context destinations, workouts, attendance, friends,
+Home, workouts, attendance, friends,
 health/readiness, progress, classes and gym busy times. No AI generation or
 notification was requested by these checks.
 
