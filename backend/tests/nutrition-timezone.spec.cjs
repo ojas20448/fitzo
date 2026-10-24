@@ -58,6 +58,30 @@ test('every food write uses the member day and persists it for history', async (
     assert.equal((await call('get', '/calories/day/2026-10-23')).body.totals.calories, 350);
 });
 
+test('single food, bulk meals and recipes save to the selected Friday instead of today', async () => {
+    clock = '2026-10-25T12:00:00Z';
+    assert.equal((await call('post', '/nutrition/log').send({ food_name: 'Rice', calories: 200, logged_date: '2026-10-23' })).status, 200);
+    assert.equal((await call('post', '/nutrition/log-bulk').send({ logged_date: '2026-10-23', items: [{ meal_name: 'Dal', calories: 100 }, { meal_name: 'Roti', calories: 120 }] })).status, 201);
+    assert.equal((await call('post', '/calories').send({ meal_name: 'Recipe', calories: 300, logged_date: '2026-10-23' })).status, 200);
+    const rows = (await db.query('SELECT logged_date::text, logged_timezone FROM calorie_logs')).rows;
+    assert.deepEqual(rows, Array(4).fill({ logged_date: '2026-10-23', logged_timezone: 'Europe/London' }));
+    assert.equal((await call('get', '/calories/day/2026-10-23')).body.totals.calories, 720);
+    assert.equal((await call('get', '/calories/today')).body.totals.calories, 0);
+    assert.equal((await call('get', '/nutrition/today')).body.logged.calories, 0);
+    assert.equal((await call('get', '/calories/day/2026-10-23', 'Asia/Kolkata')).body.totals.calories, 720);
+});
+
+test('invalid explicit diary dates cannot write food to today by falling back', async () => {
+    for (const logged_date of ['', null, 42, '2026-02-30', '23-10-2026', ['2026-10-23']]) {
+        for (const [url, payload] of [
+            ['/nutrition/log', { food_name: 'Rice', calories: 200 }],
+            ['/nutrition/log-bulk', { items: [{ meal_name: 'Dal', calories: 100 }] }],
+            ['/calories', { meal_name: 'Recipe', calories: 300 }],
+        ]) assert.equal((await call('post', url).send({ ...payload, logged_date })).status, 400, `${url}: ${JSON.stringify(logged_date)}`);
+    }
+    assert.equal((await db.query('SELECT count(*)::int AS n FROM calorie_logs')).rows[0].n, 0);
+});
+
 test('legacy London evening meals are corrected in diary, history and weekly totals without rewriting rows', async () => {
     await db.exec(`INSERT INTO calorie_logs (user_id, calories, logged_date, created_at) VALUES
         ('member', 1528, '2026-10-23', '2026-10-22T19:10:00Z'),

@@ -37,7 +37,7 @@ it('opens for review, then scales and swaps actual portions without writing prem
     expect(labels()).toContain('1 cup · 150 g, cooked');
     expect(labels()).toMatch(/206\s+kcal/);
     await act(async () => logButton().props.onPress());
-    expect(nutritionAPI.logBulk).toHaveBeenCalledWith([expect.objectContaining({ meal_name: 'Rice', calories: 206, serving_size: '1 cup · 150 g, cooked' })], 'lunch', 'account-a');
+    expect(nutritionAPI.logBulk).toHaveBeenCalledWith([expect.objectContaining({ meal_name: 'Rice', calories: 206, serving_size: '1 cup · 150 g, cooked' })], 'lunch', 'account-a', undefined);
 });
 
 it('guards immediate double taps, locks editing while saving, and ignores a late result after unmount', async () => {
@@ -66,7 +66,7 @@ it('keeps portions, substitution and meal category after failure for an explicit
     expect(labels()).toContain('0.5 cup · 100 g, cooked');
     expect(onClose).not.toHaveBeenCalled();
     await act(async () => logButton().props.onPress());
-    expect(nutritionAPI.logBulk).toHaveBeenLastCalledWith([expect.objectContaining({ calories: 99, serving_size: '0.5 cup · 100 g, cooked' })], 'dinner', 'account-a');
+    expect(nutritionAPI.logBulk).toHaveBeenLastCalledWith([expect.objectContaining({ calories: 99, serving_size: '0.5 cup · 100 g, cooked' })], 'dinner', 'account-a', undefined);
     expect(onLogged).toHaveBeenCalledTimes(1);
 });
 

@@ -44,6 +44,25 @@ it('pins the food write to the session that started it', async () => {
     await mount(); await act(async () => { await value.logFoodOptimistic(food); });
     expect(nutritionAPI.logFood).toHaveBeenCalledWith(food, 'token-a');
 });
+it('saves a Friday meal without changing today totals or celebrating today goals', async () => {
+    jest.useFakeTimers();
+    try {
+        jest.setSystemTime(new Date(2026, 9, 25, 12));
+        (nutritionAPI.getToday as jest.Mock).mockResolvedValue({ logged, targets: { calories: 1000, protein: 100, carbs: 100, fat: 50 } });
+        await mount();
+        let resolve!: () => void;
+        (nutritionAPI.logFood as jest.Mock).mockReturnValueOnce(new Promise<void>(done => { resolve = done; }));
+        const fridayFood = { ...food, logged_date: '2026-10-23' };
+        let saved!: Promise<{ isGoalHit: boolean }>;
+        await act(async () => { saved = value.logFoodOptimistic(fridayFood); });
+        expect(value.todayMacros).toEqual(logged);
+        let result: any;
+        await act(async () => { resolve(); result = await saved; });
+        expect(nutritionAPI.logFood).toHaveBeenCalledWith(fridayFood, 'token-a');
+        expect(value.todayMacros).toEqual(logged);
+        expect(result.isGoalHit).toBe(false);
+    } finally { await act(async () => screen.unmount()); screen = null; jest.useRealTimers(); }
+});
 it('clears yesterday at local midnight even when the new day cannot load', async () => {
     jest.useFakeTimers();
     try {

@@ -22,7 +22,7 @@ jest.mock('../../../context/NutritionContext', () => ({ useNutrition: () => ({ r
 jest.mock('../../../context/AuthContext', () => ({ useAuth: () => ({ user: { id: mockAccount } }) }));
 jest.mock('../../../services/FoodCacheService', () => ({ FoodCacheService: { searchLocal: async () => [] } }));
 jest.mock('../../../services/api', () => ({
-    caloriesAPI: { getToday: jest.fn(async () => ({ entries: [{ id: 'meal', food_name: 'Lunch', calories: 400 }] })), getFrequentFoods: jest.fn(async () => ({ frequent: [] })) },
+    caloriesAPI: { getToday: jest.fn(async () => ({ entries: [{ id: 'meal', food_name: 'Lunch', calories: 400 }] })), getDay: jest.fn(async () => ({ entries: [{ id: 'friday-meal', food_name: 'Friday rice', calories: 200 }] })), getFrequentFoods: jest.fn(async () => ({ frequent: [] })) },
     settingsAPI: { getSharingPreference: async () => ({ share_logs: false }) },
     nutritionAPI: { logBulk: jest.fn(async () => ({})), getPresets: async () => ({ presets: [{ id: 'veg', name: 'Veg Thali', emoji: '🍛', items: [{ name: 'Rice', calories: 130 }] }] }) },
     foodAPI: { search: jest.fn(), analyzeText: jest.fn(async () => ({ food: null })) },
@@ -114,13 +114,24 @@ it('lets a member choose breakfast before repeating a food previously logged for
     expect(texts()).toContain('Lunch'); // Legacy entries without a category remain accessible.
 });
 it('keeps the selected meal in camera navigation and voice review logging', async () => {
-    mockParams = { meal_type: 'dinner' };
+    mockParams = { meal_type: 'dinner', date: '2026-10-23' };
     await open();
     expect(button('Add to dinner').props['aria-checked']).toBe(true);
     await act(async () => button('Scan food photo').props.onPress());
-    expect(router.push).toHaveBeenCalledWith({ pathname: '/food-scanner', params: { meal_type: 'dinner' } });
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/food-scanner', params: { meal_type: 'dinner', date: '2026-10-23' } });
     await act(async () => screen.root.findByType(FoodDraftSheet).props.onConfirm([{ name: 'Dal', calories: 200, protein: 12 }]));
-    expect(nutritionAPI.logBulk).toHaveBeenCalledWith([expect.objectContaining({ meal_name: 'Dal', calories: 200 })], 'dinner');
+    expect(nutritionAPI.logBulk).toHaveBeenCalledWith([expect.objectContaining({ meal_name: 'Dal', calories: 200 })], 'dinner', undefined, '2026-10-23');
+});
+it('loads and saves quick-add food on the selected Friday', async () => {
+    jest.setSystemTime(new Date(2026, 9, 25, 12));
+    mockParams = { date: '2026-10-23' };
+    await repeatFood();
+    expect(caloriesAPI.getDay).toHaveBeenCalledWith('2026-10-23');
+    expect(caloriesAPI.getToday).not.toHaveBeenCalled();
+    expect(texts()).toContain('Friday rice');
+    expect(texts()).not.toContain("TODAY'S LOG");
+    await act(async () => button('Save food').props.onPress());
+    expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({ logged_date: '2026-10-23', food_name: 'Dal' }));
 });
 it('saves the actual repeat portion and chosen meal, then stays in the flow for another food', async () => {
     await repeatFood();

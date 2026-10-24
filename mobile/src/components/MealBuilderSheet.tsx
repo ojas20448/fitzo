@@ -31,6 +31,7 @@ export interface Preset {
 
 interface Props {
     preset: Preset | null;
+    loggedDate?: string;
     onClose: () => void;
     onLogged: (preset: Preset, totalCalories: number) => void;
     onError: (message: string) => void;
@@ -45,7 +46,7 @@ interface Props {
  * anything is written. Catching the difference before it becomes data beats
  * logging wrong and editing after.
  */
-const MealBuilderSheet: React.FC<Props> = ({ preset, onClose, onLogged, onError }) => {
+const MealBuilderSheet: React.FC<Props> = ({ preset, onClose, onLogged, onError, loggedDate }) => {
     const [entries, setEntries] = useState<BuilderEntry[]>([]);
     const [busy, setBusy] = useState(false);
     const [swapping, setSwapping] = useState<string | null>(null);
@@ -103,7 +104,7 @@ const MealBuilderSheet: React.FC<Props> = ({ preset, onClose, onLogged, onError 
         const current = generation.current;
         try {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            const result = await nutritionAPI.logBulk(toLogPayload(entries), mealType, expectedToken.current);
+            const result = await nutritionAPI.logBulk(toLogPayload(entries), mealType, expectedToken.current, loggedDate);
             if (generation.current !== current) return;
             onLogged(preset, result?.totals?.calories ?? totals.calories);
             onClose();

@@ -821,7 +821,7 @@ export interface CalorieDay {
 }
 
 export const caloriesAPI = {
-    log: async (data: { calories: number; protein?: number; carbs?: number; fat?: number; meal_name?: string; visibility?: string }) => {
+    log: async (data: { calories: number; protein?: number; carbs?: number; fat?: number; meal_name?: string; visibility?: string; logged_date?: string }) => {
         const response = await api.post('/calories', data);
         return response.data;
     },
@@ -968,6 +968,7 @@ export const nutritionAPI = {
         meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
         is_estimate?: boolean;
         visibility?: string;
+        logged_date?: string;
     }, authToken?: string) => {
         const response = await api.post('/nutrition/log', data, authToken ? { _expectedAuthToken: authToken } as any : undefined);
         return response.data;
@@ -986,10 +987,11 @@ export const nutritionAPI = {
         fat?: number;
         serving_size?: string;
         is_estimate?: boolean;
-    }>, mealType?: string, authToken?: string) => {
+    }>, mealType?: string, authToken?: string, loggedDate?: string) => {
         const response = await api.post('/nutrition/log-bulk', {
             items,
             ...(mealType ? { meal_type: mealType } : {}),
+            ...(loggedDate !== undefined ? { logged_date: loggedDate } : {}),
         }, authToken ? { _expectedAuthToken: authToken } as any : undefined);
         return response.data;
     },

@@ -15,6 +15,7 @@ const cache = require('../services/cache');
 const { validateComboItems } = require('../utils/mealCombo');
 const { getMealIdeas } = require('../utils/mealIdeas');
 const { MEMBER_TIMEZONE_SQL, MEMBER_TODAY_SQL, nutritionDaySql } = require('../utils/nutritionDay');
+const { isValidDateString } = require('../utils/dayBoundary');
 const { supportsTrainingFirst, legacyNutritionTargets } = require('../utils/clientCapabilities');
 
 const { resolveTargets, legacyModes } = require('../utils/nutritionTargets');
@@ -250,12 +251,14 @@ router.post('/log', authenticate, asyncHandler(async (req, res) => {
         cooking_medium,
         is_estimate = false,
         meal_type = 'snack', // breakfast, lunch, dinner, snack
-        visibility = 'friends'
+        visibility = 'friends',
+        logged_date,
     } = req.body;
 
     if (!food_name || calories === undefined) {
         throw new ValidationError('Food name and calories are required');
     }
+    if (logged_date !== undefined && !isValidDateString(logged_date)) throw new ValidationError('Date must be YYYY-MM-DD');
 
     if (!['breakfast', 'lunch', 'dinner', 'snack'].includes(meal_type)) {
         throw new ValidationError('Choose breakfast, lunch, dinner or snack');
@@ -271,9 +274,9 @@ router.post('/log', authenticate, asyncHandler(async (req, res) => {
     const result = await query(
         `INSERT INTO calorie_logs (
             user_id, food_name, calories, protein, carbs, fat, serving_size, meal_type, visibility, is_estimate, logged_date, logged_timezone
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, ${MEMBER_TODAY_SQL}, ${MEMBER_TIMEZONE_SQL})
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE($11::date, ${MEMBER_TODAY_SQL}), ${MEMBER_TIMEZONE_SQL})
         RETURNING *`,
-        [userId, food_name, calories, protein || 0, carbs || 0, fat || 0, serving_size, meal_type, visibility, is_estimate]
+        [userId, food_name, calories, protein || 0, carbs || 0, fat || 0, serving_size, meal_type, visibility, is_estimate, logged_date ?? null]
     );
 
     // Invalidate context pack cache for fresh AI responses
@@ -300,7 +303,8 @@ router.post('/log', authenticate, asyncHandler(async (req, res) => {
  */
 router.post('/log-bulk', authenticate, asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const { items, meal_type = 'snack', visibility = 'friends' } = req.body;
+    const { items, meal_type = 'snack', visibility = 'friends', logged_date } = req.body;
+    if (logged_date !== undefined && !isValidDateString(logged_date)) throw new ValidationError('Date must be YYYY-MM-DD');
     if (!['breakfast', 'lunch', 'dinner', 'snack'].includes(meal_type)) {
         throw new ValidationError('Choose breakfast, lunch, dinner or snack');
     }
@@ -319,16 +323,16 @@ router.post('/log-bulk', authenticate, asyncHandler(async (req, res) => {
     // visibility. (mealCombo items use `meal_name`, mapped to the food_name
     // column here — the same field this app already renames once elsewhere.)
     const values = [];
+    const dateParameter = cleaned.length * 10 + 1;
     const placeholders = cleaned.map((it, i) => {
         const b = i * 10;
         values.push(
             userId, it.meal_name, it.calories, it.protein, it.carbs, it.fat,
             it.serving_size, meal_type, visibility, it.is_estimate
         );
-        // logged_date is appended as a literal SQL expression, not a bound
-        // value — it must not consume a $n or shift any placeholder index.
-        return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}, $${b + 6}, $${b + 7}, $${b + 8}, $${b + 9}, $${b + 10}, ${MEMBER_TODAY_SQL}, ${MEMBER_TIMEZONE_SQL})`;
+        return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}, $${b + 6}, $${b + 7}, $${b + 8}, $${b + 9}, $${b + 10}, COALESCE($${dateParameter}::date, ${MEMBER_TODAY_SQL}), ${MEMBER_TIMEZONE_SQL})`;
     });
+    values.push(logged_date ?? null);
 
     await query(
         `INSERT INTO calorie_logs (

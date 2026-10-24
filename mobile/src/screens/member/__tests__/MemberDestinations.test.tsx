@@ -83,15 +83,24 @@ it('shows each meal and lets an empty dinner section open food logging in that c
     await act(async () => { screen = create(<FoodHomeScreen />); });
     for (const meal of ['Breakfast', 'Lunch', 'Dinner', 'Snacks']) expect(copy()).toContain(meal);
     await press('Add dinner');
-    expect(router.push).toHaveBeenCalledWith({ pathname: '/log/calories', params: { meal_type: 'dinner' } });
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/log/calories', params: { date: localDiaryDate(), meal_type: 'dinner' } });
 });
-it('keeps historical meal shortcuts explicit about adding food for today and returns to today', async () => {
-    await act(async () => { screen = create(<FoodHomeScreen />); });
-    await press('Previous day');
-    await press('Add dinner for today');
-    expect(router.push).toHaveBeenCalledWith({ pathname: '/log/calories', params: { meal_type: 'dinner' } });
-    await press('Previous day'); await press('Go to today');
-    expect(caloriesAPI.getDay).toHaveBeenLastCalledWith(localDiaryDate());
+it('adds to the selected Friday and keeps that day open until Today is chosen', async () => {
+    jest.useFakeTimers();
+    try {
+        jest.setSystemTime(new Date(2026, 9, 25, 12));
+        await act(async () => { screen = create(<FoodHomeScreen />); });
+        await press('Previous day'); await press('Previous day');
+        await press('Add dinner');
+        expect(router.push).toHaveBeenLastCalledWith({ pathname: '/log/calories', params: { date: '2026-10-23', meal_type: 'dinner' } });
+        expect(copy()).toContain('Friday');
+        const add = screen.root.findAll((node: any) => node.props.title === 'Add food' && typeof node.props.onPress === 'function')[0];
+        await act(async () => add.props.onPress());
+        expect(router.push).toHaveBeenLastCalledWith({ pathname: '/log/calories', params: { date: '2026-10-23' } });
+        expect(caloriesAPI.getDay).toHaveBeenLastCalledWith('2026-10-23');
+        await press('Go to today');
+        expect(caloriesAPI.getDay).toHaveBeenLastCalledWith('2026-10-25');
+    } finally { await act(async () => screen.unmount()); screen = null; jest.useRealTimers(); }
 });
 it('never shows a late diary response from another account', async () => {
     let resolve!: (value: unknown) => void;

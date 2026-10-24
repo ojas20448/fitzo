@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList, FlashListProps } from '@shopify/flash-list';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { recipesAPI, caloriesAPI } from '../../services/api';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
@@ -13,6 +13,7 @@ import useOfflineStore from '../../stores/offlineStore';
 const TypedFlashList = FlashList as React.ComponentType<FlashListProps<any> & { estimatedItemSize?: number }>;
 
 const RecipeListScreen = () => {
+    const { date } = useLocalSearchParams<{ date?: string }>();
     const [recipes, setRecipes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -90,7 +91,8 @@ const RecipeListScreen = () => {
                 carbs: recipe.total_carbs,
                 fat: recipe.total_fat,
                 meal_name: recipe.name,
-                visibility: 'friends'
+                visibility: 'friends',
+                logged_date: date,
             });
             toast.success('Logged', `${recipe.name} added to diary`);
             router.back(); // Go back to where we came from (likely CalorieLog or Home)

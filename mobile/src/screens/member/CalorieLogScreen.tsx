@@ -40,6 +40,7 @@ import { defaultFoods } from '../../data/defaultFoods';
 import { useNutrition } from '../../context/NutritionContext';
 import { FoodCacheService } from '../../services/FoodCacheService';
 import { useAuth } from '../../context/AuthContext';
+import { useLocalDay } from '../../hooks/useLocalDay';
 import { MealType, isMealType, portionGrams, savedPortion, repeatServing } from '../../utils/foodPortion';
 
 const { width } = Dimensions.get('window');
@@ -136,7 +137,11 @@ const AccountCalorieLogScreen: React.FC = () => {
         fat?: string;
         source?: string;
         meal_type?: string;
+        date?: string;
     }>();
+    const today = useLocalDay();
+    const date = params.date ?? today;
+    const dateLabel = date === today ? 'Today' : new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
 
     const [searchQuery, setSearchQuery] = useState('');
     const hasSearchQuery = searchQuery.trim().length > 0;
@@ -150,11 +155,11 @@ const AccountCalorieLogScreen: React.FC = () => {
         const request = ++entriesRequest.current;
         setEntriesLoading(true);
         setEntriesError(false);
-        caloriesAPI.getToday()
+        (date === today ? caloriesAPI.getToday() : caloriesAPI.getDay(date))
             .then((r) => { if (request === entriesRequest.current) setTodayEntries(r.entries || []); })
             .catch(() => { if (request === entriesRequest.current) setEntriesError(true); })
             .finally(() => { if (request === entriesRequest.current) setEntriesLoading(false); });
-    }, []);
+    }, [date, today]);
 
     useEffect(() => { const generation = entriesRequest; loadTodayEntries(); return () => { generation.current++; }; }, [loadTodayEntries]);
 
@@ -650,7 +655,8 @@ const AccountCalorieLogScreen: React.FC = () => {
                 cooking_medium: (selectedServing as any).cookingMedium ?? undefined,
                 meal_type: mealType,
                 is_estimate: selectedServing.isEstimate ?? false,
-                visibility: visibility
+                visibility: visibility,
+                logged_date: date,
             });
 
             if (!mounted.current) return;
@@ -761,7 +767,7 @@ const AccountCalorieLogScreen: React.FC = () => {
                     <MaterialIcons name="close" size={20} color={colors.text.muted} />
                 </Pressable>
                 <Text style={styles.headerTitle}>Add Food</Text>
-                <Pressable onPress={() => router.push('/member/recipes')}>
+                <Pressable onPress={() => router.push({ pathname: '/member/recipes', params: { date } })}>
                     <MaterialIcons name="menu-book" size={24} color={colors.primary} />
                 </Pressable>
             </View>
@@ -805,7 +811,7 @@ const AccountCalorieLogScreen: React.FC = () => {
                     </Pressable>
                     <View style={styles.searchBarDivider} />
                     <Pressable
-                        onPress={() => router.push({ pathname: '/food-scanner', params: { meal_type: mealType } })}
+                        onPress={() => router.push({ pathname: '/food-scanner', params: { meal_type: mealType, date } })}
                         style={styles.barcodeScanBtn}
                         accessibilityLabel="Scan food photo"
                     >
@@ -815,7 +821,7 @@ const AccountCalorieLogScreen: React.FC = () => {
             </View>
 
             <View style={styles.mealContext}>
-                <Text style={styles.mealContextLabel}>ADDING TO</Text>
+                <Text style={styles.mealContextLabel}>ADDING TO {dateLabel}</Text>
                 <MealTypePicker value={mealType} onChange={setMealType} />
             </View>
 
@@ -842,6 +848,7 @@ const AccountCalorieLogScreen: React.FC = () => {
             >
             <ThaliPresets
                 mealType={mealType}
+                loggedDate={date}
                 onLogged={(preset, kcal) => {
                     toast.success('Logged!', `${preset.name} · ${kcal} kcal`);
                     refreshToday();
@@ -977,13 +984,13 @@ const AccountCalorieLogScreen: React.FC = () => {
             )}
 
                 <View style={styles.todayBlock}>
-                    <Text style={styles.servingPickerLabel}>TODAY&apos;S LOG</Text>
-                    {entriesLoading && <ActivityIndicator accessibilityLabel="Loading today's food log" color={colors.primary} />}
+                    <Text style={styles.servingPickerLabel}>{date === today ? "TODAY'S LOG" : `FOOD LOG · ${dateLabel}`}</Text>
+                    {entriesLoading && <ActivityIndicator accessibilityLabel={`Loading ${dateLabel} food log`} color={colors.primary} />}
                     {entriesError && <View>
-                        <Text accessibilityLiveRegion="polite" style={styles.todayServing}>Could not refresh today&apos;s log. {todayEntries.length ? 'Previously loaded entries are shown below.' : 'Try again to see saved meals.'}</Text>
+                        <Text accessibilityLiveRegion="polite" style={styles.todayServing}>Could not refresh {date === today ? "today's" : "this day's"} log. {todayEntries.length ? 'Previously loaded entries are shown below.' : 'Try again to see saved meals.'}</Text>
                         <TouchableOpacity accessibilityRole="button" style={{ minHeight: 48, justifyContent: 'center' }} onPress={loadTodayEntries}><Text style={styles.todayName}>Try again</Text></TouchableOpacity>
                     </View>}
-                    {!entriesLoading && !entriesError && !todayEntries.length && <Text style={styles.todayServing}>No meals logged today. Search for a food or use Quick Add above.</Text>}
+                    {!entriesLoading && !entriesError && !todayEntries.length && <Text style={styles.todayServing}>No meals logged {date === today ? 'today' : 'for this day'}. Search for a food or use Quick Add above.</Text>}
                     {groupDiaryEntries(todayEntries).map(group => <View key={group.key}>
                     <Text style={styles.mealGroupLabel}>{group.key === 'snack' ? 'Snacks' : group.title}</Text>
                     {group.entries.map((e) => (
@@ -1488,7 +1495,7 @@ const AccountCalorieLogScreen: React.FC = () => {
                             carbs: Math.round((i.carbs || 0) * (i.quantity || 1)),
                             fat: Math.round((i.fat || 0) * (i.quantity || 1))
                         }));
-                        await nutritionAPI.logBulk(payload, mealType);
+                        await nutritionAPI.logBulk(payload, mealType, undefined, date);
                         refreshToday();
                         toast.success('Logged!', `Successfully logged ${items.length} items`);
                         loadTodayEntries();

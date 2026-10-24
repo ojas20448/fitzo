@@ -5,7 +5,7 @@ import { nutritionAPI } from '../../services/api';
 const { create, act } = jest.requireActual('react-test-renderer');
 let mockUserId = 'a';
 jest.mock('../../context/AuthContext', () => ({ useAuth: () => ({ user: { id: mockUserId } }) }));
-jest.mock('../../services/api', () => ({ nutritionAPI: { getPresets: jest.fn() }, getAuthToken: jest.fn(async () => 'account-a') }));
+jest.mock('../../services/api', () => ({ nutritionAPI: { getPresets: jest.fn(), logBulk: jest.fn(async () => ({ totals: { calories: 198 } })) }, getAuthToken: jest.fn(async () => 'account-a') }));
 jest.mock('../../utils/haptics', () => ({ selectionAsync: jest.fn(), impactAsync: jest.fn(), ImpactFeedbackStyle: { Light: 'light', Medium: 'medium' } }));
 let screen: any;
 const texts = () => screen.root.findAllByType(Text).map((node: any) => node.props.children).flat().join(' ');
@@ -13,6 +13,13 @@ const button = (label: string) => screen.root.findAllByProps({ accessibilityLabe
 const response = { diet: 'vegetarian', presets: [{ id: 'veg', name: 'Roti & dal', emoji: '🍛', vegetarian: true, items: [{ meal_name: 'Dal', calories: 198, protein: 11 }] }] };
 beforeEach(() => { jest.clearAllMocks(); mockUserId = 'a'; (nutritionAPI.getPresets as jest.Mock).mockResolvedValue(response); });
 afterEach(async () => { await act(async () => screen?.unmount()); });
+it('logs a reviewed meal idea to the selected Friday', async () => {
+    await act(async () => { screen = create(<ThaliPresets loggedDate="2026-10-23" mealType="dinner" />); });
+    await act(async () => button('Open Roti & dal, about 198 calories, 1 items to adjust').props.onPress());
+    const log = screen.root.findAll((node: any) => typeof node.props.onPress === 'function' && String(node.props.accessibilityLabel).startsWith('Log meal,'))[0];
+    await act(async () => log.props.onPress());
+    expect(nutritionAPI.logBulk).toHaveBeenCalledWith([expect.objectContaining({ meal_name: 'Dal', calories: 198 })], 'dinner', 'account-a', '2026-10-23');
+});
 it('makes load failures visible and provides a retry without logging', async () => {
     (nutritionAPI.getPresets as jest.Mock).mockRejectedValueOnce(new Error('Offline'));
     await act(async () => { screen = create(<ThaliPresets />); });

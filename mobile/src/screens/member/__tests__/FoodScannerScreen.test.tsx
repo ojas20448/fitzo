@@ -3,12 +3,14 @@ import { Alert, TouchableOpacity } from 'react-native';
 import FoodScannerScreen from '../FoodScannerScreen';
 import Button from '../../../components/Button';
 import { foodPhotoAPI } from '../../../services/api';
+import { router } from 'expo-router';
 
 const { create, act } = jest.requireActual('react-test-renderer');
 const mockSave = jest.fn(async () => ({ base64: 'prepared-jpeg' }));
 const mockRender = jest.fn(async () => ({ saveAsync: mockSave }));
+let mockParams: Record<string, string> = {};
 jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock').default);
-jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}), router: { back: jest.fn(), push: jest.fn() } }));
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => mockParams, router: { back: jest.fn(), push: jest.fn() } }));
 jest.mock('../../../utils/haptics', () => ({ impactAsync: jest.fn(), ImpactFeedbackStyle: { Light: 'light' } }));
 jest.mock('expo-camera', () => {
     const React = jest.requireActual('react');
@@ -34,6 +36,7 @@ let alert: jest.SpyInstance;
 const analyze = () => screen.root.findAllByType(Button).find((n: any) => n.props.title === 'Analyze Photo');
 const capture = () => screen.root.findAllByType(TouchableOpacity).at(-1).props.onPress();
 beforeEach(async () => {
+    mockParams = {};
     mockSave.mockReset().mockResolvedValue({ base64: 'prepared-jpeg' });
     mockRender.mockReset().mockResolvedValue({ saveAsync: mockSave });
     (foodPhotoAPI.analyzePhoto as jest.Mock).mockReset().mockResolvedValue({
@@ -41,6 +44,15 @@ beforeEach(async () => {
     });
     alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     await act(async () => { screen = create(<FoodScannerScreen />); });
+});
+it('keeps Friday and the chosen meal when returning a photo result to food logging', async () => {
+    mockParams = { date: '2026-10-23', meal_type: 'dinner' };
+    await act(async () => screen.update(<FoodScannerScreen />));
+    await act(async () => { await capture(); });
+    await act(async () => { await analyze().props.onPress(); });
+    const log = screen.root.findAllByType(Button).find((n: any) => n.props.title === 'Log Food');
+    await act(async () => log.props.onPress());
+    expect(router.push).toHaveBeenLastCalledWith({ pathname: '/log/calories', params: expect.objectContaining({ date: '2026-10-23', meal_type: 'dinner', foodName: 'Banana' }) });
 });
 afterEach(async () => { await act(async () => screen?.unmount()); alert.mockRestore(); });
 

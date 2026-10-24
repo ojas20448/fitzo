@@ -1,7 +1,22 @@
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(async () => 'token-a'), setItemAsync: jest.fn(), deleteItemAsync: jest.fn() }));
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
-import api, { caloriesAPI, memberAPI, setAuthToken, healthAPI, trainerAPI } from '../../services/api';
+import api, { caloriesAPI, memberAPI, setAuthToken, healthAPI, trainerAPI, nutritionAPI } from '../../services/api';
 import { useOfflineStore } from '../../stores/offlineStore';
+
+it('sends the selected diary date with single, bulk and recipe food writes', async () => {
+    const writes: any[] = [];
+    api.defaults.adapter = async config => {
+        writes.push({ url: config.url, body: JSON.parse(config.data) });
+        return { data: {}, status: 200, statusText: 'OK', headers: {}, config };
+    };
+    const meal = { food_name: 'Dal', calories: 200, protein: 12, carbs: 30, fat: 4, serving_size: '1 bowl', meal_type: 'dinner' as const, logged_date: '2026-10-23' };
+    await nutritionAPI.logFood(meal);
+    await nutritionAPI.logBulk([{ meal_name: 'Dal', calories: 200 }], 'dinner', undefined, '2026-10-23');
+    await caloriesAPI.log({ calories: 200, meal_name: 'Recipe', logged_date: '2026-10-23' });
+    expect(writes.map(write => [write.url, write.body.logged_date])).toEqual([
+        ['/nutrition/log', '2026-10-23'], ['/nutrition/log-bulk', '2026-10-23'], ['/calories', '2026-10-23'],
+    ]);
+});
 
 it('sends the current device timezone on each request, including after travel', async () => {
     const formatter = jest.spyOn(Intl, 'DateTimeFormat');

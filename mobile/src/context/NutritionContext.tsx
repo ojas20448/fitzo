@@ -27,7 +27,7 @@ interface NutritionContextType {
     lastUpdatedAt: number;
     isLoading: boolean;
     refreshToday: () => Promise<void>;
-    logFoodOptimistic: (food: { calories: number; protein: number; carbs: number; fat: number; serving_size: string; food_name: string; cooking_medium?: string; meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'; is_estimate?: boolean; visibility?: string }) => Promise<{ isGoalHit: boolean }>;
+    logFoodOptimistic: (food: { calories: number; protein: number; carbs: number; fat: number; serving_size: string; food_name: string; cooking_medium?: string; meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'; is_estimate?: boolean; visibility?: string; logged_date?: string }) => Promise<{ isGoalHit: boolean }>;
 }
 
 const NutritionContext = createContext<NutritionContextType | undefined>(undefined);
@@ -145,10 +145,16 @@ const AccountNutritionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         is_estimate?: boolean;
         meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
         visibility?: string;
+        logged_date?: string;
     }) => {
         const token = await getAuthToken();
         if (!userId || !token || !mounted.current) throw new Error('Your session changed. Please sign in again.');
         const loggedDay = localDiaryDate();
+        if (food.logged_date !== undefined && food.logged_date !== loggedDay) {
+            await nutritionAPI.logFood(food, token);
+            void refreshToday();
+            return { isGoalHit: false };
+        }
         const previousMacros = today === loggedDay && macrosDay.current === loggedDay
             ? { ...todayMacros } : { calories: 0, protein: 0, carbs: 0, fat: 0 };
         macrosDay.current = loggedDay;

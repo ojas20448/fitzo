@@ -47,8 +47,7 @@ export default function FoodHomeScreen() {
     }, [load]));
     const day = saved?.owner === user?.id && saved?.date === date ? saved.day : null;
     const addFood = (meal?: MealType) => {
-        setDate(localDiaryDate());
-        router.push(meal ? { pathname: '/log/calories', params: { meal_type: meal } } : '/log/calories');
+        router.push({ pathname: '/log/calories', params: { date, ...(meal ? { meal_type: meal } : {}) } });
     };
     const totals = day?.totals;
     const calories = Math.round(totals?.calories || 0);
@@ -81,11 +80,10 @@ export default function FoodHomeScreen() {
             {!day.entries.length && <Text style={s.detail}>No food logged for this day.</Text>}
             {calorieGoal === null && date === today ? <Button variant="ghost" title="Set up food targets" onPress={() => router.push('/member/fitness-profile')} /> : null}
         </GlassCard>}
-        <Button title={date === today ? 'Add food' : 'Add food for today'} icon={<Ionicons name="add-outline" size={20} color={colors.text.dark} />} onPress={() => addFood()} fullWidth />
-        {date !== today && <Text style={s.detail}>Adding food records it in today&apos;s diary. You can edit this day&apos;s saved entries below.</Text>}
+        <Button title="Add food" icon={<Ionicons name="add-outline" size={20} color={colors.text.dark} />} onPress={() => addFood()} fullWidth />
         {day && <View style={styles.meals}><Text style={s.section}>Meals</Text>{meals.map(group => <GlassCard key={group.key}>
             <View style={styles.mealHeader}><View style={s.actionIcon}><Ionicons name={mealIcons[group.key]} size={20} color={colors.text.secondary} /></View><View style={s.grow}><Text style={s.title}>{group.title}</Text>{group.entries.length > 0 && <Text style={styles.dateDetail}>{Math.round(group.entries.reduce((sum, item) => sum + Number(item.calories || 0), 0))} kcal</Text>}</View>
-                {group.key !== 'other' && <Pressable accessibilityRole="button" accessibilityLabel={`Add ${group.key}${date !== today ? ' for today' : ''}`} style={styles.mealAdd} onPress={() => addFood(group.key as MealType)}><Ionicons name="add-outline" size={18} color={colors.primary} /><Text style={styles.link}>{date === today ? 'Add' : 'Add for today'}</Text></Pressable>}
+                {group.key !== 'other' && <Pressable accessibilityRole="button" accessibilityLabel={`Add ${group.key}`} style={styles.mealAdd} onPress={() => addFood(group.key as MealType)}><Ionicons name="add-outline" size={18} color={colors.primary} /><Text style={styles.link}>Add</Text></Pressable>}
             </View>
             {!group.entries.length && <Text style={styles.emptyMeal}>Nothing logged yet.</Text>}
             {group.entries.map(item => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`Edit ${item.food_name || 'food entry'}`} style={({ pressed }) => [styles.foodRow, pressed && s.pressed]} onPress={() => setEntry(item)}>
@@ -95,7 +93,7 @@ export default function FoodHomeScreen() {
         </GlassCard>)}</View>}
         <View style={styles.meals}><Text style={s.section}>Food tools</Text><GlassCard>
             <MemberAction icon="time-outline" title="Recent foods & quick add" detail="Repeat foods and your saved shortcuts" onPress={() => addFood()} />
-            <MemberAction icon="book-outline" title="Recipes & saved meals" onPress={() => router.push('/member/recipes')} />
+            <MemberAction icon="book-outline" title="Recipes & saved meals" onPress={() => router.push({ pathname: '/member/recipes', params: { date } })} />
         </GlassCard></View>
         <GlassCard><MemberAction icon="stats-chart-outline" title="Nutrition details" onPress={() => router.push('/member/nutrition-insights')} /><MemberAction icon="bulb-outline" title="Ask Spotter" detail="Ask about your food or nutrition" onPress={() => router.push({ pathname: '/ai-coach', params: { source: 'food', prompt: 'Help me review my recent food logs.' } })} /></GlassCard>
         <FoodEntrySheet entry={saved?.owner === user?.id ? entry : null} onClose={() => setEntry(null)} onChanged={() => { void load(); void refreshToday(); }} />

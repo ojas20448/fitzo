@@ -9,6 +9,7 @@ import type { MealType } from '../utils/foodPortion';
 
 interface ThaliPresetsProps {
     mealType?: MealType;
+    loggedDate?: string;
     onLogged?: (preset: Preset, totalCalories: number) => void;
     onError?: (message: string) => void;
 }
@@ -26,7 +27,7 @@ const ThaliPresets: React.FC<ThaliPresetsProps> = (props) => {
     return user ? <MealIdeas key={user.id} {...props} /> : null;
 };
 
-const MealIdeas: React.FC<ThaliPresetsProps> = ({ onLogged, onError, mealType }) => {
+const MealIdeas: React.FC<ThaliPresetsProps> = ({ onLogged, onError, mealType, loggedDate }) => {
     const [presets, setPresets] = useState<Preset[]>([]);
     const [open, setOpen] = useState<Preset | null>(null);
     const [diet, setDiet] = useState<'vegetarian' | 'all' | undefined>();
@@ -89,6 +90,7 @@ const MealIdeas: React.FC<ThaliPresetsProps> = ({ onLogged, onError, mealType })
 
             <MealBuilderSheet
                 preset={open}
+                loggedDate={loggedDate}
                 onClose={() => setOpen(null)}
                 onLogged={(p, total) => onLogged?.(p, total)}
                 onError={(m) => onError?.(m)}

@@ -35,7 +35,7 @@ test('logs the reviewed portions and meal type atomically and preserves legacy b
     expect(res.body.totals.calories).toBe(301);
     const inserts = query.mock.calls.filter(([sql]) => sql.includes('INSERT INTO calorie_logs'));
     expect(inserts).toHaveLength(1);
-    expect(inserts[0][1]).toEqual(['u1', 'Rice', 103, 2, 0, 0, '0.5 cup · 75 g, cooked', 'lunch', 'friends', true, 'u1', 'Dal', 198, 11, 0, 0, '1 cup · 200 g, cooked', 'lunch', 'friends', false]);
+    expect(inserts[0][1]).toEqual(['u1', 'Rice', 103, 2, 0, 0, '0.5 cup · 75 g, cooked', 'lunch', 'friends', true, 'u1', 'Dal', 198, 11, 0, 0, '1 cup · 200 g, cooked', 'lunch', 'friends', false, null]);
     expect(inserts[0][0]).toContain('is_estimate');
     expect((await request(app).post('/nutrition/log-bulk').send({ items: [{ meal_name: 'Roti', calories: 120 }] })).status).toBe(201);
 });

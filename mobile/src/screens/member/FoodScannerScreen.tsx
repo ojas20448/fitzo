@@ -14,7 +14,7 @@ import { foodJobsEnabled, loadPendingScan, clearPendingScan, submitScan, scanSta
 import { isMealType } from '../../utils/foodPortion';
 
 export default function FoodScannerScreen() {
-    const params = useLocalSearchParams<{ meal_type?: string }>();
+    const params = useLocalSearchParams<{ meal_type?: string; date?: string }>();
     const [permission, requestPermission] = useCameraPermissions();
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const [preparingPhoto, setPreparingPhoto] = useState(false);
@@ -218,6 +218,7 @@ export default function FoodScannerScreen() {
                     fat: detectedFood.fat_g,
                     source: 'camera_scan',
                     ...(isMealType(params.meal_type) ? { meal_type: params.meal_type } : {}),
+                    ...(params.date !== undefined ? { date: params.date } : {}),
                 }
             });
         } catch (error: any) {
