@@ -1,5 +1,9 @@
 import { EMPTY_ONBOARDING, restoreOnboarding, startingSplit, validateBody, validateStep } from '../onboardingPlan';
 const form = { ...EMPTY_ONBOARDING, goal: 'maintenance' as const, days: 3, experience: 'new' as const, equipment: 'gym' as const, sessionMinutes: 35 as const, activity: 'light' as const, height: '175', weight: '70', age: '25', gender: 'male' as const, vegetarian: false };
+test('restores a 90-minute setup draft and rejects the unoffered 120-minute value', () => {
+    expect(restoreOnboarding(JSON.stringify({ version: 1, step: 2, form: { ...form, sessionMinutes: 90 } }))?.form.sessionMinutes).toBe(90);
+    expect(restoreOnboarding(JSON.stringify({ version: 1, step: 2, form: { ...form, sessionMinutes: 120 } }))?.form.sessionMinutes).toBeNull();
+});
 test('routine validation identifies the next unanswered choice', () => {
     expect(validateStep(2, { ...form, experience: null, equipment: null })).toBe('Choose your training experience.');
     expect(validateStep(2, { ...form, equipment: null })).toBe('Choose the equipment you can train with.');

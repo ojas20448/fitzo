@@ -170,11 +170,11 @@ const styles = StyleSheet.create({
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 6,
+        rowGap: 6,
         justifyContent: 'flex-start',
     },
     dayContainer: {
-        width: '13%',
+        width: '14.285714%',
         aspectRatio: 1,
         justifyContent: 'center',
         alignItems: 'center',

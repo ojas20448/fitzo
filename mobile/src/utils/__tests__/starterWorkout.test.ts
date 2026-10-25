@@ -38,6 +38,14 @@ test('bodyweight draft starts at zero external weight and no suggestion counts a
     expect(readStarterPlan({ ...plan, sessions: [null] })).toBeNull();
     expect(readStarterPlan({ ...plan, sessions: [{ day_name: 'Full Body A', exercises: [{ id: 'made-up', set_count: 3, reps: 10 }] }] })).toBeNull();
 });
+test('90-minute plans survive validation and open as editable, unperformed suggestions', () => {
+    const plan = buildStarterPlan(['Upper A'], { experience: 'returning', equipment: 'gym', session_minutes: 90 });
+    expect(readStarterPlan(plan)).toEqual(plan);
+    const draft = starterSessionDraft(plan, 'Upper A')!;
+    expect(draft.length).toBeGreaterThan(0);
+    expect(draft.every(exercise => exercise.sets.every(set => !set.completed))).toBe(true);
+    expect(readStarterPlan({ ...plan, preferences: { ...plan.preferences, session_minutes: 120 } })).toBeNull();
+});
 test('prior performed work wins; inactive, mismatched and corrupt starting templates are ignored', () => {
     const plan = buildStarterPlan(['Upper A'], { experience: 'new', equipment: 'gym', session_minutes: 35 });
     const splits = [{ is_active: true, split_id: 'upper_lower', days: ['Upper A'], training_plan: plan }];

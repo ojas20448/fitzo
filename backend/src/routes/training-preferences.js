@@ -10,7 +10,7 @@ const router = express.Router();
 const preferencesSchema = z.object({
     experience: z.enum(['new', 'returning', 'regular']),
     equipment: z.enum(['gym', 'dumbbells', 'bodyweight']),
-    session_minutes: z.union([z.literal(20), z.literal(35), z.literal(50)]),
+    session_minutes: z.union([z.literal(20), z.literal(35), z.literal(50), z.literal(90)]),
     goal_type: z.enum(['fat_loss', 'maintenance', 'muscle_gain']),
 }).strict();
 const splitSchema = z.object({

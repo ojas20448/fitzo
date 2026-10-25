@@ -16,6 +16,7 @@ import {
     Linking,
 } from 'react-native';
 import AIConsentModal, { getAIConsent } from '../../components/AIConsentModal';
+import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -293,7 +294,7 @@ function TypingDots() {
                     </View>
                 ) : (
                     <View style={styles.spotterBody}>
-                        <Text style={styles.textSpotter}>{item.content}</Text>
+                        <Markdown style={markdownStyles} rules={{ image: () => null }} onLinkPress={url => /^https?:\/\//i.test(url)}>{item.content}</Markdown>
                     </View>
                 )}
             </View>
@@ -794,4 +795,14 @@ const styles = StyleSheet.create({
         fontSize: typography.sizes.sm,
         fontFamily: typography.fontFamily.medium,
     },
+});
+
+const markdownStyles = StyleSheet.create({
+    body: styles.textSpotter,
+    paragraph: { marginTop: 0, marginBottom: spacing.sm },
+    strong: { fontFamily: typography.fontFamily.bold, fontWeight: 'normal' },
+    heading1: { fontFamily: typography.fontFamily.bold, fontSize: 20, lineHeight: 28, marginBottom: spacing.sm },
+    heading2: { fontFamily: typography.fontFamily.bold, fontSize: 18, lineHeight: 26, marginBottom: spacing.sm },
+    heading3: { fontFamily: typography.fontFamily.bold, fontSize: 16, lineHeight: 24, marginBottom: spacing.sm },
+    link: { color: colors.text.primary, textDecorationLine: 'underline' },
 });

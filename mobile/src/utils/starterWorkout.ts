@@ -3,10 +3,11 @@ import type { UserExercise } from '../components/workout/types';
 
 export type TrainingExperience = 'new' | 'returning' | 'regular';
 export type TrainingEquipment = 'gym' | 'dumbbells' | 'bodyweight';
+export const SESSION_MINUTES = [20, 35, 50, 90] as const;
 export interface TrainingPreferences {
     experience: TrainingExperience;
     equipment: TrainingEquipment;
-    session_minutes: 20 | 35 | 50;
+    session_minutes: typeof SESSION_MINUTES[number];
 }
 export interface SavedTrainingPreferences extends TrainingPreferences {
     goal_type: 'fat_loss' | 'maintenance' | 'muscle_gain';
@@ -77,7 +78,7 @@ export function readStarterPlan(value: unknown): StarterWorkoutPlan | null {
     const plan = value as StarterWorkoutPlan;
     const p = plan.preferences;
     if (plan.version !== 1 || !p || !['new', 'returning', 'regular'].includes(p.experience)
-        || !['gym', 'dumbbells', 'bodyweight'].includes(p.equipment) || ![20, 35, 50].includes(p.session_minutes)
+        || !['gym', 'dumbbells', 'bodyweight'].includes(p.equipment) || !SESSION_MINUTES.includes(p.session_minutes)
         || !Array.isArray(plan.sessions) || plan.sessions.length < 1 || plan.sessions.length > 6) return null;
     for (const session of plan.sessions) {
         if (!session || typeof session.day_name !== 'string' || !session.day_name.trim() || session.day_name.length > 80

@@ -1,4 +1,4 @@
-import type { TrainingExperience, TrainingEquipment } from './starterWorkout';
+import { SESSION_MINUTES, type TrainingExperience, type TrainingEquipment, type TrainingPreferences } from './starterWorkout';
 export type Goal = 'fat_loss' | 'maintenance' | 'muscle_gain';
 export type Activity = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
 export interface OnboardingForm {
@@ -7,7 +7,7 @@ export interface OnboardingForm {
     activity: Activity | null;
     experience: TrainingExperience | null;
     equipment: TrainingEquipment | null;
-    sessionMinutes: 20 | 35 | 50 | null;
+    sessionMinutes: TrainingPreferences['session_minutes'] | null;
     height: string;
     weight: string;
     age: string;
@@ -70,7 +70,7 @@ export function restoreOnboarding(raw: string | null): { step: number; form: Onb
         if (['sedentary', 'light', 'moderate', 'active', 'very_active'].includes(source.activity)) form.activity = source.activity;
         if (['new', 'returning', 'regular'].includes(source.experience)) form.experience = source.experience;
         if (['gym', 'dumbbells', 'bodyweight'].includes(source.equipment)) form.equipment = source.equipment;
-        if ([20, 35, 50].includes(source.sessionMinutes)) form.sessionMinutes = source.sessionMinutes;
+        if (SESSION_MINUTES.includes(source.sessionMinutes)) form.sessionMinutes = source.sessionMinutes;
         if (['male', 'female'].includes(source.gender)) form.gender = source.gender;
         if (typeof source.vegetarian === 'boolean') form.vegetarian = source.vegetarian;
         for (const key of ['height', 'weight', 'age', 'customCalories'] as const) {

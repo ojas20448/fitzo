@@ -398,7 +398,7 @@ export default function HealthReportScreen() {
                     {/* ── Weekly Steps Chart ── */}
                     {healthHistory?.daily.some(day => day.steps != null) && (
                         <Animated.View entering={FadeInDown.delay(400).duration(600).springify()} style={styles.sectionBlock}>
-                            <Text style={styles.sectionTitle}>STEPS THIS WEEK</Text>
+                            <View style={styles.sectionHeaderRow}><Text style={styles.sectionTitle}>STEPS THIS WEEK</Text></View>
                             <GlassCard style={styles.innerCard}>
                                 <MiniBarChart
                                     data={healthHistory.daily.filter(d => d.steps != null).map((d) => ({
@@ -414,7 +414,7 @@ export default function HealthReportScreen() {
                     {/* ── Body Composition ── */}
                     {measurements && Object.values(measurements).some(value => value != null) && (
                         <Animated.View entering={FadeInDown.delay(500).duration(600).springify()} style={styles.sectionBlock}>
-                            <Text style={styles.sectionTitle}>BODY COMPOSITION</Text>
+                            <View style={styles.sectionHeaderRow}><Text style={styles.sectionTitle}>BODY COMPOSITION</Text></View>
                             <GlassCard style={styles.innerCard}>
                                 <View style={styles.bodyRow}>
                                     {measurements.weight != null && <BodyStat label="Weight" value={`${measurements.weight}`} unit="kg" />}
@@ -429,7 +429,7 @@ export default function HealthReportScreen() {
                     {/* ── Nutrition Targets ── */}
                     {hasNutrition && (
                         <Animated.View entering={FadeInDown.delay(600).duration(600).springify()} style={styles.sectionBlock}>
-                            <Text style={styles.sectionTitle}>DAILY NUTRITION TARGETS</Text>
+                            <View style={styles.sectionHeaderRow}><Text style={styles.sectionTitle}>DAILY NUTRITION TARGETS</Text></View>
                             <GlassCard style={styles.innerCard}>
                                 <View style={styles.macroRow}>
                                     <MacroStat label="Calories" value={nutrition!.target_calories} unit="kcal" color={colors.accent.orange} />
@@ -444,7 +444,7 @@ export default function HealthReportScreen() {
                     {/* ── Personal Records ── */}
                     {prs.length > 0 && (
                         <Animated.View entering={FadeInDown.delay(700).duration(600).springify()} style={styles.sectionBlock}>
-                            <Text style={styles.sectionTitle}>TOP PERSONAL RECORDS</Text>
+                            <View style={styles.sectionHeaderRow}><Text style={styles.sectionTitle}>TOP PERSONAL RECORDS</Text></View>
                             <GlassCard style={styles.innerCard}>
                                 {prs.map((pr, i) => (
                                     <View key={i}>

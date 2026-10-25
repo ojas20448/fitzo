@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { colors, typography } from '../styles/theme';
-import { EXPERIENCE_CHOICES, EQUIPMENT_CHOICES, TrainingPreferences } from '../utils/starterWorkout';
+import { EXPERIENCE_CHOICES, EQUIPMENT_CHOICES, SESSION_MINUTES, TrainingPreferences } from '../utils/starterWorkout';
 
 export type TrainingAnswers = { days: number | null; experience: TrainingPreferences['experience'] | null; equipment: TrainingPreferences['equipment'] | null; sessionMinutes: TrainingPreferences['session_minutes'] | null };
 export default function TrainingChoices({ value, onChange, disabled = false }: {
@@ -43,8 +43,8 @@ export default function TrainingChoices({ value, onChange, disabled = false }: {
             </TouchableOpacity>)}
         </View>)}
         <Text style={s.heading}>Time for each session</Text>
-        <View style={s.sessions}>{([20, 35, 50] as const).map(minutes => <TouchableOpacity key={minutes} disabled={disabled}
-            style={[s.session, value.sessionMinutes === minutes && s.selected]} onPress={() => onChange({ sessionMinutes: minutes })}
+        <View style={s.sessions}>{SESSION_MINUTES.map(minutes => <TouchableOpacity key={minutes} disabled={disabled}
+            style={[s.session, compact && s.compactSession, value.sessionMinutes === minutes && s.selected]} onPress={() => onChange({ sessionMinutes: minutes })}
             accessibilityRole="radio" accessibilityLabel={`About ${minutes} minutes`} accessibilityState={{ checked: value.sessionMinutes === minutes, selected: value.sessionMinutes === minutes, disabled }} aria-checked={value.sessionMinutes === minutes}>
             <Text style={s.title}>{minutes} min</Text>
         </TouchableOpacity>)}</View>
@@ -59,5 +59,6 @@ const s = StyleSheet.create({
     select: { minHeight: 52, flexDirection: 'row', gap: 12, alignItems: 'center', padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#333', backgroundColor: '#101010' },
     grow: { flex: 1, minWidth: 0 }, option: { minHeight: 48, padding: 14, marginTop: 8, borderWidth: 1, borderColor: '#333', borderRadius: 12, backgroundColor: '#101010' }, optionRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     sessions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, session: { flex: 1, flexBasis: 70, minWidth: 70, minHeight: 52, padding: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#333', borderRadius: 12, backgroundColor: '#101010' },
+    compactSession: { flexBasis: '45%' },
     selected: { borderColor: colors.text.primary, backgroundColor: colors.surfaceLighter },
 });

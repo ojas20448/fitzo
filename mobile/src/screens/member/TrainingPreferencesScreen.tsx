@@ -10,7 +10,7 @@ import ScreenBackdrop from '../../components/ScreenBackdrop';
 import TrainingChoices, { TrainingAnswers } from '../../components/TrainingChoices';
 import { colors, typography } from '../../styles/theme';
 import { startingSplit, Goal } from '../../utils/onboardingPlan';
-import { buildStarterPlan, SavedTrainingPreferences, starterSessionDraft } from '../../utils/starterWorkout';
+import { buildStarterPlan, SavedTrainingPreferences, SESSION_MINUTES, starterSessionDraft } from '../../utils/starterWorkout';
 
 const GOALS = [{ id: 'fat_loss', title: 'Lose fat' }, { id: 'maintenance', title: 'Maintain' }, { id: 'muscle_gain', title: 'Build muscle' }] as const;
 const EMPTY: TrainingAnswers = { days: null, experience: null, equipment: null, sessionMinutes: null };
@@ -50,7 +50,7 @@ function Editor() {
             setAnswers({ days: [1, 2, 3, 4, 5, 6].includes(data.split?.days_per_week) ? data.split.days_per_week : null,
                 experience: ['new', 'returning', 'regular'].includes(p?.experience) ? p.experience : null,
                 equipment: ['gym', 'dumbbells', 'bodyweight'].includes(p?.equipment) ? p.equipment : null,
-                sessionMinutes: [20, 35, 50].includes(p?.session_minutes) ? p.session_minutes : null });
+                sessionMinutes: SESSION_MINUTES.includes(p?.session_minutes) ? p.session_minutes : null });
             setReplace(false); setReview(false); setConfirmRemove(false);
         } catch (e: any) { if (mounted.current) setError(e.message || 'Could not load your training preferences.'); }
         finally { if (mounted.current) setLoading(false); }

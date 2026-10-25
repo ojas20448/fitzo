@@ -93,3 +93,14 @@ test('removal clears embedded preferences across this account but keeps history,
     assert.equal((await db.query('SELECT training_plan FROM user_splits WHERE user_id = $1', [other])).rows[0].training_plan.version, 1);
     assert.equal((await db.query('SELECT exercises FROM workout_logs WHERE user_id = $1', [user])).rows[0].exercises[0].sets[0].weight, 40);
 });
+
+test('90-minute preferences and a matching starting plan save and reload together', async () => {
+    await db.exec(fs.readFileSync(path.join(__dirname, '../data/migrations/022_training_first_setup.sql'), 'utf8'));
+    const current = (await request(app).get('/sessions/training-preferences')).body.split;
+    const longer = { ...replacement, training_plan: { ...replacement.training_plan, preferences: { ...replacement.training_plan.preferences, session_minutes: 90 } } };
+    const res = await request(app).put('/sessions/training-preferences').send({ preferences: { ...preferences, session_minutes: 90 }, expected_split_id: current.id, replacement: longer });
+    assert.equal(res.status, 200);
+    const saved = (await request(app).get('/sessions/training-preferences')).body;
+    assert.equal(saved.preferences.session_minutes, 90);
+    assert.equal(saved.split.training_plan.preferences.session_minutes, 90);
+});

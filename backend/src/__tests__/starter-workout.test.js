@@ -42,7 +42,7 @@ test('legacy custom splits do not require the new column', async () => {
     expect(insert[0]).not.toContain('training_plan'); expect(insert[1]).toHaveLength(5);
 });
 test.each([
-    { ...plan, preferences: { ...plan.preferences, session_minutes: 90 } },
+    { ...plan, preferences: { ...plan.preferences, session_minutes: 120 } },
     { ...plan, preferences: { ...plan.preferences, equipment: 'bodyweight' } },
     { ...plan, sessions: [{ ...plan.sessions[0], day_name: 'Push' }] },
     { ...plan, sessions: [{ ...plan.sessions[0], exercises: [{ id: 'unknown', set_count: 2, reps: 10 }] }] },
@@ -59,6 +59,10 @@ test('latest lookup binds the selected day to the owning source workout', async 
     expect(sql).toContain('s.source_workout_log_id = w.id');
     expect(sql).toContain('s.user_id = $1'); expect(sql).toContain('w.completed = true');
     expect(args).toEqual(['member', ['chest', 'push'], 'Full Body B']);
+});
+test('accepts a 90-minute starting plan and retains its selected time', () => {
+    const longer = { ...plan, preferences: { ...plan.preferences, session_minutes: 90 } };
+    expect(validateStarterPlan(longer, split.days)).toEqual(longer);
 });
 test('template validator accepts absence and legacy latest queries remain supported', async () => {
     expect(validateStarterPlan(undefined, split.days)).toBeNull();

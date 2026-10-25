@@ -29,6 +29,15 @@ it('prefills an editable prompt without submitting a chat message', async () => 
     expect(screen.root.findByType(TextInput).props.value).toBe('Review my meals');
     expect(aiAPI.chat).not.toHaveBeenCalled();
 });
+it('renders coach headings, emphasis and list items without literal Markdown markers', async () => {
+    (aiAPI.getChatHistory as jest.Mock).mockResolvedValueOnce({ success: true, history: [{ id: 'reply', sender: 'assistant', message: '**Training:**\n\n1. **Consistency:** Keep your next session manageable.', created_at: '2026-10-25T00:00:00Z' }] });
+    await act(async () => { screen = create(<AICoachScreen />); });
+    expect(texts()).toContain('Training:');
+    expect(texts()).toContain('Consistency:');
+    expect(texts()).toContain('Keep your next session manageable.');
+    expect(texts()).not.toContain('**Training:**');
+    expect(texts()).not.toContain('**Consistency:**');
+});
 it('uses the shared consent source and does not fetch coach data before acceptance', async () => {
     (getAIConsent as jest.Mock).mockResolvedValue(false);
     await act(async () => { screen = create(<AICoachScreen />); });

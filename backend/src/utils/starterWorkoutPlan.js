@@ -14,7 +14,7 @@ const schema = z.object({
     preferences: z.object({
         experience: z.enum(['new', 'returning', 'regular']),
         equipment: z.enum(['gym', 'dumbbells', 'bodyweight']),
-        session_minutes: z.union([z.literal(20), z.literal(35), z.literal(50)]),
+        session_minutes: z.union([z.literal(20), z.literal(35), z.literal(50), z.literal(90)]),
     }).strict(),
     sessions: z.array(z.object({
         day_name: z.string().trim().min(1).max(80),

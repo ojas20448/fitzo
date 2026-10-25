@@ -32,6 +32,18 @@ it('reviews preferences without replacing a custom routine by default', async ()
     expect(workoutsAPI.saveTrainingPreferences).toHaveBeenCalledWith({ preferences, expected_split_id: split.id }, 'session-a');
     expect(mockWeekly).not.toHaveBeenCalled();
 });
+it('saves the 90-minute option without replacing an existing routine', async () => {
+    await mount(); await press('About 90 minutes'); await press('Review changes'); await press('Save changes');
+    expect(workoutsAPI.saveTrainingPreferences).toHaveBeenCalledWith({ preferences: { ...preferences, session_minutes: 90 }, expected_split_id: split.id }, 'session-a');
+    expect(text()).not.toContain('120 min');
+});
+it('restores the saved 90-minute selection when preferences reopen', async () => {
+    (workoutsAPI.getTrainingPreferences as jest.Mock).mockResolvedValue({ preferences: { ...preferences, session_minutes: 90 }, split, age: 25 });
+    await mount();
+    expect(screen.root.findAllByType(TouchableOpacity).find((node: any) => node.props.accessibilityLabel === 'About 90 minutes').props.accessibilityState.checked).toBe(true);
+    await press('Review changes'); await press('Save changes');
+    expect(workoutsAPI.saveTrainingPreferences).toHaveBeenCalledWith({ preferences: { ...preferences, session_minutes: 90 }, expected_split_id: split.id }, 'session-a');
+});
 it('previews equipment-specific exercises and applies a routine only after confirmation', async () => {
     await mount(); await press('Choose training equipment'); await press('No equipment'); await press('Preview a replacement routine'); await press('Review changes');
     expect(text()).toContain('Bodyweight Squat'); expect(text()).not.toContain('Leg Press');
