@@ -1,6 +1,7 @@
 # Diary and exercise settings — October 25, 2026
 
-Implemented the five requested improvements in the local working tree.
+Implemented the five requested improvements. Deployment details are recorded in
+`docs/releases/2026-10-25-diary-and-exercise-settings-ota.md`.
 
 - Saved food entries can move to another diary date in one PATCH. The same row,
   nutrition and ownership are retained. Explicit moves pin legacy timezone data
@@ -22,11 +23,12 @@ Implemented the five requested improvements in the local working tree.
 
 ## Backend and rollout
 
-Apply `backend/data/migrations/026_exercise_preferences.sql` before deploying
+Applied `backend/data/migrations/026_exercise_preferences.sql` before deploying
 the backend and publishing a compatible OTA. It creates one private table with
 row-level security, an account/exercise primary key, bounded note/rest values,
 and cascading account deletion. Its idempotence was tested against isolated
-PostgreSQL-compatible storage. No production migration or deployment was run.
+PostgreSQL-compatible storage. The production migration and schema constraints
+were verified before updating the API.
 
 The authenticated GET and PATCH `/api/settings/exercises` endpoints scope every
 read/write to the current account. Existing workout records and shared history
