@@ -10,6 +10,7 @@
  */
 
 const { MAX_ITEM_CALORIES, MAX_ITEM_MACRO_GRAMS } = require('./mealCombo');
+const { isValidDateString } = require('./dayBoundary');
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 const MACRO_FIELDS = ['protein', 'carbs', 'fat'];
@@ -28,6 +29,10 @@ function validateEntryPatch(body) {
     if (!body || typeof body !== 'object') return fail('Nothing to update');
 
     const fields = {};
+    if ('logged_date' in body) {
+        if (!isValidDateString(body.logged_date)) return fail('logged_date must be a real date in YYYY-MM-DD format');
+        fields.logged_date = body.logged_date;
+    }
 
     if ('calories' in body) {
         // `Number(null) === 0`, which would silently accept a null as a real

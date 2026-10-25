@@ -156,6 +156,22 @@ test('explicitly backdated legacy meals keep their chosen date', async () => {
     assert.equal((await call('get', '/calories/today')).body.totals.calories, 0);
 });
 
+test('moving a legacy meal updates the same row and pins its chosen day during travel', async () => {
+    clock = '2026-10-25T12:00:00Z';
+    const row = (await db.query("INSERT INTO calorie_logs (user_id, food_name, calories, protein, logged_date, created_at) VALUES ('member', 'Rice', 200, 4, '2026-10-25', '2026-10-23T22:30:00Z') RETURNING id")).rows[0];
+    const moved = await call('patch', '/calories/' + row.id).send({ logged_date: '2026-10-24' });
+    assert.equal(moved.status, 200);
+    assert.equal(moved.body.entry.id, row.id);
+    assert.equal(Number(moved.body.entry.protein), 4);
+    assert.equal((await call('get', '/calories/day/2026-10-24')).body.totals.calories, 200);
+    assert.equal((await call('get', '/calories/today')).body.totals.calories, 0);
+    assert.equal((await call('get', '/calories/day/2026-10-24', 'Asia/Kolkata')).body.totals.calories, 200);
+    assert.equal((await db.query('SELECT count(*)::int AS n FROM calorie_logs')).rows[0].n, 1);
+    assert.equal((await call('patch', '/calories/' + row.id).send({ logged_date: '2026-02-30' })).status, 400);
+    await db.query("UPDATE calorie_logs SET user_id = 'another-member' WHERE id = $1", [row.id]);
+    assert.equal((await call('patch', '/calories/' + row.id).send({ logged_date: '2026-10-22' })).status, 404);
+});
+
 test('shared food totals use each owner timezone and keep private meals hidden', async () => {
     await db.exec(`INSERT INTO users (id, timezone) VALUES ('india', 'Asia/Kolkata'), ('uk', 'Europe/London');
         INSERT INTO calorie_logs (user_id, calories, logged_date, created_at, visibility) VALUES

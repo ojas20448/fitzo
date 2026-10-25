@@ -10,6 +10,10 @@ const { validateEntryPatch } = require('../utils/entryEdit');
 const { MAX_ITEM_CALORIES, MAX_ITEM_MACRO_GRAMS } = require('../utils/mealCombo');
 
 describe('validateEntryPatch', () => {
+    it('accepts a real diary date without changing omitted food fields', () => {
+        expect(validateEntryPatch({ logged_date: '2024-02-29' })).toEqual({ valid: true, error: null, fields: { logged_date: '2024-02-29' } });
+        for (const logged_date of ['2026-02-29', '2026-02-30', '', null, 42]) expect(validateEntryPatch({ logged_date }).valid).toBe(false);
+    });
     it('returns only the fields that were sent', () => {
         const r = validateEntryPatch({ calories: 250 });
         expect(r.valid).toBe(true);

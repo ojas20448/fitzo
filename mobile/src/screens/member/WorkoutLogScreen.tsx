@@ -60,6 +60,8 @@ import WorkoutSetEditor from '../../components/workout/WorkoutSetEditor';
 import { invalidateExerciseHistory } from '../../hooks/useExerciseHistory';
 import { routineUpdate } from '../../utils/routineUpdate';
 import { workoutNumber } from '../../utils/workoutNumber';
+import { useExercisePreferences } from '../../hooks/useExercisePreferences';
+import ExercisePreferencesSheet from '../../components/workout/ExercisePreferencesSheet';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -69,6 +71,15 @@ const WorkoutLogScreen: React.FC = () => {
     const toast = useToast();
     const params = useLocalSearchParams();
     const { user, token } = useAuth();
+    const exercisePreferences = useExercisePreferences(user?.id);
+    const [exerciseSettings, setExerciseSettings] = useState<{ owner: string; exercise: UserExercise } | null>(null);
+    const settingsExercise = exerciseSettings?.owner === user?.id ? exerciseSettings?.exercise : null;
+    const editExercisePreferences = useCallback((exercise: UserExercise) => {
+        if (!user?.id) return;
+        void exercisePreferences.reload();
+        setExerciseSettings({ owner: user.id, exercise });
+    }, [user?.id, exercisePreferences.reload]);
+    useEffect(() => { setExerciseSettings(null); }, [user?.id]);
     const { inputMode, selectMode } = useWorkoutInputMode(user?.id);
     const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(false);
@@ -344,12 +355,12 @@ const WorkoutLogScreen: React.FC = () => {
 
     const restTargetTimeRef = useRef<number | null>(null);
 
-    const startRestTimer = useCallback(() => {
+    const startRestTimer = useCallback((seconds = restDuration) => {
         if (restIntervalRef.current) clearInterval(restIntervalRef.current);
 
-        const targetTime = Date.now() + restDuration * 1000;
+        const targetTime = Date.now() + seconds * 1000;
         restTargetTimeRef.current = targetTime;
-        setRestSeconds(restDuration);
+        setRestSeconds(seconds);
         setRestActive(true);
 
         restIntervalRef.current = setInterval(() => {
@@ -366,6 +377,10 @@ const WorkoutLogScreen: React.FC = () => {
             }
         }, 500);
     }, [restDuration]);
+    const startExerciseRest = useCallback((exercise: UserExercise) => {
+        const seconds = exercisePreferences.preferences[exercise.name.trim().toLowerCase()]?.rest_seconds ?? (restTimerEnabled ? restDuration : 0);
+        if (seconds > 0) startRestTimer(seconds);
+    }, [exercisePreferences.preferences, restTimerEnabled, restDuration, startRestTimer]);
 
     const dismissRestTimer = useCallback(() => {
         if (restIntervalRef.current) clearInterval(restIntervalRef.current);
@@ -612,16 +627,13 @@ const WorkoutLogScreen: React.FC = () => {
                     }, 80);
                     // The rest timer is opt-in, so completing a set no longer
                     // pops a countdown unless it was asked for.
-                    if (restTimerEnabled) {
-                        // setTimeout avoids setState-in-setState.
-                        setTimeout(() => startRestTimer(), 0);
-                    }
+                    setTimeout(() => startExerciseRest(updated[exerciseIndex]), 0);
                 }
 
                 return updated;
             });
         },
-        [startRestTimer, restTimerEnabled, showRir],
+        [startExerciseRest, showRir],
     );
 
     const handleToggleUnilateral = useCallback((eIdx: number) => {
@@ -670,7 +682,7 @@ const WorkoutLogScreen: React.FC = () => {
         }));
         if (complete && !set.completed) {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            if (restTimerEnabled) startRestTimer();
+            startExerciseRest(exercise);
         }
         closePicker();
     };
@@ -824,9 +836,11 @@ const WorkoutLogScreen: React.FC = () => {
                 onRemoveSet={removeSet}
                 onToggleUnilateral={handleToggleUnilateral}
                 onOpenPicker={openPicker}
+                preference={exercisePreferences.preferences[item.name.trim().toLowerCase()]}
+                onEditPreferences={editExercisePreferences}
             />
         ),
-        [showRir, updateSet, addSet, removeExercise, removeSet, handleToggleUnilateral, openPicker],
+        [showRir, updateSet, addSet, removeExercise, removeSet, handleToggleUnilateral, openPicker, exercisePreferences.preferences, editExercisePreferences],
     );
 
     // Header component for FlatList
@@ -1224,8 +1238,8 @@ const WorkoutLogScreen: React.FC = () => {
                         <Text style={styles.restConfigTitle}>Rest Timer</Text>
                         <Text style={styles.restConfigSubtitle}>
                             {restTimerEnabled
-                                ? 'A countdown appears after each completed set'
-                                : 'Off — completing a set will not interrupt you'}
+                                ? 'A countdown appears unless an exercise has its own rest setting'
+                                : 'Default off. Exercises with a saved rest time can still start their timer.'}
                         </Text>
 
                         <Pressable
@@ -1242,7 +1256,7 @@ const WorkoutLogScreen: React.FC = () => {
                                     .catch(() => {});
                             }}
                         >
-                            <Text style={styles.restToggleLabel}>Show rest timer</Text>
+                            <Text style={styles.restToggleLabel}>Default rest timer</Text>
                             <View style={[styles.restToggle, restTimerEnabled && styles.restToggleActive]}>
                                 <View
                                     style={[
@@ -1311,6 +1325,7 @@ const WorkoutLogScreen: React.FC = () => {
                 />
             )}
 
+            {settingsExercise && <ExercisePreferencesSheet key={user?.id} exercise={settingsExercise} preference={exercisePreferences.preferences[settingsExercise.name.trim().toLowerCase()]} loading={exercisePreferences.loading} error={exercisePreferences.error} onRetry={() => void exercisePreferences.reload()} onSave={async preference => { await exercisePreferences.save(preference); toast.success('Exercise settings saved'); }} onClose={() => setExerciseSettings(null)} />}
             <WorkoutPrefsSheet
                 visible={showPrefsSheet}
                 rirEnabled={showRir}

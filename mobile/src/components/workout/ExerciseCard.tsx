@@ -16,6 +16,7 @@ import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { useExerciseHistory } from '../../hooks/useExerciseHistory';
 import { exerciseHistoryDate, latestExerciseSession } from '../../utils/exerciseHistory';
 import { workoutNumber } from '../../utils/workoutNumber';
+import type { ExercisePreference } from '../../services/api';
 
 type EntryField = 'weight' | 'reps' | 'rir';
 function entryError(set: ExerciseSet, field: EntryField) {
@@ -38,6 +39,8 @@ interface ExerciseCardProps {
     onRemoveSet: (eIdx: number, sIdx: number) => void;
     onToggleUnilateral: (eIdx: number) => void;
     onOpenPicker: (eIdx: number, sIdx: number, type: 'weight' | 'reps' | 'rir') => void;
+    preference?: ExercisePreference;
+    onEditPreferences?: (exercise: UserExercise) => void;
 }
 
 const ExerciseCard = React.memo<ExerciseCardProps>(
@@ -51,6 +54,8 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
         onRemoveSet,
         onToggleUnilateral,
         onOpenPicker,
+        preference,
+        onEditPreferences,
     }) => {
         const [showDetails, setShowDetails] = useState(false);
         const [editingSets, setEditingSets] = useState(false);
@@ -105,6 +110,10 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                     </TouchableOpacity>
                 </View>
 
+                {onEditPreferences && <View style={styles.reminder}>
+                    {!!preference?.note && <Text style={styles.reminderText}>{preference.note}</Text>}
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Notes and rest for ${exercise.name}`} style={styles.preferenceButton} onPress={() => onEditPreferences(exercise)}><Ionicons name="options-outline" size={16} color={colors.text.secondary} /><Text style={styles.reminderText}>Notes & rest · {preference?.rest_seconds == null ? 'Default' : preference.rest_seconds === 0 ? 'Off' : `${preference.rest_seconds}s`}</Text></TouchableOpacity>
+                </View>}
                 {showDetails && <ExerciseDetailsModal exercise={exercise} onClose={() => setShowDetails(false)} onToggleUnilateral={() => onToggleUnilateral(exerciseIndex)} />}
                 {/* Table Header */}
                 <View style={styles.tableHeader}>
@@ -227,6 +236,9 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
 );
 
 const styles = StyleSheet.create({
+    reminder: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, gap: spacing.xs },
+    reminderText: { color: colors.text.secondary, fontFamily: typography.fontFamily.regular, fontSize: 12, lineHeight: 18 },
+    preferenceButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     inlineInput: { minWidth: 0, flexShrink: 1, color: colors.text.primary, fontFamily: typography.fontFamily.semiBold, fontSize: 16, textAlign: 'center', paddingHorizontal: spacing.xs, borderWidth: 1, borderColor: 'transparent' },
     inputFocused: { borderColor: colors.text.secondary },
     inputError: { borderColor: colors.error },

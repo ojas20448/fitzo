@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useNutrition } from '../../context/NutritionContext';
 import { caloriesAPI, type CalorieDay, type CalorieEntry } from '../../services/api';
-import { groupDiaryEntries, localDiaryDate, shiftDiaryDate } from '../../utils/foodDiary';
+import { groupDiaryEntries, localDiaryDate, shiftDiaryDate, isDiaryDate } from '../../utils/foodDiary';
 import { borderRadius, colors, spacing, typography } from '../../styles/theme';
 import { MEAL_TYPES, type MealType } from '../../utils/foodPortion';
 import GlassCard from '../../components/GlassCard';
@@ -14,12 +14,21 @@ import EmptyState from '../../components/EmptyState';
 import FoodEntrySheet from '../../components/FoodEntrySheet';
 import { MemberScreen, MemberAction, memberStyles as s } from '../../components/navigation/MemberScreen';
 import { useLocalDay } from '../../hooks/useLocalDay';
+import DiaryDatePicker from '../../components/DiaryDatePicker';
 
 export default function FoodHomeScreen() {
     const { user } = useAuth();
     const { calorieGoal, macroTargets, refreshToday } = useNutrition();
     const today = useLocalDay();
+    const params = useLocalSearchParams<{ date?: string }>();
     const [date, setDate] = useState(localDiaryDate);
+    const [choosingDate, setChoosingDate] = useState(false);
+    useEffect(() => {
+        if (isDiaryDate(params.date) && params.date <= localDiaryDate()) {
+            setDate(params.date);
+            router.setParams({ date: undefined });
+        }
+    }, [params.date]);
     const previousToday = useRef(today);
     useEffect(() => {
         const previous = previousToday.current;
@@ -59,7 +68,7 @@ export default function FoodHomeScreen() {
         headerRight={date !== today ? <Pressable accessibilityRole="button" accessibilityLabel="Go to today" style={styles.todayButton} onPress={() => setDate(localDiaryDate())}><Text style={styles.link}>Today</Text></Pressable> : undefined}>
         <View style={styles.dateRow}>
             <Pressable style={s.iconButton} accessibilityRole="button" accessibilityLabel="Previous day" onPress={() => setDate(value => shiftDiaryDate(value, -1))}><Ionicons name="chevron-back" size={22} color={colors.primary} /></Pressable>
-            <View style={styles.dateCopy}><Text style={s.title}>{date === today ? 'Today' : new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long' })}</Text><Text style={styles.dateDetail}>{new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}</Text></View>
+            <Pressable style={styles.dateCopy} accessibilityRole="button" accessibilityLabel="Choose diary date" onPress={() => setChoosingDate(true)}><Text style={s.title}>{date === today ? 'Today' : new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long' })}</Text><Text style={styles.dateDetail}>{new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })} · Change</Text></Pressable>
             <Pressable style={s.iconButton} accessibilityRole="button" accessibilityLabel="Next day" accessibilityState={{ disabled: date >= today }} disabled={date >= today} onPress={() => setDate(value => shiftDiaryDate(value, 1))}><Ionicons name="chevron-forward" size={22} color={date >= today ? colors.text.subtle : colors.primary} /></Pressable>
         </View>
         {loading && !day ? <ActivityIndicator color={colors.primary} accessibilityLabel="Loading food diary" /> : null}
@@ -97,6 +106,7 @@ export default function FoodHomeScreen() {
         </GlassCard></View>
         <GlassCard><MemberAction icon="stats-chart-outline" title="Nutrition details" onPress={() => router.push('/member/nutrition-insights')} /><MemberAction icon="bulb-outline" title="Ask Spotter" detail="Ask about your food or nutrition" onPress={() => router.push({ pathname: '/ai-coach', params: { source: 'food', prompt: 'Help me review my recent food logs.' } })} /></GlassCard>
         <FoodEntrySheet entry={saved?.owner === user?.id ? entry : null} onClose={() => setEntry(null)} onChanged={() => { void load(); void refreshToday(); }} />
+        <DiaryDatePicker visible={choosingDate} date={date} onSelect={setDate} onClose={() => setChoosingDate(false)} />
     </MemberScreen>;
 }
 const styles = StyleSheet.create({

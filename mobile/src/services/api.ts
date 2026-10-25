@@ -402,7 +402,21 @@ export const buddyActivityAPI = {
 // ===========================================
 // SETTINGS ENDPOINTS
 // ===========================================
+export interface ExercisePreference {
+    exercise_name: string;
+    note: string;
+    rest_seconds: number | null;
+}
+
 export const settingsAPI = {
+    getExercisePreferences: async (): Promise<{ preferences: ExercisePreference[] }> => {
+        const response = await api.get('/settings/exercises');
+        return response.data;
+    },
+    updateExercisePreference: async (preference: ExercisePreference, authToken: string): Promise<{ preference: ExercisePreference }> => {
+        const response = await api.patch('/settings/exercises', preference, { _expectedAuthToken: authToken } as any);
+        return response.data;
+    },
     getSharingPreference: async () => {
         const response = await api.get('/settings/sharing');
         return response.data;
@@ -854,6 +868,7 @@ export const caloriesAPI = {
         fat?: number;
         serving_size?: string;
         meal_type?: string;
+        logged_date?: string;
     }) => {
         const response = await api.patch(`/calories/${entryId}`, patch);
         return response.data;

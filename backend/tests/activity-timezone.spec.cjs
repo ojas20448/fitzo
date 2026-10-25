@@ -203,7 +203,8 @@ test('buddy food uses London day when the viewer is already in tomorrow', async 
     assert.equal(friends.body.friends[0].logged_food_today, true);
 });
 
-test('an open gym visit survives midnight and checkout closes it', async () => {
+test('an open gym visit survives midnight and checkout closes it', async (t) => {
+    t.mock.method(Date, 'now', () => Date.parse(clock));
     await setClock('2026-10-24T23:10:00Z');
     await db.exec(`INSERT INTO attendances (user_id, gym_id, check_date, checked_in_at, checked_timezone)
         VALUES ('${member}', '${gym}', '2026-10-24', '2026-10-24T22:50:00Z', 'Europe/London');`);

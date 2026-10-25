@@ -7,13 +7,16 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 const { create, act } = jest.requireActual('react-test-renderer');
 const mockSave = jest.fn(async (_food: any) => ({ isGoalHit: false }));
-const mockToast = { error: jest.fn(), success: jest.fn() };
+const mockToast = { error: jest.fn(), success: jest.fn(), showToast: jest.fn() };
 const mockRequestAIConsent = jest.fn(async () => true);
 let mockAccount = 'a';
 let mockParams: Record<string, string> = {};
+let mockFocused = true;
 
 jest.mock('react-native-reanimated', () => ({ ...jest.requireActual('react-native-reanimated/mock'), useReducedMotion: () => true }));
-jest.mock('expo-router', () => ({ router: { push: jest.fn(), canGoBack: () => false, replace: jest.fn() }, useLocalSearchParams: () => mockParams }));
+jest.mock('expo-router', () => ({ router: { push: jest.fn(), dismissTo: jest.fn(), canGoBack: () => false, replace: jest.fn() }, useLocalSearchParams: () => mockParams,
+    useFocusEffect: (callback: any) => jest.requireActual('react').useEffect(() => mockFocused ? callback() : undefined, [callback, mockFocused]),
+}));
 jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('../../../utils/firstRun', () => ({ hasSeenTip: async () => true, TIP_KEYS: {} }));
 jest.mock('../../../hooks/useVoiceCapture', () => ({ useVoiceCapture: () => ({ isBusy: false, requestAIConsent: mockRequestAIConsent }) }));
@@ -33,6 +36,15 @@ const texts = () => screen.root.findAllByType(Text).map((n: any) => n.props.chil
 beforeEach(async () => { jest.useFakeTimers(); jest.clearAllMocks(); mockAccount = 'a'; mockParams = {}; await AsyncStorage.clear(); mockSave.mockResolvedValue({ isGoalHit: false }); (caloriesAPI.getFrequentFoods as jest.Mock).mockResolvedValue({ frequent: [] }); });
 afterEach(async () => { await act(async () => screen?.unmount()); jest.useRealTimers(); });
 async function open() { await act(async () => { screen = create(<CalorieLogScreen />); }); }
+it('refreshes the selected day after returning from a recipe screen', async () => {
+    mockFocused = true; mockParams = { date: '2026-10-23' };
+    await open();
+    mockFocused = false; await act(async () => screen.update(<CalorieLogScreen />));
+    (caloriesAPI.getDay as jest.Mock).mockResolvedValueOnce({ entries: [{ id: 'recipe', food_name: 'New saved recipe', calories: 300 }] });
+    mockFocused = true; await act(async () => screen.update(<CalorieLogScreen />));
+    expect(texts()).toContain('New saved recipe');
+    expect(caloriesAPI.getDay).toHaveBeenLastCalledWith('2026-10-23');
+});
 it('distinguishes failed meal loading from an empty log and retries', async () => {
     (caloriesAPI.getToday as jest.Mock).mockRejectedValueOnce(new Error('Offline'));
     await open();
@@ -132,6 +144,10 @@ it('loads and saves quick-add food on the selected Friday', async () => {
     expect(texts()).not.toContain("TODAY'S LOG");
     await act(async () => button('Save food').props.onPress());
     expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({ logged_date: '2026-10-23', food_name: 'Dal' }));
+    const notice = mockToast.showToast.mock.calls.at(-1)![0];
+    expect(notice.message).toContain('Friday'); expect(notice.message).toContain('Lunch');
+    await act(async () => notice.action.onPress());
+    expect(router.dismissTo).toHaveBeenCalledWith({ pathname: '/(tabs)/food', params: { date: '2026-10-23' } });
 });
 it('saves the actual repeat portion and chosen meal, then stays in the flow for another food', async () => {
     await repeatFood();

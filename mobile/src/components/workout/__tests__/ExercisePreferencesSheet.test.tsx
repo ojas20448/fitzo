@@ -1,0 +1,32 @@
+import React from 'react';
+import { Text } from 'react-native';
+import ExercisePreferencesSheet from '../ExercisePreferencesSheet';
+import Button from '../../Button';
+const { create, act } = jest.requireActual('react-test-renderer');
+jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
+let screen: any;
+const save = jest.fn(), close = jest.fn(), retry = jest.fn();
+const props = { exercise: { name: 'Cable Row' }, preference: { exercise_name: 'cable row', note: 'Seat 4', rest_seconds: 90 }, loading: false, error: false, onSave: save, onClose: close, onRetry: retry };
+const button = (title: string) => screen.root.findAllByType(Button).find((node: any) => node.props.title === title);
+beforeEach(() => { jest.clearAllMocks(); save.mockResolvedValue(undefined); });
+afterEach(async () => { await act(async () => screen?.unmount()); });
+it('preserves a failed note and rest edit for retry and only closes after success', async () => {
+    await act(async () => { screen = create(<ExercisePreferencesSheet {...props} />); });
+    await act(async () => screen.root.findByProps({ accessibilityLabel: 'Exercise reminder' }).props.onChangeText('Seat 5, neutral grip'));
+    const rest = screen.root.findAllByProps({ accessibilityLabel: 'Rest 120 seconds' }).find((node: any) => typeof node.props.onPress === 'function');
+    await act(async () => rest.props.onPress());
+    save.mockRejectedValueOnce(new Error('Offline'));
+    await act(async () => button('Save exercise settings').props.onPress());
+    expect(close).not.toHaveBeenCalled();
+    expect(screen.root.findAllByType(Text).some((node: any) => node.props.children === 'Offline')).toBe(true);
+    expect(screen.root.findByProps({ accessibilityLabel: 'Exercise reminder' }).props.value).toBe('Seat 5, neutral grip');
+    await act(async () => button('Save exercise settings').props.onPress());
+    expect(save).toHaveBeenLastCalledWith({ exercise_name: 'cable row', note: 'Seat 5, neutral grip', rest_seconds: 120 });
+    expect(close).toHaveBeenCalledTimes(1);
+});
+it('blocks overwriting unknown saved settings until loading succeeds', async () => {
+    await act(async () => { screen = create(<ExercisePreferencesSheet {...props} error />); });
+    expect(button('Save exercise settings').props.disabled).toBe(true);
+    expect(screen.root.findByProps({ accessibilityLabel: 'Exercise reminder' }).props.editable).toBe(false);
+    await act(async () => button('Retry').props.onPress()); expect(retry).toHaveBeenCalled();
+});

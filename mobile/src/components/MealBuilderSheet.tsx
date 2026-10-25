@@ -106,7 +106,7 @@ const MealBuilderSheet: React.FC<Props> = ({ preset, onClose, onLogged, onError,
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             const result = await nutritionAPI.logBulk(toLogPayload(entries), mealType, expectedToken.current, loggedDate);
             if (generation.current !== current) return;
-            onLogged(preset, result?.totals?.calories ?? totals.calories);
+            onLogged({ ...preset, meal_type: mealType }, result?.totals?.calories ?? totals.calories);
             onClose();
         } catch (err: any) {
             // Surface the server's reason rather than a generic string — the

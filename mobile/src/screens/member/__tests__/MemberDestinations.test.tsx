@@ -10,10 +10,11 @@ import { caloriesAPI, settingsAPI, workoutsAPI } from '../../../services/api';
 import { localDiaryDate } from '../../../utils/foodDiary';
 const { create, act } = jest.requireActual('react-test-renderer');
 let mockAccount = 'a';
+let mockDiaryParams: Record<string, string> = {};
 const mockRefresh = jest.fn();
 jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock').default);
-jest.mock('expo-router', () => ({ router: { push: jest.fn(), navigate: jest.fn(), replace: jest.fn(), canGoBack: () => false }, useFocusEffect: (callback: any) => jest.requireActual('react').useEffect(callback, [callback]) }));
+jest.mock('expo-router', () => ({ router: { push: jest.fn(), navigate: jest.fn(), replace: jest.fn(), setParams: jest.fn(), canGoBack: () => false }, useLocalSearchParams: () => mockDiaryParams, useFocusEffect: (callback: any) => jest.requireActual('react').useEffect(callback, [callback]) }));
 jest.mock('../../../context/AuthContext', () => ({ useAuth: () => ({ user: { id: mockAccount }, refreshUser: jest.fn(async () => {}) }) }));
 jest.mock('../../../context/NutritionContext', () => ({ useNutrition: () => ({ calorieGoal: null, macroTargets: null, refreshToday: mockRefresh }) }));
 jest.mock('../../../components/Toast', () => ({ useToast: () => ({ success: jest.fn(), error: jest.fn() }) }));
@@ -25,7 +26,7 @@ jest.mock('../../../services/api', () => ({
     workoutsAPI: { getHistory: jest.fn() },
 }));
 let screen: any;
-const entry = { id: 'meal', food_name: 'Rice', serving_size: '1 bowl', meal_type: 'lunch', calories: 200, protein: 4, carbs: 40, fat: 2 };
+const entry = { id: 'meal', food_name: 'Rice', serving_size: '1 bowl', meal_type: 'lunch', calories: 200, protein: 4, carbs: 40, fat: 2, logged_date: '2026-10-23' };
 const day = { entries: [entry], totals: { calories: 200, protein: 4, carbs: 40, fat: 2, entry_count: 1 } };
 const copy = () => screen.root.findAllByType(Text).map((node: any) => node.props.children).flat().join(' ');
 const press = async (label: string) => {
@@ -33,7 +34,7 @@ const press = async (label: string) => {
     await act(async () => node.props.onPress());
 };
 beforeEach(() => {
-    jest.clearAllMocks(); mockAccount = 'a';
+    jest.clearAllMocks(); mockAccount = 'a'; mockDiaryParams = {};
     (caloriesAPI.getDay as jest.Mock).mockResolvedValue(day);
     (settingsAPI.getGym as jest.Mock).mockResolvedValue({ gym: null });
     (settingsAPI.joinGym as jest.Mock).mockResolvedValue({ gym: { id: 'gym', name: 'Gym' } });
@@ -41,6 +42,14 @@ beforeEach(() => {
     (workoutsAPI.getHistory as jest.Mock).mockResolvedValue({ history: [] });
 });
 afterEach(async () => { await act(async () => screen?.unmount()); screen = null; });
+it('opens a saved confirmation destination and lets the calendar choose another day', async () => {
+    mockDiaryParams = { date: '2026-10-23' };
+    await act(async () => { screen = create(<FoodHomeScreen />); });
+    expect(caloriesAPI.getDay).toHaveBeenLastCalledWith('2026-10-23');
+    expect(router.setParams).toHaveBeenCalledWith({ date: undefined });
+    await press('Choose diary date'); await press('Previous month'); await press('Choose 2026-09-12');
+    expect(caloriesAPI.getDay).toHaveBeenLastCalledWith('2026-09-12');
+});
 
 it('opens a target-free diary and edits a saved meal without a food search', async () => {
     await act(async () => { screen = create(<FoodHomeScreen />); });

@@ -225,10 +225,12 @@ router.patch('/:id', asyncHandler(async (req, res) => {
     const { valid, error, fields } = validateEntryPatch(req.body);
     if (!valid) throw new ValidationError(error);
 
-    // Build a partial UPDATE from exactly the keys that were sent. COALESCE is
-    // not needed because absent keys never appear in the SET list at all.
+    // Update supplied fields only. Date moves also pin legacy rows so timezone
+    // correction cannot move the chosen day again.
     const keys = Object.keys(fields);
-    const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+    const timezoneSql = MEMBER_TIMEZONE_SQL.replace('$1', `$${keys.length + 2}`);
+    const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ')
+        + ('logged_date' in fields ? `, logged_timezone = COALESCE(logged_timezone, ${timezoneSql})` : '');
     const values = keys.map((k) => fields[k]);
 
     const result = await query(

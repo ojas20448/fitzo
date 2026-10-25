@@ -20,7 +20,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from '../../utils/haptics';
 import { foodAPI, caloriesAPI, nutritionAPI, settingsAPI, aiAPI, CalorieEntry } from '../../services/api';
@@ -32,7 +32,7 @@ import { useVoiceCapture } from '../../hooks/useVoiceCapture';
 import Celebration from '../../components/Celebration';
 import ThaliPresets from '../../components/ThaliPresets';
 import MealTypePicker from '../../components/MealTypePicker';
-import { groupDiaryEntries } from '../../utils/foodDiary';
+import { groupDiaryEntries, diaryDateLabel } from '../../utils/foodDiary';
 import FoodEntrySheet from '../../components/FoodEntrySheet';
 import { useToast } from '../../components/Toast';
 import { colors, typography, spacing, borderRadius, shadows, shadow } from '../../styles/theme';
@@ -161,7 +161,7 @@ const AccountCalorieLogScreen: React.FC = () => {
             .finally(() => { if (request === entriesRequest.current) setEntriesLoading(false); });
     }, [date, today]);
 
-    useEffect(() => { const generation = entriesRequest; loadTodayEntries(); return () => { generation.current++; }; }, [loadTodayEntries]);
+    useFocusEffect(useCallback(() => { loadTodayEntries(); return () => { entriesRequest.current++; }; }, [loadTodayEntries]));
 
     // First visit only: surface voice logging, which is faster than searching
     // the catalogue for a home-cooked meal.
@@ -278,6 +278,13 @@ const AccountCalorieLogScreen: React.FC = () => {
     const [mealType, setMealType] = useState<MealType>(isMealType(params.meal_type) ? params.meal_type : 'snack');
     useEffect(() => { if (isMealType(params.meal_type)) setMealType(params.meal_type); }, [params.meal_type]);
     const [savedFood, setSavedFood] = useState<string | null>(null);
+    const showSaved = (name: string, isGoalHit = false, savedMeal: MealType = mealType) => {
+        const meal = savedMeal === 'snack' ? 'Snacks' : savedMeal[0].toUpperCase() + savedMeal.slice(1);
+        const destination = `${diaryDateLabel(date)} · ${meal}`;
+        setSavedFood(`${name} saved to ${destination}`);
+        toast.showToast({ type: 'success', title: isGoalHit ? 'GOAL REACHED!' : 'Food saved', message: `Saved to ${destination}`, duration: 5000,
+            action: { label: 'View diary', onPress: () => router.dismissTo({ pathname: '/(tabs)/food', params: { date } }) } });
+    };
     const [showCelebration, setShowCelebration] = useState(false);
     const [searchError, setSearchError] = useState<string | null>(null);
     const [pendingFoodName, setPendingFoodName] = useState('');
@@ -664,13 +671,8 @@ const AccountCalorieLogScreen: React.FC = () => {
             loadTodayEntries();
             loadFrequentFoods();
             setShowDetail(false);
-            setSavedFood(selectedFood.name);
+            showSaved(selectedFood.name, isGoalHit);
             setSearchQuery('');
-            if (isGoalHit) {
-                toast.success('GOAL REACHED!', `You've hit your daily targets!`);
-            } else {
-                toast.success('Logged!', `${totalCalories} kcal from ${selectedFood.name}`);
-            }
 
         } catch (error: any) {
             if (mounted.current) toast.error('Error', error.message || 'Failed to log calories');
@@ -827,7 +829,7 @@ const AccountCalorieLogScreen: React.FC = () => {
 
             {savedFood && (
                 <View style={styles.savedFoodBanner}>
-                    <Text accessibilityLiveRegion="polite" style={styles.todayName}>{savedFood} saved</Text>
+                    <Text accessibilityLiveRegion="polite" style={styles.todayName}>{savedFood}</Text>
                     <View style={styles.savedFoodActions}>
                         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Add another food" style={styles.savedFoodAction} onPress={() => { setSavedFood(null); searchInput.current?.focus(); }}>
                             <Text style={styles.savedFoodActionText}>Add another food</Text>
@@ -849,8 +851,8 @@ const AccountCalorieLogScreen: React.FC = () => {
             <ThaliPresets
                 mealType={mealType}
                 loggedDate={date}
-                onLogged={(preset, kcal) => {
-                    toast.success('Logged!', `${preset.name} · ${kcal} kcal`);
+                onLogged={(preset) => {
+                    showSaved(preset.name, false, preset.meal_type ?? mealType);
                     refreshToday();
                     loadTodayEntries();
                 }}
@@ -1042,7 +1044,7 @@ const AccountCalorieLogScreen: React.FC = () => {
             <FoodEntrySheet
                 entry={openEntry}
                 onClose={() => setOpenEntry(null)}
-                onChanged={loadTodayEntries}
+                onChanged={() => { loadTodayEntries(); void refreshToday(); }}
             />
 
             {/* Food Detail Modal */}
@@ -1497,7 +1499,7 @@ const AccountCalorieLogScreen: React.FC = () => {
                         }));
                         await nutritionAPI.logBulk(payload, mealType, undefined, date);
                         refreshToday();
-                        toast.success('Logged!', `Successfully logged ${items.length} items`);
+                        showSaved(`${items.length} food items`);
                         loadTodayEntries();
                         setShowDraftSheet(false);
                         setDraftItems([]);

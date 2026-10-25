@@ -4,6 +4,9 @@ import { caloriesAPI, CalorieEntry } from '../services/api';
 import { useToast } from './Toast';
 import { colors, typography, spacing, borderRadius } from '../styles/theme';
 import { MEAL_TYPES, isMealType } from '../utils/foodPortion';
+import { diaryDateLabel, isDiaryDate } from '../utils/foodDiary';
+import DiaryDatePicker from './DiaryDatePicker';
+import { router } from 'expo-router';
 
 interface FoodEntrySheetProps {
     entry: CalorieEntry | null;
@@ -24,11 +27,13 @@ const FoodEntrySheet: React.FC<FoodEntrySheetProps> = ({ entry, onClose, onChang
     const [busy, setBusy] = useState(false);
     const [draft, setDraft] = useState<Record<string, string>>({});
     const saving = useRef(false);
+    const [choosingDate, setChoosingDate] = useState(false);
 
     // Reset whenever a different entry opens, so a previous edit never leaks
     // into the next entry the member taps.
     useEffect(() => {
         setEditing(false);
+        setChoosingDate(false);
         setDraft(
             entry
                 ? {
@@ -39,6 +44,7 @@ const FoodEntrySheet: React.FC<FoodEntrySheetProps> = ({ entry, onClose, onChang
                       portion: '1',
                       serving_size: entry.serving_size || '',
                       meal_type: entry.meal_type || 'snack',
+                      logged_date: entry.logged_date.slice(0, 10),
                   }
                 : {},
         );
@@ -52,6 +58,8 @@ const FoodEntrySheet: React.FC<FoodEntrySheetProps> = ({ entry, onClose, onChang
             toast.error('Check the portion', 'The portion multiplier must be greater than zero.'); return;
         }
         const patch: Parameters<typeof caloriesAPI.update>[1] = {};
+        if (!isDiaryDate(draft.logged_date)) { toast.error('Choose a date', 'Choose a valid diary day.'); return; }
+        if (draft.logged_date !== entry.logged_date.slice(0, 10)) patch.logged_date = draft.logged_date;
         for (const m of MACROS) {
             const n = Number(draft[m.key]);
             if (!draft[m.key]?.trim() || !Number.isFinite(n) || n < 0) {
@@ -67,7 +75,10 @@ const FoodEntrySheet: React.FC<FoodEntrySheetProps> = ({ entry, onClose, onChang
         setBusy(true);
         try {
             await caloriesAPI.update(entry.id, patch);
-            toast.success('Updated', entry.food_name || 'Entry saved');
+            const meal = draft.meal_type === 'snack' ? 'Snacks' : draft.meal_type[0].toUpperCase() + draft.meal_type.slice(1);
+            const savedDate = draft.logged_date;
+            toast.showToast({ type: 'success', title: 'Entry saved', message: `Saved to ${diaryDateLabel(savedDate)} · ${meal}`, duration: 5000,
+                action: { label: 'View diary', onPress: () => router.dismissTo({ pathname: '/(tabs)/food', params: { date: savedDate } }) } });
             onChanged();
             onClose();
         } catch (e: any) {
@@ -115,6 +126,8 @@ const FoodEntrySheet: React.FC<FoodEntrySheetProps> = ({ entry, onClose, onChang
                     {!!entry.serving_size && <Text style={styles.serving}>{entry.serving_size}</Text>}
 
                     {editing && <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
+                        <Text style={styles.macroLabel}>Diary date</Text>
+                        <Pressable accessibilityRole="button" accessibilityLabel="Change food date" disabled={busy} style={styles.secondary} onPress={() => setChoosingDate(true)}><Text style={styles.secondaryText}>{diaryDateLabel(draft.logged_date)}</Text></Pressable>
                         <Text style={styles.macroLabel}>Portion multiplier</Text>
                         <TextInput style={styles.macroInput} value={draft.portion} accessibilityLabel="Portion multiplier" keyboardType="decimal-pad" editable={!busy}
                             onChangeText={value => {
@@ -184,6 +197,7 @@ const FoodEntrySheet: React.FC<FoodEntrySheetProps> = ({ entry, onClose, onChang
                 </Pressable>
             </Pressable>
             </KeyboardAvoidingView>
+            <DiaryDatePicker visible={choosingDate} date={draft.logged_date || entry.logged_date.slice(0, 10)} onClose={() => setChoosingDate(false)} onSelect={value => setDraft(current => ({ ...current, logged_date: value }))} />
         </Modal>
     );
 };

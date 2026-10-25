@@ -68,6 +68,7 @@ it('keeps portions, substitution and meal category after failure for an explicit
     await act(async () => logButton().props.onPress());
     expect(nutritionAPI.logBulk).toHaveBeenLastCalledWith([expect.objectContaining({ calories: 99, serving_size: '0.5 cup · 100 g, cooked' })], 'dinner', 'account-a', undefined);
     expect(onLogged).toHaveBeenCalledTimes(1);
+    expect(onLogged).toHaveBeenCalledWith(expect.objectContaining({ meal_type: 'dinner' }), expect.any(Number));
 });
 
 it('cannot log a draft without an authenticated account', async () => {

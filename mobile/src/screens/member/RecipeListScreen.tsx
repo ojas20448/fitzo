@@ -8,6 +8,7 @@ import { recipesAPI, caloriesAPI } from '../../services/api';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { useToast } from '../../components/Toast';
 import useOfflineStore from '../../stores/offlineStore';
+import { diaryDateLabel, localDiaryDate } from '../../utils/foodDiary';
 
 // FlashList wrapper to handle typing issues
 const TypedFlashList = FlashList as React.ComponentType<FlashListProps<any> & { estimatedItemSize?: number }>;
@@ -84,6 +85,7 @@ const RecipeListScreen = () => {
     };
 
     const handleLog = async (recipe: any) => {
+        const loggedDate = date ?? localDiaryDate();
         try {
             await caloriesAPI.log({
                 calories: recipe.total_calories,
@@ -92,9 +94,10 @@ const RecipeListScreen = () => {
                 fat: recipe.total_fat,
                 meal_name: recipe.name,
                 visibility: 'friends',
-                logged_date: date,
+                logged_date: loggedDate,
             });
-            toast.success('Logged', `${recipe.name} added to diary`);
+            toast.showToast({ type: 'success', title: 'Recipe saved', message: `Saved to ${diaryDateLabel(loggedDate)}`, duration: 5000,
+                action: { label: 'View diary', onPress: () => router.dismissTo({ pathname: '/(tabs)/food', params: { date: loggedDate } }) } });
             router.back(); // Go back to where we came from (likely CalorieLog or Home)
         } catch (error) {
             toast.error('Error', 'Failed to log recipe');

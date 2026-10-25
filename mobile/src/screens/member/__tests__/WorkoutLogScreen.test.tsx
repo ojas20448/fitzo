@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { workoutInputModeKey } from '../../../hooks/useWorkoutInputMode';
 import WorkoutLogScreen from '../WorkoutLogScreen';
-import { workoutsAPI, exerciseAPI } from '../../../services/api';
+import { workoutsAPI, exerciseAPI, settingsAPI } from '../../../services/api';
 import ExerciseList from '../../../components/ExerciseList';
 import WorkoutCategorySheet from '../../../components/workout/WorkoutCategorySheet';
 import ConfirmationSheet from '../../../components/ConfirmationSheet';
@@ -31,7 +31,7 @@ jest.mock('../../../services/workoutActivity', () => ({ syncWorkoutActivity: jes
 jest.mock('../../../services/api', () => ({
     workoutsAPI: { getLatest: jest.fn(), getMySplits: jest.fn(), log: jest.fn(), updateRoutine: jest.fn() },
     exerciseAPI: { getById: jest.fn(async () => ({ exercise: { id: 'press', name: 'Chest Press' } })) },
-    settingsAPI: { getWorkoutPreferences: async () => ({ workout_prefs_seen: true, warmup_card_enabled: false, rest_timer_enabled: mockRestEnabled }), getSharingPreference: async () => ({ share_logs_default: false }) }, aiAPI: {},
+    settingsAPI: { getWorkoutPreferences: async () => ({ workout_prefs_seen: true, warmup_card_enabled: false, rest_timer_enabled: mockRestEnabled }), getSharingPreference: async () => ({ share_logs_default: false }), getExercisePreferences: jest.fn(async () => ({ preferences: [] })), updateExercisePreference: jest.fn() }, getAuthToken: async () => 'test-token', aiAPI: {},
 }));
 jest.mock('../../../components/ExerciseList', () => ({ __esModule: true, default: () => null }));
 jest.mock('../../../components/WorkoutDraftSheet', () => ({ WorkoutDraftSheet: () => null }));
@@ -55,6 +55,25 @@ beforeEach(async () => {
     mockParams.intent = JSON.stringify({ session_label: 'Full Body A', training_pattern: 'full_body' });
     (workoutsAPI.getLatest as jest.Mock).mockResolvedValue({ found: false });
     (workoutsAPI.getMySplits as jest.Mock).mockResolvedValue(saved);
+    (settingsAPI.getExercisePreferences as jest.Mock).mockResolvedValue({ preferences: [] });
+});
+test.each([[120, 'inline'], [0, 'inline'], [120, 'editor'], [0, 'editor']])('uses the exercise rest setting %s from the %s editor', async (seconds, source) => {
+    jest.useFakeTimers(); mockRestEnabled = true;
+    const prefs = deferred(); (settingsAPI.getExercisePreferences as jest.Mock).mockReturnValueOnce(prefs.promise);
+    try {
+        await mount(); const exercise = cards()[0].props.exercise;
+        await act(async () => prefs.resolve({ preferences: [{ exercise_name: exercise.name.toLowerCase(), note: 'Seat 4', rest_seconds: seconds }] }));
+        if (source === 'inline') {
+            await act(async () => { cards()[0].props.onUpdateSet(0, 0, 'weight_kg', 40); cards()[0].props.onUpdateSet(0, 0, 'completed', true); });
+            await act(async () => jest.advanceTimersByTime(0));
+        } else {
+            await act(async () => cards()[0].props.onOpenPicker(0, 0, 'weight'));
+            await act(async () => screen.root.findByType(WorkoutSetEditor).props.onSave({ weight_kg: 40, reps: 8 }, true));
+        }
+        const timers = screen.root.findAllByType(RestTimerPill);
+        if (seconds === 0) expect(timers).toHaveLength(0); else expect(timers[0].props.seconds).toBe(120);
+        expect(cards()[0].props.preference.note).toBe('Seat 4');
+    } finally { await act(async () => screen?.unmount()); screen = null; jest.clearAllTimers(); jest.useRealTimers(); }
 });
 afterEach(async () => { await act(async () => screen?.unmount()); screen = null; });
 async function mount() { await act(async () => { screen = create(<WorkoutLogScreen />); }); }

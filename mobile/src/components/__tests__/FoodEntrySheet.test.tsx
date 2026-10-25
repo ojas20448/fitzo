@@ -3,7 +3,8 @@ import { TextInput } from 'react-native';
 import FoodEntrySheet from '../FoodEntrySheet';
 import { caloriesAPI } from '../../services/api';
 const { create, act } = jest.requireActual('react-test-renderer');
-const mockToast = { success: jest.fn(), error: jest.fn() };
+const mockToast = { success: jest.fn(), error: jest.fn(), showToast: jest.fn() };
+jest.mock('expo-router', () => ({ router: { dismissTo: jest.fn() } }));
 jest.mock('../../components/Toast', () => ({ useToast: () => mockToast }));
 jest.mock('../../services/api', () => ({ caloriesAPI: { update: jest.fn(), delete: jest.fn() } }));
 const entry = { id: 'meal', food_name: 'Rice', serving_size: '1 bowl', meal_type: 'lunch', calories: 200, protein: 4, carbs: 40, fat: 2, logged_date: '2026-10-22', created_at: '2026-10-22' };
@@ -23,6 +24,18 @@ it('updates portion nutrition and meal assignment in a single mutation', async (
     expect(caloriesAPI.update).toHaveBeenCalledTimes(1);
     expect(caloriesAPI.update).toHaveBeenCalledWith('meal', expect.objectContaining({ calories: 400, protein: 8, carbs: 80, fat: 4, serving_size: '2 × 1 bowl', meal_type: 'dinner' }));
     expect(changed).toHaveBeenCalledTimes(1); expect(close).toHaveBeenCalledTimes(1);
+});
+it('moves an entry to another day in the same save and retains the date after a failure', async () => {
+    await open();
+    await press('Change food date');
+    await press('Choose 2026-10-23');
+    (caloriesAPI.update as jest.Mock).mockRejectedValueOnce(new Error('offline'));
+    await press('Save food entry');
+    expect(close).not.toHaveBeenCalled();
+    await press('Save food entry');
+    expect(caloriesAPI.update).toHaveBeenLastCalledWith('meal', expect.objectContaining({ logged_date: '2026-10-23', calories: 200, protein: 4 }));
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(mockToast.showToast).toHaveBeenLastCalledWith(expect.objectContaining({ message: expect.stringContaining('Friday'), action: expect.objectContaining({ label: 'View diary' }) }));
 });
 it('keeps failed edits open with their values available for retry', async () => {
     await open(); (caloriesAPI.update as jest.Mock).mockRejectedValueOnce(new Error('offline'));

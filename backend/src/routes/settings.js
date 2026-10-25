@@ -13,6 +13,25 @@ const {
 // All routes require authentication
 router.use(authenticate);
 
+router.get('/exercises', asyncHandler(async (req, res) => {
+    const result = await query('SELECT exercise_name, note, rest_seconds FROM user_exercise_preferences WHERE user_id = $1 ORDER BY exercise_name', [req.user.id]);
+    res.json({ preferences: result.rows });
+}));
+
+router.patch('/exercises', asyncHandler(async (req, res) => {
+    const { exercise_name, note, rest_seconds } = req.body || {};
+    if (typeof exercise_name !== 'string' || !exercise_name.trim() || exercise_name.trim().length > 100) throw new ValidationError('Choose a valid exercise');
+    if (typeof note !== 'string' || note.length > 300) throw new ValidationError('Keep exercise notes within 300 characters');
+    if (rest_seconds !== null && (!Number.isInteger(rest_seconds) || rest_seconds < 0 || rest_seconds > 1800)) throw new ValidationError('Choose a rest time between 0 and 1800 seconds, or default');
+    const result = await query(
+        `INSERT INTO user_exercise_preferences (user_id, exercise_name, note, rest_seconds) VALUES ($1, $2, $3, $4)
+         ON CONFLICT (user_id, exercise_name) DO UPDATE SET note = EXCLUDED.note, rest_seconds = EXCLUDED.rest_seconds
+         RETURNING exercise_name, note, rest_seconds`,
+        [req.user.id, exercise_name.trim().toLowerCase(), note.trim(), rest_seconds]
+    );
+    res.json({ preference: result.rows[0] });
+}));
+
 /**
  * GET /api/settings/gym
  * Current gym membership info (or gym: null if not enrolled)
