@@ -32,9 +32,11 @@ const customSchema = z.object({
         exercises: z.array(z.object({
             id: z.string().min(1).max(100).optional(), name: z.string().trim().min(1).max(200),
             target: z.string().max(80).optional(), instructions: z.string().max(2000).optional(),
-            set_count: z.number().int().min(1).max(20), reps_min: z.number().int().min(1).max(100),
-            reps_max: z.number().int().min(1).max(100), tempo, is_unilateral: z.boolean().optional(),
-        }).strict().refine(ex => ex.reps_min <= ex.reps_max)).min(1).max(30),
+            set_count: z.number().int().min(1).max(20), reps_min: z.number().int().min(1).max(100).optional(),
+            reps_max: z.number().int().min(1).max(100).optional(), tempo, is_unilateral: z.boolean().optional(),
+            tracking_type: z.literal('cardio').optional(), duration_minutes: z.number().min(1 / 60).max(1440).optional(),
+        }).strict().refine(ex => ex.tracking_type === 'cardio' ? ex.duration_minutes !== undefined
+            : ex.reps_min !== undefined && ex.reps_max !== undefined && ex.reps_min <= ex.reps_max)).min(1).max(30),
     }).strict()).min(1).max(7),
 }).strict();
 

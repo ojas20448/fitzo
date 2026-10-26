@@ -72,3 +72,34 @@ it('rejects an unchecked-only workout before changing an existing log', async ()
     expect(res.status).toBe(400);
     expect(db.getClient).not.toHaveBeenCalled();
 });
+
+it('persists completed cardio time and effort in both stores without reps, load or strength PRs', async () => {
+    client.query.mockImplementation(async sql => {
+        if (sql.includes('INSERT INTO workout_logs')) return { rows: [{ id: 'log' }] };
+        if (sql.includes('INSERT INTO workout_sessions')) return { rows: [{ id: 'session' }] };
+        if (sql.includes('INSERT INTO exercise_logs')) return { rows: [{ id: 'exercise' }] };
+        if (sql.includes('SELECT sl.weight_kg')) return { rows: [{ weight_kg: 50, reps: 5 }] };
+        return { rows: [] };
+    });
+    const res = await request(app).post('/').send({ workout_type: 'legs', exercises: JSON.stringify([
+        { name: 'Stair Climber', target: 'legs', tracking_type: 'cardio', sets: [
+            { duration_minutes: '20.5', rpe: '6', completed: true, weight_kg: 100, reps: 8, rir: 1 },
+            { duration_minutes: 10, completed: false }, { duration_minutes: -5, completed: true },
+            { duration_minutes: 10, rpe: 11, completed: true },
+        ] },
+    ]) });
+    expect(res.status).toBe(200); expect(res.body.prs).toEqual([]);
+    const flat = client.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO workout_logs'));
+    expect(JSON.parse(flat[1][2])[0].sets).toEqual([{ duration_minutes: 20.5, rpe: 6, completed: true }]);
+    const sets = client.query.mock.calls.filter(([sql]) => sql.includes('INSERT INTO set_logs'));
+    expect(sets).toHaveLength(1); expect(sets[0][0]).toContain('duration_seconds'); expect(sets[0][1]).toEqual(['exercise', 1, 1230, 6]);
+    const exercise = client.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO exercise_logs'));
+    expect(exercise[1].slice(-2)).toEqual([null, false]);
+});
+
+it.each([0, -5, 1441, '20min'])('rejects invalid cardio time %s before writing', async duration_minutes => {
+    const res = await request(app).post('/').send({ workout_type: 'cardio', exercises: JSON.stringify([
+        { name: 'Treadmill Run', tracking_type: 'cardio', sets: [{ duration_minutes, completed: true }] },
+    ]) });
+    expect(res.status).toBe(400); expect(db.getClient).not.toHaveBeenCalled();
+});

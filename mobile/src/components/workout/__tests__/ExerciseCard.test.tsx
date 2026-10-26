@@ -7,6 +7,35 @@ const mockHistory = { sessions: [] as any[], loading: false, error: false, retry
 jest.mock('../../../hooks/useExerciseHistory', () => ({ useExerciseHistory: () => mockHistory }));
 beforeEach(() => { mockHistory.sessions = []; });
 
+test('uses real last-session cardio time without copying its effort rating', async () => {
+    mockHistory.sessions = [{ id: 'h', date: '2026-10-25', workout: 'cardio', isUnilateral: false, isCardio: true, sets: [{ duration_minutes: 20, rpe: 8 }] }];
+    const update = jest.fn(); let screen: any;
+    await act(async () => { screen = create(<ExerciseCard exercise={{ id: 'running_treadmill', name: 'Treadmill Run', sets: [{ id: 's', completed: false }] }} exerciseIndex={0} showRir={false}
+        onUpdateSet={update} onAddSet={jest.fn()} onRemoveExercise={jest.fn()} onRemoveSet={jest.fn()} onToggleUnilateral={jest.fn()} onOpenPicker={jest.fn()} />); });
+    try {
+        const use = screen.root.findAllByProps({ accessibilityLabel: 'Use last session for Treadmill Run set 1' }).find((node: any) => typeof node.props.onPress === 'function');
+        expect(use.props.disabled).toBe(false);
+        await act(async () => use.props.onPress());
+        expect(update.mock.calls).toEqual([[0, 0, 'duration_minutes', 20]]);
+    } finally { await act(async () => screen.unmount()); }
+});
+
+test.each([['', '6', false], ['20', '11', false], ['20', '', true], ['20.5', '6', true]])('logs cardio with time %s and effort %s, without strength inputs', async (duration, effort, valid) => {
+    const update = jest.fn(), open = jest.fn(); let screen: any;
+    await act(async () => { screen = create(<ExerciseCard exercise={{ id: 'running_treadmill', name: 'Treadmill Run', sets: [{ id: 's', duration_minutes: duration, rpe: effort, completed: false }] }} exerciseIndex={0} showRir
+        onUpdateSet={update} onAddSet={jest.fn()} onRemoveExercise={jest.fn()} onRemoveSet={jest.fn()} onToggleUnilateral={jest.fn()} onOpenPicker={open} />); });
+    try {
+        const labels = screen.root.findAllByType(TextInput).map((node: any) => node.props.accessibilityLabel);
+        expect(labels).toEqual(['Duration in minutes for Treadmill Run, set 1', 'Effort out of 10 for Treadmill Run, set 1']);
+        const button = (label: string) => screen.root.findAllByProps({ accessibilityLabel: label }).find((node: any) => typeof node.props.onPress === 'function');
+        await act(async () => button('Complete Treadmill Run set 1').props.onPress());
+        if (valid) expect(update).toHaveBeenCalledWith(0, 0, 'completed', true);
+        else expect(update).not.toHaveBeenCalled();
+        await act(async () => button('Edit Treadmill Run set 1').props.onPress());
+        expect(open).toHaveBeenCalledWith(0, 0, 'duration');
+    } finally { await act(async () => screen.unmount()); }
+});
+
 test.each(['', 0, 6])('keeps RIR inline, optional and within range (%s)', async rir => {
     const update = jest.fn(), open = jest.fn(); let screen: any;
     await act(async () => { screen = create(<ExerciseCard exercise={{ id: 'row', name: 'Cable Row', sets: [{ id: 's', weight_kg: 40, reps: 8, rir, completed: false }] }} exerciseIndex={0} showRir

@@ -1,4 +1,5 @@
 import type { UserExercise } from '../components/workout/types';
+import { isCardioExercise } from './cardio';
 
 export interface CustomWorkoutPlan {
     version: 2;
@@ -12,8 +13,10 @@ export interface CustomWorkoutPlan {
             target?: string;
             instructions?: string;
             set_count: number;
-            reps_min: number;
-            reps_max: number;
+            reps_min?: number;
+            reps_max?: number;
+            tracking_type?: 'cardio';
+            duration_minutes?: number;
             tempo?: string;
             is_unilateral?: boolean;
         }[];
@@ -38,7 +41,10 @@ export function readCustomWorkoutPlan(value: unknown): CustomWorkoutPlan | null 
         days.add(dayKey(session.day_name));
         for (const exercise of session.exercises) {
             if (!exercise || !text(exercise.name, 200) || !integer(exercise.set_count, 20)
-                || !integer(exercise.reps_min, 100) || !integer(exercise.reps_max, 100) || exercise.reps_min > exercise.reps_max
+                || (exercise.tracking_type === 'cardio'
+                    ? !Number.isFinite(exercise.duration_minutes) || Number(exercise.duration_minutes) < 1 / 60 || Number(exercise.duration_minutes) > 1440
+                    : !integer(exercise.reps_min, 100) || !integer(exercise.reps_max, 100) || Number(exercise.reps_min) > Number(exercise.reps_max))
+                || (exercise.tracking_type !== undefined && exercise.tracking_type !== 'cardio')
                 || !tempo(exercise.tempo) || (exercise.id !== undefined && !text(exercise.id, 100))
                 || (exercise.target !== undefined && !text(exercise.target, 80))
                 || (exercise.instructions !== undefined && !text(exercise.instructions, 2000))
@@ -57,12 +63,14 @@ export function customSessionDraft(value: unknown, day: string, previous?: UserE
         const last = previous?.find(item => dayKey(item.name) === dayKey(exercise.name));
         const range = exercise.reps_min === exercise.reps_max ? String(exercise.reps_min) : `${exercise.reps_min}–${exercise.reps_max}`;
         const exerciseTempo = exercise.tempo || plan?.tempo;
+        const cardio = isCardioExercise(exercise);
         return {
-            id, name: exercise.name, target: exercise.target, is_unilateral: exercise.is_unilateral === true,
-            instructions: [`${exercise.set_count} working sets × ${range} reps${exercise.is_unilateral ? ' per side' : ''}.`,
+            id, name: exercise.name, target: exercise.target, ...(cardio ? { tracking_type: 'cardio' as const } : {}), is_unilateral: !cardio && exercise.is_unilateral === true,
+            instructions: [cardio ? `${exercise.set_count} cardio intervals${exercise.duration_minutes ? ` × ${exercise.duration_minutes} minutes` : ''}.` : `${exercise.set_count} working sets × ${range} reps${exercise.is_unilateral ? ' per side' : ''}.`,
                 exerciseTempo ? `Tempo ${exerciseTempo}.` : '', exercise.instructions || ''].filter(Boolean).join(' '),
             sets: Array.from({ length: exercise.set_count }, (_, setIndex) => ({
                 id: `${id}-${setIndex}`, weight_kg: last?.sets[setIndex]?.weight_kg ?? '',
+                ...(cardio ? { duration_minutes: last?.sets[setIndex]?.duration_minutes ?? exercise.duration_minutes ?? '', rpe: '' } : {}),
                 reps: last?.sets[setIndex]?.reps ?? (exercise.reps_min === exercise.reps_max ? exercise.reps_min : ''),
                 previous: last?.sets[setIndex]?.previous, completed: false,
             })),

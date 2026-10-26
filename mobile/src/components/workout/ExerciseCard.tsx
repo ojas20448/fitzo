@@ -11,15 +11,17 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import GlassCard from '../GlassCard';
 import ExerciseDetailsModal from '../ExerciseDetailsModal';
 import ExercisePreview from '../ExercisePreview';
-import { ExerciseSet, UserExercise } from './types';
+import { ExerciseSet, UserExercise, SetEntryField } from './types';
+import { cardioEntryError, cardioSetSummary, isCardioExercise } from '../../utils/cardio';
 import { colors, typography, spacing, borderRadius } from '../../styles/theme';
 import { useExerciseHistory } from '../../hooks/useExerciseHistory';
 import { exerciseHistoryDate, latestExerciseSession } from '../../utils/exerciseHistory';
 import { workoutNumber } from '../../utils/workoutNumber';
 import type { ExercisePreference } from '../../services/api';
 
-type EntryField = 'weight' | 'reps' | 'rir';
+type EntryField = SetEntryField;
 function entryError(set: ExerciseSet, field: EntryField) {
+    if (field === 'duration' || field === 'effort') return cardioEntryError(set, field);
     const raw = field === 'weight' ? set.weight_kg : field === 'reps' ? set.reps : set.rir;
     if (field === 'rir' && (raw == null || String(raw).trim() === '')) return '';
     const value = workoutNumber(raw);
@@ -38,7 +40,7 @@ interface ExerciseCardProps {
     onRemoveExercise: (eIdx: number) => void;
     onRemoveSet: (eIdx: number, sIdx: number) => void;
     onToggleUnilateral: (eIdx: number) => void;
-    onOpenPicker: (eIdx: number, sIdx: number, type: 'weight' | 'reps' | 'rir') => void;
+    onOpenPicker: (eIdx: number, sIdx: number, type: SetEntryField) => void;
     preference?: ExercisePreference;
     onEditPreferences?: (exercise: UserExercise) => void;
 }
@@ -64,10 +66,11 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
         const [validated, setValidated] = useState<Record<string, boolean>>({});
         const history = useExerciseHistory(exercise.name);
         const lastSession = latestExerciseSession(history.sessions);
+        const cardio = isCardioExercise(exercise);
+        const fields: EntryField[] = cardio ? ['duration', 'effort'] : showRir ? ['weight', 'reps', 'rir'] : ['weight', 'reps'];
         const handleToggleComplete = (setIndex: number, currentVal: boolean) => {
                 const set = exercise.sets[setIndex];
                 if (!currentVal) {
-                    const fields: EntryField[] = showRir ? ['weight', 'reps', 'rir'] : ['weight', 'reps'];
                     const invalid = fields.find(field => entryError(set, field));
                     if (invalid) {
                         setValidated(current => ({ ...current, [`${set.id}:${invalid}`]: true }));
@@ -97,6 +100,7 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                             <Text style={styles.exerciseName} numberOfLines={2}>
                                 {exercise.name}
                             </Text>
+                            {cardio && <Text style={styles.guideLink}>Cardio · time & effort</Text>}
                             <Text style={styles.guideLink}>Guide & history ›</Text>
                         </View>
                     </TouchableOpacity>
@@ -118,9 +122,9 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                 {/* Table Header */}
                 <View style={styles.tableHeader}>
                     <Text style={[styles.colLabel, { width: 44 }]}>SET</Text>
-                    <Text style={[styles.colLabel, { flex: 1, textAlign: 'center' }]}>{exercise.is_unilateral ? 'KG / SIDE' : 'KG'}</Text>
-                    <Text style={[styles.colLabel, { flex: 1, textAlign: 'center' }]}>{exercise.is_unilateral ? 'REPS / SIDE' : 'REPS'}</Text>
-                    {showRir && <Text style={[styles.colLabel, { width: 44 }]}>RIR</Text>}
+                    <Text style={[styles.colLabel, { flex: 1, textAlign: 'center' }]}>{cardio ? 'MINUTES' : exercise.is_unilateral ? 'KG / SIDE' : 'KG'}</Text>
+                    <Text style={[styles.colLabel, { flex: 1, textAlign: 'center' }]}>{cardio ? 'EFFORT / 10' : exercise.is_unilateral ? 'REPS / SIDE' : 'REPS'}</Text>
+                    {showRir && !cardio && <Text style={[styles.colLabel, { width: 44 }]}>RIR</Text>}
                     <Text style={[styles.colLabel, { width: 44, textAlign: 'center', letterSpacing: editingSets ? 0 : 1.5 }]}>{editingSets ? 'REMOVE' : 'DONE'}</Text>
                 </View>
 
@@ -135,12 +139,24 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                         ]}
                     >
                         {/* Set number */}
-                        <TouchableOpacity style={{ width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }} onPress={() => onOpenPicker(exerciseIndex, setIndex, 'weight')} accessibilityRole="button" accessibilityLabel={`Edit ${exercise.name} set ${setIndex + 1}`}>
+                        <TouchableOpacity style={{ width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }} onPress={() => onOpenPicker(exerciseIndex, setIndex, cardio ? 'duration' : 'weight')} accessibilityRole="button" accessibilityLabel={`Edit ${exercise.name} set ${setIndex + 1}`}>
                             <View style={styles.setBadge}>
                                 <Text style={styles.setNumber}>{setIndex + 1}</Text>
                             </View>
                         </TouchableOpacity>
 
+                        {cardio ? (['duration', 'effort'] as const).map(field => <TextInput key={field}
+                            ref={node => { inputs.current[`${set.id}:${field}`] = node; }}
+                            style={[styles.valueCell, styles.inlineInput, focused === `${set.id}:${field}` && styles.inputFocused, validated[`${set.id}:${field}`] && !!entryError(set, field) && styles.inputError]}
+                            value={String((field === 'duration' ? set.duration_minutes : set.rpe) ?? '')}
+                            onChangeText={value => onUpdateSet(exerciseIndex, setIndex, field === 'duration' ? 'duration_minutes' : 'rpe', value.replace(',', '.'))}
+                            keyboardType={field === 'duration' ? 'decimal-pad' : 'number-pad'} selectTextOnFocus
+                            placeholder="—" placeholderTextColor={colors.text.subtle}
+                            onFocus={() => focus(set.id, field)} onBlur={() => blur(set.id, field)}
+                            returnKeyType={field === 'duration' ? 'next' : 'done'} submitBehavior={field === 'duration' ? 'submit' : 'blurAndSubmit'}
+                            onSubmitEditing={() => { if (field === 'duration') inputs.current[`${set.id}:effort`]?.focus(); }}
+                            accessibilityLabel={`${field === 'duration' ? 'Duration in minutes' : 'Effort out of 10'} for ${exercise.name}, set ${setIndex + 1}`}
+                            accessibilityHint={field === 'effort' ? 'Optional. 1 is very easy, 10 is maximum effort.' : 'Time spent on this interval, in minutes.'} />) : <>
                         {/* Weight cell */}
                         <TextInput ref={node => { inputs.current[`${set.id}:weight`] = node; }}
                             style={[styles.valueCell, styles.inlineInput, focused === `${set.id}:weight` && styles.inputFocused, validated[`${set.id}:weight`] && !!entryError(set, 'weight') && styles.inputError]}
@@ -175,6 +191,7 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                                 onFocus={() => focus(set.id, 'rir')} onBlur={() => blur(set.id, 'rir')}
                                 onSubmitEditing={() => { if (exercise.sets[setIndex + 1]) inputs.current[`${exercise.sets[setIndex + 1].id}:weight`]?.focus(); }} />
                         )}
+                        </>}
 
                         {/* Checkmark */}
                         {editingSets ? <TouchableOpacity
@@ -199,19 +216,24 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                             </View>
                         </TouchableOpacity>}
                     </View>
-                    {(['weight', 'reps', ...(showRir ? ['rir'] : [])] as EntryField[]).map(field => validated[`${set.id}:${field}`] && entryError(set, field)
+                    {fields.map(field => validated[`${set.id}:${field}`] && entryError(set, field)
                         ? <Text key={field} style={styles.entryError} accessibilityRole="alert" accessibilityLiveRegion="polite">{entryError(set, field)}</Text> : null)}
                     {(lastSession?.sets[setIndex] || set.previous) && <View style={styles.lastSession}>
                         <Text style={styles.lastText}>{lastSession?.sets[setIndex]
-                            ? `Last session: ${lastSession.sets[setIndex].weight_kg} kg × ${lastSession.sets[setIndex].reps}${lastSession.isUnilateral ? ' / side' : ''} · ${exerciseHistoryDate(lastSession.date)}`
+                            ? `Last session: ${lastSession.sets[setIndex].duration_minutes != null ? cardioSetSummary(lastSession.sets[setIndex]) : `${lastSession.sets[setIndex].weight_kg} kg × ${lastSession.sets[setIndex].reps}${lastSession.isUnilateral ? ' / side' : ''}`} · ${exerciseHistoryDate(lastSession.date)}`
                             : `Last session: ${set.previous}`}</Text>
-                        {lastSession?.sets[setIndex] && <TouchableOpacity style={styles.useLast} disabled={set.completed || lastSession.isUnilateral !== !!exercise.is_unilateral} accessibilityRole="button" accessibilityLabel={`Use last session for ${exercise.name} set ${setIndex + 1}`} accessibilityState={{ disabled: set.completed || lastSession.isUnilateral !== !!exercise.is_unilateral }} onPress={() => {
+                        {lastSession?.sets[setIndex] && <TouchableOpacity style={styles.useLast} disabled={set.completed || (lastSession.isUnilateral !== !!exercise.is_unilateral || cardio !== (lastSession.sets[setIndex].duration_minutes != null))} accessibilityRole="button" accessibilityLabel={`Use last session for ${exercise.name} set ${setIndex + 1}`} accessibilityState={{ disabled: set.completed || (lastSession.isUnilateral !== !!exercise.is_unilateral || cardio !== (lastSession.sets[setIndex].duration_minutes != null)) }} onPress={() => {
+                            if (cardio) {
+                                onUpdateSet(exerciseIndex, setIndex, 'duration_minutes', lastSession.sets[setIndex].duration_minutes);
+                                return;
+                            }
                             onUpdateSet(exerciseIndex, setIndex, 'weight_kg', lastSession.sets[setIndex].weight_kg);
                             onUpdateSet(exerciseIndex, setIndex, 'reps', lastSession.sets[setIndex].reps);
-                        }}><Text style={[styles.useText, (set.completed || lastSession.isUnilateral !== !!exercise.is_unilateral) && { opacity: 0.35 }]}>{lastSession.isUnilateral !== !!exercise.is_unilateral ? 'Different mode' : 'Use'}</Text></TouchableOpacity>}
+                        }}><Text style={[styles.useText, (set.completed || (lastSession.isUnilateral !== !!exercise.is_unilateral || cardio !== (lastSession.sets[setIndex].duration_minutes != null))) && { opacity: 0.35 }]}>{(lastSession.isUnilateral !== !!exercise.is_unilateral || cardio !== (lastSession.sets[setIndex].duration_minutes != null)) ? 'Different mode' : 'Use'}</Text></TouchableOpacity>}
                     </View>}
                     </View>
                 ))}
+                {cardio && <Text style={[styles.lastText, { paddingHorizontal: spacing.lg }]}>Effort is optional · 1 = very easy, 10 = maximum</Text>}
 
                 {/* Add Set */}
                 <View style={styles.setTools}>
@@ -223,7 +245,7 @@ const ExerciseCard = React.memo<ExerciseCardProps>(
                     accessibilityLabel={`Add set for ${exercise.name}`}
                 >
                     <MaterialIcons name="add" size={16} color={colors.text.muted} />
-                    <Text style={styles.addSetText}>Add Set</Text>
+                    <Text style={styles.addSetText}>{cardio ? 'Add Interval' : 'Add Set'}</Text>
                 </TouchableOpacity>
                 {(exercise.sets.length > 0 || editingSets) && <TouchableOpacity style={styles.addSetRow} onPress={() => setEditingSets(current => !current)} accessibilityRole="button" accessibilityLabel={`${editingSets ? 'Done editing' : 'Edit sets for'} ${exercise.name}`} accessibilityState={{ expanded: editingSets }}>
                     <Ionicons name={editingSets ? 'checkmark' : 'create-outline'} size={16} color={colors.text.secondary} />

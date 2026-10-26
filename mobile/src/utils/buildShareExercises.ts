@@ -1,10 +1,15 @@
 import type { UserExercise } from '../components/workout';
 import type { ShareExercise } from '../components/share/SharePayload';
 import { finalizeWorkout } from './finalizeWorkout';
+import { isCardioExercise } from './cardio';
 
 /** Preserve raw external-load volume; bodyweight work still has sets and reps. */
 export function buildShareExercises(userExercises: UserExercise[]): ShareExercise[] {
     return finalizeWorkout(userExercises).map(ex => {
+        if (isCardioExercise(ex)) return {
+            id: ex.id, name: ex.name, target: 'cardio', volumeKg: 0, setCount: ex.sets.length,
+            durationMinutes: ex.sets.reduce((sum, set) => sum + Number(set.duration_minutes), 0),
+        };
         const top = ex.sets.reduce((best, set) => {
             const weight = Number(set.weight_kg);
             const bestWeight = Number(best.weight_kg);

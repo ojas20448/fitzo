@@ -4,12 +4,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Button from '../Button';
 import ScrollWheelPicker from './ScrollWheelPicker';
-import { ExerciseSet, REPS_VALUES, RIR_VALUES, WEIGHT_VALUES } from './types';
+import { ExerciseSet, REPS_VALUES, RIR_VALUES, WEIGHT_VALUES, SetEntryField } from './types';
+import { cardioEntryError, cardioSetSummary } from '../../utils/cardio';
 import { borderRadius, colors, spacing, typography } from '../../styles/theme';
 import { workoutNumber as numberValue } from '../../utils/workoutNumber';
 
-type Field = 'weight' | 'reps' | 'rir';
-type Values = Pick<ExerciseSet, 'weight_kg' | 'reps' | 'rir'>;
+type Field = SetEntryField;
+type Values = Pick<ExerciseSet, 'weight_kg' | 'reps' | 'rir' | 'duration_minutes' | 'rpe'>;
+const DURATION_VALUES = Array.from({ length: 180 }, (_, index) => index + 1);
+const EFFORT_VALUES = Array.from({ length: 10 }, (_, index) => index + 1);
 interface Props {
     exerciseName: string;
     setIndex: number;
@@ -18,6 +21,7 @@ interface Props {
     initialField: Field;
     showRir: boolean;
     isUnilateral?: boolean;
+    isCardio?: boolean;
     inputMode: 'typing' | 'wheel';
     onSelectMode: (mode: 'typing' | 'wheel') => void;
     onSave: (values: Values, complete: boolean) => void;
@@ -26,19 +30,19 @@ interface Props {
 
 const textValue = (value: unknown) => value == null ? '' : String(value);
 
-export default function WorkoutSetEditor({ exerciseName, setIndex, set, previousSet, initialField, showRir, isUnilateral, inputMode, onSelectMode, onSave, onClose }: Props) {
+export default function WorkoutSetEditor({ exerciseName, setIndex, set, previousSet, initialField, showRir, isUnilateral, isCardio, inputMode, onSelectMode, onSave, onClose }: Props) {
     const insets = useSafeAreaInsets();
-    const [draft, setDraft] = useState({ weight: textValue(set.weight_kg), reps: textValue(set.reps), rir: textValue(set.rir) });
+    const [draft, setDraft] = useState({ weight: textValue(set.weight_kg), reps: textValue(set.reps), rir: textValue(set.rir), duration: textValue(set.duration_minutes), effort: textValue(set.rpe) });
     const [activeField, setActiveField] = useState<Field>(initialField);
     const [error, setError] = useState('');
     const inputs = useRef<Partial<Record<Field, TextInput | null>>>({});
     const saved = useRef(false);
-    const fields: Field[] = showRir ? ['weight', 'reps', 'rir'] : ['weight', 'reps'];
-    const labels = { weight: isUnilateral ? 'KG / SIDE' : 'WEIGHT · KG', reps: isUnilateral ? 'REPS / SIDE' : 'REPS', rir: 'RIR' };
-    const inputLabels = { weight: 'Weight value', reps: 'Reps value', rir: 'Reps in reserve value' };
+    const fields: Field[] = isCardio ? ['duration', 'effort'] : showRir ? ['weight', 'reps', 'rir'] : ['weight', 'reps'];
+    const labels = { weight: isUnilateral ? 'KG / SIDE' : 'WEIGHT · KG', reps: isUnilateral ? 'REPS / SIDE' : 'REPS', rir: 'RIR', duration: 'DURATION · MIN', effort: 'EFFORT · 1–10' };
+    const inputLabels = { weight: 'Weight value', reps: 'Reps value', rir: 'Reps in reserve value', duration: 'Duration in minutes', effort: 'Effort out of 10' };
     const previousWeight = numberValue(textValue(previousSet?.weight_kg));
     const previousReps = numberValue(textValue(previousSet?.reps));
-    const canCopy = Number.isFinite(previousWeight) && previousWeight >= 0 && Number.isInteger(previousReps) && previousReps > 0;
+    const canCopy = isCardio ? !!previousSet && !cardioEntryError(previousSet, 'duration') : Number.isFinite(previousWeight) && previousWeight >= 0 && Number.isInteger(previousReps) && previousReps > 0;
 
     const edit = (field: Field, value: string) => {
         setDraft(current => ({ ...current, [field]: value }));
@@ -46,6 +50,14 @@ export default function WorkoutSetEditor({ exerciseName, setIndex, set, previous
     };
     const save = (complete: boolean) => {
         if (saved.current) return;
+        if (isCardio) {
+            const values = { duration_minutes: draft.duration, rpe: draft.effort };
+            const invalid = (['duration', 'effort'] as const).find(field => cardioEntryError(values, field));
+            if (invalid) { setError(cardioEntryError(values, invalid)); setActiveField(invalid); inputs.current[invalid]?.focus(); return; }
+            saved.current = true;
+            onSave({ duration_minutes: numberValue(draft.duration), rpe: draft.effort.trim() === '' ? '' : numberValue(draft.effort) }, complete);
+            return;
+        }
         const weight = numberValue(draft.weight);
         const reps = numberValue(draft.reps);
         const rir = draft.rir.trim() === '' ? '' : numberValue(draft.rir);
@@ -65,7 +77,7 @@ export default function WorkoutSetEditor({ exerciseName, setIndex, set, previous
                 <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.md) }]} accessibilityViewIsModal>
                     <View style={styles.header}>
                         <View style={styles.heading}>
-                            <Text style={styles.eyebrow}>SET {setIndex + 1}{set.completed ? ' · COMPLETED' : ''}</Text>
+                            <Text style={styles.eyebrow}>{isCardio ? 'CARDIO · INTERVAL' : 'SET'} {setIndex + 1}{set.completed ? ' · COMPLETED' : ''}</Text>
                             <Text style={styles.title} accessibilityRole="header">{exerciseName}</Text>
                         </View>
                         <Pressable onPress={onClose} style={styles.close} accessibilityRole="button" accessibilityLabel="Close set editor">
@@ -73,7 +85,7 @@ export default function WorkoutSetEditor({ exerciseName, setIndex, set, previous
                         </Pressable>
                     </View>
                     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
-                        <Text style={styles.hint}>{isUnilateral ? 'Enter weight and reps for one side. Volume counts both sides.' : 'Enter what you lifted. Use 0 kg for bodyweight.'}</Text>
+                        <Text style={styles.hint}>{isCardio ? 'Log your time in minutes. Effort is optional: 1 is very easy, 10 is maximum effort.' : isUnilateral ? 'Enter weight and reps for one side. Volume counts both sides.' : 'Enter what you lifted. Use 0 kg for bodyweight.'}</Text>
                         <View style={styles.fields}>
                             {fields.map(field => (
                                 <View key={field} style={styles.field}>
@@ -87,9 +99,9 @@ export default function WorkoutSetEditor({ exerciseName, setIndex, set, previous
                                             onFocus={() => setActiveField(field)}
                                             autoFocus={field === initialField}
                                             selectTextOnFocus
-                                            keyboardType={field === 'weight' ? 'decimal-pad' : 'number-pad'}
+                                            keyboardType={field === 'weight' || field === 'duration' ? 'decimal-pad' : 'number-pad'}
                                             accessibilityLabel={inputLabels[field]}
-                                            placeholder={field === 'rir' ? '—' : '0'}
+                                            placeholder={field === 'rir' || field === 'effort' ? '—' : '0'}
                                             placeholderTextColor={colors.text.subtle}
                                             returnKeyType={field === fields[fields.length - 1] ? 'done' : 'next'}
                                             submitBehavior={field === fields[fields.length - 1] ? 'blurAndSubmit' : 'submit'}
@@ -105,15 +117,15 @@ export default function WorkoutSetEditor({ exerciseName, setIndex, set, previous
                                 </View>
                             ))}
                         </View>
-                        {inputMode === 'wheel' && <ScrollWheelPicker values={activeField === 'weight' ? WEIGHT_VALUES : activeField === 'rir' ? RIR_VALUES : REPS_VALUES}
+                        {inputMode === 'wheel' && <ScrollWheelPicker values={activeField === 'duration' ? DURATION_VALUES : activeField === 'effort' ? EFFORT_VALUES : activeField === 'weight' ? WEIGHT_VALUES : activeField === 'rir' ? RIR_VALUES : REPS_VALUES}
                             selectedValue={Number.isFinite(numberValue(draft[activeField])) ? numberValue(draft[activeField]) : 0}
                             onValueChange={value => edit(activeField, String(value))} />}
                         <View style={styles.tools}>
-                            {canCopy && <Pressable style={styles.tool} onPress={() => { setDraft(current => ({ ...current, weight: textValue(previousSet!.weight_kg), reps: textValue(previousSet!.reps) })); setError(''); }} accessibilityRole="button" accessibilityLabel="Copy previous set">
+                            {canCopy && <Pressable style={styles.tool} onPress={() => { setDraft(current => ({ ...current, ...(isCardio ? { duration: textValue(previousSet!.duration_minutes) } : { weight: textValue(previousSet!.weight_kg), reps: textValue(previousSet!.reps) }) })); setError(''); }} accessibilityRole="button" accessibilityLabel="Copy previous set">
                                 <Ionicons name="copy-outline" size={17} color={colors.text.secondary} />
                                 <View style={styles.heading}>
                                     <Text style={styles.toolText}>Copy previous set</Text>
-                                    <Text style={styles.copyHint}>{previousWeight} kg × {previousReps}{isUnilateral ? ' / side' : ''}</Text>
+                                    <Text style={styles.copyHint}>{isCardio ? cardioSetSummary({ duration_minutes: previousSet!.duration_minutes }) : `${previousWeight} kg × ${previousReps}${isUnilateral ? ' / side' : ''}`}</Text>
                                 </View>
                             </Pressable>}
                             <Pressable style={styles.tool} onPress={() => onSelectMode(inputMode === 'typing' ? 'wheel' : 'typing')} accessibilityRole="button" accessibilityLabel={inputMode === 'typing' ? 'Use scroll wheel' : 'Type a value'}>
@@ -121,7 +133,7 @@ export default function WorkoutSetEditor({ exerciseName, setIndex, set, previous
                                 <Text style={styles.toolText}>{inputMode === 'typing' ? 'Use wheel' : 'Type values'}</Text>
                             </Pressable>
                         </View>
-                        {showRir && <Text style={styles.hint}>RIR is optional: 0 means no reps left in reserve.</Text>}
+                        {showRir && !isCardio && <Text style={styles.hint}>RIR is optional: 0 means no reps left in reserve.</Text>}
                         {!!error && <Text style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="polite">{error}</Text>}
                     </ScrollView>
                     <View style={styles.footer}>

@@ -1,6 +1,7 @@
 import type { UserExercise } from '../components/workout/types';
 import { starterSessionDraft } from './starterWorkout';
 import { customSessionDraft } from './savedWorkoutPlan';
+import { cardioEntryError, cardioSetSummary, isCardioExercise } from './cardio';
 
 export function parseWorkoutIntent(raw: unknown): { session_label: string; training_pattern?: string; emphasis?: string[] } | null {
     try {
@@ -18,9 +19,11 @@ export function previousWorkoutDraft(value: unknown): UserExercise[] | null {
     }
     if (!Array.isArray(value)) return null;
     const draft = value.filter(ex => ex && typeof ex.name === 'string' && Array.isArray(ex.sets)).map((ex, index) => ({
-        ...ex, sets: ex.sets.filter((set: any) => set && set.completed !== false && Number.isFinite(Number(set.weight_kg)) && Number(set.weight_kg) >= 0
-            && Number.isInteger(Number(set.reps)) && Number(set.reps) > 0).map((set: any, i: number) => ({
-                ...set, id: `previous-${index}-${i}`, completed: false, previous: `${set.weight_kg}kg x ${set.reps}`,
+        ...ex, sets: ex.sets.filter((set: any) => set && set.completed !== false && (isCardioExercise(ex)
+            ? !cardioEntryError(set, 'duration') && !cardioEntryError(set, 'effort')
+            : Number.isFinite(Number(set.weight_kg)) && Number(set.weight_kg) >= 0 && Number.isInteger(Number(set.reps)) && Number(set.reps) > 0)).map((set: any, i: number) => ({
+                ...set, ...(isCardioExercise(ex) ? { rpe: '' } : {}), id: `previous-${index}-${i}`, completed: false,
+                previous: isCardioExercise(ex) ? cardioSetSummary(set) : `${set.weight_kg}kg x ${set.reps}`,
             })),
     })).filter(ex => ex.sets.length > 0);
     return draft.length ? draft : null;

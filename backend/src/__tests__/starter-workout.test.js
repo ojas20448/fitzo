@@ -69,3 +69,15 @@ test('template validator accepts absence and legacy latest queries remain suppor
     const res = await request(app).get('/workouts/latest?type=legs');
     expect(res.status).toBe(200); expect(db.query.mock.calls[0][1]).toEqual(['member', ['legs', 'lower']]);
 });
+
+test('accepts timed cardio prescriptions and rejects missing or invalid durations', () => {
+    const cardio = { version: 2, type: 'custom', sessions: [{ day_name: 'Cardio', exercises: [
+        { name: 'Treadmill Run', tracking_type: 'cardio', set_count: 1, duration_minutes: 20.5 },
+    ] }] };
+    expect(validateStarterPlan(cardio, ['Cardio'])).toEqual(cardio);
+    for (const duration_minutes of [undefined, 0, -5, 1441]) {
+        const invalid = structuredClone(cardio);
+        invalid.sessions[0].exercises[0].duration_minutes = duration_minutes;
+        expect(() => validateStarterPlan(invalid, ['Cardio'])).toThrow();
+    }
+});

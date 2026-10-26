@@ -9,14 +9,18 @@ import GlassCard from '../../components/GlassCard';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
 import { MemberScreen, memberStyles as s } from '../../components/navigation/MemberScreen';
+import { cardioEntryError, cardioSetSummary, isCardioExercise } from '../../utils/cardio';
+import type { ExerciseSet } from '../../components/workout/types';
 
 type Record = { id: string; workout_type: string; completed: boolean; exercises?: string | null };
 type Day = { logged_date: string; workouts: Record[] };
-function details(raw: string | null | undefined): { name: string; sets: { reps: number; weight_kg: number }[] }[] {
+function details(raw: string | null | undefined): { name: string; sets: ExerciseSet[] }[] {
     try {
         const value = JSON.parse(raw || '[]');
         return Array.isArray(value) ? value.filter(exercise => typeof exercise?.name === 'string' && Array.isArray(exercise.sets)).map(exercise => ({
-            name: exercise.name, sets: exercise.sets.filter((set: any) => set?.completed !== false && Number.isFinite(Number(set.weight_kg)) && Number(set.weight_kg) >= 0 && Number.isInteger(Number(set.reps)) && Number(set.reps) > 0),
+            name: exercise.name, sets: exercise.sets.filter((set: any) => set && set.completed !== false && (isCardioExercise(exercise) && set.duration_minutes != null
+                ? !cardioEntryError(set, 'duration') && !cardioEntryError(set, 'effort')
+                : Number.isFinite(Number(set.weight_kg)) && Number(set.weight_kg) >= 0 && Number.isInteger(Number(set.reps)) && Number(set.reps) > 0)),
         })) : [];
     } catch { return []; }
 }
@@ -62,7 +66,7 @@ export default function WorkoutHistoryScreen() {
                 <Pressable style={({ pressed }) => [styles.workout, pressed && s.pressed]} accessibilityRole="button" accessibilityLabel={`View ${workout.workout_type} workout`} accessibilityState={{ expanded: expanded === workout.id }} aria-expanded={expanded === workout.id} onPress={() => setExpanded(value => value === workout.id ? null : workout.id)}>
                     <View style={s.actionIcon}><Ionicons name="barbell-outline" size={22} color={colors.text.secondary} /></View><View style={s.grow}><Text style={s.title}>{workout.workout_type.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase())}</Text><Text style={s.detail}>{workout.parsed.length ? `${workout.parsed.length} ${workout.parsed.length === 1 ? 'exercise' : 'exercises'} · ${workout.setCount} ${workout.setCount === 1 ? 'set' : 'sets'}` : workout.completed ? 'Completed workout' : 'Saved log'}</Text></View><Ionicons name={expanded === workout.id ? 'chevron-up-outline' : 'chevron-down-outline'} size={19} color={colors.text.muted} />
                 </Pressable>
-                {expanded === workout.id && <View style={styles.details}>{workout.parsed.length ? workout.parsed.map((exercise, i) => <View key={i} style={styles.exercise}><Text style={s.title}>{exercise.name}</Text>{exercise.sets.length ? exercise.sets.map((set, j) => <View key={j} style={styles.set}><Text style={styles.setLabel}>Set {j + 1}</Text><Text style={styles.setValue}>{set.weight_kg > 0 ? `${set.weight_kg} kg × ` : ''}{set.reps} reps</Text></View>) : <Text style={s.detail}>No completed sets recorded.</Text>}</View>) : <Text style={s.detail}>{workout.exercises && !workout.exercises.startsWith('[') ? workout.exercises : 'No exercise details were recorded for this log.'}</Text>}</View>}
+                {expanded === workout.id && <View style={styles.details}>{workout.parsed.length ? workout.parsed.map((exercise, i) => <View key={i} style={styles.exercise}><Text style={s.title}>{exercise.name}</Text>{exercise.sets.length ? exercise.sets.map((set, j) => <View key={j} style={styles.set}><Text style={styles.setLabel}>Set {j + 1}</Text><Text style={styles.setValue}>{set.duration_minutes != null ? cardioSetSummary(set) : `${Number(set.weight_kg) > 0 ? `${set.weight_kg} kg × ` : ''}${set.reps} reps`}</Text></View>) : <Text style={s.detail}>No completed sets recorded.</Text>}</View>) : <Text style={s.detail}>{workout.exercises && !workout.exercises.startsWith('[') ? workout.exercises : 'No exercise details were recorded for this log.'}</Text>}</View>}
             </GlassCard>)}
         </View>)}
         {days.length >= limit ? <Button title="Show earlier workouts" variant="secondary" loading={loading} onPress={() => setLimit(value => value + 30)} /> : null}

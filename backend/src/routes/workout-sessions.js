@@ -99,7 +99,8 @@ router.get('/sessions/:id', authenticate, asyncHandler(async (req, res) => {
                     'weight_kg', sl.weight_kg,
                     'is_warmup', sl.is_warmup,
                     'is_failure', sl.is_failure,
-                    'rpe', sl.rpe
+                    'rpe', sl.rpe,
+                    'duration_seconds', sl.duration_seconds
                 ) ORDER BY sl.set_number
             ) FROM set_logs sl WHERE sl.exercise_log_id = el.id) as sets
          FROM exercise_logs el
@@ -167,9 +168,9 @@ router.post('/sessions', authenticate, asyncHandler(async (req, res) => {
                     );
                     for (const s of prevSets.rows) {
                         await query(
-                            `INSERT INTO set_logs (exercise_log_id, set_number, reps, weight_kg, rpe)
-                             VALUES ($1, $2, $3, $4, $5)`,
-                            [newLogId, s.set_number, s.reps, s.weight_kg, s.rpe]
+                            `INSERT INTO set_logs (exercise_log_id, set_number, reps, weight_kg, rpe, duration_seconds)
+                             VALUES ($1, $2, $3, $4, $5, $6)`,
+                            [newLogId, s.set_number, s.reps, s.weight_kg, s.rpe, s.duration_seconds]
                         );
                     }
                 }

@@ -138,7 +138,7 @@ export function pickSummaryRows(
         ...payload.prs.map((pr) => ({ label: pr.exercise, value: pr.current })),
         ...payload.exercises.map((ex) => ({
             label: ex.name,
-            value: formatTopSet(ex.topSet) || `${formatVolumeKg(ex.volumeKg)} KG`,
+            value: ex.durationMinutes != null ? `${ex.durationMinutes} min` : formatTopSet(ex.topSet) || `${formatVolumeKg(ex.volumeKg)} KG`,
         })),
     ];
     return (content.length ? content : payload.rows).slice(0, n);

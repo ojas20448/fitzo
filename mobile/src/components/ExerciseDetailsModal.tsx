@@ -9,6 +9,7 @@ import techniqueGuides from '../data/exerciseTechniqueGuides.json';
 import ExercisePreview from './ExercisePreview';
 import { useExerciseHistory } from '../hooks/useExerciseHistory';
 import { exerciseHistoryDate } from '../utils/exerciseHistory';
+import { cardioSetSummary, isCardioExercise } from '../utils/cardio';
 
 interface Props {
     exercise: { id?: string; name: string; gifUrl?: string | null; instructions?: string | string[]; description?: string; is_unilateral?: boolean; bodyPart?: string; target?: string; equipment?: string };
@@ -43,14 +44,14 @@ export default function ExerciseDetailsModal({ exercise, onClose, onToggleUnilat
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 {tab === 'history' ? <>
                     <Text style={styles.sectionTitle}>Your recent sets</Text>
-                    <Text style={styles.body}>From your last 90 logged days. Weight and reps are shown exactly as recorded.</Text>
+                    <Text style={styles.body}>{isCardioExercise(exercise) ? 'From your last 90 logged days. Time and effort are shown as recorded.' : 'From your last 90 logged days. Weight and reps are shown exactly as recorded.'}</Text>
                     {history.loading ? <ActivityIndicator accessibilityLabel="Loading exercise history" color={colors.text.secondary} />
                         : history.error ? <View style={styles.notes}><Text style={styles.body}>Could not load your history. Your current workout is safe.</Text><Button title="Retry history" variant="secondary" onPress={history.retry} /></View>
                         : history.sessions.length === 0 ? <View style={styles.notes}><Text style={styles.trackingTitle}>No recent sets yet</Text><Text style={styles.body}>Complete and save this exercise to see it here. Older sets may be outside this history window.</Text></View>
                         : history.sessions.map(session => <View key={session.id} style={styles.historyCard}>
                             <View style={styles.historyHeading}><Text style={styles.trackingTitle}>{exerciseHistoryDate(session.date)}</Text><Text style={styles.body}>{session.workout}</Text></View>
-                            <Text style={styles.body}>{session.isUnilateral ? 'Weight and reps per side' : 'Whole movement'}</Text>
-                            {session.sets.map((set, index) => <View key={index} style={styles.historySet}><Text style={styles.body}>Set {index + 1}</Text><Text style={styles.historyValue}>{set.weight_kg} kg × {set.reps}{set.rir !== undefined ? ` · ${set.rir} RIR` : ''}</Text></View>)}
+                            <Text style={styles.body}>{session.isCardio ? 'Cardio' : session.isUnilateral ? 'Weight and reps per side' : 'Whole movement'}</Text>
+                            {session.sets.map((set, index) => <View key={index} style={styles.historySet}><Text style={styles.body}>Set {index + 1}</Text><Text style={styles.historyValue}>{set.duration_minutes != null ? cardioSetSummary(set) : `${set.weight_kg} kg × ${set.reps}${set.rir !== undefined ? ` · ${set.rir} RIR` : ''}`}</Text></View>)}
                         </View>)}
                 </> : <>
                 <ExercisePreview exercise={exercise} large />
@@ -60,7 +61,7 @@ export default function ExerciseDetailsModal({ exercise, onClose, onToggleUnilat
                     {steps.length ? steps.map((step, index) => <View key={index} style={styles.step}>{steps.length > 1 && <Text style={styles.stepNumber}>{index + 1}</Text>}<Text style={[styles.body, { flex: 1 }]}>{step}</Text></View>) : <Text style={styles.body}>A technique guide has not been added for this exercise yet.</Text>}
                     {prescriptionOnly && <View style={styles.notes}><Text style={styles.trackingTitle}>Workout notes</Text><Text style={styles.body}>{workoutNotes}</Text></View>}
                 </View>
-                {onToggleUnilateral && <View style={styles.tracking}>
+                {onToggleUnilateral && !isCardioExercise(exercise) && <View style={styles.tracking}>
                     <Text style={styles.trackingTitle}>How do you log it?</Text>
                     <View accessibilityRole="radiogroup" accessibilityLabel="Exercise logging mode" style={styles.segment}>
                         {[{ label: 'Whole movement', value: false }, { label: 'Each side', value: true }].map(option => <Pressable key={option.label} accessibilityRole="radio" accessibilityLabel={option.label} accessibilityState={{ checked: !!exercise.is_unilateral === option.value }} aria-checked={!!exercise.is_unilateral === option.value} onPress={() => { if (!!exercise.is_unilateral !== option.value) onToggleUnilateral(); }} style={[styles.choice, !!exercise.is_unilateral === option.value && styles.choiceSelected]}>

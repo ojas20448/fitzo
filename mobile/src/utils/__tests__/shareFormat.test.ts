@@ -13,6 +13,11 @@ function basePayload(overrides: Partial<SharePayload> = {}): SharePayload {
     };
 }
 
+test('summarizes timed cardio with minutes instead of zero kilograms', () => {
+    const payload = basePayload({ exercises: [{ id: 'cardio', name: 'Treadmill Run', volumeKg: 0, setCount: 1, durationMinutes: 25.5 }] });
+    expect(pickSummaryRows(payload, 1)).toEqual([{ label: 'Treadmill Run', value: '25.5 min' }]);
+});
+
 describe('CARD_LOCALE', () => {
     it('is pinned to en-IN — the product already speaks in Indian units (auto-rickshaws, Royal Enfields)', () => {
         expect(CARD_LOCALE).toBe('en-IN');

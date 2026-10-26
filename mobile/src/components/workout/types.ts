@@ -7,6 +7,8 @@ export interface ExerciseSet {
     weight_kg?: number | string;
     reps?: number | string;
     rir?: number | string;
+    duration_minutes?: number | string;
+    rpe?: number | string;
     completed: boolean;
     previous?: string;
 }
@@ -16,6 +18,8 @@ export interface UserExercise {
     name: string;
     gifUrl?: string;
     target?: string;
+    bodyPart?: string;
+    tracking_type?: 'strength' | 'cardio';
     instructions?: string;
     /** Entered per side — volume counts both. See backend/src/utils/volume.js */
     is_unilateral?: boolean;
@@ -24,11 +28,13 @@ export interface UserExercise {
 
 export interface PickerConfig {
     visible: boolean;
-    type: 'weight' | 'reps' | 'rir';
+    type: SetEntryField;
     exerciseIndex: number;
     setIndex: number;
     currentValue: number;
 }
+
+export type SetEntryField = 'weight' | 'reps' | 'rir' | 'duration' | 'effort';
 
 export const WORKOUT_TYPES = ['legs', 'chest', 'back', 'shoulders', 'arms', 'cardio'] as const;
 export const REST_PRESETS = [60, 90, 120, 180] as const;

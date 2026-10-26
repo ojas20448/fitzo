@@ -1,6 +1,7 @@
 import type { UserExercise } from '../components/workout/types';
 import { readCustomWorkoutPlan, type CustomWorkoutPlan } from './savedWorkoutPlan';
 import { readStarterPlan, starterSessionDraft } from './starterWorkout';
+import { cardioEntryError, isCardioExercise } from './cardio';
 
 export function routineUpdate(original: unknown, day: string, exercises: UserExercise[]) {
     const custom = readCustomWorkoutPlan(original);
@@ -31,6 +32,13 @@ export function routineUpdate(original: unknown, day: string, exercises: UserExe
     const replacements: CustomWorkoutPlan['sessions'][number]['exercises'] = [];
     for (const exercise of exercises) {
         const existing = session.exercises.find(item => item.name.trim().toLowerCase() === exercise.name.trim().toLowerCase());
+        if (isCardioExercise(exercise)) {
+            const timed = exercise.sets.find(set => !cardioEntryError(set, 'duration'));
+            if (!timed) return { changed: true, plan: null, changes, error: `Enter a duration for ${exercise.name} before updating the routine.` };
+            replacements.push({ id: exercise.id, name: exercise.name, target: exercise.target, tracking_type: 'cardio',
+                duration_minutes: Number(timed.duration_minutes), set_count: exercise.sets.length });
+            continue;
+        }
         const reps = exercise.sets.find(set => Number.isInteger(Number(set.reps)) && Number(set.reps) > 0 && Number(set.reps) <= 100)?.reps;
         if (!existing && reps === undefined) return { changed: true, plan: null, changes, error: `Enter reps for ${exercise.name} before updating the routine.` };
         replacements.push({ ...(existing || { id: exercise.id, name: exercise.name, target: exercise.target, reps_min: Number(reps), reps_max: Number(reps) }),

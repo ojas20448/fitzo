@@ -5,10 +5,13 @@ import {
     StyleSheet,
     Animated,
     TouchableOpacity,
+    PanResponder,
+    AccessibilityInfo,
+    Platform,
 } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from '../utils/haptics';
 import { colors, typography, spacing, borderRadius, shadow } from '../styles/theme';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -49,27 +52,23 @@ const getToastConfig = (type: ToastType) => {
         case 'success':
             return {
                 icon: 'check-circle' as const,
-                color: colors.crowd.low,
-                haptic: Haptics.NotificationFeedbackType.Success,
+                color: colors.success,
             };
         case 'error':
             return {
                 icon: 'error' as const,
                 color: colors.error,
-                haptic: Haptics.NotificationFeedbackType.Error,
             };
         case 'warning':
             return {
                 icon: 'warning' as const,
-                color: colors.crowd.medium,
-                haptic: Haptics.NotificationFeedbackType.Warning,
+                color: colors.warning,
             };
         case 'info':
         default:
             return {
                 icon: 'info' as const,
                 color: colors.primary,
-                haptic: Haptics.NotificationFeedbackType.Success,
             };
     }
 };
@@ -80,90 +79,134 @@ const ToastItem: React.FC<{
 }> = ({ toast, onHide }) => {
     const translateY = useRef(new Animated.Value(-100)).current;
     const opacity = useRef(new Animated.Value(0)).current;
+    const translateX = useRef(new Animated.Value(0)).current;
+    const reducedMotion = useReducedMotion();
+    const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const dismissing = useRef(false);
+    const hide = useRef(onHide);
+    hide.current = onHide;
+    const duration = useRef(toast.duration ?? (toast.action ? 6000 : 4000));
     const config = getToastConfig(toast.type);
 
-    useEffect(() => {
-        // Animate in
+    const clearTimer = useCallback(() => {
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = null;
+    }, []);
+
+    const animateOut = useCallback((direction = 0) => {
+        if (dismissing.current) return;
+        dismissing.current = true;
+        clearTimer();
         Animated.parallel([
-            Animated.spring(translateY, {
-                toValue: 0,
+            Animated.timing(direction ? translateX : translateY, {
+                toValue: direction ? direction * 500 : -100,
+                duration: reducedMotion ? 0 : 160,
                 useNativeDriver: true,
-                tension: 50,
-                friction: 8,
+            }),
+            Animated.timing(opacity, {
+                toValue: 0,
+                duration: reducedMotion ? 0 : 160,
+                useNativeDriver: true,
+            }),
+        ]).start(({ finished }) => { if (finished) hide.current(); });
+    }, [clearTimer, opacity, reducedMotion, translateX, translateY]);
+
+    const scheduleHide = useCallback(() => {
+        clearTimer();
+        if (!dismissing.current) timer.current = setTimeout(() => animateOut(), duration.current);
+    }, [animateOut, clearTimer]);
+
+    useEffect(() => {
+        let active = true;
+        Animated.parallel([
+            Animated.timing(translateY, {
+                toValue: 0,
+                duration: reducedMotion ? 0 : 180,
+                useNativeDriver: true,
             }),
             Animated.timing(opacity, {
                 toValue: 1,
-                duration: 200,
+                duration: reducedMotion ? 0 : 180,
                 useNativeDriver: true,
             }),
         ]).start();
+        scheduleHide();
+        if (Platform.OS === 'android') {
+            void AccessibilityInfo.getRecommendedTimeoutMillis(duration.current).then(timeout => {
+                if (active) { duration.current = timeout; scheduleHide(); }
+            }).catch(() => {});
+        }
+        return () => {
+            active = false;
+            clearTimer();
+            translateX.stopAnimation(); translateY.stopAnimation(); opacity.stopAnimation();
+        };
+    }, [clearTimer, opacity, reducedMotion, scheduleHide, translateX, translateY]);
 
-        // Haptic feedback
-        Haptics.notificationAsync(config.haptic);
-
-        // Auto hide
-        const timer = setTimeout(() => {
-            animateOut();
-        }, toast.duration || 3000);
-
-        return () => clearTimeout(timer);
-    }, []);
-
-    const animateOut = () => {
-        Animated.parallel([
-            Animated.timing(translateY, {
-                toValue: -100,
-                duration: 200,
-                useNativeDriver: true,
-            }),
-            Animated.timing(opacity, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: true,
-            }),
-        ]).start(() => onHide());
+    const resetPosition = () => {
+        Animated.parallel([translateX, translateY].map(value => reducedMotion
+            ? Animated.timing(value, { toValue: 0, useNativeDriver: true, duration: 0 })
+            : Animated.spring(value, { toValue: 0, useNativeDriver: true, tension: 80, friction: 12 }))).start();
+        scheduleHide();
     };
+    const panResponder = PanResponder.create({
+        onMoveShouldSetPanResponder: (_, { dx, dy }) => Math.abs(dx) > 10 || dy < -10,
+        onPanResponderGrant: clearTimer,
+        onPanResponderMove: (_, { dx, dy }) => { translateX.setValue(dx); translateY.setValue(Math.min(0, dy)); },
+        onPanResponderRelease: (_, { dx, dy, vx, vy }) => {
+            if (Math.abs(dx) > 60 || (Math.abs(dx) > 15 && Math.abs(vx) > 0.6)) animateOut(Math.sign(dx));
+            else if (dy < -40 || (dy < -10 && vy < -0.6)) animateOut();
+            else resetPosition();
+        },
+        onPanResponderTerminate: resetPosition,
+    });
 
     return (
         <Animated.View
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"
+            accessibilityActions={[{ name: 'dismiss', label: 'Dismiss notification' }]}
+            onAccessibilityAction={({ nativeEvent }) => { if (nativeEvent.actionName === 'dismiss') animateOut(); }}
+            onTouchStart={clearTimer}
+            onTouchEnd={scheduleHide}
+            onTouchCancel={scheduleHide}
+            {...panResponder.panHandlers}
             style={[
                 styles.toast,
                 {
-                    transform: [{ translateY }],
+                    transform: [{ translateX }, { translateY }],
                     opacity,
-                    borderLeftColor: config.color,
                 },
             ]}
         >
-            <View style={[styles.iconContainer, { backgroundColor: `${config.color}20` }]}>
-                <MaterialIcons name={config.icon} size={24} color={config.color} />
+            <View style={styles.iconContainer}>
+                <MaterialIcons name={config.icon} size={20} color={config.color} />
             </View>
             <View style={styles.content}>
                 <Text style={styles.title}>{toast.title}</Text>
                 {toast.message && <Text style={styles.message}>{toast.message}</Text>}
+                {toast.action && (
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        accessibilityRole="button"
+                        onPress={() => {
+                            toast.action?.onPress();
+                            animateOut();
+                        }}
+                        accessibilityLabel={toast.action.label}
+                    >
+                        <Text style={styles.actionText}>{toast.action.label}</Text>
+                    </TouchableOpacity>
+                )}
             </View>
-            {toast.action ? (
-                <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => {
-                        toast.action?.onPress();
-                        animateOut();
-                    }}
-                    accessibilityLabel={toast.action.label}
-                >
-                    <Text style={styles.actionText}>{toast.action.label}</Text>
-                </TouchableOpacity>
-            ) : (
-                <TouchableOpacity
-                    style={styles.closeButton}
-                    onPress={animateOut}
-                    accessibilityLabel="Dismiss notification"
-                >
-                    <MaterialIcons name="close" size={18} color={colors.text.muted} />
-                </TouchableOpacity>
-            )}
+            <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => animateOut()}
+                accessibilityRole="button"
+                accessibilityLabel="Dismiss notification"
+            >
+                <MaterialIcons name="close" size={18} color={colors.text.muted} />
+            </TouchableOpacity>
         </Animated.View>
     );
 };
@@ -171,10 +214,12 @@ const ToastItem: React.FC<{
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
     const insets = useSafeAreaInsets();
+    const nextId = useRef(0);
 
     const showToast = useCallback((toast: Omit<Toast, 'id'>) => {
-        const id = Date.now().toString();
-        setToasts((prev) => [...prev, { ...toast, id }]);
+        const id = String(++nextId.current);
+        setToasts(prev => prev.some(current => current.type === toast.type && current.title === toast.title && current.message === toast.message
+            && !current.action && !toast.action) ? prev : [{ ...toast, id }]);
     }, []);
 
     const hideToast = useCallback((id: string) => {
@@ -226,32 +271,37 @@ const styles = StyleSheet.create({
         width: '100%',
         maxWidth: 480,
         flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.surface,
+        alignItems: 'flex-start',
+        backgroundColor: colors.surfaceLight,
         borderRadius: borderRadius.lg,
         borderWidth: 1,
         borderColor: colors.glass.border,
-        borderLeftWidth: 4,
-        padding: spacing.md,
+        paddingLeft: spacing.md,
+        paddingVertical: spacing.sm,
+        paddingRight: spacing.xs,
         marginBottom: spacing.sm,
         ...shadow({ y: 4, blur: 8, color: '#000000', opacity: 0.3 }),
         zIndex: 8, // was implied by elevation: 8 on Android
     },
     iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 32,
+        height: 32,
+        borderRadius: borderRadius.sm,
+        backgroundColor: colors.glass.surfaceLight,
+        marginTop: 6,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: spacing.md,
+        marginRight: spacing.sm,
     },
     content: {
         flex: 1,
         minWidth: 0,
+        paddingVertical: 6,
     },
     title: {
         fontSize: typography.sizes.base,
-        fontFamily: typography.fontFamily.bold,
+        fontFamily: typography.fontFamily.medium,
+        lineHeight: 20,
         color: colors.text.primary,
     },
     message: {
@@ -259,10 +309,12 @@ const styles = StyleSheet.create({
         fontFamily: typography.fontFamily.regular,
         color: colors.text.secondary,
         marginTop: 2,
+        lineHeight: 18,
     },
     actionButton: {
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
+        minHeight: 44,
+        justifyContent: 'center',
+        alignSelf: 'flex-start',
     },
     actionText: {
         fontSize: typography.sizes.sm,
@@ -270,7 +322,10 @@ const styles = StyleSheet.create({
         color: colors.primary,
     },
     closeButton: {
-        padding: spacing.sm,
+        minWidth: 44,
+        minHeight: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });
 

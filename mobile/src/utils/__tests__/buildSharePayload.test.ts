@@ -21,6 +21,13 @@ const baseSession = (overrides: Partial<LastSession> = {}): LastSession => ({
     ...overrides,
 });
 
+test('shows cardio time when sharing cardio alone and retains lifting volume for mixed sessions', () => {
+    const session = baseSession({ exercises: [exercise({ id: 'cardio', name: 'Treadmill Run', durationMinutes: 25.5 }), exercise({ id: 'strength', volumeKg: 300 })] });
+    const cardio = buildSharePayload(session, [EX_PREFIX + 'cardio']);
+    expect(cardio.headline).toBe('25.5 MIN'); expect(cardio.headlineLabel).toBe('Cardio time');
+    expect(buildSharePayload(session, [TOTAL_ID]).headline).toBe('300 KG');
+});
+
 describe('buildSharePayload — R12: round once, over exactly the selected exercises', () => {
     it('rounds the SUM of raw volumeKg once, not the sum of independently-rounded parts', () => {
         // Same trio buildShareExercises.test.ts guards: summed raw -> 305,

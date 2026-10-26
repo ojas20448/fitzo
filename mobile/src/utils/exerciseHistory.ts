@@ -1,10 +1,12 @@
-export interface ExerciseHistorySet { weight_kg: number; reps: number; rir?: number; }
+import { cardioEntryError, isCardioExercise } from './cardio';
+export interface ExerciseHistorySet { weight_kg?: number; reps?: number; rir?: number; duration_minutes?: number; rpe?: number; }
 export interface ExerciseHistorySession {
     id: string;
     date: string;
     createdAt?: string;
     workout: string;
     isUnilateral: boolean;
+    isCardio?: boolean;
     sets: ExerciseHistorySet[];
 }
 
@@ -20,7 +22,11 @@ export function exerciseHistoryFor(groups: unknown, name: string): ExerciseHisto
             if (!Array.isArray(exercises)) continue;
             exercises.forEach((exercise, index) => {
                 if (typeof exercise?.name !== 'string' || exercise.name.trim().toLowerCase() !== name.trim().toLowerCase() || !Array.isArray(exercise.sets)) return;
-                const sets = exercise.sets.flatMap((set: any) => {
+                const sets = exercise.sets.flatMap((set: any): ExerciseHistorySet[] => {
+                    if (set && set.completed !== false && isCardioExercise(exercise) && !cardioEntryError(set, 'duration') && !cardioEntryError(set, 'effort')) {
+                        return [{ duration_minutes: Number(set.duration_minutes),
+                            ...(set.rpe == null || String(set.rpe).trim() === '' ? {} : { rpe: Number(set.rpe) }) }];
+                    }
                     if (!set || set.completed === false || set.weight_kg == null || String(set.weight_kg).trim() === '' || !Number.isFinite(Number(set.weight_kg)) || Number(set.weight_kg) < 0
                         || !Number.isInteger(Number(set.reps)) || Number(set.reps) <= 0) return [];
                     const rir = set.rir == null || String(set.rir).trim() === '' ? undefined : Number(set.rir);
@@ -29,7 +35,8 @@ export function exerciseHistoryFor(groups: unknown, name: string): ExerciseHisto
                 });
                 if (sets.length) result.push({ id: `${workout.id}-${index}`, date: group.logged_date,
                     createdAt: typeof workout.created_at === 'string' ? workout.created_at : undefined,
-                    workout: typeof workout.workout_type === 'string' ? workout.workout_type : 'Workout', isUnilateral: exercise.is_unilateral === true, sets });
+                    workout: typeof workout.workout_type === 'string' ? workout.workout_type : 'Workout', isUnilateral: exercise.is_unilateral === true,
+                    ...(isCardioExercise(exercise) ? { isCardio: true } : {}), sets });
             });
         }
     }

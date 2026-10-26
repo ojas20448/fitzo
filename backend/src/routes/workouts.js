@@ -83,10 +83,11 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
 
         // The client already knows the muscle — store it so volume/heatmap
         // attribution works even without a catalog match.
-        const muscle = normalizeMuscle(ex.target) || normalizeMuscle(workoutType);
+        const cardio = ex.tracking_type === 'cardio';
+        const muscle = cardio ? null : normalizeMuscle(ex.target) || normalizeMuscle(workoutType);
 
         // Unilateral reps are entered per side; volume doubles. See utils/volume.js.
-        const isUnilateral = ex.is_unilateral === true;
+        const isUnilateral = !cardio && ex.is_unilateral === true;
 
         const logResult = await runQuery(
             `INSERT INTO exercise_logs (session_id, exercise_id, custom_exercise_name, order_index, muscle_group, is_unilateral)
@@ -115,6 +116,14 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
         const sets = Array.isArray(ex.sets) ? ex.sets : [];
         let bestSet = null;
         for (let s = 0; s < sets.length; s++) {
+            if (cardio) {
+                await runQuery(
+                    `INSERT INTO set_logs (exercise_log_id, set_number, duration_seconds, rpe, is_warmup)
+                     VALUES ($1, $2, $3, $4, false)`,
+                    [exerciseLogId, s + 1, Math.round(Number(sets[s].duration_minutes) * 60), sets[s].rpe ?? null]
+                );
+                continue;
+            }
             const reps = parseInt(sets[s].reps, 10) || 0;
             const weight = parseFloat(sets[s].weight_kg) || 0;
             if (reps <= 0 && weight <= 0) continue;

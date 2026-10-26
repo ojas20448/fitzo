@@ -19,6 +19,36 @@ const mount = async (extra = {}) => { await act(async () => { screen = create(<W
 beforeEach(() => jest.clearAllMocks());
 afterEach(async () => { await act(async () => screen?.unmount()); });
 
+test('edits cardio time and effort without weight, reps or RIR, including decimal minutes', async () => {
+    await mount({ exerciseName: 'Treadmill Run', isCardio: true, showRir: true, initialField: 'duration' });
+    expect(screen.root.findAllByType(TextInput)).toHaveLength(2);
+    expect(input('Weight value')).toBeUndefined(); expect(input('Reps value')).toBeUndefined(); expect(input('Reps in reserve value')).toBeUndefined();
+    await type('Duration in minutes', '20,5'); await type('Effort out of 10', '6');
+    await press('Mark set complete');
+    expect(save).toHaveBeenCalledWith({ duration_minutes: 20.5, rpe: 6 }, true);
+});
+
+test('retains a cardio draft after validation errors and allows an empty effort rating', async () => {
+    await mount({ isCardio: true, initialField: 'duration' });
+    await type('Duration in minutes', '0'); await press('Mark set complete'); expect(save).not.toHaveBeenCalled();
+    await type('Duration in minutes', '25'); await type('Effort out of 10', '11');
+    await press('Mark set complete'); expect(save).not.toHaveBeenCalled();
+    expect(input('Duration in minutes').props.value).toBe('25');
+    await type('Effort out of 10', ''); await press('Save without completing');
+    expect(save).toHaveBeenCalledWith({ duration_minutes: 25, rpe: '' }, false);
+});
+
+test('uses duration and effort wheels and only copies the previous duration', async () => {
+    await mount({ isCardio: true, initialField: 'duration', inputMode: 'wheel', previousSet: { id: 'p', duration_minutes: 15, rpe: 8, completed: true } });
+    await press('Copy previous set');
+    expect(screen.root.findByType(ScrollWheelPicker).props.selectedValue).toBe(15);
+    await press('Effort out of 10');
+    expect(screen.root.findByType(ScrollWheelPicker).props.values).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    await act(async () => screen.root.findByType(ScrollWheelPicker).props.onValueChange(5));
+    await press('Save without completing');
+    expect(save).toHaveBeenCalledWith({ duration_minutes: 15, rpe: 5 }, false);
+});
+
 test('edits both values together and explicitly completes only once, including a bodyweight set', async () => {
     await mount();
     expect(screen.root.findAllByType(TextInput)).toHaveLength(2);

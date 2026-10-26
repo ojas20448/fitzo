@@ -17,11 +17,13 @@ export function buildSharePayload(session: LastSession, selection: string[]): Sh
     const prOnly = exercises.length === 0 && prs.length > 0;
     const volume = exercises.length ? selectedVolume : session.volumeKg;
     const sets = exercises.length ? selectedSets : session.setCount;
+    const cardioMinutes = exercises.reduce((sum, exercise) => sum + (exercise.durationMinutes ?? 0), 0);
+    const cardioOnly = exercises.length > 0 && exercises.every(exercise => exercise.durationMinutes != null);
     const headline = prOnly
         ? (prs.length === 1 ? prs[0].current : `${prs.length} PERSONAL RECORDS`)
-        : volume > 0 ? `${formatVolumeKg(volume)} KG` : `${sets} ${sets === 1 ? 'SET' : 'SETS'}`;
+        : cardioOnly ? `${cardioMinutes} MIN` : volume > 0 ? `${formatVolumeKg(volume)} KG` : `${sets} ${sets === 1 ? 'SET' : 'SETS'}`;
     const headlineLabel = prOnly ? 'Personal record'
-        : volume > 0 ? (subset ? 'Selected load volume' : 'Workout load volume') : 'Completed sets';
+        : cardioOnly ? 'Cardio time' : volume > 0 ? (subset ? 'Selected load volume' : 'Workout load volume') : 'Completed sets';
     const date = new Date(session.completedAt);
     return {
         headline,

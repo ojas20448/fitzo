@@ -20,6 +20,18 @@ describe('Context Pack Builder Service', () => {
         jest.clearAllMocks();
     });
 
+    it('keeps cardio time and effort without inventing reps or adding strength volume', async () => {
+        query.mockImplementation(sql => ({ rows: sql.includes('FROM workout_sessions') ? [{
+            id: 'session', log_id: 'cardio', exercise_name: 'Stair Climber', exercise_category: 'legs',
+            set_number: 1, duration_seconds: 1200, rpe: 6, reps: null, weight_kg: null,
+        }] : [] }));
+        const pack = await getContextPack('cardio-user');
+        expect(pack.training.sessions[0].exercises[0]).toMatchObject({ category: 'cardio', sets: [{ set_number: 1, duration_seconds: 1200, rpe: 6 }] });
+        expect(pack.training.sessions[0].exercises[0].sets[0].reps).toBeUndefined();
+        expect(pack.training.volume.legs).toBeUndefined();
+        expect(pack.training.prs).toEqual({});
+    });
+
     it('compiles 14-day context pack correctly', async () => {
         const userId = '1234-5678';
 

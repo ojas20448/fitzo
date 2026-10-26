@@ -44,7 +44,7 @@ export default function Spec({ payload, photoMode, onBackgroundLoad, onBackgroun
                     {exercises.map(ex => (
                         <View style={styles.row} key={ex.id}>
                             <Text style={[styles.name, styles.nameCol]} numberOfLines={2}>{ex.name}</Text>
-                            <Text style={[styles.value, styles.numberCol]} numberOfLines={2}>{formatTopSet(ex.topSet) || '—'}</Text>
+                            <Text style={[styles.value, styles.numberCol]} numberOfLines={2}>{ex.durationMinutes != null ? `${ex.durationMinutes} min` : formatTopSet(ex.topSet) || '—'}</Text>
                             <Text style={[styles.value, styles.numberCol]} numberOfLines={2}>{ex.volumeKg > 0 ? formatVolumeKg(ex.volumeKg) : '—'}</Text>
                         </View>
                     ))}

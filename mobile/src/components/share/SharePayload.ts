@@ -17,6 +17,7 @@ export interface ShareExercise {
     volumeKg: number;
     setCount: number;
     topSet?: ShareSet;
+    durationMinutes?: number;
 }
 
 /**

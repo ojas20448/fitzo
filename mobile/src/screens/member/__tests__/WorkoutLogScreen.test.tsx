@@ -78,6 +78,40 @@ test.each([[120, 'inline'], [0, 'inline'], [120, 'editor'], [0, 'editor']])('use
 afterEach(async () => { await act(async () => screen?.unmount()); screen = null; });
 async function mount() { await act(async () => { screen = create(<WorkoutLogScreen />); }); }
 
+test('restores, edits and saves a cardio-only workout without requesting weight or starting rest', async () => {
+    mockRestEnabled = true;
+    await saveActiveWorkoutDraft('a', { version: 1, intent: { session_label: 'Cardio' }, visibility: 'private', restDuration: 90,
+        startedAt: new Date().toISOString(), exercises: [{ id: 'running_treadmill', name: 'Treadmill Run', bodyPart: 'cardio', sets: [
+            { id: 'timed', duration_minutes: 20, rpe: 5, completed: false },
+        ] }] });
+    await mount();
+    await act(async () => cards()[0].props.onOpenPicker(0, 0, 'duration'));
+    expect(screen.root.findByType(WorkoutSetEditor).props.isCardio).toBe(true);
+    await act(async () => screen.root.findByType(WorkoutSetEditor).props.onSave({ duration_minutes: 25.5, rpe: 6 }, true));
+    expect(screen.root.findAllByType(RestTimerPill)).toHaveLength(0);
+    await act(async () => cards()[0].props.onUpdateSet(0, 0, 'duration_minutes', '0'));
+    expect(cards()[0].props.exercise.sets[0].completed).toBe(false);
+    await act(async () => cards()[0].props.onUpdateSet(0, 0, 'duration_minutes', '25.5'));
+    await act(async () => cards()[0].props.onUpdateSet(0, 0, 'completed', true));
+    (workoutsAPI.log as jest.Mock).mockResolvedValueOnce({ prs: [] });
+    const finish = screen.root.findAllByType(TouchableOpacity).find((node: any) => node.findAllByType(Text).some((item: any) => String(item.props.children).toLowerCase().includes('finish')));
+    await act(async () => finish.props.onPress());
+    expect(mockToast.error).not.toHaveBeenCalled();
+    expect(workoutsAPI.log).toHaveBeenCalledTimes(1);
+    const body = (workoutsAPI.log as jest.Mock).mock.calls[0][0];
+    expect(JSON.parse(body.exercises)[0]).toMatchObject({ tracking_type: 'cardio', sets: [{ id: 'timed', duration_minutes: 25.5, rpe: 6, completed: true }] });
+    expect(body.workout_type).toBe('cardio');
+});
+
+test('retains remote cardio metadata when adding an exercise to the workout', async () => {
+    await mount();
+    const manage = screen.root.findAllByProps({ accessibilityLabel: 'Edit exercises' }).find((node: any) => typeof node.props.onPress === 'function');
+    await act(async () => manage.props.onPress());
+    await act(async () => screen.root.findByType(WorkoutExercisesSheet).props.onAdd());
+    await act(async () => screen.root.findByType(ExerciseList).props.onSelect({ id: 'remote-cardio', name: 'Air Bike', bodyPart: 'cardio', target: 'cardiovascular system' }));
+    expect(cards().at(-1).props.exercise).toMatchObject({ bodyPart: 'cardio', tracking_type: 'cardio' });
+});
+
 test('adding rest time advances the deadline so later countdown ticks preserve the extra seconds', async () => {
     jest.useFakeTimers(); mockRestEnabled = true;
     try {

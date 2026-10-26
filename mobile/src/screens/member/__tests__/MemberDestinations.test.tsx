@@ -179,6 +179,17 @@ it('shows real saved workout details without routing into a new workout', async 
     await press('View push workout'); expect(copy()).toContain('Chest Press'); expect(copy()).toContain('40');
     expect(router.push).not.toHaveBeenCalled();
 });
+it('shows saved cardio time and effort while preserving older entries recorded as reps', async () => {
+    (workoutsAPI.getHistory as jest.Mock).mockResolvedValue({ history: [{ logged_date: '2026-10-26', workouts: [{ id: 'w', workout_type: 'cardio', completed: true, exercises: JSON.stringify([
+        { name: 'Treadmill Run', tracking_type: 'cardio', sets: [{ duration_minutes: 20, rpe: 6, completed: true }] },
+        { name: 'Stationary Bike', sets: [{ reps: 8, weight_kg: 0, completed: true }] },
+    ]) }] }] });
+    await act(async () => { screen = create(<WorkoutHistoryScreen />); });
+    await press('View cardio workout');
+    expect(copy()).toContain('20 min · effort 6/10');
+    expect(copy()).toContain('8 reps');
+    expect(copy()).not.toContain('No completed sets recorded');
+});
 it('finds a saved workout by its exercise name and can clear an unmatched search', async () => {
     (workoutsAPI.getHistory as jest.Mock).mockResolvedValue({ history: [{ logged_date: '2026-10-22', workouts: [
         { id: 'push', workout_type: 'push', completed: true, exercises: JSON.stringify([{ name: 'Chest Press', sets: [{ reps: 8, weight_kg: 40, completed: true }] }]) },

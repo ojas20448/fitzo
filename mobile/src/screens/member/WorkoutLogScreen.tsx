@@ -46,6 +46,8 @@ import { useLastSessionStore } from '../../stores/lastSessionStore';
 import { normalizePrs } from '../../utils/normalizePr';
 import { buildShareExercises } from '../../utils/buildShareExercises';
 import { finalizeWorkout } from '../../utils/finalizeWorkout';
+import { cardioEntryError, isCardioExercise } from '../../utils/cardio';
+import type { SetEntryField } from '../../components/workout/types';
 import { useAuth } from '../../context/AuthContext';
 import { useWorkoutInputMode } from '../../hooks/useWorkoutInputMode';
 import { chooseWorkoutDraft, parseWorkoutIntent, previousWorkoutDraft } from '../../utils/workoutSetup';
@@ -378,6 +380,7 @@ const WorkoutLogScreen: React.FC = () => {
         }, 500);
     }, [restDuration]);
     const startExerciseRest = useCallback((exercise: UserExercise) => {
+        if (isCardioExercise(exercise)) return;
         const seconds = exercisePreferences.preferences[exercise.name.trim().toLowerCase()]?.rest_seconds ?? (restTimerEnabled ? restDuration : 0);
         if (seconds > 0) startRestTimer(seconds);
     }, [exercisePreferences.preferences, restTimerEnabled, restDuration, startRestTimer]);
@@ -472,7 +475,7 @@ const WorkoutLogScreen: React.FC = () => {
                     editedExercises.current = true;
                     setUserExercises(parsed);
                     const label = params.curatedName ? (params.curatedName as string) : 'template';
-                    toast.success('Template Loaded', `Loaded "${label}" — fill in your weights!`);
+                    toast.success('Template Loaded', `Loaded "${label}" — enter your workout values.`);
                 }
             } catch {
                 // silently ignore bad data
@@ -520,6 +523,8 @@ const WorkoutLogScreen: React.FC = () => {
                 name: exercise.name,
                 gifUrl: exercise.gifUrl,
                 target: exercise.target,
+                bodyPart: exercise.bodyPart,
+                tracking_type: isCardioExercise(exercise) ? 'cardio' : 'strength',
                 instructions: exercise.instructions,
                 sets: ghostSets,
             };
@@ -576,6 +581,8 @@ const WorkoutLogScreen: React.FC = () => {
                         id: Math.random().toString(),
                         weight_kg: prevSet ? prevSet.weight_kg : '',
                         reps: prevSet ? prevSet.reps : '',
+                        duration_minutes: prevSet?.duration_minutes ?? '',
+                        rpe: '',
                         previous: prevSet?.previous,
                         rir: '',
                         completed: false,
@@ -614,9 +621,11 @@ const WorkoutLogScreen: React.FC = () => {
                 sets[setIndex] = { ...sets[setIndex], [field]: value };
                 const rir = sets[setIndex].rir;
                 const invalidRir = showRir && rir != null && String(rir).trim() !== '' && (!Number.isInteger(workoutNumber(rir)) || workoutNumber(rir) < 0 || workoutNumber(rir) > 5);
-                if (field !== 'completed' && (sets[setIndex].weight_kg == null || String(sets[setIndex].weight_kg).trim() === ''
+                if (field !== 'completed' && (isCardioExercise(updated[exerciseIndex])
+                    ? !!cardioEntryError(sets[setIndex], 'duration') || !!cardioEntryError(sets[setIndex], 'effort')
+                    : (sets[setIndex].weight_kg == null || String(sets[setIndex].weight_kg).trim() === ''
                     || !Number.isFinite(workoutNumber(sets[setIndex].weight_kg)) || workoutNumber(sets[setIndex].weight_kg) < 0
-                    || !Number.isInteger(workoutNumber(sets[setIndex].reps)) || workoutNumber(sets[setIndex].reps) <= 0 || invalidRir)) sets[setIndex].completed = false;
+                    || !Number.isInteger(workoutNumber(sets[setIndex].reps)) || workoutNumber(sets[setIndex].reps) <= 0 || invalidRir))) sets[setIndex].completed = false;
                 updated[exerciseIndex] = { ...updated[exerciseIndex], sets };
 
                 // Layered double-pulse haptics when a set becomes completed.
@@ -664,14 +673,14 @@ const WorkoutLogScreen: React.FC = () => {
     // -----------------------------------------------------------------------
 
     const openPicker = useCallback(
-        (exerciseIndex: number, setIndex: number, type: 'weight' | 'reps' | 'rir') => {
+        (exerciseIndex: number, setIndex: number, type: SetEntryField) => {
             if (!userExercises[exerciseIndex]?.sets[setIndex]) return;
             setPickerConfig({ visible: true, type, exerciseIndex, setIndex, currentValue: 0 });
         },
         [userExercises],
     );
     const closePicker = useCallback(() => setPickerConfig(current => ({ ...current, visible: false })), []);
-    const saveEditedSet = (values: Pick<ExerciseSet, 'weight_kg' | 'reps' | 'rir'>, complete: boolean) => {
+    const saveEditedSet = (values: Pick<ExerciseSet, 'weight_kg' | 'reps' | 'rir' | 'duration_minutes' | 'rpe'>, complete: boolean) => {
         const exercise = userExercises[pickerConfig.exerciseIndex];
         const set = exercise?.sets[pickerConfig.setIndex];
         if (!set) return;
@@ -718,13 +727,13 @@ const WorkoutLogScreen: React.FC = () => {
     const handleFinish = async (focus?: string, routineChoice?: 'today' | 'update') => {
         if (finishPending.current) return;
         Keyboard.dismiss();
-        if (userExercises.some(ex => ex.sets.some(set => set.completed && (set.weight_kg === '' || set.weight_kg == null)))) {
+        if (userExercises.some(ex => !isCardioExercise(ex) && ex.sets.some(set => set.completed && (set.weight_kg === '' || set.weight_kg == null)))) {
             toast.error('Enter a weight', 'Enter the weight for each checked set. Use 0 kg for bodyweight exercises.');
             return;
         }
         const finishedExercises = finalizeWorkout(userExercises);
         if (finishedExercises.length === 0) {
-            toast.error('No completed sets', 'Check off at least one set with reps before finishing. Use 0 kg for bodyweight exercises.');
+            toast.error('No completed sets', 'Complete at least one strength set or cardio interval before finishing.');
             return;
         }
 
@@ -844,6 +853,7 @@ const WorkoutLogScreen: React.FC = () => {
     );
 
     // Header component for FlatList
+    const hasCardio = userExercises.some(isCardioExercise);
     const ListHeader = useMemo(
         () => (
             <View>
@@ -916,12 +926,12 @@ const WorkoutLogScreen: React.FC = () => {
                     <Text style={[styles.sectionLabel, { marginBottom: 0 }]}>EXERCISES · {userExercises.length}</Text>
                     {userExercises.length > 0 && <TouchableOpacity accessibilityRole="button" accessibilityLabel="Edit exercises" onPress={() => setShowExerciseEditor(true)} style={styles.editExercisesButton}><Ionicons name="options-outline" size={18} color={colors.text.primary} /><Text style={styles.editExercisesText}>Edit exercises</Text></TouchableOpacity>}
                 </View>
-                <Text style={styles.editHint}>{userExercises.length ? 'Type weight and reps below. Tap the set number for more options.' : 'Add your exercises first. Then enter weight and reps for each set.'}</Text>
+                <Text style={styles.editHint}>{hasCardio ? 'Log time and effort for cardio. Tap a set number for more options.' : userExercises.length ? 'Type weight and reps below. Tap the set number for more options.' : 'Add your exercises first. Then log each set or cardio interval.'}</Text>
             </View>
         ),
         // showWarmUp must be here — without it the memo holds the old header and
         // dismissing the warm-up card does nothing on screen.
-        [workoutType, sessionLabel, lastWorkoutPreview, userExercises.length, showWarmUp, starterLoaded, setupError, fetchingLastWorkout, savedDays, savedSplit?.scheduleOnly, selectSavedDay, params.curatedExercises],
+        [workoutType, sessionLabel, lastWorkoutPreview, userExercises.length, hasCardio, showWarmUp, starterLoaded, setupError, fetchingLastWorkout, savedDays, savedSplit?.scheduleOnly, selectSavedDay, params.curatedExercises],
     );
 
     // Footer component for FlatList
@@ -1056,7 +1066,7 @@ const WorkoutLogScreen: React.FC = () => {
                             <Text style={styles.routineTitle} accessibilityRole="header">Keep these routine changes?</Text>
                             <Text style={styles.routineBody}>You changed exercises, their order or the number of sets in {sessionLabel}. Save them just for today, or use this version next time too.</Text>
                             {proposedRoutine.changes.map((change, index) => <Text key={index} style={[styles.routineBody, { color: colors.text.primary }]}>• {change}</Text>)}
-                            <Text style={styles.routineBody}>Other training days and existing rep targets stay the same. New exercises use the reps you entered. Lifted weights are saved in your workout history.</Text>
+                            <Text style={styles.routineBody}>Other training days and existing targets stay the same. New exercises use the reps or time you entered. Performed values are saved in your workout history.</Text>
                             {!!(routineError || proposedRoutine.error) && <Text style={[styles.routineBody, { color: colors.error }]} accessibilityRole="alert">{routineError || proposedRoutine.error}</Text>}
                         </ScrollView>
                         <Button title="Save today only" disabled={loading} onPress={() => { void handleFinish(routinePrompt?.focus, 'today'); }} fullWidth />
@@ -1318,6 +1328,7 @@ const WorkoutLogScreen: React.FC = () => {
                     initialField={pickerConfig.type}
                     showRir={showRir}
                     isUnilateral={userExercises[pickerConfig.exerciseIndex].is_unilateral}
+                    isCardio={isCardioExercise(userExercises[pickerConfig.exerciseIndex])}
                     inputMode={inputMode}
                     onSelectMode={selectMode}
                     onSave={saveEditedSet}

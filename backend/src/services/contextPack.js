@@ -52,7 +52,7 @@ async function buildContextPack(userId) {
         `SELECT s.id, s.day_name, s.completed_at, ${sessionDaySql('s')}::text AS local_date, s.duration_minutes, s.notes,
                 el.id as log_id, COALESCE(e.name, el.custom_exercise_name) as exercise_name,
                 COALESCE(e.category, el.muscle_group) as exercise_category,
-                sl.set_number, sl.reps, sl.weight_kg, sl.rpe
+                sl.set_number, sl.reps, sl.weight_kg, sl.rpe, sl.duration_seconds
          FROM workout_sessions s
          LEFT JOIN exercise_logs el ON el.session_id = s.id
          LEFT JOIN exercises e ON el.exercise_id = e.id
@@ -85,7 +85,7 @@ async function buildContextPack(userId) {
             if (!sessionsMap[row.id].exercises[row.log_id]) {
                 sessionsMap[row.id].exercises[row.log_id] = {
                     name: row.exercise_name,
-                    category: row.exercise_category || 'other',
+                    category: row.duration_seconds != null ? 'cardio' : row.exercise_category || 'other',
                     sets: []
                 };
             }
@@ -93,10 +93,12 @@ async function buildContextPack(userId) {
             if (row.set_number != null) {
                 sessionsMap[row.id].exercises[row.log_id].sets.push({
                     set_number: row.set_number,
-                    reps: row.reps,
-                    weight_kg: parseFloat(row.weight_kg) || 0,
+                    ...(row.duration_seconds != null ? { duration_seconds: row.duration_seconds }
+                        : { reps: row.reps, weight_kg: parseFloat(row.weight_kg) || 0 }),
                     rpe: row.rpe
                 });
+
+                if (row.duration_seconds != null) continue;
 
                 // Count total sets completed per muscle group
                 const category = row.exercise_category || 'other';
