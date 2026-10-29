@@ -56,7 +56,8 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
 
     const sessionResult = await runQuery(
         `INSERT INTO workout_sessions (user_id, day_name, visibility, notes, completed_at, duration_minutes, source_workout_log_id, completed_timezone)
-         VALUES ($1, $2, $3, 'smart-log', NOW(), $4, $5, ${MEMBER_TIMEZONE_SQL})
+         VALUES ($1, $2, $3, 'smart-log', (SELECT created_at FROM workout_logs WHERE id = $5), $4, $5,
+                 (SELECT COALESCE(logged_timezone, ${MEMBER_TIMEZONE_SQL}) FROM workout_logs WHERE id = $5))
          RETURNING id`,
         [userId, sessionDayName, visibility, durationMinutes || null, sourceLogId]
     );
@@ -161,7 +162,14 @@ async function mirrorToStructuredLogs(userId, workoutType, exercisesJson, visibi
 // ============================================
 router.post('/', asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const { workout_type, day_name, notes, visibility = 'friends', duration_minutes } = req.body;
+    const { workout_type, day_name, notes, visibility = 'friends', duration_minutes, client_session_id } = req.body;
+
+    if (client_session_id !== undefined && (typeof client_session_id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(client_session_id))) {
+        throw new ValidationError('Invalid workout session ID');
+    }
+    if (duration_minutes != null && (!Number.isInteger(Number(duration_minutes)) || Number(duration_minutes) < 1 || Number(duration_minutes) > 1440)) {
+        throw new ValidationError('Workout duration must be between 1 and 1440 whole minutes');
+    }
 
     // Validation
     const validTypes = ['legs', 'chest', 'back', 'shoulders', 'arms', 'cardio', 'rest'];
@@ -180,31 +188,30 @@ router.post('/', asyncHandler(async (req, res) => {
     try {
         await client.query('BEGIN');
         const query = client.query.bind(client);
-        // Serialize updates for this user, including concurrent first logs of a type.
+        // Serialize retries for one account; separate sessions may share a day and type.
         await query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [userId]);
-        // Check if already logged today for this type
-        const existingLog = await query(
+        const existingLog = client_session_id ? await query(
             `SELECT id FROM workout_logs
-             WHERE user_id = $1 AND logged_date = ${MEMBER_TODAY_SQL} AND workout_type = $2`,
-            [userId, workout_type]
-        );
+             WHERE user_id = $1 AND id = $2`,
+            [userId, client_session_id]
+        ) : { rows: [] };
 
         if (existingLog.rows.length > 0) {
             // Update existing log
             result = await query(
                 `UPDATE workout_logs
-                 SET exercises = $1, notes = $2, visibility = $3, completed = true
-                 WHERE id = $4
+                 SET exercises = $1, notes = $2, visibility = $3, completed = true, workout_type = $5
+                 WHERE id = $4 AND user_id = $6
                  RETURNING *`,
-                [exercises || null, notes || null, visibility, existingLog.rows[0].id]
+                [exercises || null, notes || null, visibility, existingLog.rows[0].id, workout_type, userId]
             );
         } else {
             // Create new log
             result = await query(
-                `INSERT INTO workout_logs (user_id, workout_type, exercises, notes, visibility, logged_date, logged_timezone)
-                 VALUES ($1, $2, $3, $4, $5, ${MEMBER_TODAY_SQL}, ${MEMBER_TIMEZONE_SQL})
+                `INSERT INTO workout_logs (user_id, workout_type, exercises, notes, visibility, logged_date, logged_timezone, created_at${client_session_id ? ', id' : ''})
+                 VALUES ($1, $2, $3, $4, $5, ${MEMBER_TODAY_SQL}, ${MEMBER_TIMEZONE_SQL}, NOW()${client_session_id ? ', $6' : ''})
                  RETURNING *`,
-                [userId, workout_type, exercises || null, notes || null, visibility]
+                [userId, workout_type, exercises || null, notes || null, visibility, ...(client_session_id ? [client_session_id] : [])]
             );
         }
 

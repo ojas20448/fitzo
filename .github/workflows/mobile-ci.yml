@@ -5,8 +5,10 @@ on:
     branches: [master]
     paths: ['mobile/**']
   pull_request:
-    branches: [master]
     paths: ['mobile/**']
+
+permissions:
+  contents: read
 
 jobs:
   validate:
@@ -19,13 +21,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: mobile/package-lock.json
 
       - name: Install dependencies
         working-directory: mobile
-        run: npm ci
+        run: npm ci --ignore-scripts
+
+      - name: Check dependency security
+        working-directory: mobile
+        run: npm audit --audit-level=high
 
       - name: TypeScript type check
         working-directory: mobile
