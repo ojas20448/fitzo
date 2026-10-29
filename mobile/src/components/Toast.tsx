@@ -185,28 +185,27 @@ const ToastItem: React.FC<{
             <View style={styles.content}>
                 <Text style={styles.title}>{toast.title}</Text>
                 {toast.message && <Text style={styles.message}>{toast.message}</Text>}
-                {toast.action && (
-                    <TouchableOpacity
-                        style={styles.actionButton}
-                        accessibilityRole="button"
-                        onPress={() => {
-                            toast.action?.onPress();
-                            animateOut();
-                        }}
-                        accessibilityLabel={toast.action.label}
-                    >
-                        <Text style={styles.actionText}>{toast.action.label}</Text>
-                    </TouchableOpacity>
-                )}
             </View>
-            <TouchableOpacity
+            {toast.action ? (
+                <TouchableOpacity
+                    style={styles.actionButton}
+                    accessibilityRole="button"
+                    onPress={() => {
+                        toast.action?.onPress();
+                        animateOut();
+                    }}
+                    accessibilityLabel={toast.action.label}
+                >
+                    <MaterialIcons name="arrow-forward" size={20} color={colors.text.primary} />
+                </TouchableOpacity>
+            ) : <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => animateOut()}
                 accessibilityRole="button"
                 accessibilityLabel="Dismiss notification"
             >
                 <MaterialIcons name="close" size={18} color={colors.text.muted} />
-            </TouchableOpacity>
+            </TouchableOpacity>}
         </Animated.View>
     );
 };
@@ -271,24 +270,23 @@ const styles = StyleSheet.create({
         width: '100%',
         maxWidth: 480,
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         backgroundColor: colors.surfaceLight,
         borderRadius: borderRadius.lg,
         borderWidth: 1,
         borderColor: colors.glass.border,
         paddingLeft: spacing.md,
-        paddingVertical: spacing.sm,
+        paddingVertical: 6,
         paddingRight: spacing.xs,
         marginBottom: spacing.sm,
         ...shadow({ y: 4, blur: 8, color: '#000000', opacity: 0.3 }),
         zIndex: 8, // was implied by elevation: 8 on Android
     },
     iconContainer: {
-        width: 32,
-        height: 32,
-        borderRadius: borderRadius.sm,
+        width: 28,
+        height: 28,
+        borderRadius: borderRadius.full,
         backgroundColor: colors.glass.surfaceLight,
-        marginTop: 6,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: spacing.sm,
@@ -296,7 +294,7 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         minWidth: 0,
-        paddingVertical: 6,
+        paddingVertical: 2,
     },
     title: {
         fontSize: typography.sizes.base,
@@ -312,14 +310,15 @@ const styles = StyleSheet.create({
         lineHeight: 18,
     },
     actionButton: {
+        minWidth: 44,
         minHeight: 44,
         justifyContent: 'center',
-        alignSelf: 'flex-start',
-    },
-    actionText: {
-        fontSize: typography.sizes.sm,
-        fontFamily: typography.fontFamily.bold,
-        color: colors.primary,
+        alignItems: 'center',
+        marginLeft: spacing.xs,
+        borderRadius: borderRadius.full,
+        backgroundColor: colors.glass.surfaceHover,
+        borderWidth: 1,
+        borderColor: colors.glass.border,
     },
     closeButton: {
         minWidth: 44,

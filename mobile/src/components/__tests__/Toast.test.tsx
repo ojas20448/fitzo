@@ -56,14 +56,24 @@ test('pauses expiry during a drag and returns a short drag to its resting positi
     expect(messages()).toBe('Food log');
 });
 
-test('preserves actions and offers an independent close button and accessibility dismissal', async () => {
+test('uses one icon action instead of a text row and close button, retaining accessibility dismissal', async () => {
     const action = jest.fn();
     await act(async () => api.showToast({ type: 'success', title: 'Entry saved', action: { label: 'View diary', onPress: action } }));
-    expect(button('Dismiss notification')).toBeDefined();
+    expect(button('Dismiss notification')).toBeUndefined();
+    expect(button('View diary').props.accessibilityRole).toBe('button');
+    expect(messages()).not.toContain('View diary');
     await act(async () => button('View diary').props.onPress());
     expect(action).toHaveBeenCalledTimes(1); expect(messages()).toBe('Food log');
     await act(async () => api.error('Error'));
     const alert = screen.root.findAllByProps({ accessibilityRole: 'alert' }).find((node: any) => node.props.onAccessibilityAction);
     await act(async () => alert.props.onAccessibilityAction({ nativeEvent: { actionName: 'dismiss' } }));
     expect(messages()).toBe('Food log');
+});
+
+test('swiping an actionable notification dismisses it without opening the diary', async () => {
+    const action = jest.fn();
+    await act(async () => api.showToast({ type: 'success', title: 'Food saved', action: { label: 'View diary', onPress: action } }));
+    await act(async () => { gesture.onPanResponderGrant(); gesture.onPanResponderRelease({}, { dx: 80, dy: 0, vx: 0, vy: 0 }); });
+    expect(messages()).toBe('Food log');
+    expect(action).not.toHaveBeenCalled();
 });
