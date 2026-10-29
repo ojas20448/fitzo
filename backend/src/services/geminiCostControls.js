@@ -49,6 +49,7 @@ function getCostControlledModel(client, feature, options, requestOptions, ownerI
         ...requestOptions,
     });
     const generate = async input => {
+        await require('../middleware/aiQuota').reserveProviderCall(ownerId || context.getStore()?.userId);
         const result = await model.generateContent(input);
         const response = await result.response;
         const usage = response.usageMetadata;

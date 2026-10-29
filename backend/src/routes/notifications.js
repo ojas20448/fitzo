@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool, query, getClient } = require('../config/database');
 const { authenticate, authenticateAdmin } = require('../middleware/auth');
-const { asyncHandler } = require('../utils/errors');
+const { asyncHandler, ForbiddenError } = require('../utils/errors');
 const pushNotifications = require('../services/pushNotifications');
 
 // ============================================
@@ -152,6 +152,12 @@ router.post('/test', authenticate, asyncHandler(async (req, res) => {
 // Send notification to specific user (admin only)
 router.post('/send/:userId', authenticateAdmin, asyncHandler(async (req, res) => {
     const { userId } = req.params;
+    if (req.user.role !== 'admin') {
+        const target = await query('SELECT gym_id FROM users WHERE id = $1', [userId]);
+        if (!req.user.gym_id || target.rows[0]?.gym_id !== req.user.gym_id) {
+            throw new ForbiddenError('You can only notify users in your own gym');
+        }
+    }
     const { title, body, type = 'general', data = {} } = req.body;
 
     if (!title || !body) {
@@ -170,6 +176,7 @@ router.post('/send/:userId', authenticateAdmin, asyncHandler(async (req, res) =>
 
 // Broadcast to all users (admin only)
 router.post('/broadcast', authenticateAdmin, asyncHandler(async (req, res) => {
+    if (req.user.role !== 'admin') throw new ForbiddenError('Platform administrator access required');
     const { title, body, type = 'general', data = {} } = req.body;
 
     if (!title || !body) {

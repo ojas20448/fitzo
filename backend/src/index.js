@@ -9,6 +9,7 @@ const { initSentry, sentryErrorHandler } = require('./services/sentry');
 
 // Initialize express
 const app = express();
+app.disable('x-powered-by');
 
 // Trust Render's proxy so rate limiters see the real client IP
 // (X-Forwarded-For, one trusted hop). Without this every user shares a
@@ -71,6 +72,14 @@ app.use(cors({
 //
 // Therefore: large-body routes (base64 image / audio uploads) must declare
 // their parser HERE, above the global default.
+// Reject floods before allocating memory to parse uploaded media.
+app.use('/api', globalLimiter);
+app.use((req, res, next) => {
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.set('Referrer-Policy', 'no-referrer');
+    if (req.secure) res.set('Strict-Transport-Security', 'max-age=31536000');
+    next();
+});
 const LARGE_BODY_ROUTES = [
     '/api/ai-jobs/food-photo',
     '/api/food/analyze-photo',  // base64 food photo -> Gemini Vision
@@ -82,9 +91,6 @@ LARGE_BODY_ROUTES.forEach((route) => {
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-
-// Global rate limit (after CORS/parsing so limited responses are well-formed)
-app.use('/api', globalLimiter);
 
 // Request logging (development only)
 if (process.env.NODE_ENV === 'development') {

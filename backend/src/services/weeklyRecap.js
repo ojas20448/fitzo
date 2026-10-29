@@ -9,6 +9,7 @@ if (!process.env.GEMINI_API_KEY) {
     console.error('⚠️  GEMINI_API_KEY not set — AI Weekly Recaps will fail');
 }
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const warmingRecaps = new Map();
 
 /**
  * Calculates the Monday date string for a given date.
@@ -178,13 +179,15 @@ async function getLatestWeeklyRecap(userId) {
         return result.rows[0];
     }
 
-    // Generate on-the-fly if missing
-    try {
-        return await generateWeeklyRecap(userId, startOfLastWeek);
-    } catch (err) {
-        console.error('Failed generating weekly recap on-the-fly:', err.message);
-        return null;
+    const key = `${userId}:${startOfLastWeek}`;
+    if (!warmingRecaps.has(key)) {
+        const job = generateWeeklyRecap(userId, startOfLastWeek).catch(err => {
+            console.error('Failed generating weekly recap on-the-fly:', err.message);
+            return null;
+        }).finally(() => warmingRecaps.delete(key));
+        warmingRecaps.set(key, job);
     }
+    return warmingRecaps.get(key);
 }
 
 /**

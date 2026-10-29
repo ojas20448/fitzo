@@ -1,3 +1,4 @@
+jest.mock('../middleware/aiQuota', () => ({ reserveProviderCall: jest.fn(async () => {}) }));
 /**
  * Daily Insight Service Tests
  * Verifies proactive daily note generation, database storage, English-only restrictions,

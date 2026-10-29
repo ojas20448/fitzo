@@ -1,140 +1,83 @@
-/**
- * AI Quota Middleware
- *
- * Protects Gemini-backed endpoints from cost blowout and abuse:
- *   1. Burst limit  — max requests per minute per user
- *   2. Daily limit  — max requests per day per user
- *   3. Monthly cap  — hard ceiling per user per calendar month
- *
- * Counters live in Redis (Upstash) when available, with an in-memory
- * fallback so limits still apply on a single instance without Redis.
- *
- * Configure via env (all optional):
- *   AI_BURST_LIMIT    requests/minute  (default 3)
- *   AI_DAILY_LIMIT    requests/day     (default 10)
- *   AI_MONTHLY_LIMIT  requests/month   (default 150)
- */
-
-const cache = require('../services/cache');
-
+/** Durable AI allowances shared by API requests, bulk calls and reports. */
+const { query } = require('../config/database');
+const context = require('../services/aiContext');
+const { AppError, AIUnavailableError } = require('../utils/errors');
 function positiveLimit(value, fallback) {
     const parsed = Number(value);
     return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
-
 const LIMITS = {
     minute: { max: positiveLimit(process.env.AI_BURST_LIMIT, 3), ttl: 120 },
     day: { max: positiveLimit(process.env.AI_DAILY_LIMIT, 10), ttl: 60 * 60 * 26 },
     month: { max: positiveLimit(process.env.AI_MONTHLY_LIMIT, 150), ttl: 60 * 60 * 24 * 32 },
 };
-
-// In-memory fallback when Redis is unavailable (single-instance safe)
-const memoryCounters = new Map();
-
-function memoryIncr(key, ttlSeconds) {
-    const now = Date.now();
-    const entry = memoryCounters.get(key);
-    if (!entry || entry.expiresAt < now) {
-        memoryCounters.set(key, { count: 1, expiresAt: now + ttlSeconds * 1000 });
-        return 1;
-    }
-    entry.count += 1;
-    return entry.count;
-}
-
-// Lazy cleanup so the Map doesn't grow forever
-function memoryCleanup() {
-    if (memoryCounters.size < 5000) return;
-    const now = Date.now();
-    for (const [key, entry] of memoryCounters) {
-        if (entry.expiresAt < now) memoryCounters.delete(key);
-    }
-}
-
+const PROJECT_MONTHLY_LIMIT = positiveLimit(process.env.AI_PROJECT_MONTHLY_LIMIT, 1000);
+const QUOTA_MESSAGES = {
+    minute: 'Please wait a minute before using Fitzo AI again.',
+    day: 'You have used your AI allowance for today. It resets at midnight UTC.',
+    month: 'You have used your AI allowance for this month. It resets on the 1st UTC.',
+    project: 'Fitzo AI has reached its shared monthly allowance. Please try again next month.',
+};
 function windowKeys(userId, now = new Date()) {
-    const minuteBucket = Math.floor(now.getTime() / 60000);
-    const dayBucket = now.toISOString().slice(0, 10); // YYYY-MM-DD
-    const monthBucket = now.toISOString().slice(0, 7); // YYYY-MM
     return {
-        minute: `ai:${userId}:m:${minuteBucket}`,
-        day: `ai:${userId}:d:${dayBucket}`,
-        month: `ai:${userId}:mo:${monthBucket}`,
+        minute: `ai:${userId}:m:${Math.floor(now.getTime() / 60000)}`,
+        day: `ai:${userId}:d:${now.toISOString().slice(0, 10)}`,
+        month: `ai:${userId}:mo:${now.toISOString().slice(0, 7)}`,
+        project: `ai:project:mo:${now.toISOString().slice(0, 7)}`,
     };
 }
-
-async function incrementCounter(key, ttlSeconds) {
-    const redisCount = await cache.incrWithExpire(key, ttlSeconds);
-    if (redisCount !== null) return redisCount;
-    memoryCleanup();
-    return memoryIncr(key, ttlSeconds);
-}
-
-const QUOTA_MESSAGES = {
-    minute: "Whoa, slow down! The AI coach needs a breather. Try again in a minute.",
-    day: "You've used all your AI coach sessions for today. They reset at midnight! 🌙",
-    month: "You've reached this month's AI coach limit. It resets on the 1st. 💪",
-};
-
-/**
- * Express middleware — must run AFTER authenticate (needs req.user.id)
- */
-const aiQuota = async (req, res, next) => {
+async function consumeQuota(userId, res) {
+    if (!userId) throw new AIUnavailableError('AI needs an authenticated account.');
+    const keys = windowKeys(userId);
     try {
-        if (!req.user || !req.user.id) {
-            // Should never happen (authenticate runs first) — fail closed
-            return res.status(401).json({ error: true, message: 'Please log in to continue', code: 'AUTH_REQUIRED' });
-        }
-
-        const keys = windowKeys(req.user.id);
-
-        for (const window of ['minute', 'day', 'month']) {
-            const { max, ttl } = LIMITS[window];
-            const count = await incrementCounter(keys[window], ttl);
-
+        await query('DELETE FROM ai_usage_counters WHERE expires_at < NOW()');
+        for (const window of ['minute', 'day', 'month', 'project']) {
+            const { max, ttl } = window === 'project' ? { max: PROJECT_MONTHLY_LIMIT, ttl: LIMITS.month.ttl } : LIMITS[window];
+            const result = await query(`INSERT INTO ai_usage_counters (key, used, expires_at)
+                VALUES ($1, 1, NOW() + $2::int * INTERVAL '1 second')
+                ON CONFLICT (key) DO UPDATE SET used = ai_usage_counters.used + 1
+                RETURNING used`, [keys[window], ttl]);
+            const count = Number(result.rows[0].used);
             if (count > max) {
-                return res.status(429).json({
-                    error: true,
-                    code: 'AI_LIMIT_REACHED',
-                    message: QUOTA_MESSAGES[window],
-                    window,
-                    limit: max,
-                });
+                const error = new AppError(QUOTA_MESSAGES[window], 429, 'AI_LIMIT_REACHED');
+                Object.assign(error, { window, limit: max });
+                throw error;
             }
-
-            if (window === 'day') {
-                res.set('X-AI-Daily-Remaining', String(Math.max(0, max - count)));
-            }
-            if (window === 'month') {
-                res.set('X-AI-Monthly-Remaining', String(Math.max(0, max - count)));
-            }
+            if (window === 'day') res?.set('X-AI-Daily-Remaining', String(max - count));
+            if (window === 'month') res?.set('X-AI-Monthly-Remaining', String(max - count));
         }
-
+    } catch (error) {
+        if (error.code === 'AI_LIMIT_REACHED') throw error;
+        console.error('AI allowance accounting failed');
+        throw new AIUnavailableError('Fitzo AI is unavailable while its allowance is checked. Please try again later.');
+    }
+}
+const aiQuota = async (req, res, next) => {
+    if (!req.user?.id) return res.status(401).json({ error: true, message: 'Please log in to continue', code: 'AUTH_REQUIRED' });
+    try {
+        await consumeQuota(req.user.id, res);
+        const store = context.getStore();
+        if (store?.userId === req.user.id) store.aiQuotaCredit = (store.aiQuotaCredit || 0) + 1;
         next();
     } catch (error) {
-        // Quota check should never take the AI feature down — log and continue
-        console.error('AI quota check failed:', error.message);
-        next();
+        if (error.code === 'AI_LIMIT_REACHED') return res.status(429).json({ error: true, code: error.code, message: error.message, window: error.window, limit: error.limit });
+        next(error);
     }
 };
-
-/**
- * Read-only usage lookup for GET /api/ai/quota (does not increment)
- */
+async function reserveProviderCall(userId) {
+    const store = context.getStore();
+    if (store?.userId === userId && store.aiQuotaCredit > 0) {
+        store.aiQuotaCredit -= 1;
+        return;
+    }
+    await consumeQuota(userId);
+}
 async function getUsage(userId) {
     const keys = windowKeys(userId);
-    const readCounter = async (key) => {
-        const cached = await cache.get(key);
-        if (cached !== null && cached !== undefined) return parseInt(cached, 10) || 0;
-        const entry = memoryCounters.get(key);
-        return entry && entry.expiresAt > Date.now() ? entry.count : 0;
-    };
-
-    const [day, month] = await Promise.all([readCounter(keys.day), readCounter(keys.month)]);
-
-    return {
-        daily: { used: day, limit: LIMITS.day.max, remaining: Math.max(0, LIMITS.day.max - day) },
-        monthly: { used: month, limit: LIMITS.month.max, remaining: Math.max(0, LIMITS.month.max - month) },
-    };
+    const result = await query('SELECT key, used FROM ai_usage_counters WHERE key = ANY($1::text[]) AND expires_at > NOW()', [[keys.day, keys.month]]);
+    const counts = Object.fromEntries(result.rows.map(row => [row.key, Number(row.used)]));
+    return Object.fromEntries(['day', 'month'].map(window => [window === 'day' ? 'daily' : 'monthly', {
+        used: counts[keys[window]] || 0, limit: LIMITS[window].max, remaining: Math.max(0, LIMITS[window].max - (counts[keys[window]] || 0)),
+    }]));
 }
-
-module.exports = { aiQuota, getUsage, LIMITS };
+module.exports = { aiQuota, getUsage, LIMITS, reserveProviderCall };

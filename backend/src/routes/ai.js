@@ -6,11 +6,12 @@ const { aiQuota, getUsage } = require('../middleware/aiQuota');
 const transcriptionService = require('../services/transcription');
 const { asyncHandler, ValidationError } = require('../utils/errors');
 const { validate } = require('../middleware/validate');
-const { aiWorkoutPlanSchema, aiChatSchema, aiFormAnalysisSchema, aiTranscribeSchema, aiExtractSchema } = require('../schemas');
+const { aiWorkoutPlanSchema, aiNutritionAdviceSchema, aiChatSchema, aiFormAnalysisSchema, aiTranscribeSchema, aiExtractSchema } = require('../schemas');
 const { query } = require('../config/database');
 const contextPackService = require('../services/contextPack');
 const dailyInsightService = require('../services/dailyInsight');
 const weeklyRecapService = require('../services/weeklyRecap');
+const { isFitnessQuestion, SCOPE_REPLY } = require('../utils/coachScope');
 
 // All AI routes require auth. Generation routes also burn quota.
 router.use(authenticate);
@@ -32,7 +33,7 @@ router.post('/workout-plan', aiQuota, validate({ body: aiWorkoutPlanSchema }), a
 }));
 
 // Get nutrition advice
-router.post('/nutrition-advice', aiQuota, asyncHandler(async (req, res) => {
+router.post('/nutrition-advice', validate({ body: aiNutritionAdviceSchema }), aiQuota, asyncHandler(async (req, res) => {
     const { goal, currentWeight, targetWeight, activityLevel } = req.body;
 
     const userProfile = {
@@ -110,7 +111,14 @@ router.get('/weekly-recap', asyncHandler(async (req, res) => {
 }));
 
 // Chat with AI coach
-router.post('/chat', aiQuota, validate({ body: aiChatSchema }), asyncHandler(async (req, res) => {
+router.post('/chat', validate({ body: aiChatSchema }), asyncHandler(async (req, res, next) => {
+    const result = await query(`SELECT sender, message, created_at FROM coach_messages
+        WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10`, [req.user.id]);
+    req.coachHistory = result.rows.reverse();
+    const previous = req.coachHistory.filter(message => message.sender === 'user').at(-1)?.message;
+    if (!isFitnessQuestion(req.body.question, previous)) return res.json({ success: true, response: SCOPE_REPLY, offTopic: true });
+    next();
+}), aiQuota, asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const { question } = req.body;
 
@@ -118,15 +126,7 @@ router.post('/chat', aiQuota, validate({ body: aiChatSchema }), asyncHandler(asy
     const contextPack = await contextPackService.getContextPack(userId);
 
     // 2. Fetch last 10 turns of message history (ordered chronologically)
-    const historyResult = await query(
-        `SELECT sender, message, created_at
-         FROM coach_messages
-         WHERE user_id = $1
-         ORDER BY created_at DESC
-         LIMIT 10`,
-        [userId]
-    );
-    const history = historyResult.rows.reverse();
+    const history = req.coachHistory;
 
     // 3. Send query to Gemini
     const aiResponse = await geminiService.chatWithCoach(question, contextPack, history);

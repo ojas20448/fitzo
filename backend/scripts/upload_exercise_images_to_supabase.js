@@ -13,9 +13,9 @@ require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pieyjxokfjvsnfygblmv.supabase.co';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-if (!SUPABASE_SERVICE_KEY) {
-    console.error('❌ SUPABASE_SERVICE_KEY not set. Add it to backend/.env');
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
+if (!SUPABASE_SECRET_KEY?.startsWith('sb_secret_')) {
+    console.error('❌ Set the replacement SUPABASE_SECRET_KEY in backend/.env');
     process.exit(1);
 }
 const BUCKET_NAME = 'exercise-images';
@@ -65,8 +65,7 @@ function supabaseRequest(method, urlPath, body, contentType = 'application/json'
             hostname: url.hostname,
             path: url.pathname + url.search,
             headers: {
-                'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-                'apikey': SUPABASE_SERVICE_KEY,
+                'apikey': SUPABASE_SECRET_KEY,
             }
         };
         if (body) {
