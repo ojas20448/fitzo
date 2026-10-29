@@ -1,7 +1,8 @@
 jest.mock('../config/database', () => ({ query: jest.fn() }));
 let mockGymId = null;
+let mockRole = 'member';
 jest.mock('../middleware/auth', () => ({
-    authenticate: (req, res, next) => { req.user = { id: 'member', gym_id: mockGymId }; next(); },
+    authenticate: (req, res, next) => { req.user = { id: 'member', role: mockRole, gym_id: mockGymId }; next(); },
     invalidateUserCache: jest.fn(async () => {}),
 }));
 jest.mock('../services/cache', () => ({ del: jest.fn(async () => {}), keys: { homeData: id => `home:${id}` } }));
@@ -17,7 +18,7 @@ app.use(require('../utils/errors').errorHandler);
 const gym = { id: '11111111-1111-1111-1111-111111111111', name: 'My Club', capacity: 40 };
 
 beforeEach(() => {
-    jest.clearAllMocks(); mockGymId = null;
+    jest.clearAllMocks(); mockGymId = null; mockRole = 'member';
     query.mockReset().mockResolvedValueOnce({ rows: [gym] }).mockResolvedValue({ rows: [] });
 });
 
@@ -34,7 +35,7 @@ test.each([
     expect(response.status).toBe(200);
     expect(response.body.gym).toEqual({ id: gym.id, name: gym.name });
     expect(query.mock.calls[0]).toEqual([`SELECT id, name, capacity FROM gyms WHERE ${field} = $1`, [value]]);
-    expect(query.mock.calls[1]).toEqual(['UPDATE users SET gym_id = $1 WHERE id = $2', [gym.id, 'member']]);
+    expect(query.mock.calls[1]).toEqual(['UPDATE users SET gym_id = $1, trainer_id = NULL WHERE id = $2', [gym.id, 'member']]);
     expect(query).toHaveBeenCalledTimes(2);
     expect(invalidateUserCache).toHaveBeenCalledWith('member');
     expect(cache.del).toHaveBeenCalledWith('home:member');
@@ -61,4 +62,11 @@ test('scanning the current gym QR is idempotent', async () => {
     expect(response.status).toBe(200);
     expect(query).toHaveBeenCalledTimes(1);
     expect(invalidateUserCache).not.toHaveBeenCalled();
+});
+
+test.each(['manager', 'trainer'])('prevents %s from transferring privileges through self-service gym changes', async role => {
+    mockRole = role;
+    expect((await request(app).post('/api/settings/gym').send({ gym_code: 'CLUB' })).status).toBe(403);
+    expect((await request(app).delete('/api/settings/gym')).status).toBe(403);
+    expect(query).not.toHaveBeenCalled();
 });

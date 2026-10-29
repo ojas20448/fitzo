@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { query } = require('../config/database');
 const { authenticate, invalidateUserCache } = require('../middleware/auth');
-const { ValidationError, NotFoundError, asyncHandler } = require('../utils/errors');
+const { ValidationError, NotFoundError, ForbiddenError, asyncHandler } = require('../utils/errors');
 const cache = require('../services/cache');
 const {
     WORKOUT_PREF_COLUMNS,
@@ -68,6 +68,7 @@ router.get('/gym', asyncHandler(async (req, res) => {
  * Body: { gym_code: string } or { gym_qr: string }
  */
 router.post('/gym', asyncHandler(async (req, res) => {
+    if (req.user.role !== 'member') throw new ForbiddenError('Staff gym assignments must be changed by an administrator');
     const userId = req.user.id;
     const { gym_code, gym_qr } = req.body;
     let gymCode = gym_code;
@@ -120,7 +121,7 @@ router.post('/gym', asyncHandler(async (req, res) => {
         });
     }
 
-    await query('UPDATE users SET gym_id = $1 WHERE id = $2', [gym.id, userId]);
+    await query('UPDATE users SET gym_id = $1, trainer_id = NULL WHERE id = $2', [gym.id, userId]);
 
     // Auth middleware caches user (incl. gym_id) — must invalidate
     await invalidateUserCache(userId);
@@ -138,13 +139,14 @@ router.post('/gym', asyncHandler(async (req, res) => {
  * Leave current gym
  */
 router.delete('/gym', asyncHandler(async (req, res) => {
+    if (req.user.role !== 'member') throw new ForbiddenError('Staff gym assignments must be changed by an administrator');
     const userId = req.user.id;
 
     if (!req.user.gym_id) {
         throw new ValidationError("You're not enrolled in a gym right now");
     }
 
-    await query('UPDATE users SET gym_id = NULL WHERE id = $1', [userId]);
+    await query('UPDATE users SET gym_id = NULL, trainer_id = NULL WHERE id = $1', [userId]);
     await invalidateUserCache(userId);
     await cache.del(cache.keys.homeData(userId));
 

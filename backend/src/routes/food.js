@@ -498,7 +498,9 @@ router.post('/barcode', authenticate, searchLimiter, asyncHandler(async (req, re
 
 router.post('/bulk-resolve', authenticate, aiQuota, asyncHandler(async (req, res) => {
     const { items } = req.body;
-    if (!Array.isArray(items)) return res.status(400).json({ error: 'items must be an array' });
+    if (!Array.isArray(items) || items.length < 1 || items.length > 10 || items.some(entry => !entry || typeof entry.item !== 'string' || !entry.item.trim() || entry.item.length > 200 || !['string', 'number'].includes(typeof entry.quantity) || String(entry.quantity).length > 50)) {
+        return res.status(400).json({ error: 'Provide 1 to 10 food items with a short name and quantity.' });
+    }
     const results = [];
     for (const { item, quantity } of items) {
         const searchQuery = `${quantity} ${item}`.trim();

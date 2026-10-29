@@ -7,7 +7,7 @@ LABEL org.opencontainers.image.source="https://github.com/ojas20448/fitzo" \
 ENV NODE_ENV=production
 WORKDIR /app/backend
 COPY backend/package.json backend/package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund && npm cache clean --force
 
 COPY backend/src ./src
 COPY backend/certs ./certs

@@ -1,3 +1,4 @@
+jest.mock('../middleware/aiQuota', () => ({ reserveProviderCall: jest.fn(async () => {}) }));
 /**
  * Weekly Recap Service Tests
  * Verifies weekly metrics aggregation (workouts, check-ins, calorie averages, weight trends)

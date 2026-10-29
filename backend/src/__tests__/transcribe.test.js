@@ -1,3 +1,4 @@
+jest.mock('../middleware/aiQuota', () => ({ reserveProviderCall: jest.fn(async () => {}) }));
 /**
  * Transcription Service Tests
  * Verifies Gemini voice transcription service integration.

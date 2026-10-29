@@ -1,3 +1,4 @@
+jest.mock('../middleware/aiQuota', () => ({ reserveProviderCall: jest.fn(async () => {}) }));
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 describe('Gemini cost controls at the real SDK request boundary', () => {
@@ -143,5 +144,18 @@ describe('Gemini cost controls at the real SDK request boundary', () => {
             feature: 'food_text', model: 'gemini-3.1-flash-lite',
             inputTokens: 100, outputTokens: 20, thinkingTokens: 0, totalTokens: 120,
         });
+    });
+
+    test('coach instructions stay separate from questions, saved notes and history', async () => {
+        const gemini = require('../services/gemini');
+        await context.run({ userId: 'owner' }, () => gemini.chatWithCoach('Help my workouts', {
+            profile: { ai_profile_summary: 'untrusted saved note' },
+        }, [{ sender: 'user', message: 'untrusted prior message' }]));
+        const body = requests[0].body;
+        const instructions = body.systemInstruction.parts[0].text;
+        expect(instructions).toContain('Answer only workout, nutrition, recovery and Fitzo support questions');
+        expect(instructions).not.toContain('untrusted saved note');
+        expect(instructions).not.toContain('untrusted prior message');
+        expect(body.contents.at(-1)).toEqual({ role: 'user', parts: [{ text: 'Help my workouts' }] });
     });
 });

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
+const { randomBytes } = require('node:crypto');
 const { query } = require('../config/database');
 const { renderEmail } = require('../utils/emailTemplate');
 const { authenticate } = require('../middleware/auth');
@@ -143,6 +144,11 @@ router.post('/users', asyncHandler(async (req, res) => {
     if (!['member', 'trainer'].includes(role)) {
         throw new ValidationError('Invalid role. Must be member or trainer');
     }
+    if (!gymId) throw new ValidationError('A gym assignment is required');
+    if (role === 'member' && trainer_id) {
+        const trainer = await query("SELECT id FROM users WHERE id = $1 AND gym_id = $2 AND role = 'trainer'", [trainer_id, gymId]);
+        if (!trainer.rows.length) throw new ValidationError('Choose a trainer from your own gym');
+    }
 
     // Check if email already exists
     const existingUser = await query(
@@ -155,7 +161,7 @@ router.post('/users', asyncHandler(async (req, res) => {
     }
 
     // Generate temporary password (user should reset on first login)
-    const tempPassword = Math.random().toString(36).slice(-8);
+    const tempPassword = randomBytes(18).toString('base64url');
     const passwordHash = await bcrypt.hash(tempPassword, 10);
 
     // Create user

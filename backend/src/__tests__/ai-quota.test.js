@@ -1,8 +1,19 @@
 /**
  * AI Quota Middleware Tests
  * The quota is the cost-control for Gemini — it must hold even without Redis
- * (in-memory fallback path is what these tests exercise).
+ * Provider reservations share durable counters with endpoint admission.
  */
+
+let mockCounters;
+jest.mock('../config/database', () => ({ query: jest.fn(async (sql, params) => {
+    if (sql.startsWith('INSERT')) {
+        const used = (mockCounters.get(params[0]) || 0) + 1;
+        mockCounters.set(params[0], used);
+        return { rows: [{ used }] };
+    }
+    if (sql.startsWith('SELECT')) return { rows: params[0].filter(key => mockCounters.has(key)).map(key => ({ key, used: mockCounters.get(key) })) };
+    return { rows: [] };
+}) }));
 
 describe('aiQuota middleware', () => {
     let aiQuota, getUsage;
@@ -18,6 +29,7 @@ describe('aiQuota middleware', () => {
     const mockReq = (userId) => ({ user: userId ? { id: userId } : null });
 
     beforeEach(() => {
+        mockCounters = new Map();
         jest.resetModules();
         process.env.AI_BURST_LIMIT = '3';
         process.env.AI_DAILY_LIMIT = '5';
@@ -122,5 +134,26 @@ describe('aiQuota middleware', () => {
         for (let i = 0; i < 11; i++) await quota.aiQuota(mockReq('default-daily-user'), res, next);
         expect(next).toHaveBeenCalledTimes(10);
         expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'AI_LIMIT_REACHED', window: 'day', limit: 10 }));
+    });
+
+    it('fails closed when durable accounting is unavailable', async () => {
+        require('../config/database').query.mockRejectedValueOnce(new Error('database offline'));
+        const next = jest.fn();
+        await aiQuota(mockReq('outage'), mockRes(), next);
+        expect(next.mock.calls[0][0]).toMatchObject({ statusCode: 503 });
+    });
+
+    it('uses endpoint admission for the first provider call and charges each extra call', async () => {
+        const context = require('../services/aiContext');
+        const { reserveProviderCall } = require('../middleware/aiQuota');
+        await context.run({ userId: 'bulk' }, async () => {
+            await aiQuota(mockReq('bulk'), mockRes(), jest.fn());
+            await reserveProviderCall('bulk');
+            expect((await getUsage('bulk')).daily.used).toBe(1);
+            await reserveProviderCall('bulk');
+            expect((await getUsage('bulk')).daily.used).toBe(2);
+            await reserveProviderCall('bulk');
+            await expect(reserveProviderCall('bulk')).rejects.toMatchObject({ statusCode: 429 });
+        });
     });
 });

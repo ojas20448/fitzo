@@ -172,19 +172,26 @@ const registerPushTokenSchema = z.object({
 // AI SCHEMAS
 // ===========================================
 const aiChatSchema = z.object({
-    question: z.string().min(1, 'Question is required').max(2000),
+    question: z.string().trim().min(1, 'Question is required').max(2000),
     context: z.record(z.any()).optional().default({}),
 });
 
 const aiWorkoutPlanSchema = z.object({
-    goal: z.string().default('general fitness'),
-    fitnessLevel: z.string().default('beginner'),
+    goal: z.string().max(200).default('general fitness'),
+    fitnessLevel: z.string().max(100).default('beginner'),
     daysPerWeek: z.number().int().min(1).max(7).default(3),
-    equipment: z.string().default('bodyweight'),
+    equipment: z.string().max(500).default('bodyweight'),
+});
+
+const aiNutritionAdviceSchema = z.object({
+    goal: z.string().max(200).default('maintain weight'),
+    currentWeight: z.coerce.number().min(1).max(500).default(70),
+    targetWeight: z.coerce.number().min(1).max(500).default(70),
+    activityLevel: z.string().max(100).default('moderate'),
 });
 
 const aiFormAnalysisSchema = z.object({
-    exerciseName: z.string().min(1, 'Exercise name is required'),
+    exerciseName: z.string().min(1, 'Exercise name is required').max(200),
     description: z.string().min(1, 'Form description is required').max(2000),
 });
 
@@ -234,6 +241,7 @@ module.exports = {
     // AI
     aiChatSchema,
     aiWorkoutPlanSchema,
+    aiNutritionAdviceSchema,
     aiFormAnalysisSchema,
     aiTranscribeSchema,
     aiExtractSchema,

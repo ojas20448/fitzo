@@ -57,28 +57,18 @@ const trainerMemberGuard = async (req, res, next) => {
             return next(new ForbiddenError('Please log in first'));
         }
 
-        // Managers can access all members
-        if (req.user.role === 'manager') {
-            return next();
+        if (!['manager', 'trainer'].includes(req.user.role) || !req.user.gym_id) {
+            return next(new ForbiddenError('Staff access requires a gym assignment'));
         }
-
-        // Trainers can only access their assigned members
-        if (req.user.role === 'trainer') {
-            const { query } = require('../config/database');
-            const memberId = req.params.memberId || req.params.id;
-
-            const result = await query(
-                'SELECT trainer_id FROM users WHERE id = $1',
-                [memberId]
-            );
-
-            if (result.rows.length === 0) {
-                return next(new ForbiddenError("Member not found"));
-            }
-
-            if (result.rows[0].trainer_id !== req.user.id) {
-                return next(new ForbiddenError("You can only view your assigned members"));
-            }
+        const { query } = require('../config/database');
+        const memberId = req.params.memberId || req.params.id;
+        const result = await query('SELECT trainer_id, gym_id, role FROM users WHERE id = $1', [memberId]);
+        const member = result.rows[0];
+        if (!member || member.role !== 'member' || member.gym_id !== req.user.gym_id) {
+            return next(new ForbiddenError('You can only access members in your own gym'));
+        }
+        if (req.user.role === 'trainer' && member.trainer_id !== req.user.id) {
+            return next(new ForbiddenError('You can only view your assigned members'));
         }
 
         next();
