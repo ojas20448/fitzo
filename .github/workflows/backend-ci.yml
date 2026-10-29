@@ -27,6 +27,10 @@ jobs:
         working-directory: backend
         run: npm ci --ignore-scripts
 
+      - name: Check dependency security
+        working-directory: backend
+        run: npm audit --audit-level=high
+
       - name: Syntax check (all source files)
         working-directory: backend
         run: |
